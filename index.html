@@ -149,6 +149,13 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .crow .car{color:var(--mut);font-size:12px}
 .colbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:6px;font-size:10.5px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
 .lastdone{font-size:12px;color:var(--mut);text-decoration:line-through;opacity:.6;margin:2px 0}
+.addmenu{margin-bottom:10px}
+.addmenu summary{display:inline-block;font-size:12px;font-weight:700;color:var(--mut);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;list-style:none;font-family:var(--font)}
+.addmenu summary::-webkit-details-marker{display:none}
+.addmenu[open] summary{color:var(--acc);border-color:var(--acc)}
+.wf.mini button{font-size:9.5px;padding:2px 7px}
+.crowwrap{padding:7px 10px}
+.crowwrap .crow{padding:0;background:none;border:none;margin:0}
 .evsec{margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--card2);overflow:hidden}
 .evhead{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--purp)}
 .evhead .evn{color:var(--mut);font-weight:600;font-size:11px;margin-left:auto}
@@ -267,15 +274,18 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="nudge" id="nudge">You've taken 3+ consults since your last check. <a onclick="goCheck()">Run the cognitive-load self-check</a> — rebuild the master list before opening another chart.</div>
   <input id="cap" class="capin" placeholder="Type anything… '90F fall, SDH 5 mm' → consult · 'call Joanna NCC6 wife re consent' → call · question → OpenEvidence" autocomplete="off">
   <div id="capsugg"></div>
-  <div class="rowflex" style="gap:6px">
-    <button class="btn sec sm" onclick="openForm()">🧠 Consult</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'COMM')">📞 Comm</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'POC')">🩹 POC</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
-  </div>
+  <details class="addmenu">
+    <summary>＋ Add by type ▾</summary>
+    <div class="rowflex" style="gap:6px;margin-top:8px">
+      <button class="btn sec sm" onclick="openForm()">🧠 Consult</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'COMM')">📞 Comm</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'POC')">🩹 POC</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
+    </div>
+  </details>
   <div class="rowflex">
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
     <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
@@ -816,7 +826,7 @@ const TYPES={
  COMM:{i:"📞",l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Before signout","17:45"],["Clear",0]],
   rem:"Closed-loop: state exam + plan, get a read-back, note who you told and when. Secure-chat the plan so they don't page you later."},
- CHART:{i:"📋",l:"Chart check",probL:"Which list / patients",probPh:"BB7 + NCCU list before night signout",dlL:"Done by",
+ CHART:{i:"📋",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by",
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["Clear",0]],
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?)."},
  PROC:{i:"🛠",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
@@ -1036,6 +1046,22 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
 function sortCs(a,b){if(b.E!==a.E)return b.E-a.E;const ad=a.deadlineISO?Date.parse(a.deadlineISO):Infinity,bd=b.deadlineISO?Date.parse(b.deadlineISO):Infinity;if(ad!==bd)return ad-bd;if((b.W||0)!==(a.W||0))return(b.W||0)-(a.W||0);return b.O-a.O}
 const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note ✓"]];
 const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
+const TYPE_WF={
+ CONSULT:WF_ITEMS,
+ PROC:[["supplies","Gather supplies"],["consent","Consent"],["meds","Order meds"],["doproc","Do proc"],["doc","Document proc"],["proclist","Add to proc list"]],
+ POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
+ CHART:[["seen","Seen"],["cc1","Chart check 1 pm"],["cc5","Chart check 5 pm"]],
+ COMM:[["attempted","Attempted"],["__close","Done"]],
+ DC:DC_WF
+};
+function wfChips(c,mini){
+  const set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"];
+  if(!set||!set.length)return "";
+  return '<div class="wf'+(mini?" mini":"")+'">'+set.map(([k,l])=>{
+    if(k==="__close")return '<button style="border-color:var(--ok);color:var(--ok)" onclick="startClose(\''+c.id+'\')">'+l+' ✓</button>';
+    return '<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>';
+  }).join("")+'</div>';
+}
 const revealedPh=new Set();
 function maskPhone(p){return (p||"").replace(/\d(?=(?:\D*\d){3})/g,"•")}
 function togPh(id){if(revealedPh.has(id))revealedPh.delete(id);else revealedPh.add(id);render()}
@@ -1087,14 +1113,17 @@ function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+
 function rowCard(c,dl,isTask){
   const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
   const tIcon=isTask?TYPES[c.type].i+" ":"";
-  return '<div class="card crow E'+c.E+'" onclick="rowTap(event,\''+c.id+'\')">'+
-   '<span class="bg e'+c.E+'">E'+c.E+'</span>'+
-   '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
-   (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
-   (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
-       :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
-   (dl?'<span class="rdl dl '+dl.cls+'">⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
-   '<span class="car">▸</span></div>';
+  return '<div class="card crowwrap E'+c.E+'">'+
+   '<div class="crow" onclick="rowTap(event,\''+c.id+'\')">'+
+    '<span class="bg e'+c.E+'">E'+c.E+'</span>'+
+    '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
+    (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
+    (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
+        :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
+    (dl?'<span class="rdl dl '+dl.cls+'">⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+    '<span class="car">▸</span></div>'+
+   wfChips(c,true)+
+  '</div>';
 }
 function rowTap(e,id){if(e.target&&e.target.closest&&e.target.closest("button"))return;togCollapse(id)}
 function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render()}}
@@ -1121,7 +1150,7 @@ function card(c){
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
-    const dcwf=(c.type==="DC")?'<div class="wf">'+DC_WF.map(([k,l])=>'<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>').join("")+'</div>':"";
+    const dcwf=wfChips(c,false);
     return '<div class="card E'+c.E+'">'+
      '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span>'+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
@@ -1135,7 +1164,7 @@ function card(c){
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3⚠ E'+c.E+'</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
-  const wf=WF_ITEMS.map(([k,l])=>'<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>').join("");
+  const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
   return '<div class="card E'+c.E+'">'+
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
@@ -1147,7 +1176,7 @@ function card(c){
    stepsHtml(c)+
    (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
    evSection(c)+
-   '<div class="wf">'+wf+'</div>'+
+   wf+
    '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
   '</div>';
 }
