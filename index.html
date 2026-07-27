@@ -303,6 +303,15 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
   </div>
+  <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
+    <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
+    <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Logan — Pupils pinpoint… Plan: discharge 11 AM…&#10;Mr. Salk — Post-op L acute SDH…&#10;Action items:&#10;* ☐ Discharge Logan 11 AM if no CSF leak"></textarea>
+    <div class="rowflex">
+      <button class="btn" onclick="scrubList()">🧼 Scrub</button>
+      <button class="btn sec sm" onclick="copyScrubAll()">Copy all one-liners</button>
+    </div>
+    <div id="scrubout"></div>
+  </div></details>
   <div id="rcards"></div>
 </section>
 
@@ -1427,6 +1436,110 @@ function copySO(){const r=S.rounds.find(x=>x.id===soId);if(!r)return;
   const t=SO_TMPLS[r.soT];
   toClip(t.name+" sign-out — "+r.label+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n"));
   showToast("Sign-out copied");}
+// ---------- list scrubber ----------
+const SCRUB_WHITE=["Patient","Post","Pre","Neurology","Consult","Spanish","English","The","This","New","Left","Right","Plan","Pupils","Foley","Keppra","Lovenox","Tylenol"];
+const DX_TAGS=[
+ [/pseudomeningocele|csf leak/i,"pseudomeningocele/CSF leak"],
+ [/\bsah\b|aneurysm|pcomm|acomm/i,"aSAH"],
+ [/\bsdh\b|subdural/i,"SDH"],
+ [/\bedh\b|epidural hematoma/i,"EDH"],
+ [/\bich\b|intracerebral|occipital.{0,20}(hemorrhage|ich)/i,"ICH"],
+ [/tcar|carotid|cea\b/i,"TCAR/carotid"],
+ [/tssh|pituitary|sellar/i,"TSSH"],
+ [/shunt/i,"shunt"],
+ [/resection|crani(?!al nerve)|post-?op/i,"post-op crani"],
+ [/\bevd\b|ventriculostomy/i,"EVD"],
+ [/radiculopath|scoliosis|lami|fusion|\blbp\b|spine|spondy/i,"spine"],
+ [/stroke|\bctp\b|\blvo\b/i,"stroke w/u"],
+ [/cerebral edema|\btbi\b/i,"cerebral edema"]];
+let SCRUB=[];
+function scrubNameSeg(seg,names){
+  return seg.split(/(\s+)/).map(tok=>{
+    const w=tok.replace(/[^\w'-]/g,"");
+    if(/^(Mr|Mrs|Ms|Dr)\.?$/.test(w))return "";
+    if(/^[A-Z][a-z]{2,}$/.test(w)&&!SCRUB_WHITE.includes(w)){names.push(w);return tok.replace(w,w[0]+".")}
+    return tok;
+  }).join("").replace(/\s+/g," ").trim();
+}
+function scrubTag(t){
+  const hits=[];
+  DX_TAGS.forEach(d=>{if(hits.length<2&&d[1]&&d[0].test(t)&&!hits.includes(d[1]))hits.push(d[1])});
+  return hits.join(" + ")||"floor pt";
+}
+function scrubVals(t){
+  const v=[];
+  const na=t.match(/\bNa\s*:?[\s=]*(1\d{2})\b/);if(na&&(+na[1]>145||+na[1]<135))v.push("Na "+na[1]);
+  const tm=t.match(/tmax\s*:?[\s=]*([\d.]+)/i);if(tm&&+tm[1]>=100.4)v.push("Tmax "+tm[1]);
+  const icp=t.match(/icps?\s*(?:at|<|>|=)?\s*(\d{1,2})/i);if(icp)v.push("ICP "+t.match(/icps?\s*((?:at|<|>|=)?\s*\d{1,2})/i)[1].replace(/\s+/g,""));
+  if(/\bevd\b/i.test(t))v.push("EVD");
+  if(/lumbar drain|\bld\b/i.test(t))v.push("LD");
+  if(/(gpc|yeast|culture[^.]{0,20}positive|positive[^.]{0,20}culture|csf[^.]{0,25}positive)/i.test(t))v.push("cx+");
+  if(/intubated/i.test(t))v.push("intubated");
+  return [...new Set(v)].slice(0,4);
+}
+function scrubList(){
+  const raw=document.getElementById("scrubbox").value;
+  if(!raw.trim())return;
+  const lines=raw.split(/\n/).map(l=>l.trim());
+  let mode="pt";const pts=[];const items=[];
+  lines.forEach(l=>{
+    if(!l)return;
+    if(/^action items/i.test(l)){mode="act";return}
+    if(mode==="act"||/^[*•☐✓-]\s*[☐✓]?/.test(l)&&mode==="act"){if(mode==="act"){items.push(l.replace(/^[*•\-\s]*[☐✓]?\s*/,""));return}}
+    pts.push(l);
+  });
+  const allNames=[];
+  SCRUB=pts.map(line=>{
+    const m=line.match(/^(.{1,70}?)\s*[—–]\s*(.*)$/)||line.match(/^(.{1,50}?):\s+(.*)$/);
+    const nameSeg=m?m[1]:line.slice(0,30);
+    let body=m?m[2]:line;
+    const names=[];
+    const label=scrubNameSeg(nameSeg,names);
+    names.forEach(n=>{if(!allNames.includes(n))allNames.push(n)});
+    const tag=scrubTag(nameSeg+" "+body);
+    const vals=scrubVals(body);
+    const pm=body.match(/\bplan:\s*(.+)$/i);
+    let plan=pm?pm[1].trim():"";
+    if(plan.length>110)plan=plan.slice(0,110)+"…";
+    return {label:label,names:names,tag:tag,vals:vals,plan:plan,body:body,todos:[]};
+  });
+  // global name replacement in bodies/plans/items
+  const scrubTxt=t=>{let o=t;allNames.forEach(n=>{o=o.replace(new RegExp("\\b(?:Mr\\.?\\s+|Mrs\\.?\\s+|Ms\\.?\\s+)?"+n+"\\b","g"),n[0]+".")});return o};
+  SCRUB.forEach(p=>{p.body=scrubTxt(p.body);p.plan=scrubTxt(p.plan)});
+  const un=[];
+  items.forEach(it=>{
+    const itS=scrubTxt(it);
+    let hit=SCRUB.find(p=>p.names.some(n=>new RegExp("\\b"+n+"\\b").test(it)));
+    if(!hit){
+      hit=SCRUB.find(p=>p.label.split(/[\s/()]+/).some(tok=>tok.length>=4&&!/patient|consult/i.test(tok)&&new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(it)));
+    }
+    if(hit)hit.todos.push(itS);else un.push(itS);
+  });
+  SCRUB.unmatched=un;
+  renderScrub();
+}
+function scrubShort(p){
+  return p.label+" — "+p.tag+(p.vals.length?" · "+p.vals.join(" · "):"")+(p.plan?" · Plan: "+p.plan:"")+(p.todos.length?" · "+p.todos.map(t=>"☐ "+t).join(" · "):"");
+}
+function renderScrub(){
+  const el=document.getElementById("scrubout");
+  el.innerHTML=SCRUB.map((p,i)=>
+   '<div class="card" style="border-left-color:var(--teal)">'+
+    '<div style="font-size:13px;font-weight:600;color:#c8d3e4">'+esc(scrubShort(p))+'</div>'+
+    '<details style="margin-top:5px"><summary style="font-size:11.5px;color:var(--mut);cursor:pointer">full scrubbed text</summary><div class="state" style="margin-top:4px">'+esc(p.label+" — "+p.body)+'</div></details>'+
+    '<div class="cardbtns"><button onclick="copyScrub('+i+')">Copy line</button><button onclick="copyScrubFull('+i+')">Copy full</button><button onclick="scrubToRounds('+i+')">＋ Rounds card</button></div>'+
+   '</div>').join("")+
+   ((SCRUB.unmatched&&SCRUB.unmatched.length)?'<div class="card" style="border-left-color:var(--e1)"><b style="font-size:12.5px">Unmatched to-dos</b><div class="state">'+SCRUB.unmatched.map(esc).join("<br>")+'</div></div>':"");
+}
+function copyScrub(i){toClip(scrubShort(SCRUB[i]));showToast("One-liner copied")}
+function copyScrubFull(i){const p=SCRUB[i];toClip(p.label+" — "+p.body+(p.todos.length?"\n"+p.todos.map(t=>"☐ "+t).join("\n"):""));showToast("Full scrubbed text copied")}
+function copyScrubAll(){if(!SCRUB.length)return;toClip(SCRUB.map(scrubShort).join("\n")+((SCRUB.unmatched&&SCRUB.unmatched.length)?"\nUnmatched: "+SCRUB.unmatched.join(" · "):""));showToast("All one-liners copied")}
+function scrubToRounds(i){
+  const p=SCRUB[i];
+  const raw=p.label+" — "+p.body;
+  S.rounds.push({id:"r"+uid(),raw:raw,label:p.label.split(" ")[0]||p.label.slice(0,10),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:p.todos.join(" · "),created:Date.now(),updatedAt:Date.now()});
+  renderRounds();save();showToast("Added to rounds");
+}
 // ---------- smart capture ----------
 let capActions=[];
 function extractBed(t){
