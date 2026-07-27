@@ -107,6 +107,17 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .sg .sgb button{font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--acc);cursor:pointer;font-family:var(--font)}
 .sg .sgb button:active{background:#12283f}
 .sgnote{font-size:10.5px;color:var(--mut);font-style:italic;margin-bottom:4px}
+.mal{display:flex;gap:8px;align-items:center;border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;line-height:1.4}
+.mal span{flex:1}
+.mal b{font-weight:800}
+.mal.crit{background:#2a0f18;border:1px solid var(--e3);border-left:4px solid var(--e3);color:#ff9aa5}
+.mal.crit b{color:var(--e3)}
+.mal.warn{background:#2a1e10;border:1px solid #6b4b1c;border-left:4px solid var(--e2);color:#ffca7a}
+.mal.warn b{color:var(--e2)}
+.mal.ok{background:#10231c;border:1px solid #1f4a3a;border-left:4px solid var(--ok);color:#8fd8b8}
+.mal.ok b{color:var(--ok)}
+.mal button{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:7px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.autochip{display:flex;gap:8px;align-items:center;background:#12283f;border:1px solid var(--acc);border-radius:9px;padding:7px 10px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--acc)}
 .evsec{margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--card2);overflow:hidden}
 .evhead{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--purp)}
 .evhead .evn{color:var(--mut);font-weight:600;font-size:11px;margin-left:auto}
@@ -785,20 +796,113 @@ function renderFlags(){
     return '<div class="fl '+f.lv+'"><span>⚑ '+f.label+'</span>'+(hasApply?(done?'<button disabled style="opacity:.45">applied</button>':'<button onclick="applyFlag('+i+')">apply</button>'):"")+'</div>';
   }).join("");
 }
-function applyFlag(i){const f=curFlags[i];if(!f)return;
+function applyFlag(i){const f=curFlags[i];if(!f)return;F._manual=true;
   if(f.apply.E!==undefined&&F.E<f.apply.E)F.E=f.apply.E;
   if(f.apply.W!==undefined&&F.W<f.apply.W)F.W=f.apply.W;
   (f.apply.mods||[]).forEach(m=>{if(!F.mods.includes(m))F.mods.push(m)});
   buildSelectors();buildMods();syncWWarn();renderFlags();
 }
-let curSugg=[];
+// ---------- measurement parsing & threshold alerts ----------
+function parseMeas(txt){
+  const m={};
+  // MLS (both word orders); remember spans so mm-numbers aren't double-counted as thickness
+  const spans=[];
+  const p1=/(\d+(?:\.\d+)?)\s*mm?\s*(?:of\s+)?(?:midline\s*shift|mls)\b/ig;
+  const p2=/(?:midline\s*shift|mls)\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)\s*mm?\b/ig;
+  let r;
+  while((r=p1.exec(txt)))if(m.mls===undefined){m.mls=parseFloat(r[1]);spans.push([r.index,r.index+r[0].length])}
+  while((r=p2.exec(txt)))if(m.mls===undefined){m.mls=parseFloat(r[1]);spans.push([r.index,r.index+r[0].length])}
+  // thickness: any remaining "N mm" not inside an MLS span
+  const pt=/(\d+(?:\.\d+)?)\s*mm\b/ig;
+  while((r=pt.exec(txt))){
+    const a=r.index,b=r.index+r[0].length;
+    if(!spans.some(s=>a<s[1]&&b>s[0])){if(m.thick===undefined||parseFloat(r[1])>m.thick)m.thick=parseFloat(r[1])}
+  }
+  const v=/(\d+(?:\.\d+)?)\s*(?:cc|ml|cm3|cm³)\b/i.exec(txt);if(v)m.vol=parseFloat(v[1]);
+  const gd=/gcs[^0-9]{0,14}(\d{1,2})\s*(?:→|->|-->|to)\s*(\d{1,2})/i.exec(txt);
+  if(gd){m.gcsFrom=+gd[1];m.gcs=+gd[2]}
+  else{const g=/gcs[^0-9]{0,8}(\d{1,2})/i.exec(txt);if(g)m.gcs=+g[1]}
+  const ic=/icps?[^0-9]{0,8}(\d{1,3})/i.exec(txt);if(ic)m.icp=+ic[1];
+  return m;
+}
+function measAlerts(m,txt){
+  const A=[];
+  const isSDH=/\bsdh\b|subdural/i.test(txt),isEDH=/\bedh\b|epidural hematoma|extradural/i.test(txt);
+  const anyLesion=isSDH||isEDH||/\bich\b|\biph\b|contusion|hematoma|hemorrhage/i.test(txt);
+  const pf=/posterior fossa|cerebell/i.test(txt);
+  if(isSDH&&m.thick!==undefined){
+    if(m.thick>10)A.push({h:"SDH thickness <b>"+m.thick+" mm</b> &gt; 10 mm → <b>evacuation recommended regardless of GCS</b> [4]",lv:"crit",up:{E:2,O:2,W:3,mods:["W"]}});
+    else A.push({h:"SDH thickness <b>"+m.thick+" mm</b> ≤ 10 mm — below evacuation threshold alone; check MLS, GCS trend, pupils, ICP [4]",lv:"ok",up:{W:3}});
+  }
+  if(isEDH&&m.vol!==undefined){
+    if(m.vol>30)A.push({h:"EDH volume <b>"+m.vol+" cm³</b> &gt; 30 → <b>evacuate regardless of GCS</b> [4]",lv:"crit",up:{E:2,O:2,W:3,mods:["W"]}});
+    else A.push({h:"EDH <b>"+m.vol+" cm³</b> ≤ 30 — nonoperative ONLY if also &lt;15 mm thick, MLS &lt;5 mm, GCS &gt;8, no focal deficit + serial CT in a NSG center [4]",lv:"warn",up:{W:3}});
+  }
+  if(isEDH&&m.thick!==undefined&&m.thick>15)A.push({h:"EDH thickness <b>"+m.thick+" mm</b> &gt; 15 mm → fails nonoperative criteria [4]",lv:"crit",up:{E:2,O:2,W:3}});
+  if(m.mls!==undefined){
+    if(m.mls>5)A.push({h:"MLS <b>"+m.mls+" mm</b> &gt; 5 mm → operative criterion (SDH) / fails EDH nonoperative pathway [4]",lv:"crit",up:{E:2,O:2,W:3,mods:["W"]}});
+    else A.push({h:"MLS <b>"+m.mls+" mm</b> ≤ 5 mm — below the 5 mm threshold; serial imaging still required",lv:"ok",up:{W:(isSDH||isEDH)?3:2}});
+  }
+  if(anyLesion&&m.vol!==undefined&&m.vol>25&&!(isEDH&&m.vol>30))
+    A.push({h:"Hematoma <b>"+m.vol+" mL</b> &gt; 25 mL — ACS 2024: evacuate large traumatic hematoma <b>before</b> deterioration"+(pf?" (posterior fossa: even lower threshold)":""),lv:"warn",up:{O:2,W:3}});
+  if(m.gcsFrom!==undefined&&(m.gcsFrom-m.gcs)>=2)
+    A.push({h:"GCS <b>"+m.gcsFrom+" → "+m.gcs+"</b> (drop ≥ 2) → operative criterion + <b>E3 trigger</b> [4]",lv:"crit",up:{E:3,W:3,mods:["NΔ"]}});
+  if(m.gcs!==undefined&&m.gcs<=8)
+    A.push({h:"GCS <b>"+m.gcs+"</b> ≤ 8 — comatose range: airway, <b>E3 territory</b>"+(isSDH?"; pupils/ICP criteria apply to smaller SDH [4]":""),lv:"crit",up:{E:3}});
+  else if(m.gcs!==undefined&&m.gcs>=14&&anyLesion&&m.gcsFrom===undefined)
+    A.push({h:"GCS <b>"+m.gcs+"</b> with a dangerous lesion — preserved exam ≠ safe → <b>W3</b> (silent-deterioration risk)",lv:"ok",up:{W:3,mods:["W"]}});
+  if(m.icp!==undefined){
+    if(m.icp>=22)A.push({h:"ICP <b>"+m.icp+"</b> ≥ 22 mm Hg — above the modern initial treatment threshold (20–25 sustained &gt;5 min) [4]",lv:"crit",up:{E:3}});
+    else if(m.icp>=20)A.push({h:"ICP <b>"+m.icp+"</b> — in the 20–25 gray zone; older SDH surgical criterion uses &gt;20 [4]",lv:"warn",up:{}});
+  }
+  return A;
+}
+let curSugg=[],curAlerts=[];
+function upgradeOf(){
+  const up={};
+  const base=curSugg.length?curSugg[0].s:{};
+  ["E","O","W"].forEach(k=>{if(base[k]!==undefined)up[k]=base[k]});
+  up.mods=(base.mods||[]).slice();
+  curAlerts.forEach(a=>{
+    ["E","O","W"].forEach(k=>{if(a.up[k]!==undefined&&(up[k]===undefined||a.up[k]>up[k]))up[k]=a.up[k]});
+    (a.up.mods||[]).forEach(mo=>{if(!up.mods.includes(mo))up.mods.push(mo)});
+  });
+  return up;
+}
+function autoApply(){
+  if(!F||!F._isNew||F._manual)return false;
+  const up=upgradeOf();
+  if(up.E===undefined&&up.O===undefined&&up.W===undefined&&!up.mods.length)return false;
+  if(up.E!==undefined)F.E=up.E;if(up.O!==undefined)F.O=up.O;if(up.W!==undefined)F.W=up.W;
+  up.mods.forEach(mo=>{if(!F.mods.includes(mo))F.mods.push(mo)});
+  buildSelectors();buildMods();syncWWarn();
+  return true;
+}
+function applyAlert(i){const a=curAlerts[i];if(!a)return;F._manual=true;
+  ["E","O","W"].forEach(k=>{if(a.up[k]!==undefined&&F[k]<a.up[k])F[k]=a.up[k]});
+  (a.up.mods||[]).forEach(mo=>{if(!F.mods.includes(mo))F.mods.push(mo)});
+  buildSelectors();buildMods();syncWWarn();renderSugg();
+}
 function renderSugg(){
   const el=document.getElementById("sugg");
-  if(F&&F.type!=="CONSULT"){el.innerHTML="";curSugg=[];return}
+  if(F&&F.type!=="CONSULT"){el.innerHTML="";curSugg=[];curAlerts=[];return}
   const txt=(document.getElementById("f_prob").value||"")+" "+(document.getElementById("f_state").value||"");
-  if(txt.trim().length<3){el.innerHTML="";curSugg=[];return}
+  if(txt.trim().length<3){el.innerHTML="";curSugg=[];curAlerts=[];return}
   curSugg=SUGG.filter(s=>s.re.test(txt)).slice(0,3);
-  el.innerHTML=curSugg.length?('<div class="sgnote">Suggestions are starting points from the rubric — override freely. Bracketed numbers = citations in Reference.</div>'+curSugg.map((s,i)=>{
+  curAlerts=measAlerts(parseMeas(txt),txt);
+  const auto=autoApply();
+  let head="";
+  if(curAlerts.length){
+    head+=curAlerts.map((a,i)=>{
+      const has=(a.up.E!==undefined||a.up.O!==undefined||a.up.W!==undefined||(a.up.mods&&a.up.mods.length));
+      return '<div class="mal '+a.lv+'"><span>⚑ '+a.h+'</span>'+(has&&!auto?'<button onclick="applyAlert('+i+')">apply</button>':"")+'</div>';
+    }).join("");
+  }
+  if(auto){
+    const up=upgradeOf();
+    head+='<div class="autochip"><span>✓ Auto-graded from your text: <b>E'+F.E+"/O"+F.O+"/W"+F.W+(F.mods.length?" + "+F.mods.join(", "):"")+'</b> — tap any selector to take over</span></div>';
+  }
+  el.innerHTML=head+(curSugg.length?('<div class="sgnote">Suggestions are starting points from the rubric — override freely. Bracketed numbers = citations in Reference.</div>'+curSugg.map((s,i)=>{
     const parts=[];if(s.s.E!==undefined)parts.push("E"+s.s.E);if(s.s.O!==undefined)parts.push("O"+s.s.O);if(s.s.W!==undefined)parts.push("W"+s.s.W);
     const sug=(parts.length?parts.join("/"):"")+((s.s.mods&&s.s.mods.length)?(parts.length?" + ":"")+s.s.mods.join(", "):"");
     return '<div class="sg"><div class="sgt">'+s.n+'</div>'+(sug?'<div class="sgs">Suggest: '+sug+'</div>':"")+
@@ -806,9 +910,9 @@ function renderSugg(){
      '<div class="sgb"><button onclick="applySugg('+i+')">Apply '+(parts.length?parts.join("/"):"mods")+'</button>'+
      (s.action?'<button onclick="useSuggAction('+i+')">Use action</button>':"")+
      (s.trig?'<button onclick="useSuggTrig('+i+')">Use trigger</button>':"")+'</div></div>';
-  }).join("")):"";
+  }).join("")):"");
 }
-function applySugg(i){const s=curSugg[i];if(!s)return;
+function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
   if(s.s.E!==undefined)F.E=s.s.E;if(s.s.O!==undefined)F.O=s.s.O;if(s.s.W!==undefined)F.W=s.s.W;
   (s.s.mods||[]).forEach(m=>{if(!F.mods.includes(m))F.mods.push(m)});
   buildSelectors();buildMods();syncWWarn();
@@ -993,7 +1097,7 @@ function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2
 function buildSelectors(){
   const mk=(el,defs,key,cls)=>{
     el.innerHTML=defs.map((d,i)=>'<button class="sel'+(cls==="E"?("E"+i):cls)+((key==="cQuick"?F.cQuick===i+1:F[key]===i)?" on":"")+'"><span class="t">'+d[0]+'</span><span class="d">'+d[1]+(d[2]?"<br>"+d[2]:"")+'</span></button>').join("");
-    Array.from(el.children).forEach((b,i)=>b.onclick=()=>{if(key==="cQuick"){F.cQuick=(F.cQuick===i+1)?null:i+1}else{F[key]=i}buildSelectors();syncWWarn()});
+    Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F._manual=true;if(key==="cQuick"){F.cQuick=(F.cQuick===i+1)?null:i+1}else{F[key]=i}buildSelectors();syncWWarn();renderSugg()});
   };
   mk(document.getElementById("selE"),E_DEFS,"E","E");
   mk(document.getElementById("selO"),O_DEFS,"O","O");
@@ -1038,7 +1142,7 @@ function saveForm(){
   if(!F.loc&&!F.prob){alert("Give it at least a location or problem.");return}
   if(F.W>0&&!F.mods.includes("W"))F.mods.unshift("W");
   if(F.W===0){const ix=F.mods.indexOf("W");if(ix>=0)F.mods.splice(ix,1)}
-  const isNew=F._isNew;delete F._isNew;
+  const isNew=F._isNew;delete F._isNew;delete F._manual;
   F.updatedAt=Date.now();
   const ix=S.consults.findIndex(x=>x.id===F.id);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
