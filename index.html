@@ -119,6 +119,16 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .mal button{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:7px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer;font-family:var(--font);white-space:nowrap}
 .autochip{display:flex;gap:8px;align-items:center;background:#12283f;border:1px solid var(--acc);border-radius:9px;padding:7px 10px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--acc)}
 .btn.big{width:100%;font-size:16.5px;padding:15px;border-radius:12px;box-shadow:0 4px 16px rgba(90,162,255,.28);margin-bottom:10px}
+.capin{width:100%;background:var(--card);border:2px solid var(--acc);border-radius:12px;color:var(--text);font-family:var(--font);font-size:15.5px;padding:14px 14px;margin-bottom:8px;box-shadow:0 4px 16px rgba(90,162,255,.18)}
+.capin::placeholder{color:var(--mut);font-size:13px}
+.caprow{display:flex;gap:9px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;color:var(--text);font-family:var(--font);font-size:13.5px;cursor:pointer}
+.caprow.primary{border-color:var(--acc);background:#12283f}
+.caprow .ci{font-size:18px}
+.caprow .ct{flex:1}
+.caprow .ct b{color:var(--acc)}
+.caprow .csub{display:block;font-size:11.5px;color:var(--mut);margin-top:2px}
+.caprow.oe{border-color:var(--purp)} .caprow.oe .ct b{color:var(--purp)}
+.caprow.rl{border-color:var(--teal);background:#0f2c2e} .caprow.rl .ct b{color:var(--teal)}
 .oebox.inline{flex:1;min-width:200px;margin-bottom:0}
 .dlbtns{display:inline-flex;gap:4px;align-items:center}
 .dlbtns button{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
@@ -130,6 +140,15 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .step button{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:6px;border:1px solid var(--ok);background:transparent;color:var(--ok);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .phone span[data-ph]{cursor:pointer}
 .phone a{color:var(--acc);font-weight:700;text-decoration:none}
+.crow{display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:nowrap;overflow:hidden;cursor:pointer}
+.crow .rwho{font-weight:700;white-space:nowrap;font-size:13.5px}
+.crow .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:36px;font-size:13px}
+.crow .ract{color:var(--ok);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
+.crow .rdl{font-size:11px;white-space:nowrap}
+button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:6px;font-weight:800;font-size:11px;padding:2px 9px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.crow .car{color:var(--mut);font-size:12px}
+.colbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:6px;font-size:10.5px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
+.lastdone{font-size:12px;color:var(--mut);text-decoration:line-through;opacity:.6;margin:2px 0}
 .evsec{margin-top:6px;border:1px solid var(--line);border-radius:9px;background:var(--card2);overflow:hidden}
 .evhead{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--purp)}
 .evhead .evn{color:var(--mut);font-weight:600;font-size:11px;margin-left:auto}
@@ -246,8 +265,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <section class="view active" id="view-board">
   <div class="banner">Data lives on your devices — plus a <b>private secret Gist in your GitHub account</b> when sync is on (⭘ top right). Use bed/initials — never full names or MRNs. Wipe everything with the ⚙ button below.</div>
   <div class="nudge" id="nudge">You've taken 3+ consults since your last check. <a onclick="goCheck()">Run the cognitive-load self-check</a> — rebuild the master list before opening another chart.</div>
-  <button class="btn big" onclick="openForm()">＋ New consult</button>
+  <input id="cap" class="capin" placeholder="Type anything… '90F fall, SDH 5 mm' → consult · 'call Joanna NCC6 wife re consent' → call · question → OpenEvidence" autocomplete="off">
+  <div id="capsugg"></div>
   <div class="rowflex" style="gap:6px">
+    <button class="btn sec sm" onclick="openForm()">🧠 Consult</button>
     <button class="btn sec sm" onclick="openForm(null,false,'COMM')">📞 Comm</button>
     <button class="btn sec sm" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
     <button class="btn sec sm" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
@@ -257,6 +278,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   </div>
   <div class="rowflex">
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
+    <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
+    <button class="btn sec sm" onclick="collapseAll(false)">⊞ Expand</button>
     <div class="oebox inline">
       <input type="text" id="oeq" placeholder="Quick evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
       <button onclick="askOEBox()">🔬 OE</button>
@@ -1051,13 +1074,47 @@ function render(){
   document.getElementById("nudge").classList.toggle("show",S.sinceCheck>=3);
   save();
 }
+function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+'\')">▴ collapse</button>'}
+function rowCard(c,dl,isTask){
+  const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
+  const tIcon=isTask?TYPES[c.type].i+" ":"";
+  return '<div class="card crow E'+c.E+'" onclick="rowTap(event,\''+c.id+'\')">'+
+   '<span class="bg e'+c.E+'">E'+c.E+'</span>'+
+   '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
+   (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
+   (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
+       :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
+   (dl?'<span class="rdl dl '+dl.cls+'">⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+   '<span class="car">▸</span></div>';
+}
+function rowTap(e,id){if(e.target&&e.target.closest&&e.target.closest("button"))return;togCollapse(id)}
+function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render()}}
+function collapseAll(v){S.consults.forEach(c=>{if(!c.closed&&c.collapsed!==v){c.collapsed=v;touch(c)}});render()}
+function doneAction(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  if(c.action){
+    c.lastDone=c.action;
+    const st=(c.steps||[]).find(s=>!s.done&&s.t===c.action);if(st)st.done=true;
+  }
+  const nxt=(c.steps||[]).find(s=>!s.done);
+  c.action=nxt?nxt.t:"";
+  touch(c);render();
+  showToast(c.action?("Next → "+c.action.slice(0,44)):"Done — set the next action");
+}
+function rowDone(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  if(c.action){doneAction(id);return}
+  const i=(c.steps||[]).findIndex(s=>!s.done);
+  if(i>=0){c.steps[i].done=true;touch(c);render();const nx=(c.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete")}
+}
 function card(c){
   const dl=fmtDL(c.deadlineISO);
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
+  if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
     const dcwf=(c.type==="DC")?'<div class="wf">'+DC_WF.map(([k,l])=>'<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>').join("")+'</div>':"";
     return '<div class="card E'+c.E+'">'+
-     '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span></div>'+
+     '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span>'+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
@@ -1072,10 +1129,11 @@ function card(c){
   const wf=WF_ITEMS.map(([k,l])=>'<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>').join("");
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
   return '<div class="card E'+c.E+'">'+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+mods+w3warn+evi+'</div>'+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
-   (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">⚡ '+esc(c.trig)+'</span>':"")+'</div>':"")+
+   (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">⚡ '+esc(c.trig)+'</span>':"")+'</div>':"")+
+   (c.lastDone?'<div class="lastdone">✓ '+esc(c.lastDone)+'</div>':"")+
    '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
    (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
@@ -1141,7 +1199,7 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",steps:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},collapsed:false,closed:false,created:Date.now()}}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
@@ -1369,6 +1427,99 @@ function copySO(){const r=S.rounds.find(x=>x.id===soId);if(!r)return;
   const t=SO_TMPLS[r.soT];
   toClip(t.name+" sign-out — "+r.label+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n"));
   showToast("Sign-out copied");}
+// ---------- smart capture ----------
+let capActions=[];
+function extractBed(t){
+  const m=t.match(/\b((?:ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J)\s?-?\d+[A-Za-z]?(?:-\d+)?|\d[AB]-?\d+)\b/i);
+  return m?m[1].toUpperCase().replace(/\s+/g,""):null;
+}
+function extractCallName(t){
+  const m=t.match(/\b(?:call|page|phone|text|update)\s+(?:the\s+)?([A-Z][a-zA-Z]{2,})/);
+  if(!m)return "";
+  if(/^(ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|HCH|The)/i.test(m[1])&&/\d/.test(m[1]))return "";
+  return m[1];
+}
+function findRoundsMatch(t,bed){
+  const T=t.toUpperCase();
+  return (S.rounds||[]).find(r=>{
+    const L=String(r.label||"").toUpperCase();
+    if(!L)return false;
+    if(bed&&(L.includes(bed)||bed.includes(L)))return true;
+    return L.length>=3&&T.includes(L);
+  });
+}
+function capConsult(text,bed){
+  document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
+  openForm();
+  if(bed){F.loc=bed;document.getElementById("f_loc").value=bed}
+  F.prob=text;document.getElementById("f_prob").value=text;
+  renderSugg();renderFlags();
+}
+function capTask(type,text,pre){
+  document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
+  openForm(null,false,type);
+  if(pre.loc){F.loc=pre.loc;document.getElementById("f_loc").value=pre.loc}
+  if(pre.fname){F.fname=pre.fname;document.getElementById("f_fname").value=pre.fname}
+  if(pre.phone){F.phone=pre.phone;document.getElementById("f_phone").value=pre.phone}
+  F.prob=text;document.getElementById("f_prob").value=text;
+  renderFlags();
+}
+function capOE(text){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";askOE(text)}
+function capRounds(){document.querySelector('nav button[data-view="rounds"]').click()}
+function runCap(i){const a=capActions[i];if(a)a.fn()}
+function renderCapture(){
+  const text=document.getElementById("cap").value.trim();
+  const el=document.getElementById("capsugg");
+  capActions=[];
+  if(text.length<4){el.innerHTML="";return}
+  const bed=extractBed(text);
+  const rmatch=findRoundsMatch(text,bed);
+  const isCall=/\b(call|page|phone|text|update)\b/i.test(text);
+  const consentCue=/consent/i.test(text);
+  const isQ=/\?\s*$/.test(text)||/^(what|when|why|how|should|is|does|can|do i|any evidence)\b/i.test(text);
+  const sugns=SUGG.filter(s=>s.re.test(text));
+  const alerts=measAlerts(parseMeas(text),text);
+  const agey=/\b\d{1,3}\s*(?:yo|y\/?o|year|yr)/i.test(text)||/\b\d{1,3}\s?[FM]\b/.test(text);
+  const clinical=sugns.length>0||alerts.length>0||agey;
+  const chartCue=/chart[- ]?check/i.test(text);
+  const pocCue=/\bpoc\b|post-?op check/i.test(text);
+  const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
+  const procCue=/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text);
+  // preview grade for clinical
+  let preview="";
+  if(clinical){
+    const up={};const base=sugns.length?sugns[0].s:{};
+    ["E","O","W"].forEach(k=>{if(base[k]!==undefined)up[k]=base[k]});
+    alerts.forEach(a=>["E","O","W"].forEach(k=>{if(a.up[k]!==undefined&&(up[k]===undefined||a.up[k]>up[k]))up[k]=a.up[k]}));
+    const parts=[];if(up.E!==undefined)parts.push("E"+up.E);if(up.O!==undefined)parts.push("O"+up.O);if(up.W!==undefined)parts.push("W"+up.W);
+    preview=(sugns.length?sugns.map(s=>s.n).slice(0,2).join(", "):"clinical")+(parts.length?" · auto "+parts.join("/"):"")+(alerts.length?" · "+alerts.length+" threshold alert"+(alerts.length>1?"s":""):"");
+  }
+  const rows=[];
+  const add=(cls,ico,main,sub,fn)=>{capActions.push({fn:fn});rows.push('<button class="caprow '+cls+'" onclick="runCap('+(capActions.length-1)+')"><span class="ci">'+ico+'</span><span class="ct"><b>'+main+'</b>'+(sub?'<span class="csub">'+sub+'</span>':"")+'</span></button>')};
+  if(isCall){
+    const nm=extractCallName(text);
+    const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
+    const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
+    add("primary","📞","Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
+    if(consentCue)add("","✍️","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
+  }else if(isQ){
+    add("oe primary","🔬","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
+    if(clinical)add("","🧠","New consult instead",preview,()=>capConsult(text,bed));
+  }else if(clinical){
+    add("primary","🧠","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
+    if(consentCue)add("","✍️","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
+  }else if(chartCue){add("primary","📋","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
+  else if(pocCue){add("primary","🩹","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
+  else if(procCue){add("primary","🛠","Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
+  else if(dcCue){add("primary","🏠","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
+  else if(consentCue){add("primary","✍️","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
+  else{
+    add("oe primary","🔬","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
+    add("","🧠","New consult with this text","",()=>capConsult(text,bed));
+  }
+  if(rmatch)add("rl","🛏","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
+  el.innerHTML=rows.join("");
+}
 // ---------- sync engine (private GitHub Gist) ----------
 const SYNC_FILE="nsgy-triage-sync.json";
 const TK="nsgy_gh_token",GK="nsgy_gh_gist";
@@ -1464,6 +1615,9 @@ async function connectSync(){
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)doSync(true)});
 // ---------- init ----------
+let capT=null;
+document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
+document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 render();renderBlocks();renderSC();renderRounds();
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 doSync(true);
