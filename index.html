@@ -290,6 +290,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
     <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseAll(false)">⊞ Expand</button>
+    <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
     <div class="oebox inline">
       <input type="text" id="oeq" placeholder="Quick evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
       <button onclick="askOEBox()">🔬 OE</button>
@@ -312,6 +313,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
+    <button class="btn sec sm" onclick="purgeRounds()">🗑 Purge list</button>
+    <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
   </div>
   <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
     <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
@@ -319,6 +322,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <div class="rowflex">
       <button class="btn" onclick="scrubList()">🧼 Scrub</button>
       <button class="btn sec sm" onclick="copyScrubAll()">Copy all one-liners</button>
+      <button class="btn sec sm" onclick="scrubClear()">✕ Clear results</button>
     </div>
     <div id="scrubout"></div>
   </div></details>
@@ -674,6 +678,46 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
     <div class="sheetbtns">
       <button class="btn sec" onclick="closeForm()">Cancel</button>
       <button class="btn" onclick="saveForm()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TEXT CONSULT MODAL ============ -->
+<div class="overlay" id="ovTC">
+  <div class="sheet">
+    <h2>📱 Text consult formatter</h2>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Dump free-text notes below → Parse extracts the pieces into the text-consult pattern. Edit any field, then Copy. Facts only — blanks stay as [brackets]. No names/MRNs.</p>
+    <div class="fld"><label>Free-text source</label><textarea id="tc_src" style="min-height:90px" placeholder="86 yo F on coumadin, recurrent falls with head strike, known SDH now bigger on CTH, nonverbal baseline per family, INR pending, SBP 158…"></textarea></div>
+    <div class="rowflex"><button class="btn sec sm" onclick="tcParse()">⇣ Parse into pattern</button></div>
+    <div class="fld"><label>Title (one-line problem)</label><input type="text" id="tc_title"></div>
+    <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px"></textarea></div>
+    <div class="fld"><label>Exam</label><input type="text" id="tc_exam"></div>
+    <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img"></div>
+    <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs"></div>
+    <div class="fld"><label>Plan (one action per line — "~" added automatically)</label><textarea id="tc_plan" style="min-height:80px"></textarea></div>
+    <div class="sheetbtns">
+      <button class="btn sec" onclick="hideTC()">Close</button>
+      <button class="btn" onclick="tcCopy()">Copy text consult</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OR ESCALATION MODAL ============ -->
+<div class="overlay" id="ovOR">
+  <div class="sheet">
+    <h2>🚨 Now an emergent operative case</h2>
+    <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Don't lose the boring parts while moving fast:</p>
+    <div class="checklist">
+      <label><input type="checkbox"><span>Call chief</span></label>
+      <label><input type="checkbox"><span>Call attending</span></label>
+      <label><input type="checkbox"><span>Pre-op: NPO now · STAT T&S · CBC/PT/PTT resulted · reversal if AC</span></label>
+      <label><input type="checkbox"><span>H&P / consult note updated & signed</span></label>
+      <label><input type="checkbox"><span>Consent — exact booking name + laterality (life-threatening emergency classification if DHC)</span></label>
+      <label><input type="checkbox"><span>Book OR + Teams "Booking" chat + call OR front desk (45647) + whiteboard</span></label>
+    </div>
+    <div class="sheetbtns">
+      <button class="btn sec" onclick="hideOR()">Dismiss</button>
+      <button class="btn" onclick="addORChain()">＋ Add as to-do chain</button>
     </div>
   </div>
 </div>
@@ -1177,7 +1221,7 @@ function card(c){
    (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
    evSection(c)+
    wf+
-   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
+   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openTC(\''+c.id+'\')">📱 Text</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
   '</div>';
 }
 // ---------- evidence workspace ----------
@@ -1329,9 +1373,12 @@ function saveForm(){
   const isNew=F._isNew;delete F._isNew;delete F._manual;
   F.updatedAt=Date.now();
   const ix=S.consults.findIndex(x=>x.id===F.id);
+  const prev=ix>=0?S.consults[ix]:null;
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   if(isNew&&F.type==="CONSULT")S.sinceCheck=(S.sinceCheck||0)+1;
+  const saved=F;
   closeForm();render();
+  maybeORPopup(prev,saved);
 }
 // ---------- close flow ----------
 let closingId=null;
@@ -1417,28 +1464,67 @@ function parseRounds(){
   document.getElementById("dropbox").value="";
   renderRounds();save();
 }
+const REDIT=new Set();
 function renderRounds(){
   S.rounds=S.rounds||[];
   const el=document.getElementById("rcards");if(!el)return;
-  const list=S.rounds.slice().sort((a,b)=>(a.seen===b.seen)?String(a.label).localeCompare(String(b.label),undefined,{numeric:true}):(a.seen?1:-1));
+  const key=r=>r.seen?2:(r.worry?0:1);
+  const list=S.rounds.slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):String(a.label).localeCompare(String(b.label),undefined,{numeric:true}));
   el.innerHTML=list.length?list.map(r=>{
+    if(REDIT.has(r.id)){
+      return '<div class="card" style="border-left-color:var(--e1)">'+
+       '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(r.label)+'"></div>'+
+       '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px">'+esc(r.raw)+'</textarea></div>'+
+       '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">⚠ Worried — see 2–3×/day</button></div>'+
+       '<div class="cardbtns" style="margin-top:8px"><button onclick="roundEditCancel(\''+r.id+'\')">Cancel</button><button style="border-color:var(--ok);color:var(--ok)" onclick="roundEditSave(\''+r.id+'\')">✓ Save</button></div></div>';
+    }
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
-    return '<div class="card'+(r.seen?' closedc':'')+'" style="border-left-color:'+(r.seen?'var(--ok)':'var(--acc)')+'">'+
-     '<div class="badges"><span class="bg t">🛏 '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+tags+'</div>'+
+    const worry=r.worry?'<span class="bg warn">⚠ 2–3×/day</span>':"";
+    return '<div class="card'+(r.seen?' closedc':'')+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+
+     '<div class="badges"><span class="bg t">🛏 '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      (r.plan?'<div class="next">→ <b>'+esc(r.plan)+'</b></div>':"")+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" onchange="planSave(\''+r.id+'\',this)">'+esc(r.plan||"")+'</textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
+      '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button>'+
+      '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
       '<button onclick="openSO(\''+r.id+'\')">🗣 Sign-out</button>'+
       '<button onclick="roundToBoard(\''+r.id+'\')">→ Board</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div></div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
 }
+function roundEdit(id){REDIT.add(id);renderRounds()}
+function roundEditCancel(id){REDIT.delete(id);renderRounds()}
+function roundEditSave(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id);
+  if(lab)r.label=lab.value.trim()||r.label;
+  if(raw){r.raw=raw.value.trim()||r.raw;r.tags=roundTags(r.raw);r.soT=detectTmpl(r.raw)}
+  r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
+}
+function togWorry(id){const r=S.rounds.find(x=>x.id===id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();save()}}
+function purgeRounds(){
+  if(!confirm("Purge the ENTIRE rounds list? (Propagates to synced devices.)"))return;
+  const now=Date.now();S.tomb=S.tomb||{};
+  S.rounds.forEach(r=>S.tomb[r.id]=now);
+  S.rounds=[];renderRounds();save();doSync(true);
+}
 function togSeen(id){const r=S.rounds.find(x=>x.id===id);if(r){r.seen=!r.seen;r.updatedAt=Date.now();renderRounds();save()}}
 function clearSeen(){S.rounds.forEach(r=>{if(r.seen){r.seen=false;r.updatedAt=Date.now()}});renderRounds();save()}
-function delRound(id){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();save()}
+function delRound(id){
+  const r=S.rounds.find(x=>x.id===id);
+  if(r&&/s\/p|post-?op|crani|fusion|lami|tlif|acdf|\bevd\b|shunt|drain|incision|wound|suture|staple|pod\s?\d|burr/i.test(r.raw)){
+    if(confirm("Surgery/procedure detected — add a 'move to Suture/Staples/Incision Checks list' reminder before signing off?")){
+      const t=blankC();t.type="CHART";t.loc=r.label;t.prob="Move to Suture/Staples/Incision Checks list + wound check";t.E=1;t.updatedAt=Date.now();
+      S.consults.push(t);
+    }
+  }
+  S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
+}
+function scrubRemove(i){SCRUB.splice(i,1);renderScrub()}
+function scrubClear(){SCRUB=[];SCRUB.unmatched=[];document.getElementById("scrubout").innerHTML="";document.getElementById("scrubbox").value=""}
 function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){r.plan=el.value.trim();r.updatedAt=Date.now();renderRounds();save()}}
 function roundToBoard(id){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   document.querySelector('nav button[data-view="board"]').click();
@@ -1556,7 +1642,7 @@ function renderScrub(){
    '<div class="card" style="border-left-color:var(--teal)">'+
     '<div style="font-size:13px;font-weight:600;color:#c8d3e4">'+esc(scrubShort(p))+'</div>'+
     '<details style="margin-top:5px"><summary style="font-size:11.5px;color:var(--mut);cursor:pointer">full scrubbed text</summary><div class="state" style="margin-top:4px">'+esc(p.label+" — "+p.body)+'</div></details>'+
-    '<div class="cardbtns"><button onclick="copyScrub('+i+')">Copy line</button><button onclick="copyScrubFull('+i+')">Copy full</button><button onclick="scrubToRounds('+i+')">＋ Rounds card</button></div>'+
+    '<div class="cardbtns"><button onclick="copyScrub('+i+')">Copy line</button><button onclick="copyScrubFull('+i+')">Copy full</button><button onclick="scrubToRounds('+i+')">＋ Rounds card</button><button onclick="scrubRemove('+i+')">✕</button></div>'+
    '</div>').join("")+
    ((SCRUB.unmatched&&SCRUB.unmatched.length)?'<div class="card" style="border-left-color:var(--e1)"><b style="font-size:12.5px">Unmatched to-dos</b><div class="state">'+SCRUB.unmatched.map(esc).join("<br>")+'</div></div>':"");
 }
@@ -1568,6 +1654,110 @@ function scrubToRounds(i){
   const raw=p.label+" — "+p.body;
   S.rounds.push({id:"r"+uid(),raw:raw,label:p.label.split(" ")[0]||p.label.slice(0,10),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:p.todos.join(" · "),created:Date.now(),updatedAt:Date.now()});
   renderRounds();save();showToast("Added to rounds");
+}
+// ---------- text consult formatter ----------
+const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"],[/xarelto|rivaroxaban/i,"Xarelto"],[/pradaxa|dabigatran/i,"Pradaxa"],[/plavix|clopidogrel/i,"Plavix"],[/brilinta|ticagrelor/i,"Brilinta"],[/lovenox|enoxaparin/i,"Lovenox"],[/\bdapt\b/i,"DAPT"],[/heparin gtt|on heparin/i,"heparin"],[/\basa\b|aspirin/i,"ASA"]];
+const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation/i,"known vascular malformation"]];
+function tcExtract(text){
+  const out={};
+  let am=text.match(/(\d{1,3})\s*(?:yo|y\/?o|year[- ]old)\s*,?\s*(male|female|m|f)\b/i);
+  if(!am)am=text.match(/(\d{1,3})\s?([MF])(?![A-Za-z])/);
+  if(am)out.ageSex=am[1]+(/^m/i.test(am[2])?"M":"F");
+  const meds=TC_MEDS.filter(m=>m[0].test(text)).map(m=>m[1]);
+  const pod=text.match(/pod\s?(\d+)/i);
+  const pmh=TC_PMH.filter(p=>p[0].test(text)).map(p=>p[1]==="POD_"?("POD"+(pod?pod[1]:"_")):p[1]);
+  out.meds=meds;out.pmh=pmh;
+  const sents=text.split(/[.;\n]+/).map(s=>s.trim()).filter(Boolean);
+  const rest=sents.length>1?sents.slice(1):sents;
+  const examRe=/exam|gcs|perrl|oriented|intact|strength|\b[0-5]\/5\b|\bfnd\b|withdraw|localiz|pupil|moving all|silt|a&o/i;
+  const imgRe=/\bcth?\b|\bcta\b|\bctv\b|mri|x-?ray|\bxr\b|imaging|myelogram|angio/i;
+  out.exam=rest.filter(s=>examRe.test(s)).slice(0,3).join("; ").replace(/^exam:?\s*/i,"");
+  out.img=rest.filter(s=>imgRe.test(s)&&!examRe.test(s)).slice(0,2).join("; ").replace(/^imaging:?\s*/i,"")
+    ||(imgRe.test(sents[0])?sents[0].replace(/^.*?(?=\b(?:CTH?|CTA|MRI|XR)\b)/i,""):"");
+  const labs=[];
+  const bp=text.match(/sbp\s*:?[\s=]*(\d{2,3})/i)||text.match(/\b(1\d{2}|2\d{2})\/(\d{2,3})\b/);
+  if(bp)labs.push("SBP "+(bp[2]?bp[1]+"/"+bp[2]:bp[1]));
+  const na=text.match(/\bNa\s*:?[\s=]*(1\d{2})\b/);if(na)labs.push("Na "+na[1]);
+  const inr=text.match(/inr\s*:?[\s=]*([\d.]+|pending)/i);if(inr)labs.push("INR "+inr[1]);
+  const plt=text.match(/plt\s*:?[\s=]*(\d+)/i);if(plt)labs.push("plt "+plt[1]);
+  const wbc=text.match(/wbc\s*:?[\s=]*([\d.]+)/i);if(wbc)labs.push("WBC "+wbc[1]);
+  if(/inr pending/i.test(text)&&!inr)labs.push("[INR pending]");
+  out.labs=labs.join(", ");
+  // title from playbook + measurements
+  const sugns=SUGG.filter(s=>s.re.test(text)).map(s=>s.n);
+  const m=parseMeas(text);
+  let title=sugns[0]||sents[0].slice(0,50);
+  const bits=[];if(m.thick!==undefined)bits.push(m.thick+" mm");if(m.mls!==undefined)bits.push("MLS "+m.mls+" mm");if(m.vol!==undefined)bits.push(m.vol+" cm³");
+  out.title=title+(bits.length?" ("+bits.join(", ")+")":"");
+  // problem = first sentence, stripped of age/sex prefix
+  let prob=sents[0]||"";
+  if(am)prob=prob.replace(am[0],"");
+  TC_MEDS.forEach(p=>{prob=prob.replace(new RegExp("(?:on\\s+|with\\s+|w/\\s*)?(?:"+p[0].source+")[a-z]*","gi"),"")});
+  TC_PMH.forEach(p=>{prob=prob.replace(new RegExp("(?:on\\s+|with\\s+|w/\\s*)?(?:"+p[0].source+")[a-z]*[^,.;]*","gi"),"")});
+  prob=prob.replace(/\s{2,}/g," ").replace(/,\s*(?=,)/g,"").replace(/^[\s,–—-]+|[\s,–—-]+$/g,"").replace(/^(and|with|w\/)\s+/i,"").replace(/(,\s*)+/g,", ");
+  const medsPart=meds.length?" on "+meds.join("/"):"";
+  const pmhPart=pmh.length?" w/ "+pmh.join(", "):(meds.length?"":" w/ [relevant PMH]");
+  out.hpi=(out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".";
+  // plan
+  const plan=["NSGY eval","Review imaging + priors"];
+  if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("Repeat CTH in 6h or sooner for exam change");plan.push("SBP <140, Na eunatremia")}
+  if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
+  if(/fusion|lami|stenosis|radiculopath|spine|fracture/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
+  if(/fever|infect|abscess|osteo|wound/i.test(text))plan.push("ESR/CRP, blood cx; MRI w/ contrast if deep infection concern");
+  if(/shunt|\bvps\b/i.test(text))plan.push("Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
+  if(/seizure|postictal/i.test(text))plan.push("Keppra; ASM levels");
+  if(/fall/i.test(text))plan.push("Fall/medical workup per primary");
+  plan.push("Dispo per NSGY review");
+  out.plan=plan.join("\n");
+  return out;
+}
+let tcFromId=null;
+function openTC(id){
+  tcFromId=id||null;
+  let src="";
+  if(id){const c=S.consults.find(x=>x.id===id);if(c)src=[c.prob,c.state,c.note].filter(Boolean).join(". ")}
+  document.getElementById("tc_src").value=src;
+  ["tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].forEach(i=>document.getElementById(i).value="");
+  if(src)tcParse();
+  document.getElementById("ovTC").classList.add("show");
+}
+function hideTC(){document.getElementById("ovTC").classList.remove("show")}
+function tcParse(){
+  const t=document.getElementById("tc_src").value.trim();if(!t)return;
+  const o=tcExtract(t);
+  document.getElementById("tc_title").value=o.title||"";
+  document.getElementById("tc_hpi").value=o.hpi||"";
+  document.getElementById("tc_exam").value=o.exam||"[focused neuro exam]";
+  document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
+  document.getElementById("tc_labs").value=o.labs||"";
+  document.getElementById("tc_plan").value=o.plan||"NSGY eval";
+}
+function tcCopy(){
+  const g=i=>document.getElementById(i).value.trim();
+  const plan=g("tc_plan").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>l.startsWith("~")?l:"~ "+l).join("\n");
+  const out=[g("tc_title"),"",g("tc_hpi"),"","Exam: "+g("tc_exam"),"","Imaging: "+g("tc_img")]
+    .concat(g("tc_labs")?["","Labs/Vitals: "+g("tc_labs")]:[])
+    .concat(["","Plan:",plan]).join("\n");
+  toClip(out);showToast("Text consult copied");
+}
+// ---------- OR escalation popup ----------
+let orId=null;
+function maybeORPopup(prev,cur){
+  const now=(cur.E===3&&cur.O>=2)||cur.O===3;
+  const before=prev&&((prev.E===3&&prev.O>=2)||prev.O===3);
+  if(now&&!before&&cur.type==="CONSULT"){orId=cur.id;document.getElementById("ovOR").classList.add("show")}
+}
+function hideOR(){document.getElementById("ovOR").classList.remove("show");orId=null}
+function addORChain(){
+  const c=S.consults.find(x=>x.id===orId);
+  if(c){
+    const chain=["Call chief","Call attending","Pre-op: NPO, STAT T&S, CBC/PT/PTT, reversal if AC","Update + sign H&P/consult note","Consent — exact booking name + laterality","Book OR + Teams Booking chat + OR desk 45647 + whiteboard"];
+    c.steps=c.steps||[];
+    chain.forEach(t=>{if(!c.steps.some(s=>s.t===t))c.steps.push({t:t,done:false})});
+    if(!c.action)c.action=c.steps.find(s=>!s.done).t;
+    touch(c);render();showToast("OR chain added");
+  }
+  hideOR();
 }
 // ---------- smart capture ----------
 let capActions=[];
