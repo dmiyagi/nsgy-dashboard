@@ -271,7 +271,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <!-- ============ BOARD ============ -->
 <section class="view active" id="view-board">
   <div class="banner">Data lives on your devices — plus a <b>private secret Gist in your GitHub account</b> when sync is on (⭘ top right). Use bed/initials — never full names or MRNs. Wipe everything with the ⚙ button below.</div>
-  <div class="nudge" id="nudge">You've taken 3+ consults since your last check. <a onclick="goCheck()">Run the cognitive-load self-check</a> — rebuild the master list before opening another chart.</div>
   <input id="cap" class="capin" placeholder="Type anything… '90F fall, SDH 5 mm' → consult · 'call Joanna NCC6 wife re consent' → call · question → OpenEvidence" autocomplete="off">
   <div id="capsugg"></div>
   <details class="addmenu">
@@ -317,7 +316,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
   </div>
   <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
-    <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
+    <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. One patient = one line by default; if a patient's info wraps onto extra lines, <b>indent those continuation lines with Tab</b> so they stay grouped with that patient instead of becoming separate entries. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
     <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Logan — Pupils pinpoint… Plan: discharge 11 AM…&#10;Mr. Salk — Post-op L acute SDH…&#10;Action items:&#10;* ☐ Discharge Logan 11 AM if no CSF leak"></textarea>
     <div class="rowflex">
       <button class="btn" onclick="scrubList()">🧼 Scrub</button>
@@ -870,9 +869,9 @@ const TYPES={
  COMM:{i:"📞",l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Before signout","17:45"],["Clear",0]],
   rem:"Closed-loop: state exam + plan, get a read-back, note who you told and when. Secure-chat the plan so they don't page you later."},
- CHART:{i:"📋",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by",
-  presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["Clear",0]],
-  rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?)."},
+ CHART:{i:"📋",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
+  presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
+  rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ⚠ marks a patient to see 2–3×/day; can schedule follow-up several days out."},
  PROC:{i:"🛠",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Clear",0]],
   rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
@@ -1094,16 +1093,19 @@ const TYPE_WF={
  CONSULT:WF_ITEMS,
  PROC:[["supplies","Gather supplies"],["consent","Consent"],["meds","Order meds"],["doproc","Do proc"],["doc","Document proc"],["proclist","Add to proc list"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
- CHART:[["seen","Seen"],["cc1","Chart check 1 pm"],["cc5","Chart check 5 pm"]],
+ CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
 function wfChips(c,mini){
   const set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"];
   if(!set||!set.length)return "";
+  const timed=c.type==="CHART";
   return '<div class="wf'+(mini?" mini":"")+'">'+set.map(([k,l])=>{
     if(k==="__close")return '<button style="border-color:var(--ok);color:var(--ok)" onclick="startClose(\''+c.id+'\')">'+l+' ✓</button>';
-    return '<button class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+l+'</button>';
+    const v=c.wf&&c.wf[k];
+    const label=(timed&&v)?l+" "+fmtTime(v):l;
+    return '<button class="'+(v?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+label+'</button>';
   }).join("")+'</div>';
 }
 const revealedPh=new Set();
@@ -1150,21 +1152,24 @@ function render(){
     '<div class="card closedc"><div class="badges"><span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span></div>'+
     '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
     '<div class="cardbtns"><button onclick="reopen(\''+c.id+'\')">Reopen</button><button onclick="del(\''+c.id+'\')">Delete</button></div></div>').join("");
-  document.getElementById("nudge").classList.toggle("show",S.sinceCheck>=3);
   save();
 }
 function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+'\')">▴ collapse</button>'}
 function rowCard(c,dl,isTask){
   const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
   const tIcon=isTask?TYPES[c.type].i+" ":"";
-  return '<div class="card crowwrap E'+c.E+'">'+
+  const isChart=isTask&&c.type==="CHART";
+  const worryTag=(isChart&&c.worry)?'<span class="bg warn">⚠</span>':"";
+  return '<div class="card crowwrap E'+c.E+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
    '<div class="crow" onclick="rowTap(event,\''+c.id+'\')">'+
     '<span class="bg e'+c.E+'">E'+c.E+'</span>'+
+    worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
         :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
     (dl?'<span class="rdl dl '+dl.cls+'">⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">🗣</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
   '</div>';
@@ -1195,15 +1200,18 @@ function card(c){
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
     const dcwf=wfChips(c,false);
-    return '<div class="card E'+c.E+'">'+
-     '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span>'+colBtn(c)+'</div>'+
+    const isChart=c.type==="CHART";
+    const worryBadge=(isChart&&c.worry)?'<span class="bg warn">⚠ 2–3×/day</span>':"";
+    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button><button onclick="openSO(\''+c.id+'\')">🗣 Sign-out</button>'):"";
+    return '<div class="card E'+c.E+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
+     '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span>'+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
      stepsHtml(c)+
      dcwf+
      (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
-     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
+     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3⚠ E'+c.E+'</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -1267,7 +1275,10 @@ function pmOpen(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList
 function askOEBox(){const el=document.getElementById("oeq");const q=el.value.trim();if(q){askOE(q)}}
 let toastT=null;
 function showToast(msg){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2500)}
-function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};c.wf[k]=!c.wf[k];touch(c);render()}
+function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
+  if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}else{c.wf[k]=!c.wf[k]}
+  touch(c);render();}
+function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
 function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
 function del(id){if(confirm("Delete permanently?")){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.consults=S.consults.filter(x=>x.id!==id);render()}}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
@@ -1281,7 +1292,7 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
@@ -1475,6 +1486,7 @@ function renderRounds(){
       return '<div class="card" style="border-left-color:var(--e1)">'+
        '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(r.label)+'"></div>'+
        '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px">'+esc(r.raw)+'</textarea></div>'+
+       '<div class="fld"><label>Tags (comma-separated)</label><input type="text" id="re_tags_'+r.id+'" value="'+esc((r.tags||[]).join(", "))+'" placeholder="AC, Drain, Sutures"></div>'+
        '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">⚠ Worried — see 2–3×/day</button></div>'+
        '<div class="cardbtns" style="margin-top:8px"><button onclick="roundEditCancel(\''+r.id+'\')">Cancel</button><button style="border-color:var(--ok);color:var(--ok)" onclick="roundEditSave(\''+r.id+'\')">✓ Save</button></div></div>';
     }
@@ -1490,7 +1502,7 @@ function renderRounds(){
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
       '<button onclick="openSO(\''+r.id+'\')">🗣 Sign-out</button>'+
-      '<button onclick="roundToBoard(\''+r.id+'\')">→ Board</button>'+
+      '<button onclick="roundToBoard(\''+r.id+'\')">→ Chart check</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div></div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
@@ -1499,12 +1511,14 @@ function roundEdit(id){REDIT.add(id);renderRounds()}
 function roundEditCancel(id){REDIT.delete(id);renderRounds()}
 function roundEditSave(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id);
+  const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
   if(lab)r.label=lab.value.trim()||r.label;
-  if(raw){r.raw=raw.value.trim()||r.raw;r.tags=roundTags(r.raw);r.soT=detectTmpl(r.raw)}
+  if(raw){r.raw=raw.value.trim()||r.raw;r.soT=detectTmpl(r.raw)}
+  if(tg)r.tags=tg.value.split(",").map(t=>t.trim()).filter(Boolean);
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
 }
-function togWorry(id){const r=S.rounds.find(x=>x.id===id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();save()}}
+function findAny(id){return (S.rounds||[]).find(x=>x.id===id)||(S.consults||[]).find(x=>x.id===id)}
+function togWorry(id){const r=findAny(id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();render();save()}}
 function purgeRounds(){
   if(!confirm("Purge the ENTIRE rounds list? (Propagates to synced devices.)"))return;
   const now=Date.now();S.tomb=S.tomb||{};
@@ -1528,28 +1542,31 @@ function scrubClear(){SCRUB=[];SCRUB.unmatched=[];document.getElementById("scrub
 function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){r.plan=el.value.trim();r.updatedAt=Date.now();renderRounds();save()}}
 function roundToBoard(id){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   document.querySelector('nav button[data-view="board"]').click();
-  openForm();F.loc=r.label;F.prob=r.raw.slice(0,110);
+  openForm(null,false,'CHART');
+  F.loc=r.label;F.prob=r.raw.slice(0,110);F.worry=!!r.worry;F.roundId=r.id;
   document.getElementById("f_loc").value=F.loc;document.getElementById("f_prob").value=F.prob;
-  renderSugg();renderFlags();}
+  renderFlags();}
 function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.label+(r.plan?" | PLAN: "+r.plan:"")+" | "+r.raw).join("\n")||"(empty)");showToast("Rounds list copied")}
-// sign-out builder
+// sign-out builder (works for rounds cards or chart-check consults)
 let soId=null;
-function openSO(id){soId=id;const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  document.getElementById("soTitle").textContent="🗣 Sign-out — "+r.label;
+function soLabel(r){return r.label||r.loc||"patient"}
+function openSO(id){soId=id;const r=findAny(id);if(!r)return;
+  if(!r.soT)r.soT="floor";if(!r.so)r.so={};
+  document.getElementById("soTitle").textContent="🗣 Sign-out — "+soLabel(r);
   buildSOChips();buildSOFields();
   document.getElementById("ovSO").classList.add("show");}
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
-function buildSOChips(){const r=S.rounds.find(x=>x.id===soId);if(!r)return;
+function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();buildSOChips();buildSOFields();save()});}
-function buildSOFields(){const r=S.rounds.find(x=>x.id===soId);if(!r)return;
+function buildSOFields(){const r=findAny(soId);if(!r)return;
   document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>
    '<div class="fld"><label>'+esc(f[0])+'</label><input type="text" class="evta" data-so="'+esc(f[0])+'" value="'+esc((r.so&&r.so[f[0]])||"")+'" placeholder="'+esc(f[1])+'" onchange="soSave(this)"></div>').join("");}
-function soSave(el){const r=S.rounds.find(x=>x.id===soId);if(r){r.so=r.so||{};r.so[el.dataset.so]=el.value.trim();r.updatedAt=Date.now();save()}}
-function copySO(){const r=S.rounds.find(x=>x.id===soId);if(!r)return;
+function soSave(el){const r=findAny(soId);if(r){r.so=r.so||{};r.so[el.dataset.so]=el.value.trim();r.updatedAt=Date.now();save()}}
+function copySO(){const r=findAny(soId);if(!r)return;
   const t=SO_TMPLS[r.soT];
-  toClip(t.name+" sign-out — "+r.label+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n"));
+  toClip(t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n"));
   showToast("Sign-out copied");}
 // ---------- list scrubber ----------
 const SCRUB_WHITE=["Patient","Post","Pre","Neurology","Consult","Spanish","English","The","This","New","Left","Right","Plan","Pupils","Foley","Keppra","Lovenox","Tylenol"];
@@ -1595,14 +1612,17 @@ function scrubVals(t){
 function scrubList(){
   const raw=document.getElementById("scrubbox").value;
   if(!raw.trim())return;
-  const lines=raw.split(/\n/).map(l=>l.trim());
-  let mode="pt";const pts=[];const items=[];
-  lines.forEach(l=>{
+  const rawLines=raw.split(/\n/);
+  let mode="pt";const blocks=[];const items=[];let cur=null;
+  rawLines.forEach(orig=>{
+    const l=orig.trim();
     if(!l)return;
-    if(/^action items/i.test(l)){mode="act";return}
-    if(mode==="act"||/^[*•☐✓-]\s*[☐✓]?/.test(l)&&mode==="act"){if(mode==="act"){items.push(l.replace(/^[*•\-\s]*[☐✓]?\s*/,""));return}}
-    pts.push(l);
+    if(/^action items/i.test(l)){mode="act";cur=null;return}
+    if(mode==="act"){items.push(l.replace(/^[*•\-\s]*[☐✓]?\s*/,""));return}
+    const isContinuation=cur&&/^[\t]|^ {2,}/.test(orig);
+    if(isContinuation){cur.push(l)}else{cur=[l];blocks.push(cur)}
   });
+  const pts=blocks.map(b=>b.join(" "));
   const allNames=[];
   SCRUB=pts.map(line=>{
     const m=line.match(/^(.{1,70}?)\s*[—–]\s*(.*)$/)||line.match(/^(.{1,50}?):\s+(.*)$/);
