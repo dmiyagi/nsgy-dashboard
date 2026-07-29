@@ -20,7 +20,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;padding-bottom:72px}
-header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);border-top:3px solid var(--acc);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut)}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
@@ -121,6 +121,8 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .btn.big{width:100%;font-size:16.5px;padding:15px;border-radius:12px;box-shadow:0 4px 16px rgba(90,162,255,.28);margin-bottom:10px}
 .capin{width:100%;background:var(--card);border:2px solid var(--acc);border-radius:12px;color:var(--text);font-family:var(--font);font-size:15.5px;padding:14px 14px;margin-bottom:8px;box-shadow:0 4px 16px rgba(90,162,255,.18)}
 .capin::placeholder{color:var(--mut);font-size:13px}
+.capin-hero{font-size:18px;font-weight:600;padding:18px 16px;border-width:2.5px;box-shadow:0 6px 22px rgba(90,162,255,.28)}
+.capin-hero::placeholder{font-size:16px;font-weight:400}
 .caprow{display:flex;gap:9px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;color:var(--text);font-family:var(--font);font-size:13.5px;cursor:pointer}
 .caprow.primary{border-color:var(--acc);background:#12283f}
 .caprow .ci{font-size:18px}
@@ -184,8 +186,42 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .oebox{display:flex;gap:7px;margin-bottom:12px}
 .oebox input{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:14px;padding:9px 10px}
 .oebox button{background:var(--acc);color:#0b1220;border:none;border-radius:9px;font-family:var(--font);font-weight:800;font-size:13px;padding:0 14px;cursor:pointer;white-space:nowrap}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:80px;background:#123527;border:1px solid var(--ok);color:var(--ok);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;z-index:200;display:none}
-.toast.show{display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:80px;background:#123527;border:1px solid var(--ok);color:var(--ok);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:20px;z-index:200;display:none;align-items:center;gap:10px}
+.toast.show{display:flex}
+.toast button{font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:12px;border:1px solid var(--ok);background:transparent;color:var(--ok);cursor:pointer;font-family:var(--font)}
+.swiping-hint{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--e3);font-size:11px;font-weight:800;opacity:0;pointer-events:none}
+.card{position:relative;touch-action:pan-y}
+.lastdone{cursor:pointer}
+.sendto{display:flex;gap:6px;margin-top:6px}
+.sendto select{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:5px 6px}
+.sendto button{background:var(--card2);border:1px solid var(--acc);color:var(--acc);border-radius:8px;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
+/* type colour scheme */
+.tc-CONSULT{--tc:#5aa2ff} .tc-COMM{--tc:#3fd68f} .tc-CHART{--tc:#8ba7d6} .tc-PROC{--tc:#b48bff}
+.tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
+.bg.t[class*="tc-"]{background:transparent;border:1px solid var(--tc);color:var(--tc)}
+.chips button[class*="tc-"]{border-color:var(--tc);color:var(--tc)}
+.chips button[class*="tc-"].on{background:var(--tc);border-color:var(--tc);color:#0b1220}
+.addmenu .qbtns button[class*="tc-"]{border-color:var(--tc);color:var(--tc)}
+/* collapsible detail block in the form */
+details.moredet{margin:2px 0 12px;border-top:1px solid var(--line);padding-top:10px}
+details.moredet>summary{font-size:12.5px;font-weight:700;color:var(--acc);cursor:pointer;list-style:none;padding:4px 0}
+details.moredet>summary::-webkit-details-marker{display:none}
+details.moredet[open]>summary{margin-bottom:8px}
+/* independent (non-sequential) checklist */
+.checks{margin:5px 0 2px;display:flex;flex-direction:column;gap:3px}
+.chk{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--mut);cursor:pointer}
+.chk .bx{border:1px solid var(--line);border-radius:5px;width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.chk.on{opacity:.55;text-decoration:line-through}
+.chk.on .bx{border-color:var(--ok);color:var(--ok)}
+/* consent alert */
+.consentbar{background:#33122a;border:1px solid #ff85c0;border-left:4px solid #ff85c0;color:#ffb3d8;border-radius:var(--rad);padding:9px 12px;font-size:12.5px;margin-bottom:10px;display:none}
+.consentbar.show{display:block}
+.consentbar b{color:#ff85c0}
+.consentbar button{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;border:1px solid #ff85c0;background:transparent;color:#ff85c0;cursor:pointer;font-family:var(--font);margin-left:6px}
+.bg.consent{background:#33122a;color:#ff85c0;border:1px solid #ff85c0}
+.sovals{font-size:11.5px;color:var(--mut);background:var(--card2);border-left:3px solid var(--teal);border-radius:6px;padding:5px 8px;margin:5px 0;white-space:pre-wrap}
 details.axisinfo{margin-top:5px}
 details.axisinfo>summary{font-size:12px;color:var(--acc);cursor:pointer;font-weight:600}
 details.axisinfo .ai{font-size:12px;color:var(--mut);padding:6px 2px 2px;line-height:1.5}
@@ -270,21 +306,22 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ BOARD ============ -->
 <section class="view active" id="view-board">
-  <div class="banner">Data lives on your devices — plus a <b>private secret Gist in your GitHub account</b> when sync is on (⭘ top right). Use bed/initials — never full names or MRNs. Wipe everything with the ⚙ button below.</div>
-  <input id="cap" class="capin" placeholder="Type anything… '90F fall, SDH 5 mm' → consult · 'call Joanna NCC6 wife re consent' → call · question → OpenEvidence" autocomplete="off">
+  <div class="banner">Use only HIPAA-compliant data — bed/initials, never full names or MRNs. Data is never stored on any server. Wipe everything with the ⚙ button below.</div>
+  <input id="cap" class="capin capin-hero" placeholder="Type anything…" autocomplete="off">
   <div id="capsugg"></div>
   <details class="addmenu">
     <summary>＋ Add by type ▾</summary>
-    <div class="rowflex" style="gap:6px;margin-top:8px">
-      <button class="btn sec sm" onclick="openForm()">🧠 Consult</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'COMM')">📞 Comm</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'POC')">🩹 POC</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
+    <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
+      <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">🧠 Consult</button>
+      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')">📞 Comm</button>
+      <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
+      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
+      <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">🩹 POC</button>
+      <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
+      <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
     </div>
   </details>
+  <div class="consentbar" id="consentbar"></div>
   <div class="rowflex">
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
     <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
@@ -307,7 +344,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
   <div class="banner">Paste your list below — one patient per line (or blank-line-separated blocks). I'll split, tag, and sort them for rounding. <b>De-identify first: bed + initials only.</b></div>
-  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="BLUE (SS) 7B-12 T12 stenosis, hx L2-5 fusion, eliquis (afib, 14d), JP, nylons 5/28&#10;PINK (RT*) NCCU3 L thal ICH + IVH, R EVD 5/29-, DNR/I&#10;BB7-2 aSAH s/p R pcomm coil, post-bleed day 8"></textarea>
+  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type anything here… one patient per line"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
@@ -315,9 +352,14 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="purgeRounds()">🗑 Purge list</button>
     <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
   </div>
+  <div class="bulkexport">
+    <span style="font-size:12px;color:var(--mut)">Export whole list →</span>
+    <select id="bulkExportType"></select>
+    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
+  </div>
   <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
     <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. One patient = one line by default; if a patient's info wraps onto extra lines, <b>indent those continuation lines with Tab</b> so they stay grouped with that patient instead of becoming separate entries. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
-    <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Logan — Pupils pinpoint… Plan: discharge 11 AM…&#10;Mr. Salk — Post-op L acute SDH…&#10;Action items:&#10;* ☐ Discharge Logan 11 AM if no CSF leak"></textarea>
+    <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Type anything here… paste the raw sign-out narrative"></textarea>
     <div class="rowflex">
       <button class="btn" onclick="scrubList()">🧼 Scrub</button>
       <button class="btn sec sm" onclick="copyScrubAll()">Copy all one-liners</button>
@@ -596,15 +638,15 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
     <div class="fld"><label>Type</label><div class="chips" id="typechips"></div>
       <div class="selhint" id="typereminder" style="display:none"></div>
     </div>
-    <div class="fld" id="fld_loc"><label>Patient / location (bed + initials — no MRN)</label><input type="text" id="f_loc" placeholder="ED12 · JM"></div>
-    <div class="fld" id="fld_call" style="display:none"><label>Who to call — first name & number</label>
+    <div class="fld" id="fld_loc"><label>Location (bed + initials)</label><input type="text" id="f_loc" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_call" style="display:none"><label>Who to call</label>
       <div style="display:flex;gap:8px">
         <input type="text" id="f_fname" placeholder="First name" style="flex:1">
-        <input type="tel" id="f_phone" placeholder="401-555-1234" style="flex:1.4">
+        <input type="tel" id="f_phone" placeholder="Number" style="flex:1.4">
       </div>
-      <div style="font-size:11px;color:var(--mut);margin-top:4px">Number is masked on the board (last 3 digits visible) — tap it to reveal & call.</div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px">Masked on the board (last 3 digits) — tap to reveal & call.</div>
     </div>
-    <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="right temporal EDH" autocomplete="off">
+    <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="Type anything…" autocomplete="off">
       <div class="sugg" id="sugg"></div>
     </div>
     <div class="fld" id="fld_E"><label>E — urgency</label>
@@ -651,6 +693,16 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
         <div id="doms"></div>
       </details>
     </div>
+    <div class="fld" id="fld_action"><label>Next action</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
+    <div class="fld" id="fld_tasks"><label id="tasksLabel">Checklist — independent items, any order (one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
+    <div class="fld" id="fld_dlwrap"><label id="dlLabel">Deadline</label>
+      <div class="qbtns" id="qdl">
+        <button data-min="10">+10 min</button><button data-min="30">+30 min</button><button data-min="60">+1 h</button><button data-min="240">+4 h</button><button data-min="0">Clear</button>
+      </div>
+      <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
+    </div>
+    <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
+    <details class="moredet"><summary>▾ More details</summary>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
       <div class="chips" id="modchips"></div>
       <details class="axisinfo"><summary>ℹ Modifier meanings</summary><div class="ai">
@@ -659,21 +711,14 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
         Limit the visible line to modifiers that change what you need to remember — don't reproduce every label.
       </div></details>
     </div>
-    <div class="fld" id="fld_state"><label>Current state</label><input type="text" id="f_state" placeholder="GCS 15, PERRL, no drift"></div>
-    <div class="fld" id="fld_action"><label>Next physical action (start with a verb)</label><input type="text" id="f_action" placeholder="Measure EDH volume/thickness/MLS and call chief"></div>
-    <div class="fld" id="fld_steps"><label>To-do chain — one per line, runs in order (next unlocks when previous is done)</label><textarea id="f_steps" placeholder="Call family for consent&#10;Book OR + message Sharonda&#10;Confirm T&S resulted"></textarea></div>
-    <div class="fld" id="fld_dlwrap"><label id="dlLabel">Deadline</label>
-      <div class="qbtns" id="qdl">
-        <button data-min="10">+10 min</button><button data-min="30">+30 min</button><button data-min="60">+1 h</button><button data-min="240">+4 h</button><button data-min="0">Clear</button>
-      </div>
-      <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
-    </div>
-    <div class="fld" id="fld_trig"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="immediately for vomiting, somnolence, pupil change, weakness"></div>
-    <div class="fld" id="fld_owner"><label>Owner / bedside examiner</label><input type="text" id="f_owner" placeholder="me; ED repeating exam q15"></div>
-    <div class="fld" id="fld_qs"><label>Evidence questions — one per line (🔬 on the card copies it + opens OpenEvidence)</label><textarea id="f_qs" placeholder="Unclear if cauda equina — symptoms possibly chronic ≥1 week and MRI contraindicated (metal clips): role of CT myelogram? timing of decompression?"></textarea></div>
-    <div class="fld"><label>Notes (incl. W3 justification if applicable)</label><textarea id="f_note"></textarea>
+    <div class="fld" id="fld_state"><label>Current state</label><input type="text" id="f_state" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_steps"><label>To-do chain (one per line, in order)</label><textarea id="f_steps" placeholder="Type anything…"></textarea></div>
+    <div class="fld" id="fld_trig"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_qs"><label>Evidence questions (one per line — 🔬 on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
+    <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
       <div class="flags" id="flags"></div>
     </div>
+    </details>
     <div class="sheetbtns">
       <button class="btn sec" onclick="closeForm()">Cancel</button>
       <button class="btn" onclick="saveForm()">Save</button>
@@ -685,18 +730,21 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <div class="overlay" id="ovTC">
   <div class="sheet">
     <h2>📱 Text consult formatter</h2>
-    <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Dump free-text notes below → Parse extracts the pieces into the text-consult pattern. Edit any field, then Copy. Facts only — blanks stay as [brackets]. No names/MRNs.</p>
-    <div class="fld"><label>Free-text source</label><textarea id="tc_src" style="min-height:90px" placeholder="86 yo F on coumadin, recurrent falls with head strike, known SDH now bigger on CTH, nonverbal baseline per family, INR pending, SBP 158…"></textarea></div>
-    <div class="rowflex"><button class="btn sec sm" onclick="tcParse()">⇣ Parse into pattern</button></div>
-    <div class="fld"><label>Title (one-line problem)</label><input type="text" id="tc_title"></div>
-    <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px"></textarea></div>
-    <div class="fld"><label>Exam</label><input type="text" id="tc_exam"></div>
-    <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img"></div>
-    <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs"></div>
-    <div class="fld"><label>Plan (one action per line — "~" added automatically)</label><textarea id="tc_plan" style="min-height:80px"></textarea></div>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:8px"><b>1</b> Dump free text → <b>2</b> Parse into pieces → <b>3</b> Build the clean, ready-to-send version. Facts only — blanks stay as [brackets]. No names/MRNs.</p>
+    <div class="fld"><label>1 · Free text in</label><textarea id="tc_src" style="min-height:90px" placeholder="Type anything here…"></textarea></div>
+    <div class="rowflex"><button class="btn" onclick="tcParse()">⇣ Parse</button><button class="btn sec sm" onclick="tcBuild()">⇡ Rebuild clean version</button></div>
+    <details class="moredet" id="tcdet" open><summary>▾ 2 · Parsed pieces — fix anything wrong</summary>
+      <div class="fld"><label>Title (one-line problem)</label><input type="text" id="tc_title" placeholder="Type anything here…"></div>
+      <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px" placeholder="Type anything here…"></textarea></div>
+      <div class="fld"><label>Exam</label><input type="text" id="tc_exam" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Plan (one action per line — "~" added automatically)</label><textarea id="tc_plan" style="min-height:80px" placeholder="Type anything here…"></textarea></div>
+    </details>
+    <div class="fld"><label>3 · Ready to send</label><textarea id="tc_out" style="min-height:150px;font-size:13.5px" placeholder="Hit Parse, then Rebuild — the finished text lands here."></textarea></div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideTC()">Close</button>
-      <button class="btn" onclick="tcCopy()">Copy text consult</button>
+      <button class="btn" onclick="tcCopy()">Copy ready-to-send text</button>
     </div>
   </div>
 </div>
@@ -721,6 +769,24 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
   </div>
 </div>
 
+<!-- ============ CONSENT PROMPT MODAL ============ -->
+<div class="overlay" id="ovConsent">
+  <div class="sheet">
+    <h2>✍️ Consent not on the board</h2>
+    <p style="font-size:13px;color:var(--mut);margin-bottom:10px"><b id="consentWho" style="color:var(--text)"></b> is heading toward a procedure and has no open consent task.</p>
+    <div class="checklist">
+      <label><input type="checkbox"><span>Exact booking name + laterality copied</span></label>
+      <label><input type="checkbox"><span>All plausible attendings listed</span></label>
+      <label><input type="checkbox"><span>Capacity / surrogate confirmed (witness if phone consent)</span></label>
+      <label><input type="checkbox"><span>Date + time at every signature · no abbreviations</span></label>
+    </div>
+    <div class="sheetbtns">
+      <button class="btn sec" onclick="hideConsent()">Not yet</button>
+      <button class="btn" onclick="makeConsentNow()">＋ Create consent task</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ SIGN-OUT MODAL ============ -->
 <div class="overlay" id="ovSO">
   <div class="sheet">
@@ -730,6 +796,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
     <div id="sofields"></div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideSO()">Close</button>
+      <button class="btn sec" id="soToRoundsBtn" onclick="soToRounds()">→ Rounds sign-out</button>
       <button class="btn" onclick="copySO()">Copy sign-out</button>
     </div>
   </div>
@@ -776,25 +843,25 @@ const W_DEFS=[["W0","Low risk",""],["W1","Serial exams","routine"],["W2","Evolvi
 const C_DEFS=[["C1","Low","0–5"],["C2","Moderate","6–11"],["C3","High","12–23"],["C4","Extreme","24–33"]];
 const MODS=["W","NΔ","AC","VASC","OR","DEV","INF","BASE?","ANAT","IMG","CONSENT","DISPO","XFER","MULTI","OWN?"];
 const E_FULL=[
- "E0 Routine — can safely await scheduled review, outpatient follow-up, or a later work block.",
- "E1 Time-sensitive — must be completed during the current shift or within ~6–24 h.",
- "E2 Urgent — meaningful risk of deterioration or loss of treatment window. Active evaluation and decision-making generally within 1–6 h, often sooner.",
- "E3 Emergent — active or imminent neurologic/physiologic threat. Interrupt routine work, assess immediately, and escalate NOW. Check the E3 trigger list below."];
+ "E0 Routine — can safely await scheduled review.",
+ "E1 Time-sensitive — this shift, ~6–24 h.",
+ "E2 Urgent — decide within 1–6 h.",
+ "E3 Emergent — assess immediately, escalate now."];
 const O_FULL=[
- "O0 Nonoperative currently — observation, medical treatment, outpatient follow-up, or another service presently favored. Reminder: O0 ≠ low acuity (unsecured aneurysm, acute HCP, status can be E3/O0).",
- "O1 Potentially operative — intervention plausible but depends on evolution, imaging, medical optimization, examination, or senior review.",
- "O2 Likely operative — high probability of operation or procedure this shift/day; limited decisions remain.",
- "O3 Operative now — emergency procedure underway or decision effectively made."];
+ "O0 Nonoperative for now (≠ low acuity).",
+ "O1 Possibly operative — depends on workup.",
+ "O2 Likely operative this shift/day.",
+ "O3 Operative now."];
 const W_FULL=[
- "W0 — low likelihood of rapid or clinically silent progression.",
- "W1 — routine serial examination or imaging required.",
- "W2 — known evolving disease: set an explicit reassessment time and contingency.",
- "W3 — reassuring PRESENT exam but substantial lesion-specific risk of ABRUPT deterioration (GCS-15 EDH, PF hemorrhage, anticoagulated ICH, unsecured aneurysm…). Must define reassessment interval, examiner, and escalation trigger."];
+ "W0 Low risk of silent progression.",
+ "W1 Needs routine serial exams.",
+ "W2 Evolving — set a recheck time.",
+ "W3 Reassuring exam, high abrupt-deterioration risk."];
 const C_FULL=[
- "C1 Low complexity (would total 0–5): clear diagnosis, reliable exam, single team, minimal coordination.",
- "C2 Moderate complexity (6–11): a few difficult domains — some uncertainty, device, AC issue, or coordination steps.",
- "C3 High complexity (12–23): several hard domains at once — plan for extra chart time, collateral, and senior input.",
- "C4 Extreme complexity (24–33): difficulty across nearly every domain — schedule dedicated blocks; do not let complexity itself set the E level."];
+ "C1 Low complexity (0–5).",
+ "C2 Moderate complexity (6–11).",
+ "C3 High complexity (12–23).",
+ "C4 Extreme complexity (24–33)."];
 const DOMAINS=[
  ["1 · Neuro instability & trajectory",["Stable / readily interpretable exam","Mild symptoms or chronic stable deficit","New deficit, fluctuation, unreliable exam, uncertain trajectory","Progressive decline, severe deficit, seizure/status, pupil change, coma, continuous reassessment"]],
  ["2 · Lesion & anatomic danger",["Small, stable, uncomplicated","Lesion without major mass effect or critical structures","Moderate mass effect, eloquent, ventricular, uncertain stability","Herniation risk, brainstem/PF, obstructive HCP, unstable vascular lesion, severe cord compression, unstable spine"]],
@@ -879,7 +946,7 @@ const TYPES={
   presets:[["+1 h",60],["+2 h",120],["+4 h",240],["+6 h",360],["Clear",0]],
   rem:"Within the anticipated window: exam vs pre-op, drains + output, post-op imaging reviewed, note pended with cosigner. You cover consults, post-op ICU, and ALL children — APPs cover adult floor."},
  CONSENT:{i:"✍️",l:"Consent",probL:"Procedure — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
-  presets:[["ASAP",5],["+30 min",30],["+1 h",60],["Clear",0]],
+  presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Copy the EXACT booking name + laterality · list all plausible attendings · date + time at every signature · phone consent needs a witness · no abbreviations, never cross out · LEAVE the consent tab when done."},
  DC:{i:"🏠",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
@@ -1062,7 +1129,14 @@ const BLOCKS=[
 ];
 // ---------- state ----------
 let S=load();
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];return d}}catch(e){}return {consults:[],rounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{},sinceCheck:0}}
+function migrate(d){
+  (d.consults||[]).forEach(c=>{
+    if(!Array.isArray(c.tasks))c.tasks=[];
+    if(c.type==="CHART")c.E=0;              // chart check is always a background task
+  });
+  return d;
+}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{},sinceCheck:0}}
 let lastSaved="";
 function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);schedulePush()}}
 function touch(c){if(c)c.updatedAt=Date.now()}
@@ -1139,12 +1213,52 @@ function stepsHtml(c){
 }
 function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=true;touch(c);render()}}
 function undoStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=false;touch(c);render()}}
+function checksHtml(c){
+  const ts=c.tasks||[];if(!ts.length)return "";
+  const open=ts.filter(t=>!t.done).length;
+  return '<div class="checks">'+ts.map((t,i)=>
+    '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span></div>').join("")+
+    '<div style="font-size:11px;color:var(--mut)">'+(open?open+" open":"all done ✓")+'</div></div>';
+}
+function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;touch(c);render()}}
+// ---------- consent watch ----------
+function hasConsentTask(c){
+  const loc=String(c.loc||"").toUpperCase();
+  return (S.consults||[]).some(x=>x.type==="CONSENT"&&!x.closed&&x.id!==c.id&&
+    ((c.roundId&&x.roundId===c.roundId)||(loc&&String(x.loc||"").toUpperCase()===loc)));
+}
+function opBound(c){
+  if(c.closed||c.type==="CONSENT")return false;
+  if((c.wf||{}).consent)return false;
+  if(c.O>=2)return true;
+  if((c.mods||[]).includes("OR"))return true;
+  return /\bbook(ed|ing)?\b.*\bor\b|going to (the )?or|pre-?op|to the or|surgery (today|tomorrow|planned|scheduled)/i.test([c.prob,c.state,c.note].filter(Boolean).join(" "));
+}
+function needsConsent(c){return opBound(c)&&!hasConsentTask(c)}
+function renderConsentBar(){
+  const el=document.getElementById("consentbar");if(!el)return;
+  const list=(S.consults||[]).filter(c=>!c.closed&&needsConsent(c));
+  if(!list.length){el.classList.remove("show");el.innerHTML="";return}
+  el.innerHTML='<b>✍️ Consent not on the board</b> for '+list.length+' patient'+(list.length>1?"s":"")+' heading to the OR:<br>'+
+    list.map(c=>'<span style="display:inline-block;margin-top:5px">'+esc(c.loc||c.prob||"(unlabeled)")+
+      '<button onclick="makeConsentFor(\''+c.id+'\')">＋ Consent</button></span>').join(" ");
+  el.classList.add("show");
+}
+function makeConsentFor(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  openForm(null,false,"CONSENT");
+  F.loc=c.loc;F.prob=c.prob;F.roundId=c.roundId||null;
+  document.getElementById("f_loc").value=F.loc||"";
+  document.getElementById("f_prob").value=F.prob||"";
+  renderFlags();
+}
 function render(){
   const act=S.consults.filter(c=>!c.closed).sort(sortCs);
   const closed=S.consults.filter(c=>c.closed);
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
     '<span class="hpill e3">E3 '+counts[3]+'</span><span class="hpill e2">E2 '+counts[2]+'</span><span class="hpill e1">E1 '+counts[1]+'</span><span class="hpill e0">E0 '+counts[0]+'</span>';
+  renderConsentBar();
   const cont=document.getElementById("cards");
   cont.innerHTML=act.length?act.map(card).join(""):'<div class="empty">No active consults.<br>Tap ＋ New consult when the pager goes off.</div>';
   document.getElementById("closedsum").textContent="Closed consults ("+closed.length+")";
@@ -1160,9 +1274,12 @@ function rowCard(c,dl,isTask){
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">⚠</span>':"";
-  return '<div class="card crowwrap E'+c.E+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
+  const openChk=(c.tasks||[]).filter(t=>!t.done).length;
+  return '<div class="card crowwrap E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
    '<div class="crow" onclick="rowTap(event,\''+c.id+'\')">'+
-    '<span class="bg e'+c.E+'">E'+c.E+'</span>'+
+    (isChart?'<span class="bg t tc-CHART">📋</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+    (needsConsent(c)?'<span class="bg consent">✍️?</span>':"")+
+    (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
     worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
@@ -1194,6 +1311,15 @@ function rowDone(id){
   const i=(c.steps||[]).findIndex(s=>!s.done);
   if(i>=0){c.steps[i].done=true;touch(c);render();const nx=(c.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete")}
 }
+function undoLastDone(id){
+  const c=S.consults.find(x=>x.id===id);if(!c||!c.lastDone)return;
+  const st=(c.steps||[]).slice().reverse().find(s=>s.done&&s.t===c.lastDone);
+  if(st)st.done=false;
+  c.action=c.lastDone;
+  c.lastDone="";
+  touch(c);render();
+  showToast("Undone — back to: "+c.action.slice(0,44));
+}
 function card(c){
   const dl=fmtDL(c.deadlineISO);
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
@@ -1203,13 +1329,17 @@ function card(c){
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">⚠ 2–3×/day</span>':"";
     const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button><button onclick="openSO(\''+c.id+'\')">🗣 Sign-out</button>'):"";
-    return '<div class="card E'+c.E+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
-     '<div class="badges"><span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span><span class="bg e'+c.E+'">E'+c.E+'</span>'+worryBadge+colBtn(c)+'</div>'+
+    return '<div class="card E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
+     '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
+       (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+       (needsConsent(c)?'<span class="bg consent">✍️ consent?</span>':"")+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
      stepsHtml(c)+
+     checksHtml(c)+
      dcwf+
+     soValsHtml(c)+
      (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
      '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
   }
@@ -1217,15 +1347,16 @@ function card(c){
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
-  const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
-  return '<div class="card E'+c.E+'">'+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
+  const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
+  return '<div class="card E'+c.E+'" data-id="'+c.id+'">'+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✍️ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">⚡ '+esc(c.trig)+'</span>':"")+'</div>':"")+
-   (c.lastDone?'<div class="lastdone">✓ '+esc(c.lastDone)+'</div>':"")+
+   (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
    '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
+   checksHtml(c)+
    (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
    evSection(c)+
    wf+
@@ -1273,14 +1404,30 @@ function askPM(q){window.open("https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURI
 function oeOpen(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e)askOE(e.q)}}
 function pmOpen(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e)askPM(e.q)}}
 function askOEBox(){const el=document.getElementById("oeq");const q=el.value.trim();if(q){askOE(q)}}
-let toastT=null;
-function showToast(msg){let t=document.getElementById("toast");if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2500)}
+let toastT=null,_undoFn=null;
+function showToast(msg,undoFn){
+  let t=document.getElementById("toast");
+  if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
+  _undoFn=undoFn||null;
+  t.innerHTML='<span>'+esc(msg)+'</span>'+(undoFn?'<button onclick="runUndo()">Undo</button>':"");
+  t.classList.add("show");clearTimeout(toastT);
+  toastT=setTimeout(()=>{t.classList.remove("show");_undoFn=null},undoFn?6000:2500);
+}
+function runUndo(){if(_undoFn){const f=_undoFn;_undoFn=null;f();const t=document.getElementById("toast");if(t)t.classList.remove("show")}}
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
   if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}else{c.wf[k]=!c.wf[k]}
   touch(c);render();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
 function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
-function del(id){if(confirm("Delete permanently?")){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.consults=S.consults.filter(x=>x.id!==id);render()}}
+function del(id,skipConfirm){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  if(!skipConfirm&&!confirm("Delete permanently?"))return;
+  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  S.consults=S.consults.filter(x=>x.id!==id);
+  render();
+  showToast("Deleted "+(c.loc||c.prob||"item"),()=>restoreConsult(c));
+}
+function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
 function copyAll(){const act=S.consults.filter(c=>!c.closed).sort(sortCs);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
 function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{},()=>fallbackCopy(t))}else fallbackCopy(t)}
@@ -1292,17 +1439,18 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
   if(!F.type)F.type="CONSULT";
-  if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;}
+  if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART")F.E=0;}
   const tl=TYPES[F.type]?TYPES[F.type].l:"Consult";
   document.getElementById("formtitle").textContent=id?(reassess?"Reassess "+tl.toLowerCase():"Edit "+tl.toLowerCase()):"New "+tl.toLowerCase();
   document.getElementById("reassessBanner").style.display=reassess?"block":"none";
   ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>document.getElementById("f_"+k).value=F[k]||"");
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
+  document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
   buildTypeChips();buildSelectors();buildDomains();buildMods();syncWWarn();renderSugg();renderFlags();
   document.getElementById("ov").classList.add("show");window.scrollTo(0,0);
@@ -1310,16 +1458,21 @@ function openForm(id,reassess,ptype){
 function buildTypeChips(){
   const el=document.getElementById("typechips");
   const keys=Object.keys(TYPES);
-  el.innerHTML=keys.map(k=>'<button class="'+(F.type===k?"on":"")+'">'+TYPES[k].i+" "+TYPES[k].l+'</button>').join("");
-  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F.type=keys[i];buildTypeChips();renderSugg();renderFlags()});
+  el.innerHTML=keys.map(k=>'<button class="tc-'+k+(F.type===k?" on":"")+'">'+TYPES[k].i+" "+TYPES[k].l+'</button>').join("");
+  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F.type=keys[i];if(F.type==="CHART")F.E=0;buildTypeChips();buildSelectors();renderSugg();renderFlags()});
   setTypeUI();
 }
 function setTypeUI(){
   const t=TYPES[F.type]||TYPES.CONSULT;
   const isTask=F.type!=="CONSULT";
   TASK_HIDE.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isTask?"none":""});
+  // chart check is always a background task — no urgency axis
+  const eEl=document.getElementById("fld_E");if(eEl)eEl.style.display=(F.type==="CHART")?"none":"";
+  document.getElementById("tasksLabel").textContent=(F.type==="CHART")
+    ? "Chart-check to-dos — independent, any order (one per line)"
+    : "Checklist — independent items, any order (one per line)";
   document.getElementById("probLabel").textContent=t.probL;
-  document.getElementById("f_prob").placeholder=t.probPh;
+  document.getElementById("f_prob").placeholder="Type anything here…";
   document.getElementById("dlLabel").textContent=t.dlL;
   const rem=document.getElementById("typereminder");
   rem.style.display=t.rem?"block":"none";rem.textContent=t.rem;
@@ -1376,6 +1529,9 @@ function saveForm(){
   ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
   const stepLines=document.getElementById("f_steps").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
+  const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
+  if(F.type==="CHART")F.E=0;
   const dv=document.getElementById("f_dl").value;
   F.deadlineISO=dv?new Date(dv).toISOString():null;
   if(!F.loc&&!F.prob){alert("Give it at least a location or problem.");return}
@@ -1390,6 +1546,7 @@ function saveForm(){
   const saved=F;
   closeForm();render();
   maybeORPopup(prev,saved);
+  maybeConsentPopup(prev,saved);
 }
 // ---------- close flow ----------
 let closingId=null;
@@ -1475,6 +1632,7 @@ function parseRounds(){
   document.getElementById("dropbox").value="";
   renderRounds();save();
 }
+const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 function renderRounds(){
   S.rounds=S.rounds||[];
@@ -1492,7 +1650,7 @@ function renderRounds(){
     }
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">⚠ 2–3×/day</span>':"";
-    return '<div class="card'+(r.seen?' closedc':'')+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+
+    return '<div class="card'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+
      '<div class="badges"><span class="bg t">🛏 '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      (r.plan?'<div class="next">→ <b>'+esc(r.plan)+'</b></div>':"")+
@@ -1502,9 +1660,10 @@ function renderRounds(){
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
       '<button onclick="openSO(\''+r.id+'\')">🗣 Sign-out</button>'+
-      '<button onclick="roundToBoard(\''+r.id+'\')">→ Chart check</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
-     '</div></div>';
+     '</div>'+
+     '<div class="sendto"><select id="st_'+r.id+'">'+TYPE_SELECT_OPTS+'</select><button onclick="roundToBoard(\''+r.id+'\',document.getElementById(\'st_'+r.id+'\').value)">→ Send</button></div>'+
+     '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
 }
 function roundEdit(id){REDIT.add(id);renderRounds()}
@@ -1536,14 +1695,18 @@ function delRound(id){
     }
   }
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
+  if(r)showToast("Removed "+r.label+" from rounds",()=>restoreRound(r));
 }
+function restoreRound(r){if(S.tomb)delete S.tomb[r.id];if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
 function scrubRemove(i){SCRUB.splice(i,1);renderScrub()}
 function scrubClear(){SCRUB=[];SCRUB.unmatched=[];document.getElementById("scrubout").innerHTML="";document.getElementById("scrubbox").value=""}
 function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){r.plan=el.value.trim();r.updatedAt=Date.now();renderRounds();save()}}
-function roundToBoard(id){const r=S.rounds.find(x=>x.id===id);if(!r)return;
+function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  type=type&&TYPES[type]?type:"CHART";
   document.querySelector('nav button[data-view="board"]').click();
-  openForm(null,false,'CHART');
+  openForm(null,false,type);
   F.loc=r.label;F.prob=r.raw.slice(0,110);F.worry=!!r.worry;F.roundId=r.id;
+  F.soT=r.soT||"floor";F.so=Object.assign({},r.so||{});
   document.getElementById("f_loc").value=F.loc;document.getElementById("f_prob").value=F.prob;
   renderFlags();}
 function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.label+(r.plan?" | PLAN: "+r.plan:"")+" | "+r.raw).join("\n")||"(empty)");showToast("Rounds list copied")}
@@ -1553,6 +1716,8 @@ function soLabel(r){return r.label||r.loc||"patient"}
 function openSO(id){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
   document.getElementById("soTitle").textContent="🗣 Sign-out — "+soLabel(r);
+  const btn=document.getElementById("soToRoundsBtn");
+  if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   buildSOChips();buildSOFields();
   document.getElementById("ovSO").classList.add("show");}
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
@@ -1563,11 +1728,39 @@ function buildSOChips(){const r=findAny(soId);if(!r)return;
 function buildSOFields(){const r=findAny(soId);if(!r)return;
   document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>
    '<div class="fld"><label>'+esc(f[0])+'</label><input type="text" class="evta" data-so="'+esc(f[0])+'" value="'+esc((r.so&&r.so[f[0]])||"")+'" placeholder="'+esc(f[1])+'" onchange="soSave(this)"></div>').join("");}
-function soSave(el){const r=findAny(soId);if(r){r.so=r.so||{};r.so[el.dataset.so]=el.value.trim();r.updatedAt=Date.now();save()}}
-function copySO(){const r=findAny(soId);if(!r)return;
-  const t=SO_TMPLS[r.soT];
-  toClip(t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n"));
-  showToast("Sign-out copied");}
+function soSave(el){const r=findAny(soId);if(r){r.so=r.so||{};r.so[el.dataset.so]=el.value.trim();r.updatedAt=Date.now();save();render()}}
+function soText(r){
+  const t=SO_TMPLS[r.soT||"floor"];
+  return t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n");
+}
+function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
+// recorded values shown on the chart-check card
+function soValsHtml(c){
+  if(c.type!=="CHART")return "";
+  const t=SO_TMPLS[c.soT||"floor"];
+  const filled=t.fields.filter(f=>c.so&&c.so[f[0]]);
+  if(!filled.length)return "";
+  return '<div class="sovals">🗣 '+t.name+" — "+filled.map(f=>f[0]+": "+esc(c.so[f[0]])).join(" · ")+'</div>';
+}
+// push a chart-check's recorded values into the rounds sign-out for the same patient
+function soToRounds(){
+  const c=findAny(soId);if(!c)return;
+  if((S.rounds||[]).some(r=>r.id===c.id)){showToast("Already a rounds patient");return}
+  S.rounds=S.rounds||[];
+  let r=(c.roundId&&S.rounds.find(x=>x.id===c.roundId))||
+        S.rounds.find(x=>String(x.label||"").toUpperCase()===String(c.loc||"").toUpperCase()&&c.loc);
+  if(!r){
+    r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:roundTags(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,created:Date.now(),updatedAt:Date.now()};
+    S.rounds.push(r);c.roundId=r.id;
+  }
+  r.soT=c.soT||r.soT||"floor";
+  r.so=Object.assign({},r.so||{});
+  Object.keys(c.so||{}).forEach(k=>{if(c.so[k])r.so[k]=c.so[k]});
+  if(c.worry)r.worry=true;
+  r.updatedAt=Date.now();touch(c);
+  renderRounds();render();save();
+  showToast("Sent to rounds sign-out — "+r.label);
+}
 // ---------- list scrubber ----------
 const SCRUB_WHITE=["Patient","Post","Pre","Neurology","Consult","Spanish","English","The","This","New","Left","Right","Plan","Pupils","Foley","Keppra","Lovenox","Tylenol"];
 const DX_TAGS=[
@@ -1737,7 +1930,7 @@ function openTC(id){
   let src="";
   if(id){const c=S.consults.find(x=>x.id===id);if(c)src=[c.prob,c.state,c.note].filter(Boolean).join(". ")}
   document.getElementById("tc_src").value=src;
-  ["tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].forEach(i=>document.getElementById(i).value="");
+  ["tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan","tc_out"].forEach(i=>document.getElementById(i).value="");
   if(src)tcParse();
   document.getElementById("ovTC").classList.add("show");
 }
@@ -1751,14 +1944,21 @@ function tcParse(){
   document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
   document.getElementById("tc_labs").value=o.labs||"";
   document.getElementById("tc_plan").value=o.plan||"NSGY eval";
+  tcBuild();
 }
-function tcCopy(){
-  const g=i=>document.getElementById(i).value.trim();
-  const plan=g("tc_plan").split("\n").map(l=>l.trim()).filter(Boolean).map(l=>l.startsWith("~")?l:"~ "+l).join("\n");
-  const out=[g("tc_title"),"",g("tc_hpi"),"","Exam: "+g("tc_exam"),"","Imaging: "+g("tc_img")]
-    .concat(g("tc_labs")?["","Labs/Vitals: "+g("tc_labs")]:[])
+function tcFormat(){
+  const g=i=>(document.getElementById(i).value||"").trim();
+  const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
+  const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"~ "+l).join("\n");
+  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam: "+tidy(g("tc_exam")),"","Imaging: "+tidy(g("tc_img"))]
+    .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
-  toClip(out);showToast("Text consult copied");
+}
+function tcBuild(){document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
+function tcCopy(){
+  const el=document.getElementById("tc_out");
+  if(!el.value.trim())el.value=tcFormat();
+  toClip(el.value.trim());showToast("Text consult copied");
 }
 // ---------- OR escalation popup ----------
 let orId=null;
@@ -1768,6 +1968,18 @@ function maybeORPopup(prev,cur){
   if(now&&!before&&cur.type==="CONSULT"){orId=cur.id;document.getElementById("ovOR").classList.add("show")}
 }
 function hideOR(){document.getElementById("ovOR").classList.remove("show");orId=null}
+// ---------- consent popup ----------
+let consentId=null;
+function maybeConsentPopup(prev,cur){
+  if(!needsConsent(cur))return;
+  if(prev&&opBound(prev))return;             // only fire when it newly becomes operative
+  if(document.getElementById("ovOR").classList.contains("show"))return; // OR popup already covers it
+  consentId=cur.id;
+  document.getElementById("consentWho").textContent=cur.loc||cur.prob||"this patient";
+  document.getElementById("ovConsent").classList.add("show");
+}
+function hideConsent(){document.getElementById("ovConsent").classList.remove("show");consentId=null}
+function makeConsentNow(){const id=consentId;hideConsent();if(id)makeConsentFor(id)}
 function addORChain(){
   const c=S.consults.find(x=>x.id===orId);
   if(c){
@@ -1966,11 +2178,70 @@ async function connectSync(){
 }
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)doSync(true)});
+// ---------- swipe to delete ----------
+function attachSwipe(containerId,kind){
+  const el=document.getElementById(containerId);if(!el||el._swipeBound)return;el._swipeBound=true;
+  let sx=0,sy=0,cardEl=null,dragging=false;
+  el.addEventListener("touchstart",e=>{
+    const t=e.target;
+    if(t.closest&&t.closest("button,input,textarea,select,a,summary"))return;
+    const card=t.closest?t.closest(".card"):null;if(!card||!card.dataset.id)return;
+    cardEl=card;sx=e.touches[0].clientX;sy=e.touches[0].clientY;dragging=true;
+    cardEl.style.transition="none";
+  },{passive:true});
+  el.addEventListener("touchmove",e=>{
+    if(!dragging||!cardEl)return;
+    const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(Math.abs(dy)>Math.abs(dx)+6)return;
+    if(dx<0){
+      const clamped=Math.max(dx,-140);
+      cardEl.style.transform="translateX("+clamped+"px)";
+      cardEl.style.opacity=String(Math.max(1+clamped/220,0.35));
+    }
+  },{passive:true});
+  el.addEventListener("touchend",()=>{
+    if(!dragging||!cardEl)return;
+    dragging=false;
+    const m=/translateX\((-?\d+\.?\d*)px\)/.exec(cardEl.style.transform||"");
+    const dx=m?parseFloat(m[1]):0;
+    cardEl.style.transition="transform .18s,opacity .18s";
+    if(dx<-90){
+      const id=cardEl.dataset.id;
+      cardEl.style.transform="translateX(-100%)";cardEl.style.opacity="0";
+      setTimeout(()=>{if(kind==="round")delRound(id);else del(id,true)},160);
+    }else{
+      cardEl.style.transform="";cardEl.style.opacity="";
+    }
+    cardEl=null;
+  });
+}
+// ---------- bed board export ----------
+function sendRoundTo(id,type){
+  const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
+  const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART")t.E=0;t.updatedAt=Date.now();
+  S.consults.push(t);render();save();showToast(TYPES[type].l+" created for "+r.label);
+}
+function sendRoundToSel(id){const sel=document.getElementById("st_"+id);if(sel)sendRoundTo(id,sel.value)}
+function exportRoundsTo(type){
+  if(!TYPES[type])return;
+  const existing=new Set(S.consults.filter(c=>c.type===type&&c.roundId).map(c=>c.roundId));
+  let n=0;
+  S.rounds.forEach(r=>{
+    if(existing.has(r.id))return;
+    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART")t.E=0;t.updatedAt=Date.now();
+    S.consults.push(t);n++;
+  });
+  render();save();
+  showToast(n?("Exported "+n+" to "+TYPES[type].l):"Nothing new to export — already exported");
+}
+function exportRoundsToSel(){const sel=document.getElementById("bulkExportType");if(sel)exportRoundsTo(sel.value)}
 // ---------- init ----------
 let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
+const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
 render();renderBlocks();renderSC();renderRounds();
+attachSwipe("cards","consult");attachSwipe("rcards","round");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 doSync(true);
 setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;render();renderBlocks()},30000);
