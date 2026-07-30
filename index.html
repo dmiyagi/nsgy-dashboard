@@ -199,7 +199,30 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 /* type colour scheme */
 .tc-CONSULT{--tc:#5aa2ff} .tc-COMM{--tc:#3fd68f} .tc-CHART{--tc:#8ba7d6} .tc-PROC{--tc:#b48bff}
-.tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
+.tc-PCON{--tc:#ffa94d} .tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
+/* snooze + calendar */
+.bg.snz{background:#1e2a1c;color:#a4d97f;border:1px solid #a4d97f}
+.snoozesec summary{color:var(--mut);font-size:13px;cursor:pointer}
+.snoozesec input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px;margin:8px 0}
+.calday{margin-bottom:14px}
+.calday .cdh{font-size:13px;font-weight:800;color:var(--acc);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:6px}
+.calday .cdh.today{color:var(--ok)}
+.calday .cdh.past{color:var(--e3)}
+.calrow{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 10px;margin-bottom:5px;font-size:13px;cursor:pointer}
+.calrow .cwho{font-weight:700;white-space:nowrap}
+.calrow .cprob{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.calrow .ctime{font-size:11px;color:var(--mut);white-space:nowrap}
+/* proc kit suggestion */
+.prockit{background:var(--card2);border:1px solid var(--purp);border-left:4px solid var(--purp);border-radius:9px;padding:8px 10px;margin-top:7px}
+.prockit .pkt{font-size:12.5px;font-weight:800;color:var(--purp);margin-bottom:4px}
+.prockit .pkl{font-size:11.5px;color:#aebdd3;margin-bottom:6px}
+.prockit button{font-size:11px;font-weight:800;padding:4px 10px;border-radius:7px;border:1px solid var(--purp);background:transparent;color:var(--purp);cursor:pointer;font-family:var(--font);margin-right:5px}
+/* reference search */
+.refsearch{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:14px;padding:9px 11px;margin-bottom:8px}
+.pre{white-space:pre-wrap;font-size:12.5px;color:#c8d3e4;line-height:1.5}
+.sortbtns{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.sortbtns button{font-size:11.5px;font-weight:700;padding:6px 10px;border:none;background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
+.sortbtns button.on{background:var(--acc);color:#0b1220}
 .bg.t[class*="tc-"]{background:transparent;border:1px solid var(--tc);color:var(--tc)}
 .chips button[class*="tc-"]{border-color:var(--tc);color:var(--tc)}
 .chips button[class*="tc-"].on{background:var(--tc);border-color:var(--tc);color:#0b1220}
@@ -297,6 +320,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <nav>
   <button data-view="board" class="active"><span class="ico">🗂</span>Board</button>
   <button data-view="rounds"><span class="ico">🛏</span>Rounds</button>
+  <button data-view="cal"><span class="ico">📅</span>Cal</button>
   <button data-view="day"><span class="ico">🕐</span>Day</button>
   <button data-view="ref"><span class="ico">📚</span>Reference</button>
   <button data-view="check"><span class="ico">🧠</span>Self-Check</button>
@@ -333,6 +357,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     </div>
   </div>
   <div id="cards"></div>
+  <details class="closedsec snoozesec"><summary id="snoozesum">⏰ Scheduled / snoozed</summary>
+    <input type="text" placeholder="Search scheduled tasks… (e.g. prolenes)" oninput="snoozeFilter=this.value;renderSnoozed()">
+    <div id="snoozecards"></div>
+  </details>
   <details class="closedsec"><summary id="closedsum">Closed consults</summary><div id="closedcards"></div></details>
   <div class="footerbar">
     <button class="btn sec sm" onclick="openSync()">⇅ Sync setup</button>
@@ -341,9 +369,15 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   </div>
 </section>
 
+<!-- ============ CALENDAR ============ -->
+<section class="view" id="view-cal">
+  <div class="banner">Longitudinal view — every task with a deadline or a ⏰ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
+  <div id="calcards"></div>
+</section>
+
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <div class="banner">Paste your list below — one patient per line (or blank-line-separated blocks). I'll split, tag, and sort them for rounding. <b>De-identify first: bed + initials only.</b></div>
+  <div class="banner">Paste your list below — one patient per line; <b>indent continuation lines with Tab</b> so multi-line entries stay one patient. I'll split, tag, and sort them for rounding. <b>De-identify first: bed + initials only.</b></div>
   <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type anything here… one patient per line"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
@@ -356,6 +390,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <span style="font-size:12px;color:var(--mut)">Export whole list →</span>
     <select id="bulkExportType"></select>
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
+    <span class="sortbtns" id="rsort" style="margin-left:auto">
+      <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
+      <button data-m="initials" onclick="setRoundSort('initials')">Sort: initials</button>
+    </span>
   </div>
   <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
     <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. One patient = one line by default; if a patient's info wraps onto extra lines, <b>indent those continuation lines with Tab</b> so they stay grouped with that patient instead of becoming separate entries. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
@@ -599,6 +637,102 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <p>Time out with a <b>nurse</b>, not MD/APP. It's the <b>NCCU cabinet</b> (MRN on sign-out sheet). Peds negative CT C-spine + can't participate → MRI C-spine WO; primary service clears the collar. W&I: wash hands with soap before examining any baby.</p>
 </div></details>
 
+<h3 class="secgroup">2026 Survival guide</h3>
+
+<details class="ref"><summary>📇 Phone directory (searchable)</summary><div class="rb">
+<input class="refsearch" id="phoneq" placeholder="Search… e.g. MRI, NCCU, blood bank" oninput="renderPhones()">
+<div class="pre" id="phonelist"></div>
+</div></details>
+
+<details class="ref"><summary>🔑 Room codes</summary><div class="rb"><div class="pre">5ISC wkrm 0305# · 5ISC supply 5678#
+APC 4 library 723 · APC 506 Neuro 5250# · APC 631 NSGY 4146#
+BB7 conference 1217 · BB7 wkrm 4646# · BB7 call room 5555# · BB7 equipment 2002#
+Biplane 0911# · Biplane 2 0922#
+COOP3 supply 2022# · COOP4 supply 5525# · COOP5 wkrm 0815# · COOP/MOC stairwell *123#
+ED Code 9111* · HCH elevator 4152# · HCH 401 4441# · HCH 509 55551#
+MICU supply 2160# · PICU 263 supply 3214# · TICU supply (MAI597) 5752#
+W&I NICU clean supply 3452 1604</div></div></details>
+
+<details class="ref"><summary>🛏 NACU vs NCCU vs BB7 (what's allowed where)</summary><div class="rb">
+<h4>NACU allows</h4><p>A-lines · cardene · pressors (provider-manageable — MAP push, post-op carotid fine) · hypertonics for hypoNa (NOT cerebral edema) · Q1 neuro checks · non-transducing EVD · lumbar drain · <b>NO fresh post-op AVMs</b>.</p>
+<h4>BB7 allows</h4><p>Q2 neuro checks · lumbar drain · hypertonics for hypoNa (not edema) · <b>NO other drips including cardene</b>.</p>
+<p class="note">Pushback from nursing → involve Tia/Marguerite; major issue → Rad. Providers/bed board make NACU admission decisions.</p>
+</div></details>
+
+<details class="ref"><summary>📋 Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist"></div>
+<h4>Fixings</h4><p><b>Cranial:</b> brainlab, CUSA, scope, sonopet, sugita, ultrasound, neuromonitoring, Stryker plating. <b>Spine:</b> neuromonitoring, nuvasive, DePuy Expedium, mountaineer, airo, ziehm, viper, Jackson table, possible complex plastics closure.</p>
+<p class="note">Change booking name same day: post-op to floor → procedures.</p>
+</div></details>
+
+<details class="ref"><summary>✍️ Who consents what</summary><div class="rb"><div class="pre">Cranial: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak
+Spine: Patti · Tim · Toki · Sampath · Williamson + fellows
+Vascular: Curt · Rad · Kriszy
+TSSH: Prak+Ritu · Christine+Basit · Curt+Duff
+ALIF exposers: Soden · Luhrs
+PRS closers: Woo · Kwan · Beqiri · Maselli
+Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that day</div></div></details>
+
+<details class="ref"><summary>🧾 Pre-op checklists</summary><div class="rb">
+<h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx · NPO · H&P note · Pre-op note · EKG · Pregnancy test · MRSA screen.</p>
+<h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appt via Sharonda · PAT instructions in discharge · Hibiclens.</p>
+<h4>Preemie</h4><p>No coags needed (T&S, PT/PTT) · CLD 6 h pre-op · NPO 2 h pre-op.</p>
+</div></details>
+
+<details class="ref"><summary>🕊 Death checklist</summary><div class="rb"><ul>
+<li>Notify attending + secretary notifies medical records.</li>
+<li>Death exam: pupils, breath, carotid pulse, heartbeat.</li>
+<li>Significant event note with time of death + exam.</li>
+<li>NE Donor Services within 1 h — 1-800-446-6362 — <b>get a name + write down time contacted</b>.</li>
+<li>Report to ME (mention trauma repeatedly if trauma) — 401-222-2948 — <b>name + time</b>.</li>
+<li>Call family; ask about autopsy if warranted.</li>
+</ul></div></details>
+
+<details class="ref"><summary>💊 Order cribs (migraine · pedi · seizure · ICP)</summary><div class="rb">
+<h4>Migraine cocktail</h4><p>Compazine 10 · Benadryl 25 · Mg sulfate 2 g · 1 L fluids · Toradol vs Tylenol.</p>
+<h4>Pedi</h4><p>Pain: PRN valium, NO robaxin. Seizures: 15 mg/kg load + 10 mg/kg BID ×7 d. Transfusion: 10 cc/kg children, 15 cc/kg neonates.</p>
+<h4>Active seizure</h4><p>Ativan 2 → versed if refractory · Keppra 1–2 g · STAT EEG + call tech · call neurology.</p>
+<h4>ICP crisis</h4><p>Mannitol 1 g/kg (100 if big; caution CKD/CHF, replace volume) · 23% 30 cc · or 3% bolus 250–500 cc ×1 peripheral OK.</p>
+<h4>ICP tiers (DECRA)</h4><p><b>T1:</b> avoid HTN · HTS for Na · HOB up · collar midline, nothing pushing · afebrile. <b>T2:</b> hyperosmolar · EVD drainage · analgesia · sedation (propofol ↓CMRO) · paralysis last (vecuronium, titrate to ≤ loss of 4 twitches).</p>
+<h4>Neuro IR recovery</h4><p>Radial compression device: note balloon volume; keep inflated — neuro standard if DAPT/heparin, else body standard expedited; sign.</p>
+</div></details>
+
+<details class="ref"><summary>🔬 MRI protocols + trials</summary><div class="rb">
+<h4>MRI protocols</h4><p>Moyamoya: MRI Brain WWO Moyamoya + MRA Brain WO (comment: "please perform MRI Brain WWO Moyamoya"). Vascular malformation: MRI Brain WWO Vasc Malf + MRA Brain WO. Medulloblastoma: MRI Brain and Spine COG Protocol.</p>
+<h4>NICO (ICH)</h4><p><b>In:</b> lobar/basal ganglia ICH · 18–80 · 30–80 cc · GCS 5–14 · NIHSS >5 · surgery within 24 h of LKW. <b>Out:</b> underlying vascular lesion · irreversible coagulopathy · thalamic/brainstem extension.</p>
+<h4>REACH (ICH)</h4><p><b>In:</b> 18–70 · GCS 5–14 · mRS 0–1 · anterior basal ganglia ICH 20–80 mL · within 24 h. <b>Out (key):</b> aneurysm/AVM/tumor · NIHSS <5 · bilateral fixed pupils · extensor posturing · IVH >50% of a lateral ventricle · thalamic >25% · non-reversible AC · plt <75K or INR >1.4 · ESRD/liver/mech valve · CMO/DNR.</p>
+<p class="note">If a patient qualifies: NO empiric hypertonics pre-op unless herniating. Secure-chat the vascular team for screening.</p>
+<h4>ICA stenosis consult</h4><p>TCAR: bifurcation (distance to clavicle, C-level). CEA: stenosis length across C-levels. Degree = widest plaque/widest vessel + laterality · AC/antiplatelet · hx neck surgery/XRT · soft thrombus → heparinize + re-image in 3 d.</p>
+<h4>Baclofen pump</h4><p>1-alarm: 90 d to replacement/refill. 2-alarm: empty/battery/stopped >48 h. To-do: PT/PTT + T&S + CK + NPO · PO baclofen 20–30 q8 (up to 240/d) · cyproheptadine 4–8 q6 · IV diazepam (ICU) · propofol (intubated) · interrogate pump · CT abdomen · LD for IT baclofen.</p>
+</div></details>
+
+<details class="ref"><summary>👶 Babies + chart admin (W&I)</summary><div class="rb">
+<h4>Make Epic chart for W&I baby</h4><p>Express care 43000 creates chart (BabyBoy-MomName, LastName; alias if names don't align or imaging can't push). NICU secretary faxes demographics to x444-7100.</p>
+<h4>Push imaging W&I → RIH</h4><p>W&I file room x41248,2 → LifeImage upload + fax report to RIH file room (401-444-4133) → RIH file room x45606 uploads to Epic.</p>
+<h4>Name change / merge</h4><p>RIH Admitting 46686 + NICU secretary 43300 faxes face sheet to x45139; DOH faxes birth certificate. Merge charts: data integrity 44375.</p>
+<h4>CDs for robot cases</h4><p>Daytime: RIH file room x45606 burns CD. Overnight: ED X-ray secretary.</p>
+<h4>Brainlab remote</h4><p>connect.lifespan.org → Intranet → paste link from Cam's PDF.</p>
+</div></details>
+
+<details class="ref"><summary>⚔️ Dispo battles + M&M</summary><div class="rb">
+<p><b>TP fractures:</b> &lt;4 lumbar/thoracic TP fx need no spine consult from ortho or NSGY. <b>Frontal sinus fx</b> through anterior AND posterior tables → NSGY consult; look for CSF leak.</p>
+<h4>M&M (report to Skittles list)</h4><p>Death (index admission or 30 d) · unplanned return to OR / 30-d readmission · new unanticipated deficit · never event / wrong site-level-patient · major systemic complication · hospital-acquired infection · significant near-miss / good catch · anything referred by chair/quality.</p>
+</div></details>
+
+<details class="ref"><summary>🗣 Spanish exam script</summary><div class="rb"><div class="pre">Soy de neurocirugía. Estoy aquí para hacerte un examen físico.
+¿Cuál es tu nombre? · ¿Dónde estamos ahora? ¿La biblioteca? ¿El hospital? · ¿Qué año es?
+Abre los ojos y mírame. · Sigue mi dedo con tus ojos.
+Cubre tu ojo derecho/izquierdo. Mira mi nariz. ¿Cuántos dedos ves?
+Aprieta mis manos tan fuerte como puedas.
+Jálame, tan fuerte como puedas. · Empújame, tan fuerte como puedas.
+Levanta la pierna derecha/izquierda. Mantenla arriba. No me dejes empujar hacia abajo.
+Mantenga la pierna recta.
+Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de los pies.</div></div></details>
+
+<details class="ref"><summary>🧰 Procedure kits (supplies + steps)</summary><div class="rb">
+<p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · EVD flush · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
+<h4>Baby EVD deltas</h4><p>Max lido 1–2 cc · sterile paper towels to square head · white drape as major drape · flat baby changes angle (aim canthus, hand lower toward tragus plane) · pass only 4.5 cm · 1–2 tack-ups TIGHT · big bites if macerated tissue.</p>
+</div></details>
+
 <h3 class="secgroup">Sources</h3>
 <details class="ref"><summary>📖 Citations</summary><div class="rb">
 <ul>
@@ -648,6 +782,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
     </div>
     <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="Type anything…" autocomplete="off">
       <div class="sugg" id="sugg"></div>
+      <div id="prockit"></div>
     </div>
     <div class="fld" id="fld_E"><label>E — urgency</label>
       <div class="selrow" id="selE"></div>
@@ -702,6 +837,14 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
       <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
+    <div class="fld" id="fld_snooze"><label>⏰ Snooze until (hidden from board, resurfaces + on Calendar)</label>
+      <div class="qbtns">
+        <button type="button" onclick="setSnooze(1)">+1 day</button><button type="button" onclick="setSnooze(3)">+3 days</button>
+        <button type="button" onclick="setSnooze(7)">+1 wk</button><button type="button" onclick="setSnooze(30)">+1 mo</button>
+        <button type="button" onclick="setSnooze(0)">Clear</button>
+      </div>
+      <input type="date" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
+    </div>
     <details class="moredet"><summary>▾ More details</summary>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
       <div class="chips" id="modchips"></div>
@@ -940,8 +1083,11 @@ const TYPES={
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ⚠ marks a patient to see 2–3×/day; can schedule follow-up several days out."},
  PROC:{i:"🛠",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
-  presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Clear",0]],
+  presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
+ PCON:{i:"🎛",l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
+  presets:[["+30 min",30],["+1 h",60],["+4 h",240],["+1 day",1440],["Clear",0]],
+  rem:"Simple bedside task — dial change, pump check, interrogation, quick look. Verify valve setting / dose, document, update handoff."},
  POC:{i:"🩹",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
   presets:[["+1 h",60],["+2 h",120],["+4 h",240],["+6 h",360],["Clear",0]],
   rem:"Within the anticipated window: exam vs pre-op, drains + output, post-op imaging reviewed, note pended with cosigner. You cover consults, post-op ICU, and ALL children — APPs cover adult floor."},
@@ -952,6 +1098,55 @@ const TYPES={
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_state","fld_action","fld_trig","fld_qs","cbdet"];
+// ---------- procedure library (supplies + step chains, 2026 survival guide) ----------
+const PROC_LIB=[
+ {re:/\bevd\b(?!.*flush)|ventriculostomy/i,name:"EVD (adult)",
+  supplies:["Cranial access kit","EVD tower","Sterile flushes","Razor + blade","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
+  steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
+ {re:/evd flush/i,name:"EVD flush",
+  supplies:["Alcohol pad","Sterile flush","Sterile gloves","Clave if no access port (post-OR EVD)"],
+  steps:["Let the nurse know","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Drop significant event note"]},
+ {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen)/i,name:"EVD intrathecal meds",
+  supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
+  steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Significant event note"]},
+ {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",
+  supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
+  steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Note + update handoff + log"]},
+ {re:/shunt tap/i,name:"Shunt tap",
+  supplies:["Chloraprep ×3 (iodine at WICU — clean off after)","Butterfly needle (scalp)","18g needle (CSF tube)","Syringe (10cc adult, MAX 5cc WICU)","CSF tube (empty, no preservative)","Sterile gloves","Labels printed by nurse"],
+  steps:["Gather supplies + ask nurse to print labels","Tap","Send CSF labeled (initials/date/time) in biohazard bag","Log procedure"]},
+ {re:/shuntogram/i,name:"Shuntogram",
+  supplies:["Empty syringe","Sterile flush","3-way stopcock","Sterile gloves","Iodine or chloraprep ×3","Butterfly needle"],
+  steps:["Prep head + shunt site","Assemble syringe + flush + butterfly on stopcock","ASPIRATE — confirm CSF back before anything","Inject dye, then 1cc saline","Log the procedure"]},
+ {re:/fontanelle tap/i,name:"Fontanelle tap",
+  supplies:["Orange needle cap 25","CSF tube","Sterile gloves ×2","Chloraprep ×3 or iodine","Povidone ×2","Chucks","Laceration tray","Butterfly needles 23–25 ×3","Empty 10cc syringe","Spinal needle + IV extension tubing if big head (OR sub-sterile core)"],
+  steps:["CONSENT (required for fontanelle taps, not reservoir/shunt/EVD taps)","Max 10cc/kg (0.01cc/g)","Tap","Send CSF + log"]},
+ {re:/reservoir tap/i,name:"Reservoir tap",
+  supplies:["Chloraprep ×3","Butterfly needle","CSF tube","Sterile gloves","Syringe"],
+  steps:["No consent needed","Tap","Send CSF labeled + log"]},
+ {re:/subcutaneous|subgaleal|fluid collection tap/i,name:"Subcutaneous fluid tap",
+  supplies:["23g or butterfly needle","CSF tubes ×2","Needles ×2","10cc syringes ×2","Gloves","Chlorhexidine","Ultrasound machine","Culture swab","Marking pen"],
+  steps:["Order 'wound cx'","Find collection on ultrasound","Sterilize + sterile gloves","Aspirate like drawing CSF","Send + document"]},
+ {re:/lumbar puncture|\blp\b/i,name:"Lumbar puncture",
+  supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
+  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Note + update handoff + log"]},
+ {re:/lumbar drain|\bld\b(?! ?kit)/i,name:"Lumbar drain",
+  supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Chloraprep ×3, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon"],
+  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Note + update handoff + log"]},
+ {re:/\bhalo\b/i,name:"Halo",
+  supplies:["Needles/syringes/marker/chlorapreps","Torque wrench (BB6 halo cart)","Caliper + crown + vest + pins (brace shop — text Tom)","Weights (OR)","Traction bed (call early / steal from ED)"],
+  steps:["Consent (pin infxn, skull fx, CN6, failed reduction, progression) + text brace shop","Order bacitracin + lidocaine + valium q2 + dilaudid","Gather supplies + traction bed","Time-out","Apply vest → crown (pins: 2/3 eyebrow + mastoids; adults 8 lb head / 35 lb vest)","Traction: baseline XR → add weight → exam → re-XR","Re-torque 15 min / 24 h / 48 h / wk 1 / q3–4 wk","Note + handoff + log"]},
+ {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",
+  supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
+ {re:/(remove|pull|take out).{0,20}(prolene|nylon|suture|stitch|staple)|suture removal|staple removal/i,name:"Suture / staple removal",
+  supplies:["Suture removal kit or staple remover","Sterile gloves","Steri strips","Gauze + tegaderm"],
+  steps:["Verify POD # / wound healed (typically ≥10–14 d)","Remove sutures/staples","Steri strips","Document + update handoff"]},
+ {re:/\bseps\b/i,name:"SEPS",
+  supplies:["SEPS kit","Cranial access kit","Chloraprep ×3","Sterile gown/gloves/drapes","Suction setup","Nylon + monocryl"],
+  steps:["Consent + laterality","Coags + DVT ppx held","Order meds + post CTH","Time-out + laterality again","Do proc","Note + handoff + log"]}
+];
+function procMatch(t){if(!t)return null;return PROC_LIB.find(p=>p.re.test(t))||null}
 // ---------- live note flags ----------
 const FLAGS=[
  {re:/blown pupil|fixed.{0,10}dilat|dilat.{0,10}fixed|anisocoria|nonreactive pupil|unequal pupils|pupil (change|asym)/i,label:"Pupil change — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
@@ -973,7 +1168,17 @@ const FLAGS=[
  {re:/transfer|outside hospital|\bosh\b|accepting/i,label:"Transfer involved — XFER; images pushed + exam before departure",lv:"info",apply:{mods:["XFER"]}},
  {re:/baseline (unknown|unclear)|unclear baseline|nonverbal|dementia|intubated|sedated|paralyzed|postictal/i,label:"Baseline hard to read — BASE? modifier (Domain 5)",lv:"info",apply:{mods:["BASE?"]}},
  {re:/no bed|bed (issue|pending)|dispo (unclear|issue|problem)/i,label:"Disposition bottleneck — DISPO modifier",lv:"info",apply:{mods:["DISPO"]}},
- {re:/who owns|ownership|unclear (team|service|primary)/i,label:"Ownership unclear — OWN? modifier; patients wait on this",lv:"info",apply:{mods:["OWN?"]}}
+ {re:/who owns|ownership|unclear (team|service|primary)/i,label:"Ownership unclear — OWN? modifier; patients wait on this",lv:"info",apply:{mods:["OWN?"]}},
+ // labs to send before staffing, by pathology
+ {re:/\bsah\b|aneurysm|subarachnoid|pcomm|acomm/i,label:"🧪 Labs for staffing: coags, plt, T&S, Na baseline, troponin/EKG",lv:"info",apply:{}},
+ {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"🧪 Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
+ {re:/carotid|tcar\b|\bcea\b|ica stenosis/i,label:"🧪 Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, hx neck surgery/XRT",lv:"info",apply:{}},
+ {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"🧪 Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
+ {re:/tssh|transsphenoidal|pituitary|sellar/i,label:"🧪 Pituitary: cortisol, TSH/fT4, prolactin, IGF-1, Na/osm; watch DI (UOP, spec grav)",lv:"info",apply:{}},
+ {re:/pre-?op|book(ed|ing)? (the )?or|to the or/i,label:"🧪 Pre-op labs: coags, T&S, CBC, MRSA screen, pregnancy test if applicable, EKG",lv:"info",apply:{}},
+ {re:/abscess|osteo|discitis|empyema|ventriculitis|meningitis/i,label:"🧪 Infection staffing: ESR/CRP, CBC, blood cx ×2 before abx if stable, CSF studies if sampled",lv:"info",apply:{}},
+ {re:/\bdi\b|diabetes insipidus|polyuria|uop.{0,10}(high|200)/i,label:"🧪 DI watch: Na q6, urine spec grav (<1.005), UOP >200/h ×2h, serum osm",lv:"warn",apply:{}},
+ {re:/hyponatrem|low sodium|\bna 1[12]\d\b/i,label:"🧪 Hyponatremia: Na trend, serum/urine osm, urine Na; hypertonic per NACU/BB7 rules (Reference)",lv:"warn",apply:{}}
 ];
 let curFlags=[];
 function flagApplied(f){
@@ -983,7 +1188,38 @@ function flagApplied(f){
   if(f.apply.E===undefined&&f.apply.W===undefined&&(!f.apply.mods||!f.apply.mods.length))return false; // pure-notice flags always show
   return true;
 }
+let curProcKit=null;
+function renderProcKit(){
+  const el=document.getElementById("prockit");if(!el)return;
+  if(!F||!["PROC","PCON","CONSULT"].includes(F.type)){el.innerHTML="";curProcKit=null;return}
+  const txt=(document.getElementById("f_prob").value||"");
+  curProcKit=procMatch(txt);
+  if(!curProcKit){el.innerHTML="";return}
+  const p=curProcKit;
+  el.innerHTML='<div class="prockit"><div class="pkt">🧰 '+p.name+'</div>'+
+   '<div class="pkl">Supplies: '+p.supplies.slice(0,4).join(" · ")+(p.supplies.length>4?" · +"+(p.supplies.length-4)+" more":"")+'</div>'+
+   '<button onclick="applyProcKit(\'supplies\')">＋ Supplies checklist</button>'+
+   '<button onclick="applyProcKit(\'steps\')">＋ Step chain</button>'+
+   '<button onclick="applyProcKit(\'both\')">＋ Both</button></div>';
+}
+function applyProcKit(mode){
+  if(!curProcKit||!F)return;
+  const p=curProcKit;
+  if(mode!=="steps"){
+    F.tasks=F.tasks||[];
+    p.supplies.forEach(t=>{if(!F.tasks.some(x=>x.t===t))F.tasks.push({t:t,done:false})});
+    document.getElementById("f_tasks").value=F.tasks.map(s=>s.t).join("\n");
+  }
+  if(mode!=="supplies"){
+    F.steps=F.steps||[];
+    p.steps.forEach(t=>{if(!F.steps.some(x=>x.t===t))F.steps.push({t:t,done:false})});
+    document.getElementById("f_steps").value=F.steps.map(s=>s.t).join("\n");
+    if(!document.getElementById("f_action").value)document.getElementById("f_action").value=p.steps[0];
+  }
+  showToast(p.name+" kit loaded");
+}
 function renderFlags(){
+  renderProcKit();
   const el=document.getElementById("flags");
   if(F&&!["CONSULT","POC","PROC"].includes(F.type)){el.innerHTML="";curFlags=[];return}
   const txt=["f_prob","f_state","f_action","f_note"].map(id=>document.getElementById(id).value||"").join(" • ");
@@ -1123,7 +1359,7 @@ const SC_QS=["How many active consults do I have?","Can I state each patient's E
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
  {id:"icu",s:"06:00",e:"07:00",t:"ICU signout — BB7 conf (1217#)",tasks:["Write every patient's exam + plan (smiley = intact; crosses for motor; sq/tu/wt/l/wd/tf)","Relay plans by secure chat to primary teams — add the day team so they don't page you all day","Clarify plans + dispo with chiefs","Eat breakfast while multitasking"]},
- {id:"back",s:"07:00",e:"07:30",t:"Backwash (floor)",tasks:["Write down ONLY things you must do","Exam change + scan → note exam, review scan","Pending upright XR → follow up, send to attending with plan","Same-day OR needing consent → RED, do immediately","While waiting: round / consent / see a consult; floor resident texts when ready"]},
+ {id:"back",s:"07:00",e:"07:30",t:"Backwash (floor)",tasks:["Take over as responding provider (Epic treatment team)","Write down ONLY things you must do","Exam change + scan → note exam, review scan","Pending upright XR → follow up, send to attending with plan","Same-day OR needing consent → RED, do immediately","While waiting: round / consent / see a consult; floor resident texts when ready"]},
  {id:"day",s:"07:30",e:"18:00",t:"The Battle",tasks:["Run the list with all ICUs (chat / phone / in person)","Run the list with NCCU ~3 PM","Round on all your patients","See + staff all new consults (→ Board tab)","See all post-ops (you: consults, post-op ICU, all children; APPs: adult floor)","Consent same-day + next-day cases","Floor procedures: EVD, SEPS, LD, shunt tap/dial, shuntogram, fontanelle/reservoir tap, halos, d/c drains, EVD flushes","Attend family meetings","Prepare discharges for primary patients","Chart-check for night signout: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review"]},
  {id:"pm",s:"18:00",e:"21:00",t:"PM signout",tasks:["Floor signs out first — keep seeing consults/procedures until your turn","Sign out ICU/peds with scripts (aSAH · TSSH · post-op crani · severe TBI — see Reference)","Charge Review: every consult + post-op note signed","If time: prep tomorrow's OR list, add pre-ops to 'add preops' list, write whiteboard"]}
 ];
@@ -1165,7 +1401,8 @@ const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC
 const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
- PROC:[["supplies","Gather supplies"],["consent","Consent"],["meds","Order meds"],["doproc","Do proc"],["doc","Document proc"],["proclist","Add to proc list"]],
+ PROC:[["supplies","Gather supplies"],["consent","Consent"],["meds","Order meds"],["doproc","Do proc"],["doc","Document proc"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
+ PCON:[["done","Done"],["doc","Documented"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
@@ -1252,8 +1489,50 @@ function makeConsentFor(id){
   document.getElementById("f_prob").value=F.prob||"";
   renderFlags();
 }
+let snoozeFilter="";
+function renderSnoozed(){
+  const el=document.getElementById("snoozecards");if(!el)return;
+  const q=snoozeFilter.toLowerCase();
+  const list=S.consults.filter(c=>!c.closed&&isSnoozed(c))
+    .filter(c=>!q||[c.loc,c.prob,c.note,c.action].filter(Boolean).join(" ").toLowerCase().includes(q))
+    .sort((a,b)=>Date.parse(a.snoozeISO)-Date.parse(b.snoozeISO));
+  document.getElementById("snoozesum").textContent="⏰ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)).length+")";
+  el.innerHTML=list.map(c=>{
+    const d=new Date(c.snoozeISO);
+    return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
+     '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+'</span>'+
+     '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||"")+'</span>'+
+     '<span class="ctime">'+(d.getMonth()+1)+"/"+d.getDate()+'</span>'+
+     '<button class="rdone" onclick="event.stopPropagation();unsnooze(\''+c.id+'\')">↩ now</button></div>';
+  }).join("")||'<div class="empty" style="padding:12px">Nothing scheduled'+(q?' matching "'+esc(snoozeFilter)+'"':"")+'.</div>';
+}
+function renderCal(){
+  const el=document.getElementById("calcards");if(!el)return;
+  const items=S.consults.filter(c=>!c.closed&&(c.snoozeISO||c.deadlineISO));
+  const byDay={};
+  items.forEach(c=>{
+    const iso=isSnoozed(c)?c.snoozeISO:(c.deadlineISO||c.snoozeISO);
+    const d=new Date(iso);const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    (byDay[k]=byDay[k]||[]).push([c,iso]);
+  });
+  const todayK=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")})();
+  const keys=Object.keys(byDay).sort();
+  el.innerHTML=keys.map(k=>{
+    const d=new Date(k+"T12:00:00");
+    const lbl=d.toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})+(k===todayK?" — today":"");
+    const cls=k===todayK?"today":(k<todayK?"past":"");
+    return '<div class="calday"><div class="cdh '+cls+'">'+lbl+'</div>'+
+      byDay[k].sort((a,b)=>Date.parse(a[1])-Date.parse(b[1])).map(([c,iso])=>{
+        const t=new Date(iso);
+        return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
+         '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+" "+(TYPES[c.type]||TYPES.CONSULT).l+'</span>'+
+         '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||c.action||"")+'</span>'+
+         '<span class="ctime">'+(isSnoozed(c)?"⏰":"⏱ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span></div>';
+      }).join("")+'</div>';
+  }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ⏰ snooze date and it shows up here.</div>';
+}
 function render(){
-  const act=S.consults.filter(c=>!c.closed).sort(sortCs);
+  const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)).sort(sortCs);
   const closed=S.consults.filter(c=>c.closed);
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
@@ -1261,6 +1540,7 @@ function render(){
   renderConsentBar();
   const cont=document.getElementById("cards");
   cont.innerHTML=act.length?act.map(card).join(""):'<div class="empty">No active consults.<br>Tap ＋ New consult when the pager goes off.</div>';
+  renderSnoozed();renderCal();
   document.getElementById("closedsum").textContent="Closed consults ("+closed.length+")";
   document.getElementById("closedcards").innerHTML=closed.map(c=>
     '<div class="card closedc"><div class="badges"><span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span></div>'+
@@ -1340,8 +1620,7 @@ function card(c){
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
-     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
+     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">📝 Copy notes</button>':"")+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3⚠ E'+c.E+'</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -1357,10 +1636,9 @@ function card(c){
    '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
-   (c.note?'<div class="state">📝 '+esc(c.note)+'</div>':"")+
    evSection(c)+
    wf+
-   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openTC(\''+c.id+'\')">📱 Text</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
+   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">📝 Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">📱 Text</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
   '</div>';
 }
 // ---------- evidence workspace ----------
@@ -1429,6 +1707,7 @@ function del(id,skipConfirm){
 }
 function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
+function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toClip(c.note);showToast("Notes copied — "+(c.loc||""))}}
 function copyAll(){const act=S.consults.filter(c=>!c.closed).sort(sortCs);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
 function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{},()=>fallbackCopy(t))}else fallbackCopy(t)}
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta)}
@@ -1439,7 +1718,8 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
@@ -1452,6 +1732,7 @@ function openForm(id,reassess,ptype){
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
+  document.getElementById("f_snooze").value=F.snoozeISO?F.snoozeISO.slice(0,10):"";
   buildTypeChips();buildSelectors();buildDomains();buildMods();syncWWarn();renderSugg();renderFlags();
   document.getElementById("ov").classList.add("show");window.scrollTo(0,0);
 }
@@ -1484,6 +1765,13 @@ let suggT=null;
 ["f_prob","f_state","f_action","f_note"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)}));
 function closeForm(){document.getElementById("ov").classList.remove("show");F=null}
 function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
+function setSnooze(days){
+  const el=document.getElementById("f_snooze");
+  if(!days){el.value="";return}
+  const d=new Date(Date.now()+days*86400000);const p=n=>String(n).padStart(2,"0");
+  el.value=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function unsnooze(id){const c=S.consults.find(x=>x.id===id);if(c){c.snoozeISO=null;touch(c);render();showToast("Back on the board")}}
 function buildSelectors(){
   const mk=(el,defs,key,cls)=>{
     el.innerHTML=defs.map((d,i)=>'<button class="sel'+(cls==="E"?("E"+i):cls)+((key==="cQuick"?F.cQuick===i+1:F[key]===i)?" on":"")+'"><span class="t">'+d[0]+'</span><span class="d">'+d[1]+(d[2]?"<br>"+d[2]:"")+'</span></button>').join("");
@@ -1534,6 +1822,8 @@ function saveForm(){
   if(F.type==="CHART")F.E=0;
   const dv=document.getElementById("f_dl").value;
   F.deadlineISO=dv?new Date(dv).toISOString():null;
+  const sv=document.getElementById("f_snooze").value;
+  F.snoozeISO=sv?sv+"T06:00:00":null;
   if(!F.loc&&!F.prob){alert("Give it at least a location or problem.");return}
   if(F.W>0&&!F.mods.includes("W"))F.mods.unshift("W");
   if(F.W===0){const ix=F.mods.indexOf("W");if(ix>=0)F.mods.splice(ix,1)}
@@ -1621,11 +1911,24 @@ function roundLabel(raw){
   const first=raw.trim().split(/\s+/)[0];
   return first.length<=10?first:raw.trim().slice(0,12);
 }
+function splitPatients(txt){
+  // One patient per TAB block: a line starting with a tab (or 4+ spaces) is a
+  // continuation of the previous patient, so multi-line entries stay together.
+  const lines=txt.split(/\n/);
+  const blocks=[];
+  lines.forEach(ln=>{
+    if(!ln.trim())return;
+    if((/^\t|^ {4,}/.test(ln))&&blocks.length)blocks[blocks.length-1]+=" "+ln.trim();
+    else blocks.push(ln.trim());
+  });
+  // fallback: blank-line-separated blocks if no tabs were used at all
+  if(blocks.length<=1&&/\n\s*\n/.test(txt))return txt.split(/\n\s*\n/).map(b=>b.replace(/\s+/g," ").trim()).filter(Boolean);
+  return blocks;
+}
 function parseRounds(){
   const txt=document.getElementById("dropbox").value;
   if(!txt.trim())return;
-  let blocks=/\n\s*\n/.test(txt)?txt.split(/\n\s*\n/):txt.split(/\n/);
-  blocks=blocks.map(b=>b.trim()).filter(Boolean);
+  let blocks=splitPatients(txt);
   blocks.forEach(b=>{
     S.rounds.push({id:"r"+uid(),raw:b,label:roundLabel(b),tags:roundTags(b),soT:detectTmpl(b),so:{},seen:false,plan:"",created:Date.now(),updatedAt:Date.now()});
   });
@@ -1634,11 +1937,27 @@ function parseRounds(){
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
+function setRoundSort(m){S.roundSort=m;renderRounds();save()}
+function initialsOf(r){
+  // patient initials for sorting: prefer "(SS)"-style initials in the raw text,
+  // then multi-letter tokens in the label that aren't unit prefixes
+  const p=String(r.raw||"").match(/\(([A-Za-z*]{1,5})\)/);
+  if(p)return p[1].replace(/\*/g,"").toUpperCase();
+  const m=String(r.label||"").match(/[A-Za-z]{2,4}/g)||[];
+  const alpha=m.filter(x=>!/^(ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|ISC|MICW|MICS)$/i.test(x));
+  if(alpha.length)return alpha.join("").toUpperCase();
+  return String(r.label||"").toUpperCase();
+}
 function renderRounds(){
   S.rounds=S.rounds||[];
   const el=document.getElementById("rcards");if(!el)return;
+  const sb=document.getElementById("rsort");
+  if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const key=r=>r.seen?2:(r.worry?0:1);
-  const list=S.rounds.slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):String(a.label).localeCompare(String(b.label),undefined,{numeric:true}));
+  const cmp=(S.roundSort==="initials")
+    ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
+    :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
+  const list=S.rounds.slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
   el.innerHTML=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
       return '<div class="card" style="border-left-color:var(--e1)">'+
@@ -2048,7 +2367,10 @@ function renderCapture(){
   const chartCue=/chart[- ]?check/i.test(text);
   const pocCue=/\bpoc\b|post-?op check/i.test(text);
   const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
-  const procCue=/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text);
+  const pconCue=/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program))\b/i.test(text);
+  const kit=procMatch(text);
+  const verbStart=/^(remove|pull|place|replace|change|flush|tap|drain|suture|stitch|staple|inject|do|perform|take out|d\/?c)\b/i.test(text);
+  const procCue=!pconCue&&(!!kit||verbStart||/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text));
   // preview grade for clinical
   let preview="";
   if(clinical){
@@ -2069,6 +2391,11 @@ function renderCapture(){
   }else if(isQ){
     add("oe primary","🔬","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","🧠","New consult instead",preview,()=>capConsult(text,bed));
+  }else if(pconCue){
+    add("primary","🎛","Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
+  }else if(procCue&&(kit||verbStart)&&!clinical){
+    add("primary","🛠","Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
+    if(kit)add("","📅","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
   }else if(clinical){
     add("primary","🧠","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
     if(consentCue)add("","✍️","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
@@ -2235,12 +2562,52 @@ function exportRoundsTo(type){
   showToast(n?("Exported "+n+" to "+TYPES[type].l):"Nothing new to export — already exported");
 }
 function exportRoundsToSel(){const sel=document.getElementById("bulkExportType");if(sel)exportRoundsTo(sel.value)}
+// ---------- survival guide: phones + bookings ----------
+const PHONEBOOK=`ED — Express care 66811 / 43000 · A-POD 49291 · B-POD 49292 · HCH 44900 · Med phone 265-6312 · Trauma phone 623-0434 · Public waiting 49227 · Ambulance triage 41641
+ED CC1 48104 42053 · CC2 48133 44244 · CC3 44892 44265 · CC4 44899 47548 · CC5 40126 49266 · CC6 44685 40268 · POD supplies 401-255-5726 / 401-255-4728 / 401-640-0044
+FLOORS — 5ISC 45699 (wkrm 64057) · 6A 45761? · 6B 45763 · 7B 45911 · BB6 43976 · BB7 45761? fax 47020 · COOP2 45528 · COOP3 40128 · COOP4 45525 · J3 45935 · J4 45937 · MICW 45771 · MICS 45743 · WIMU 45943
+ICU — NCCU 45286 · CTIC 45150 · PICU 46021 · RICU 45733 · SICU 45744/48813 · TICU 43952 · MICU triage 952-6464/33232
+W&I 274-1100 · NICU2 43200 (attg x44687, fellow x44689) · NICU3 43300 · APC702 conf security 45221
+OR — Front desk 45657 · Booking 48375/45119 · OR-1 44347 · OR-11 43471 · OR-12 43472 · OR-14 43474 · OR-15 43475 · OR-16 43476 · OR-ORANGE 46082 · PACU 47358 · XR OR 48163 · XR pager 350-0146
+ASC front 48372 · ASC PACU 48232 · HCH front 46030 · HCH PACU 46887 · HCH admission 46583
+CT — ED 46159 · Main 44802 · Read 44314 · Read 5-10pm 44123 · after 10pm 42727 (ED)
+XR — ED 45405 · Main 45182 · File 40351 · Pedi 46590 · CXR read 42735 (after 10pm 42727, wknd 401-884-3281) · Extremity read 884-3281?
+MRI — Outpatient 44881 · Inpatient 48168 · Read 44267 · w/ sedation (adult) 44702 · Neurorads 45828
+IR drains — daytime body 44123 · daytime VIR 48118 · after 5pm VIR fellow 48112
+Echo 45894/48168 · ED read 42727 · EEG read 48427 · EEG techs 48575 · Pedi read 48275 · Nuclear med 45281 · Ultrasound 45309
+LABS — Blood bank 45294/44529 · Chemistry 45886 · Coagulation 45560 · Cortisol 34216 · Hematology 45621 · Microbiology 45273 (resp 43265) · Toxicology 45858 · Urinalysis 45654
+SERVICES — ACS 350-8461 (?350-1018 shunts) · Acute pain 350-9397 · Anesthesia 47804 (wkrm 45671, preop 350-8296) · Bed board 45681,3 · Brace shop 45477 · CT body bx 44123
+File room RIH 45606 fax 401-444-4133 · File room W&I 274-1100/41248,3/430-1660 · Food card 42288 · GS consult 350-1018 · HVAC 48020 · Interpreter 401-640-9058
+Medicine consult 350-2365 · Nursing admin (beds) 255-0707 · Ortho consult/spine 350-1326 · Ortho known/trauma 350-1675 · Path 45169 (cytology on site 45231, rush 45441)
+Pedi sedation 46091 (same day 42035) · Pharmacy 44119,2 · Rad onc 43600 · Safety net 47233 · Discharge delay XR 45182
+Surg1 thoracic 350-0693 · Surg2 CR 350-0732 · Surg3 surg onc 350-0950 · Trauma intern 350-2634 · Trauma senior 350-2727 · Vascular neurology 350-0795 · Vascular surgery 350-1006`;
+function renderPhones(){
+  const el=document.getElementById("phonelist");if(!el)return;
+  const q=(document.getElementById("phoneq")?document.getElementById("phoneq").value:"").trim().toLowerCase();
+  const lines=PHONEBOOK.split("\n").filter(l=>!q||l.toLowerCase().includes(q));
+  el.textContent=lines.join("\n")||"No match.";
+}
+const BOOKING_TMPLS=[
+ "Placement of left vs right external ventricular drain, possible placement of bolt intracranial pressure monitor, all indicated procedures",
+ "Placement of right possible left ventriculoperitoneal shunt; removal of right versus left external ventricular drain; possible general surgery laparoscopic vs open approach to abdomen, all indicated procedures",
+ "Endoscopic transnasal resection of sphenoid or sellar mass, possible abdominal fat graft, possible lumbar drain placement, all indicated procedures",
+ "Suboccipital craniotomy vs craniectomy, possible C1 laminectomy, possible placement of external ventricular drain left vs right, all indicated procedures",
+ "Right / left decompressive hemicraniectomy, possible microsurgical aneurysm clipping, possible placement of external ventricular drain left vs right, possible intraoperative angiogram",
+ "Right / left transcarotid artery revascularization with stent placement, possible carotid endarterectomy, neuromonitoring",
+ "Right / left carotid endarterectomy, neuromonitoring, ultrasound, microscope",
+ "Right craniectomy versus craniotomy for evacuation of subdural hematoma, possible placement of left versus right external ventricular drain, possible placement of left versus right bolt intracranial pressure monitor, all indicated procedures",
+ "Placement of cervical halo system, possible traction, all indicated procedures"];
+function copyBooking(i){toClip(BOOKING_TMPLS[i]);showToast("Booking text copied")}
+function renderBookings(){
+  const el=document.getElementById("bookinglist");if(!el)return;
+  el.innerHTML=BOOKING_TMPLS.map((t,i)=>'<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+'</span><span class="ctime">⧉</span></div>').join("");
+}
 // ---------- init ----------
 let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
-render();renderBlocks();renderSC();renderRounds();
+render();renderBlocks();renderSC();renderRounds();renderPhones();renderBookings();
 attachSwipe("cards","consult");attachSwipe("rcards","round");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 doSync(true);
