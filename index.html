@@ -34,6 +34,10 @@ nav button{flex:1;background:none;border:none;color:var(--mut);font-family:var(-
 nav button .ico{font-size:19px;line-height:1}
 nav button.active{color:var(--acc)}
 .ico,.ci,.tbtn,.rdl{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.phoneico{display:inline-block;width:.9em;height:.9em;border:2px solid currentColor;border-top:0;border-left:0;border-radius:0 0 .35em 0;transform:rotate(45deg);vertical-align:-.08em;margin-right:.25em}
+.toolico{display:inline-block;width:.95em;height:.95em;border:2px solid currentColor;border-bottom:0;border-right:0;border-radius:.35em 0 0 0;transform:rotate(-45deg);vertical-align:-.08em;margin-right:.25em;position:relative}
+.toolico:after{content:"";position:absolute;width:.34em;height:.78em;border:2px solid currentColor;border-top:0;border-radius:0 0 .18em .18em;left:.2em;top:.42em}
+.ci .phoneico,.bg .phoneico,.ci .toolico,.bg .toolico{margin-right:0}
 main{max-width:980px;margin:0 auto;padding:12px 12px 30px}
 section.view{display:none}
 section.view.active{display:block}
@@ -363,10 +367,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <summary>＋ Add by type ▾</summary>
     <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
       <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
-      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')">TEL Comm</button>
+      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')"><span class="phoneico" aria-hidden="true"></span> Comm</button>
       <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
-      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')">PROC Floor proc</button>
-      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')">◫ Quick proc</button>
+      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="toolico" aria-hidden="true"></span> Floor proc</button>
+      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="toolico" aria-hidden="true"></span> Quick proc</button>
       <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
       <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
       <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
@@ -452,7 +456,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <h3 class="secgroup">Triage core</h3>
 
-<details class="ref"><summary>TEL 30-second callback triage</summary><div class="rb">
+<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> 30-second callback triage</summary><div class="rb">
 <div class="script">"I'm managing another time-sensitive neurosurgical patient. Tell me the current neurologic examination, what changed, when it changed, the critical imaging finding, anticoagulation status, and what you need from neurosurgery right now."</div>
 <p>Ask in this order:</p>
 <ul>
@@ -661,7 +665,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <p class="note">Floor signs out first (6 PM) — keep seeing consults and doing procedures until it's your turn. Then ICU/peds with scripts.</p>
 </div></details>
 
-<details class="ref"><summary>TEL Key numbers & M&M criteria</summary><div class="rb">
+<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> Key numbers & M&M criteria</summary><div class="rb">
 <h4>Key numbers</h4>
 <p>OR front desk 45657 · OR booking 48375 · CT ED 46159 · CT read 44314 (5–10p: 44123; after 10p: 42727) · ED read 42727 · MRI read 44267 · Neurorads 45828 · Blood bank 44529 · Bed board 45681 · BB7 conference 1217# · NCCU secretary 45286 · Language line 866-874-3972 (229076) · Neuromonitoring night/wknd (1363) 800-521-9757 · Medicine consult 350-2365 · General surgery consult 350-1018 · Ortho spine 350-1326.</p>
 <h4>M&M (drag to Skittles list + blue sticky note)</h4>
@@ -676,7 +680,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <p>The raw source file is kept in this repo as <b>nsgy_bootcamp.txt</b> so future updates can be made against the original bootcamp document and then folded into the structured app sections.</p>
 </div></details>
 
-<details class="ref"><summary>TEL Phone directory (searchable)</summary><div class="rb">
+<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> Phone directory (searchable)</summary><div class="rb">
 <input class="refsearch" id="phoneq" placeholder="Search… e.g. MRI, NCCU, blood bank" oninput="renderPhones()">
 <div class="pre" id="phonelist"></div>
 </div></details>
@@ -792,7 +796,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
   <div class="sheet">
     <h2 id="formtitle">New consult</h2>
     <div id="reassessBanner" style="display:none" class="banner"><b>Downgrade checkpoint:</b> 1) E-level changed? 2) O-level changed? 3) Hidden-deterioration risk changed? 4) Can the patient be downgraded? 5) Which tasks can be removed? <span class="note">Patients otherwise keep their original priority by inertia.</span></div>
-    <details style="margin-bottom:12px" id="cbdet"><summary style="font-size:13px;color:var(--acc);cursor:pointer;font-weight:600">TEL Show 30-second callback script</summary>
+    <details style="margin-bottom:12px" id="cbdet"><summary style="font-size:13px;color:var(--acc);cursor:pointer;font-weight:600"><span class="phoneico" aria-hidden="true"></span> Show 30-second callback script</summary>
       <div style="font-size:12.5px;color:var(--mut);padding:8px 2px">1 Airway/pupils/consciousness/BP/motor acutely abnormal? · 2 What changed now? · 3 Best/worst/current exam? · 4 Last at baseline? · 5 Imaging + dangerous finding? · 6 AC / postop / device? · 7 Requested action? · 8 Who is with the patient repeating the exam?</div>
     </details>
     <div class="fld"><label>Type</label><div class="chips" id="typechips"></div>
@@ -1126,19 +1130,21 @@ const SUGG=[
   action:"Add rH&P + pre-op note + OR booking checklist",trig:"case timing changes or missing consent/labs"}
 ];
 // ---------- event types ----------
+const PHONE_ICON='<span class="phoneico" aria-hidden="true"></span>';
+const TOOL_ICON='<span class="toolico" aria-hidden="true"></span>';
 const TYPES={
  CONSULT:{i:"◉",l:"Consult",probL:"Problem",probPh:"right temporal EDH",dlL:"Deadline",
   presets:[["+10 min",10],["+30 min",30],["+1 h",60],["+4 h",240],["Clear",0]],rem:""},
- COMM:{i:"TEL",l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
+ COMM:{i:PHONE_ICON,l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Before signout","17:45"],["Clear",0]],
   rem:"Closed-loop: state exam + plan, get a read-back, note who you told and when. Secure-chat the plan so they don't page you later."},
  CHART:{i:"▤",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ! marks a patient to see 2–3×/day; can schedule follow-up several days out."},
- PROC:{i:"PROC",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
+ PROC:{i:TOOL_ICON,l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
- PCON:{i:"◫",l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
+ PCON:{i:TOOL_ICON,l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+4 h",240],["+1 day",1440],["Clear",0]],
   rem:"Simple bedside task — dial change, pump check, interrogation, quick look. Verify valve setting / dose, document, update handoff."},
  POC:{i:"＋",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
@@ -1618,7 +1624,7 @@ function phoneHtml(c){
       ?'<a href="tel:'+c.phone.replace(/[^+\d]/g,"")+'">'+esc(c.phone)+'</a> <span data-ph onclick="togPh(\''+c.id+'\')">hide</span>'
       :'<span data-ph onclick="togPh(\''+c.id+'\')">'+esc(maskPhone(c.phone))+' show</span>';
   }
-  return '<div class="state phone">TEL '+esc(c.fname||"")+(c.fname&&ph?" · ":"")+ph+'</div>';
+  return '<div class="state phone">'+PHONE_ICON+' '+esc(c.fname||"")+(c.fname&&ph?" · ":"")+ph+'</div>';
 }
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
@@ -2712,29 +2718,29 @@ function renderCapture(){
     add("","⊞","Open Booking tab","templates + pre-op reminders",()=>capBookingTab());
     if(pmatch)add("rl","▤","Open matched patient — "+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+"…",()=>pmatch.kind==="round"?capRounds():openForm(pmatch.id));
     if(bs.template)add("","⧉","Copy suggested booking template",bs.template,()=>{toClip(bs.template);showToast("Booking text copied")});
-    phoneSuggestFor(text).forEach(s=>add("","TEL",s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
+    phoneSuggestFor(text).forEach(s=>add("",PHONE_ICON,s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
   }else if(isCall){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
-    add("primary","TEL","Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
-    phoneSuggestFor(text).forEach(s=>add("","TEL",s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
+    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
+    phoneSuggestFor(text).forEach(s=>add("",PHONE_ICON,s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
     if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to rounds/boards",(bed||last3FromText(text))?("uses "+[bed,last3FromText(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capRoundsAdd(text,bed));
     if(consentCue)add("","✎","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
   }else if(isQ){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary","◫","Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary",TOOL_ICON,"Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart)&&!clinical){
-    add("primary","PROC","Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
+    add("primary",TOOL_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
   }else if(clinical){
     add("primary","◉","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
     if(consentCue)add("","✎","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
   }else if(chartCue){add("primary","▤","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
   else if(pocCue){add("primary","＋","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
-  else if(procCue){add("primary","PROC","Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
+  else if(procCue){add("primary",TOOL_ICON,"Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
   else if(dcCue){add("primary","⌂","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
   else if(consentCue){add("primary","✎","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
   else{
