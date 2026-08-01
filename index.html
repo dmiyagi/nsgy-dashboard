@@ -1569,13 +1569,55 @@ function isStarted(c){
   if(c.wf&&Object.keys(c.wf).some(k=>c.wf[k]))return true;
   return false;
 }
+function isEmergentOperative(c){
+  const mods=c.mods||[];
+  const txt=[c.prob,c.state,c.action,c.note].filter(Boolean).join(" ");
+  return (c.E>=3&&c.O>=2)||c.O>=3||(c.E>=3&&mods.includes("OR"))||/\bemergent\b.{0,35}\b(?:or|op|surgery|case)\b|\b(?:or|op|surgery|case)\b.{0,35}\bemergent\b/i.test(txt);
+}
+function openWorkflowKeys(c){
+  const set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"]||[];
+  return set.filter(([k])=>k!=="__close"&&!(c.wf&&c.wf[k])).map(([k,l])=>({k,l}));
+}
+function currentWorkText(c){
+  const bits=[];
+  if(c.action)bits.push(c.action);
+  const st=(c.steps||[]).find(s=>!s.done);if(st)bits.push(st.t);
+  const tk=(c.tasks||[]).find(t=>!t.done);if(tk)bits.push(tk.t);
+  const wf=openWorkflowKeys(c)[0];if(wf)bits.push(wf.k+" "+wf.l);
+  return bits.join(" ");
+}
+function isDeferredDocumentation(c){
+  if(isEmergentOperative(c))return false;
+  return /\b(?:doc|document|documentation|note|sign(?:ed)?|h&p|rH&P|pre-?op)\b/i.test(currentWorkText(c));
+}
+function missingEmergentOpDocs(c){
+  if(!isEmergentOperative(c))return false;
+  const txt=[currentWorkText(c),(c.steps||[]).filter(s=>!s.done).map(s=>s.t).join(" "),(c.tasks||[]).filter(t=>!t.done).map(t=>t.t).join(" ")].join(" ");
+  return /\b(?:h&p|rH&P|pre-?op|note|doc|document|sign)\b/i.test(txt);
+}
+function chartCheckBoost(c){
+  if(c.type!=="CHART")return 0;
+  const wf=c.wf||{};
+  const due=!wf.cc1?13*60:(!wf.cc4?16*60:null);
+  if(due===null)return 0;
+  const diff=due-nowMin();
+  if(diff>90)return 0;
+  if(diff>45)return 35;
+  if(diff>15)return 65;
+  if(diff>=-30)return 95;
+  return 70; // still visible after the check time, but not allowed to bury consults
+}
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
-  if(dl&&dl.cls==="over")r+=1000;
+  if(c.type==="CHART")r+=chartCheckBoost(c);
+  else if(dl&&dl.cls==="over")r+=1000;
   else if(dl&&dl.cls==="soon")r+=500;
   if(needsConsent(c))r+=80;
+  if(c.type==="CONSULT"&&!(c.wf&&c.wf.commplan))r+=90;
   if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
+  if(missingEmergentOpDocs(c))r+=180;
+  else if(isDeferredDocumentation(c))r-=80;
   return r;
 }
 function sortCs(a,b){
