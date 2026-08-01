@@ -1614,6 +1614,11 @@ function consultWorkflowBoost(c){
   const miss=CONSULT_PRIORITY_WF.find(([k])=>!wf[k]);
   return miss?miss[2]:0;
 }
+function consultPriorityMissing(c){
+  if(c.type!=="CONSULT")return null;
+  const wf=c.wf||{};
+  return CONSULT_PRIORITY_WF.find(([k])=>!wf[k])||null;
+}
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
@@ -1648,6 +1653,7 @@ function sortCs(a,b){
 function reflowQueue(){
   const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)).sort(sortCs);
   const next=act.find(c=>c.type==="CONSULT"&&consultGateMissing(c).length)||
+             act.find(c=>consultPriorityMissing(c))||
              act.find(c=>!isStarted(c))||
              act[0];
   if(next){pinnedTopId=next.id;showToast("Next up → "+((next.loc||next.prob||"task").slice(0,32)))}
@@ -2013,11 +2019,15 @@ function consultWfPrereqMissing(c,k){
   }[k]||[];
   return req.filter(([rk])=>!wf[rk]).map(([,l])=>l);
 }
+function consultWfLabel(k){
+  const hit=WF_ITEMS.find(([x])=>x===k);
+  return hit?hit[1]:k;
+}
 function clearConsultWfAfter(c,k){
   if(!c||c.type!=="CONSULT"||!c.wf)return;
   const downstream={
-    list:["staffedC","staffedA","commplan","note"],
-    handoff:["staffedC","staffedA","commplan","note"],
+    list:["seen","staffedC","staffedA","commplan","note"],
+    handoff:["seen","staffedC","staffedA","commplan","note"],
     seen:["staffedC","staffedA","commplan","note"],
     staffedC:["staffedA","commplan","note"],
     staffedA:["commplan","note"],
@@ -2031,7 +2041,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
     const next=!c.wf[k];
     if(next){
       const miss=consultWfPrereqMissing(c,k);
-      if(miss.length){pinnedTopId=c.id;showToast("Before "+k+": complete "+miss.join(" + "));render();return}
+      if(miss.length){pinnedTopId=c.id;showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
   }
