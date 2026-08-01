@@ -1,0 +1,979 @@
+2026 NSG SURVIVAL
+
+PHONES/PAGERS
+ED
+Express care 66811 or 43000
+A-POD 49291
+B-POD 49292
+HCH 44900
+MED PHONE 265-6312
+TRAUMA PHONE 623-0434
+ED Public Waiting 49227
+ED Ambulance Triage 41641
+CC1 48104 42053
+CC2 48133 44244
+CC3 44892 44265
+CC4 44899 47548
+CC5 40126 49266
+CC6 44685 40268
+POD Supplies 1-3 401-255-5726 401-255-4728 401-640-0044
+
+FLOORS/ICU
+5ISC 45699
+5ISC WKRM 64057
+6A 45761?
+6B 45763
+7B 45911
+BB6 43976
+BB7 45761?, fax 47020
+COOP2 45528
+COOP3 40128
+COOP4 45525
+CTIC 45150
+J4 45937
+J3 45935
+MICW 45771
+MICS 45743
+NCCU 45286
+PICU 46021
+RICU 45733
+SICU 45744, 48813
+TICU 43952
+WIMU 45943
+W&I 274-1100
+W&I NICU2 x44687 attending or x44689 (fellow)
+W&I NICU2 43200
+W&I NICU3 43300
+APC702 Conference Room Security 45221
+
+OR/PACU
+ASC Front Desk 48372
+ASC PACU 48232 
+HCH Front Desk 46030
+HCH PACU 46887
+OR Front Desk 45657
+OR Booking 48375 45119
+OR-1 44347
+OR-11 43471
+OR-12 43472
+OR-14 43474
+OR-15 43475
+OR-16 43476
+OR-ORANGE 46082
+PACU 47358
+XR OR 48163
+XR Pager 350-0146
+
+IMAGING
+CT ED 46159, change type of scan if scheduled
+CT Main 44802
+CT Read 44314
+CT Read 5-10pm 44123
+CT Read after 10pm 42727 (ED) 
+CXR Read 42735
+CXR Read after 10pm 42727 (ED)
+CXR Read WKND 401-884-3281
+Echo 45894, 48168 
+ED Read 42727
+EEG Read 48427
+EEG Techs 48575
+Extremity XR Read 884-3281?
+IR Drains: 
+- Daytime Body 44123
+- Daytime VIR 48118
+- After 5pm VIR fellow 48112 
+Pedi read 48275
+Outpatient MRI 44881
+Inpatient MRI 48168
+MRI Read 44267 
+MRI with sedation adult 44702
+Neurorads 45828
+Nuclear medicine 45281
+Ultrasound 45309
+XR ED 45405
+XR Main 45182
+XR File 40351
+XR Pedi 46590
+
+LABS
+Blood Bank 45294
+Chemistry 45886
+Coagulation 45560
+Cortisol 34216
+Hematology 45621
+Microbiology 45273
+Toxicology 45858
+Urinalysis 45654
+
+SERVICES/OTHERS
+ACS 350-8461 ?350-1018 for shunts now
+Acute Pain Service 350-9397
+Anesthesia 47804
+Anesthesia WKRM 45671
+Anesthesia preop 350-8296
+Bed board 45681, 3
+Blood bank 44529
+Brace shop 45477
+CT Body Bx 44123 
+Discharge Delay XR 45182
+File Room, RIH 45606 Fax 401-444-4133
+File Room, W&I 274-1100,41248,3, 430-1660
+Food card 42288
+General Surgery Consult 350-1018
+HCH Admission 46583
+HVAC 48020
+Interpreter 401-640-9058
+Medicine Consult 350-2365
+MICU triage phone 952-6464, 33232
+Micro 45273, micro resp 43265
+Nursing admin for beds 255-0707 
+Ortho Consult/Spine 350-1326 
+Ortho Known 350-1675
+Ortho Trauma 350-1675 
+Path 45169
+Path: Request cytology on site 45231
+Path: Rush 45441
+Pedi sedation 46091, 42035 for same day
+Pharmacy 44119,2
+Radiation Oncology 43600
+Safety Net 47233
+Surg 1 THORACIC 350-0693 
+Surg 2 CR 350-0732
+Surg 3 SURG ONC 350-0950
+Trauma Intern 350-2634
+Trauma Senior 350-2727
+Vascular Neurology 350-0795
+Vascular Surgery 350-1006 
+
+ROOM CODES
+
+5ISC wkrm 0305# 
+5ISC supply 5678#
+APC 4 library 723 
+APC 506 Neuro 5250#
+APC 631 NSGY 4146# 
+BB7 conference 1217
+BB7 wkrm 4646#
+BB7 call room 5555#
+BB7 equipment 2002#
+Biplane room 0911#
+Biplane room 2 0922#
+COOP3 supply 2022#
+COOP4 supply 5525#
+COOP5 wkrm 0815# 
+COOP/MOC stairwell *123#
+ED Code 9111*
+HCH elevator door 4152#
+HCH 401 4441#
+HCH 509 55551#
+MICU supply 2160# 
+PICU 263 supply 3214#
+TICU supply (MAI597) 5752#
+W&I NICU Clean supply room 3452 1604
+
+
+CHARLIE TASKS
+
+NACU vs NCCU
+Allowed in NACU: 
+-A lines
+-Cardene
+-Pressors (as long as provider can manage, should not need to be rapidly uptitrated, definitely can do MAP push or postop carotid)
+-Hypertonics for hyponatremia (but not cerebral edema)- possibly some wiggle room here depending on provider request 
+-Q1 neuro checks
+-Non-transducing evd
+-Lumbar drain 
+-NO fresh postop AVM’s! 
+
+Allowed on BB7:
+-Q2 neuro checks 
+-Lumbar drain
+-Hypertonics for hyponatremia (but not cerebral edema)
+-NO other drips including cardene
+
+*if there is confusion and/or pushback from nursing, please involve Tia/Marguerite for clarification or even Rad for a major issue. Providers/bed board should ultimately be making decisions on NACU admissions.
+
+LOGINS
+RIVERS
+Username: ewang (elainajwang@gmail.com) 
+
+RIMI login
+Username: ejw1959 (elaina_wang@brown.edu)
+
+BABIES
+MAKE EPIC CHART FOR W&I BABY
+Call express care 43000 to create chart for BabyBoy-Mom Name, Last Name; if names do not align can also create an alias or else imaging cannot be pushed over 
+Call W&I NICU secorthopedicsretary to fax demographic form to x444-7100
+Express care said OR likes to make their own chart for upcoming procedures x45119 but they told me they don’t 
+
+PUSH IMAGING FROM W&I TO RIH 
+Call W&I file room x41248, 2
+Ask them to upload image to LifeImage and fax report to RIH file room (fax 401-444-4133)
+Call RIH file room to upload to Epic x45606
+
+CHANGE EXISTING PATIENT NAME
+Call RIH Admitting 46686 
+Call NICU secretary 43300 to fax face sheet to admitting fax machine x45139 
+Call DOH to fax birth certificate to admitting LOL
+
+MERGE CHARTS
+Call data integrity 44375
+
+CDs FOR ROBOT CASES
+Daytime: Call RIH file room to burn the CD x45606
+Either pick it up yourself or sometimes someone from OR will pick up.
+Overnight: Call ED XRay to have secretary to burn them for us. 
+
+ACCESS BRAINLAB REMOTELY 
+Connect.lifespan.org
+Open Intranet
+Paste link from Cam’s PDF from his email into Intranet web browser 
+
+DISPO BATTLES
+TP fractures: <4 TP fractures in lumbar or thoracic spine don’t need spine consult from either  or neurosurgery 
+Facial fractures that go through both anterior and in posterior tables of frontal sinus require NSGY consult. Look for signs of CSF leak. 
+
+BOOKINGS
+Placement of left vs right external ventricular drain, possible placement of bolt intracranial pressure monitor, all indicated procedures  
+Placement of right possible left ventriculoperitoneal shunt; removal of right versus left external ventricular drain; possible general surgery laparoscopic vs open approach to abdomen, all indicated procedures 
+Endoscopic transnasal resection of sphenoid or sellar mass, possible abdominal fat graft, possible lumbar drain placement, all indicated procedures 
+Suboccipital craniotomy vs craniectomy, possible C1 laminectomy, possible placement of external ventricular drain left vs right, all indicated procedures 
+Right / left decompressive hemicraniectomy, possible microsurgical aneurysm clipping, possible placement of external ventricular drain left vs right, possible intraoperative angiogram 
+Right / left transcarotid artery revascularization with stent placement, possible carotid endarterectomy, neuromonitoring 
+Right / left carotid endarterectomy, neuromonitoring, ultrasound, microscope
+Right craniectomy versus craniotomy for evacuation of subdural hematoma, possible placement of left versus right external ventricular drain, possible placement of left versus right bolt intracranial pressure monitor, all indicated procedures 
+Placement of cervical halo system, possible traction, all indicated procedures
+
+FIXINGS
+Cranial fixings: brainlab, cusa, scope, sonopet, sugita, ultrasound, Neuromonitoring, Stryker plating system 
+Spine fixings: Neuromonitoring, nuvasive, dupey expedium, mountaineer, airo, ziehm, viper, Jackson table, possible complex plastics closure 
+
+CONSENTS
+Cranial cases: Athar Christine Clark Curt Deus Konstantina Prak 
+Spine cases: Patti Tim Toki Sampath Williamson + Fellows
+Vascular: Curt Rad Kriszy
+TSSH: Prak + Ritu, Christine + Basit, Curt + Duff
+ALIF Exposers: Soden Luhrs
+PRS Closers: Woo Kwan Beqiri Maselli 
+Laparoscopic approach to abdomen: Look up SICU/TICU/Vascular/GS attendings on call for that day 
+
+Add on titles - 
+   PRS add on - "soft tissue reconstruction of ***back/cranial*** wound by Plastic Surgery" 
+   Gen Surg add on - tbd
+
+Reminders - 
+   Sampath cranis add on Neuromonitoring
+
+Below are names and codes for bookings (please add codes!)______________________________________________________________________________________________
+
+Spine
+-Revision of lumbar wound and repair of cerebrospinal fluid leak, possible soft tissue reconstruction of back wound by Plastic Surgery, all indicated procedures  (***code)
+-Posterior thoracic revision and extension of fusion, soft tissue reconstruction of back wound by Plastic Surgery, brainlab, microscope, aquamantys, ultrasound, depuy, neuromonitoring, AIRO  (***code)
+-***Cervical/Thoracic wound washout; CPT code 22010 
+-***Lumbar/Sacral wound washout; CPT code 22015 or 10080?
+-Thoracic 6-10 posterior instrumentation, fusion, Thoracic 8 bilateral laminectomy, transpedicular partial corpectomy, resection of tumor, ventral decompression, possible cement augmentation, minimal invasive surgery  (***code)
+
+Cranial/Trauma
+-***Left/Right burr holes possible craniotomy for evacuation of subdural hematoma 
+-Placement of right possible left ventriculoperitoneal shunt; removal of right/left extraventricular drain  (***code)
+-Cranial wound washout; CPT code 10180, 13160 
+-***Left/Right  craniotomy for resection of brain mass, all indicated procedures, Brainlab, ultrasound, sonopet, microscope (***code)
+
+Skull base/tumor
+-Suboccipital craniotomy vs craniectomy; possible C1 laminectomy; possible placement of external ventricular drain left vs right  (***code)
+-Endoscopic transnasal resection of sellar mass, possible abdominal fat graft, possible lumbar drain placement  (***code)
+
+Vasc
+-***Left/Right transcarotid artery revascularization possible carotid endarterectomy, neuromonitoring, ultrasound, fluoroscopy (37215) ****book as CEA and then add the booking 37215 after to get it to be not cardiac, Paula says try to book w/ number "1070002314"
+-***Left/Right carotid endarterectomy, neuromonitoring, microscope, doppler (35301)
+-***Left/Right craniotomy for evacuation of intracerebral hemorrhage, NICO, steath, ultrasound, supine, within 3 (***code)
+-***Left/Right craniotomy for arteriovenous malformation resection Microscope (Kinevo if possible) ultrasound, indocyanine green dye, Brainlab. (61682, supratent complex; 61686 infratent complex; 61692 dural AVF complex; 69990 Microscope; 61781 Neuronav)
+-***Left/Right stent insertion carotid artery intracranial intravascular (61635) 
+-***Left/Right stent insertion extracranial intravascular (0075T)
+
+Functional
+-***Left/Right placement of visualase fiber, laser ablation, brain  (***code)
+-***Left/Right amygdalohippocampectomy, Airo, globus robot, visualase laser  (***code)
+-***Left/Right 
+
+
+
+CHANGE BOOKING NAME SAME DAY: post op to floor > procedures
+
+INPATIENT PREOP CHECKLIST
+Booking
+Consent
+Coags
+DVT ppx
+NPO
+H&P note
+Preop note
+
+EKG
+Pregnancy test
+MRSA screen 
+
+OUTPATIENT PREOP CHECKLIST
+Booking 
+Consent
+Coags + MRSA + urinalysis
+H&P
+Preop note
+PAT appointment via Sharonda
+PAT instructions in discharge 
+Hibiclens 
+
+PREOP PREEMIE
+No coags needed (T&S, PT/PTT)
+CLD 6h preop
+NPO 2h preop 
+
+DEATH 
+Notify attending + ask secretary to notify medical records. 
+Perform death exam: pupils, breath, carotid pulse, heartbeat. 
+Drop significant event note with time of death and death exam.
+Call NE Donor Services within 1 hour and ASK FOR NAME / WRITE DOWN TIME CONTACTED — 1-800-446-6362
+Report to ME and mention trauma a million times if trauma and ASK FOR NAME / WRITE DOWN TIME CONTACTED — 401-222-2948
+Call family and ask for autopsy if warranted. 
+
+SKITTLES LIST
+Toki wants to remind us all what an M&M is:
+
+
+An M&M case in our department is any case involving:
+
+(1) death during the index admission or within 30 days,
+(2) unplanned return to OR, or readmission within 30 days,
+(3) new or worsened neurological deficit not anticipated by the procedure,
+(4) any "never event" or wrong-site/wrong-level/wrong-patient occurrence,
+(5) significant systemic complication requiring escalation of care,
+(6) hospital-acquired infection related to neurosurgical care,
+(7) significant near-miss or good catch identified by any team member, or
+(8) any case referred by the chair, vice chair for quality, division director, or quality committee for educational or systems review.
+ORDERS 
+Migraine cocktail: 
+10 compazine 
+25 benadryl 
+Magnesium sulfate 2g
+1L Fluids
+Toradol vs Tylenol 
+
+Pedi orders: 
+Pain: PRN valium, NO robaxin 
+Seizures: 15mg/kg load + 10mg/kg BID x7d 
+Transfusions: 10cc/kg for children + 15cc/kg for neonates 
+
+Active seizures: 
+2 Ativan, if doesn’t work then versed 
+1-2 Keppra
+STAT EEG and call tech
+Call neurology
+
+ICP crises: 
+Mannitol 1g/kg, if big person 100, unless known CKD or CHF and also follow fluids to give volume back 
+23% 30cc
+Or give bolus of 3% of 500 or 250cc one dose through peripheral
+
+Plan trajectory MR tractography: http://Isblelement01.Ismaster.lifespan.org (http://Isblelement01.Ismaster.lifespan.org)
+
+MRI PROTOCOLS
+MRI Brain WWO Moyamoya + MRA Brain WO (comments = please perform MRI Brain WWO Moyamoya attn: Danny) 
+MRI Brain WWO Vascular Malformation + MRA Brain WO (comments = please perform MRI Brain WWO Vascular Malformation attn: Danny) 
+For medulloblastoma MRI Brain and Spine COG Protocol
+
+CONSULT REFERENCES
+
+ICA STENOSIS 
+* For TCAR: Bifurcation (distance to clavicle and C-spine level) 
+* For CEA: Stenosis (length across C-spine levels) 
+* Degree carotid stenosis (widest plaque / widest vessel), laterality
+* Anticoagulation/anti platelet
+* Hx neck surgery or radiation 
+* If soft thrombus, heparinize and re-image in 3 days. 
+
+ICP MANAGEMENT (DECRA) 
+Tier 1
+* BP: avoid hypertension
+* Na: HTS
+* Positioning: Elevate HOB
+* Collar: Head/neck midline, nothing pushing 
+* Temperature: not febrile
+
+Tier 2
+* Hyperosmolar therapy 
+* EVD: CSF drainage
+* Analgesia 
+* Sedation — propofol is neuro protective by decreasing CMRO
+* Paralysis — significant side effects; start with vecuronium, titratable gtt to decrease ICP to max of loss of all 4 twitches 
+
+BACLOFEN
+1-alarm: 90d before replacement or time for refill
+2-alarm: out of medication, battery dead, pump not working, pump stopped for more than 48h 
+
+To-do: 
+Send PT PTT T&S + CK +  NPO 
+PO baclofen 20-30mg every 8 hours, increasing to up to 240mg/day divided into 3-4 doses
+PO cyproheptadine for spasticity 4-8q6 (max 0.5mg/kg/day) 
+IV diazepam 5-10mg every 8-10min (in ICU patients) 
+Propofol 5-150mcg/kg/min (in intubated patients) 
+Interrogate pump: drug/dosage + drug refill alarm dates + alarm logs 
+CT abdomen (T/L XR miss malfunction) 
+Lumbar drain: IT baclofen 
+
+NICO Criteria
+Inclusion: 
+* Lobar or basal ganglia hemorrhage
+* Age 18-80
+* ICH volume 30-80cc
+* GCS 5-14
+* NIHSS > 5
+* Possibility of surgery within 24h of last known well
+
+Exclusion: 
+* Underlying vascular malformation/aneurysm
+* Irreversible coagulopathy
+* Thalamic hemorrhage/hemorrhage extending to midbrain or brainstem
+REACH Criteria
+Inclusion Criteria
+* Age 18-70
+* GCS 5-14
+* mRS 0-1 pre-randomization
+* Pre-randomization head CT demonstrating acute spontaneous anterior basal ganglia primary ICH
+* ICH volume 20-80 mL
+* Study intervention feasible within 24h of symptom onset
+
+Exclusion Criteria: 
+* Ruptured aneurysm/AVM/VST, underlying tumor
+* NIHSS < 5
+* Fixed and dilated pupils bilaterally
+* Extensor motor posturing
+* IVH involving > 50% of either lateral ventricle
+* Primary thalamic ICH or basal ganglia hemorrhage with > 25% thalamic involvement
+* Use of anticoagulants that cannot be rapidly reversed or patients who require long-term anticoagulants
+* Uncorrected coagulopathy/known clotting disorder
+* Evidence of active bleeding involving retroperitoneal, GI, GU, or respiratory tract site
+* Platelet count < 75K or INR > 1.4
+* ESRD, liver disease, mechanical heart valve 
+* Known life expectancy < 6 months
+* No reasonable expectation of recovery, DNR, or comfort measures prior to randomization
+* Participation in a concurrent interventional medical investigation or clinical trial 
+Please note that if a patient qualifies for the trial, we ask that you NOT empirically give hypertonics to the patient pre-operatively unless there is a herniation syndrome present or needed for suspected ICP elevation. 
+
+If you have a patient who you believe meets inclusion criteria, please immediately send a Secure Chat message to the following people with the patient information, so we can complete screening: 
+ 
+Krisztina Moldovan 
+Elias Shaaya 
+Radmehr Torabi
+Carlos Pince De Leon Mendez 
+Maria Duffy 
+
+
+
+LANGUAGE EXAMS 
+
+Hi I am Dr. Wang from neurosurgery. I'm here to do a physical exam on you. 
+Hola, soy la doctora Wang de neurocirugía. Estoy aquí para hacerte un examen físico.
+
+What's your name? 
+¿Cuál es tu nombre?
+
+Where are we right now? Are we at the library? Are we at the hospital?
+¿Dónde estamos ahora? ¿Estamos en la biblioteca? ¿Estamos en el hospital?
+
+What year is it? Is the year 2024? 
+¿Que año es? ¿Es el año veinte cuatro?
+
+Open your eyes and look at me. 
+Abre los ojos y mírame.
+
+Follow my finger with your eyes.
+Sigue mi dedo con tus ojos.
+
+Cover your right/left eye. Look at my nose. How many fingers do you see?
+Cubre tu ojo derecho/izquierdo. Mira mi nariz. ¿Cuántos dedos ves?
+
+Squeeze my hands as hard as you can. 
+Aprieta mis manos tan fuerte como puedas.
+
+Pull me in, as hard as you can, 
+Jálame, tan fuerte como puedas.
+
+Push me away, as hard as you can. 
+Empujame, tan fuerte como puedas.
+
+Raise your right leg. Keep it up. Don't let me push down. 
+Levanta la pierna derecha. Mantenla arriba. No me dejes empujar hacia abajo.
+
+Raise your left leg. Keep it up. Don't let me push down. 
+Levanta la pierna izqueirda. Mantenla arriba. No me dejes empujar hacia abajo.
+
+Keep your leg straight.
+Mantenga la pierna recta.
+
+Push your toes up. 
+Empuje los dedos de los pies hacia arriba.
+
+Push your toes down.
+Empuje los dedos de los pies hacia abajo.
+
+Wiggle your toes. 
+Mueve los dedos de los pies.
+
+
+PROCEDURES
+
+BOLT
+STEP 1: CONSENT THE PATIENT. Placement of right versus left bolt intracranial pressure monitor, possible placement of left versus right external ventricular drain, all indicated procedures 
+
+STEP 2: Order EVD meds (versed 5 + fentanyl 200), lidocaine, post-bolt CT Brain WO, ancef x1 dose, and grab supplies
+* Cranial access kit
+* Bolt kit x2 (sometimes transducing wire broken) or if Licox, then CereLink ICP sensor kit 
+* Boxes: Bolt Codman Cerelink monitor box with CORD and if licox, Integra PbtO2 monitor as well 
+* Chloraprep x3 
+* Sterile gown + gloves + sterile drape 
+* Nylon + monocryl
+* Xeroform + ruler + skin marker 
+* Steri strips 
+* Syringe + 18/22 gauge needle + spinal needle + sterile flushes
+* Razor with working batteries and attachment 
+
+STEP 3: TIME OUT (COAGS, DVT PPX, ABX, POST-PLACEMENT SCAN) . 
+* If Licox, hand off calibration card to nursing 
+
+STEP 4: PEW PEW. 
+* Set up bolt box: 
+* Connect to patient vitals monitor. 
+* Zero the monitor: 
+* Press zero patient monitor
+* Set vitals monitor to 0 
+* Once box and monitor read zero, hit enter 
+* Set vitals monitor to 20 
+* Once box and monitor read 20, hit enter 
+
+Placing bolt: 
+* Place EKG lead on patient on side of IV pole if LICOX
+* Shave head
+* Mark 12 and 3 to give space for EVD if need to convert, vertical incision in case of DHC 
+* Chloraprep x1
+* Inject local
+* Chloraprep x2
+* Gown up and drape 
+* Vertical incision + pericranium removal 
+* Drill with BOLT DRILL from the bolt kit or if LICOX with drill from LICOX kit 
+* Flush out bone chips with sterile saline 
+* Durotomy with blunt needle from cranial access kit 
+
+Regular bolt: 
+* Loosen bolt cap but do not drop it + place wire through bolt to 1cm past metal and mark with ruler where wire sits at plastic cap or use steri strip 
+* Screw the bolt into drill hole and USE STYLET TO MAKE SURE IT IS PATENT 
+* Zero transducer: 
+    * Hold transducer in pool of sterile saline
+    * Ask nurse to connect transducer to box 
+    * Hit zero transducer 
+    * Write down ZEROING COMPLETE ZERO REFERENCE ####
+* Make sure the bolt is patent and place wire through bolt to mark that was previously made and tighten cap carefully.
+* Figure of 8 + xeroform + nylon tack-ups 
+
+Licox bolt: 
+* Insert skull bolt and stylet path to make sure patent. 
+
+* Introducer: Insert introducer into bolt and rotate until it drops. Rotate cap one clockwise turn. 
+
+* PBtO2 channel: 
+    * Remove guidwire from pO2 channel. 
+    * Remove protection tube from blue lure connection on probe closest to tip. 
+    * Insert probe as far as possible into pO2 channel.
+    * Turn blue lock ring clockwise onto introducer channel.
+
+* ICP channel: 
+    * Remove sensor from CereLink ICP sensor kit. 
+    * Connect to Codman ICP Express monitor (ask nurse to help) and zero. 
+    * Mark ICP sensor 155mm from tip of sensor.
+    * Remove ICP obturator from ICP channel and insert micro sensor into ICP channel. 
+    * Turn microsensor cap connector securely onto introducer channel. DON’T TIGHTEN BLUE COMPRESSION RING.
+    * Insert microsensor to 155mm aligning to top of blue compression ring. NOW TIGHTEN BLUE COMPRESSION CAP. 
+
+* Securing: 
+    * TIGHTEN COMPRESSION CAP WHILE HOLDING WINGS OF BOLT.
+    * Figure of 8 + xeroform + nylon tack-ups 
+
+* Ok to travel without O2 monitor. 
+* LICOX is not MRI compatible but the bolt is. 
+
+EVD IN ADULTS
+STEP 1: CONSENT THE PATIENT (Can get fired). All residents + check laterality. 
+STEP 2: CONFIRM LATERALITY (Can get fired) 
+STEP 3: CHECK COAGS AND DVT PPX HELD. 
+STEP 4: Order meds + lidocaine + restraints + EVD + post CTH, alert nurse of meds to be given in increments and to have at bedside except lidocaine and to position patient.
+* Meds: 
+    * Versed 2mg (can start with 1)
+    * Fentanyl 100mg (can start with 25 or 50)
+    * 2g ancef or 300 clindamycin
+* EVD order: 
+    * Set open to drainage 10cm for posterior fossa bleed or unsecured aSAH 
+STEP 5: Gather supplies and set up. 
+	Cranial access kit
+	EVD tower 
+	Sterile flushes
+	Razor + blade
+	If a lot of blood, thickie (cerebroflow) catheter
+	If concern for infection, antibiotic (bactiseal) catheter
+STEP 5: TIMEOUT & CONFIRM LATERALITY AGAIN. 
+STEP 6: Pew Pew 
+	Head shave (shave more than you think) 
+	Landmarks: 12 and 3
+	Chloraprep x3 
+	Lidocaine 
+	Sterile gown and gloves 
+	Head + body drapes (so essential) 
+	Re-measure landmarks
+	Incision, scrape periosteum 
+	Drill burr hole perpendicularly (again, essential) 
+	Use trocar pointy end to poke through dura, bend trocar for future use
+	Stylet + catheter, hold at 7, aim for ipsilateral canthus
+	Hard pass to 7, soft pass to 8
+	CSF back: attach trocar and tunnel out, cut tubing, attach stop  
+	Sandal stitch with nylon
+	Anchor stitches with nylon
+	Incision stitches with monocryl 
+	Flush drain, attach drain, hand to nurse
+		Flush bag: off to patient 
+		Flush transducer: off to bag, take red cap off, pull blue nubbin, and flush — replace red cap
+		Flush patient: off to tower
+		Replace transducer white cap with a closed cap
+STEP 7: PROCEDURE NOTE. UPDATE HANDOFF. DRAG TO PROCEDURE LIST AND LOG. 
+
+EVD FLUSH
+STEP 1: Let the nurse know.
+STEP 2: Get supplies
+Alcohol pad
+Sterile flush
+Sterile gloves
+STEP 3: Flush distally first, then proximally if you have to. Tell nurse how much you flushed distally. Drop significant event note.
+
+If EVD does not have access port bc it came from OR, add a clave to stopcock and use as access point. 
+
+EVD IN BABIES
+MAX lidocaine: 1-2cc
+Use sterile paper towels to square off baby head
+Use white drape in cranial access kit as major drape
+Since baby is laying flat, angle will change, still aim for ipsilateral canthus but may need to drop hand more to be in plane of tragus
+Only pass to 4.5cm 
+Only 1-2 tack-ups (TIGHT TIGHT TIGHT because you do NOT want EVD to slip out)
+When suturing incision site, if tissue is macerated, may have to use extra big bites 
+
+EVD INTRATHECAL MEDICATION
+STEP 1: Ask a nurse for medication at bedside. For TPA order late please for intraventricular injection. Consent and place significant event note. 
+STEP 2: Get supplies
+Empty syringe
+Saline flushes
+Sterile gloves
+Alcohol pads 
+STEP 2: TIME OUT 
+STEP 3: Clean access port, draw back cc into syringe, administer medication followed by saline, clamp 1h, let nurse know to unclamp in 1h. Drop significant event note.
+
+SHUNT TAP
+Step 1: Gather supplies. Ask nurse to print labels. 
+	Chloraprep x3 *for WICU iodine preferred, remember to clean off
+	Butterfly needle (for scalp)
+              18g needle (for csf tube)
+              Syringe (10cc ok for adults but max 5cc for WICU)
+	CSF tube (empty, no bottom preservative)
+	Sterile gloves 
+              Can use razor and even sterile drapes and towels if you feel that will help
+Step 2: Send out CSF with labeled stickers on it (initials, date, time) and rest in biohazard bag. 
+
+FONTANELLE TAP (10cc/kg or 0.01cc/g)
+MUST CONSENT FOR FONTANELLE TAPS BUT NOT RESERVOIR/SHUNT/EVD TAPS.
+	Orange needle cap 25
+	CSF tube
+	Sterile gloves x2
+	Chloraprep x3 (or iodine)
+	Povidone x2
+	Chucks
+	Laceration tray 
+	3 small gauge butterfly needles (23-25)
+	Empty 10cc syringe 
+
+
+If baby head is larger than butterfly needle, then use spinal needle. Measure depth on scan and then on needle. Use IV extension tubing to be able to draw off the needle. Can find all in OR sub sterile core. 
+
+SUBCUTANEOUS FLUID TAP
+Get: 23g or butterfly needle, 2 CSF tubes, 2 needles, 2 10cc syringes, gloves, chlorhexidine, ultrasound machine, culture swab, marking pen
+Order “wound cx”
+Step 1: Find collection on ultrasound.
+Step 2: Sterilize. Put on sterile gloves.
+Step 3: Butterfly needle and 10cc syringe, like drawing CSF
+
+SHUNTOGRAM
+Step 1: Grab 1 empty syringe, 1 sterile flush, 1 3-way stopcock, 1 pair sterile gloves, iodine or chloraprep x3, 1 butterfly needle
+Step 2: Prep head and site of shunt. 
+Step 3: Attach syringe + sterile flush + butterfly needle to 3-way stopcock. 
+Step 4: Poke butterfly needle into shunt and ASPIRATE ON EMPTY SYRINGE TO MAKE SURE YOU GET CSF BACK. 
+Step 5: If CSF back, remove syringe and attach radiated dye. Flush dye. Then flush 1cc sterile saline. 
+Step 6: Log the procedure. 
+
+LUMBAR PUNCTURE
+STEP 1: CONSENT THE PATIENT (Can get fired)
+STEP 2: CHECK COAGS AND DVT PPX HELD. 
+STEP 3: Order dilaudid, pulse ox, and nasal cannula. Alert nurse to only have meds ready at bedside and give in increments. Patient either left lateral or sitting up if no intracranial pathology. 
+STEP 3: Gather supplies and set up. 
+	LP kit (equipment room: lidocaine + drape + needle + wire + pre-labeled tubes) 
+	Gloves + mask + gown + extra drape 
+	Chloraprep x3, sterile flush x2, 18/22 gauge needle, empty syringe, fluffs 
+STEP 4: Pew pew
+	Shrimp patient in lateral decubitus but seated is easier if patient does not have brain pathology
+	L4/5 iliac crest, mark entry point
+	Time out 
+	Chloraprep x3, lidocaine at this point or later when sterile 
+	Sterile gown and gloves 
+	Place extra drape at bottom + circle drape around entry point 
+	Aim needle towards umbilicus (don’t remove needle, move outside needle, and replace needle bc will transect)
+	Measure opening pressure + collect CSF if needed (x4 tubes if need xanthochromia) 
+	Clean up and send tubes out (pre-labeled 1-4) with CSF sticker labels on each tube and rest in biohazard bag 
+STEP 5: PROCEDURE NOTE. UPDATE HANDOFF. DRAG TO PROCEDURE LIST AND LOG. 
+
+LUMBAR DRAIN
+STEP 1: CONSENT THE PATIENT (Can get fired)
+STEP 2: CHECK COAGS AND DVT PPX HELD. 
+STEP 3: Order dilaudid + lidocaine, order CSF studies, alert nurse of meds to be given in increments and to have at bedside, patient lateral decubitus or seated up.
+STEP 3: Gather supplies and set up. 
+	LP kit (equipment room: lidocaine + drape + needle + wire + pre-labeled CSF tubes) 
+	LD kit (cabinet: no drape or lidocaine or CSF tubes) 
+	Gloves + mask + gown + extra drape
+	EVD tower 
+	Chloraprep x3, sterile flush x2, 18/22 gauge needle, empty syringe, sterile marker
+	Fluffs, giant tegaderm, suture kit, nylon
+STEP 4: Pew pew
+	Shrimp patient in lateral decubitus. 
+	L4/5 iliac crest, mark entry point
+	Time out 
+	Chloraprep x3 + lidocaine at this point or later when sterile 
+	Sterile gown and gloves 
+	Place extra drape at bottom + circle drape around entry point 
+	Can sterile lidocaine at this point + re-prep again 
+	Flush white catheter with sterile flush + snake wire to end of white catheter (CKL likes catheter without wire)
+	Aim needle towards umbilicus (don’t remove needle, move outside needle, and replace needle bc will transect)
+	Measure opening pressure + collect CSF if needed 
+	Snake wire and catheter through needle until no dots outside, snake it in extra inches 
+	Remove LD needle + wire + catheter as a unit 
+	Hold catheter straight at incision site to easily remove inside wire 
+	Connect white catheter to nipple and make sure still CSF flowing, connect to drain or place yellow stopcock 
+	3 points of fixation with nylons + dressing with fluff and tegaderm
+	Connect to flushed drain  
+STEP 5: PROCEDURE NOTE. UPDATE HANDOFF. DRAG TO PROCEDURE LIST AND LOG. 
+
+HALO
+Step 1: Consent the patient (pin infection, skull fracture, cranial nerve 6 injury, unsuccessful reduction, progression of injury): placement of cervical halo system, possible traction, all indicated procedures + text brace shop Tom 
+
+Step 2: Order the meds (bacitracin, lidocaine, valium q2, dilaudid), make sure patient is in room where they can receive said meds, alert nurse. Call for traction bed (takes forever), or steal traction bed from ED or steal mayo stand from OR for normal bed as makeshift traction bed.
+
+Step 3: Gather supplies. 
+Supply: needles, syringes, skin marker, chlorapreps
+BB6 Halo cart: torque wrench
+Brace shop: head-measuring caliper, halo head piece appropriately measured to have 1cm clearance off the head, halo vest piece, pins
+OR: weights 
+
+Step 4: Pew pew
+Make sure patient is on pulse ox with O2 ready. Naked with EKGs on.
+Make sure traction bed pulley system is appropriate, remove head board. 
+
+Transfer patient to traction bed. 
+
+TIME OUT
+
+Apply vest: Take gown off and make sure tele leads are on and foley in if needed. Roll the patient left and right to apply back or vest, then apply front of vest. Remove the collar carefully.
+
+Place cardboard or something under head to prop it up more. 
+
+Apply crown: 
+Measure patient’s head size with template with 1cm clearance (most patients are small to medium). 
+
+Place 3 gold pins in halo crown at center and bilateral sides. Attach white caps. 
+
+Tighten onto head at 1cm superior to ears, finger breadth above eyebrow, inferior to widest diameter of head. Make sure symmetrical on patient’s head. 
+
+Insert 2 silver pins with bacitracin at lateral 2/3 edge of eyebrow and 2 at posterior mastoids until can see the point. Apply chloraprep. Then ask patient to close eyes and inject lidocaine at site of skin.
+
+Give 2.5 valium (lowest dose) before inserting the screws until finger tight (opposite screws) for adults and children.  Then use breakaways at opposite ends to tighten to 8 lbs for adults. 
+
+Then tighten the nuts until flush with crown. 
+Adults: 8lbs for head, 35lbs for body
+Children: finger tight, 6-8 pins for head  Remove gold pins. 
+
+Traction:
+Add head piece as below with the nuts in the middle and can use Allen wrench or 30lb to tighten. Make sure bolts are centered vertically for future flexing extension. 
+
+
+Then add traction bale and 30lb tighten or Allen wrench tighten. 
+
+
+Place rods through each of the holes and do not tighten yet. 
+Add string and weight. 
+
+For traction: 
+Baseline XR, can ask for annotated XR with weight 
+Add weight every 2 minutes or hour depending on situation 
+Examine
+Re-XR 
+15-20lbs for head, 10lb per level (careful with too much weight in traumas which can cause worsening injury)
+Place rods into vest and lock down vest with 35 torque.
+
+Step 5: Re-torque in 15 minutes, 24h, 48h, Week 1, every 3-4 weeks
+
+https://youtu.be/yV1qfTCQiQY
+
+MISC
+RIBB70308WKRM02
+RIM683PC2W7
+RIBB70308WKRM03
+RIBB70308WKRM05
+RIBB70308WKRM07
+RIM683PC1
+RIBB70308WKRM04
+RIBB70308WKRM01
+RIBB70308WKRM6
+RIBB7CALLRMPC1
+RIBB7CALLRMPC2 
+LSPRINTSRV01\RIBB70308PTR1
+
+NEURO IR RECOVERY ORDERS 
+
+Post procedure orders
+Radial artery compression device in place 
+Put balloon amount 
+For radial artery compression device to remain inflated on patients wrist — choose neuro standard if on DAPT or heparin and if not choose body standard expedited 
+Sign 
+
+SDH
+- Imaging: Please obtain repeat CTH 6 hours from previous
+- AEDs: {Blank single:19197::"Keppra 500 BID x7d","Keppra 250 BID x7d","Keppra taper to *** until outpatient follow-up","Continue home AEDs", "AEDs per neurology", "Depakote 250 TID x7d", "Keppra 10mg/kg BID x7d", "AEDs per neurology"}
+- Sodium Goal: Eunatremia (Na 135-145) ***
+- BP Goal: 100-160; prn labetalol; resume home BP meds as tolerated 
+- Analgesia: ATC tylenol, prn oxycodone, breakthrough morphine; avoid NSAIDs for 14 days from final read stable 6h repeat CT Brain WO 
+- Activity: As tolerated; HOB>30
+- Antiplatelet/anticoagulation: Hold all antiplatelet/anticoagulation medication. Restart *** 14d from stable scan 
+- Other: No dextrose in IVF, use saline only; OK to start DVT ppx 24h after final-read stable CT Brain unless otherwise contraindicated
+- Dispo: Pending repeat CTH
+
+#Unsecured SAH Protocol
+- Please admit to NCCU 
+- Please consult NVIR for angiogram within 24 hours
+- Please place left-sided radial arterial line; if unable to be done, please place right-sided radial arterial line
+
+- Neuro Checks: Q1h
+- AEDs: Keppra 500 BID until secured 
+- Sodium Goal: Eunatremia (Na 135-145), ***
+- Analgesia: ATC tylenol, prn oxycodone
+- Activity: As tolerated; HOB>30
+- Drains: R EVD at 10 until aneurysm is secured *** 
+- Anticoagulation/antiplatelet: No ASA/NSAIDs or anticoagulation for 2 weeks *** 
+- BP Goal: 100-140; Nicardipine drip prn ***
+- Imaging: angiogram within 24h; TCDs x14 days 
+- Protocol: Unsecured; nimodipine x21 days
+- Other: OK to start DVT ppx 24hrs from stable repeat scan unless otherwise contraindicated 
+
+#Secured SAH Protocol
+- Please admit to NCCU 
+- Neuro Checks: Q1h
+- Sodium Goal: Eunatremia (Na 135-145), ***
+- Analgesia: ATC tylenol, prn oxycodone
+- Activity: As tolerated; HOB>30
+- Drains: R EVD at 5 ***
+- Anticoagulation/antiplatelet: No ASA/NSAIDs or anticoagulation for 2 weeks *** 
+- BP Goal: 100-200 
+- Imaging: TCDs x14 days 
+- Protocol: Secured; nimodipine x21 days
+- Other: OK to start DVT ppx 24hrs from stable repeat scan unless otherwise contraindicated 
+
+spine plan a
+- Neurochecks: q4 hours***
+- Analgesia: ATC tylenol, celebrex x5d, ATC robaxin, prn oxycodone, breakthrough morphine, lidocaine patches ATC***
+- Steroids: None indicated***
+- Drains: blake drain to suction ***
+- Activity: as tolerated***
+- Bracing: ***
+- Imaging: ***
+- Therapy Orders: ***
+- Incision Care: ***
+- Abx: periop abx***
+- Map goal: normotn***
+- Other: *** 
+
+neuroplan a 
+- Neuro Checks: {Blank single:19197::"q1 hour","q2 hour","q4 hour"}
+- AEDs: {Blank single:19197::"keppra 500 bid for 7 days","keppra 500 bid until follow up","keppra *** mg indefinintely","keppra taper: ***","VPA 250mg TID for 7 days","***"}
+- Steroids: {Blank single:19197::"dex taper to *** over *** days; PPI and ISS while on >10mg/day dex","standing dex ***q6; PPI and ISS while on >10mg/day dex","***"}
+- Sodium Goal: {Blank single:19197::"goal eunatremia (Na 135-145)","goal Na>140","goal Na>145","goal Na>150"}
+- Analgesia: ATC tylenol, prn oxycodone, breakthrough morphine***
+- Activity: HOB***
+- Drains: ***. {Blank single:19197::"No indication for drain prophylaxis.","Continue ceftriaxone*** while drain in place."}
+- BP Goal: {Blank single:19197::"SBP<140 for *** hours","SBP<160","SBP ***-***","MAP>***"}; prn labetalol***; resume home *** as tolerated
+- Imaging: MRI***
+- Incision Care: {Blank single:19197::"absorbable sutures (do not need to be removed)","*** sutures to be removed on ***","staples to be removed on ***"}. {Blank single:19197::"Remove dressing on ***","No dressing, incision open to air"}. {Blank single:19197::"Bacitracin ointment BID for *** days","No ointments or creams to incision"}.
+- DVT Prophylaxis: {Blank single:19197::"start lovenox prophylaxis on POD1","start lovenox prophylaxis on POD2","start lovenox prophylaxis after ***","start SCH prophylaxis on POD1","start SCH prophylaxis on POD2","start SCH prophylaxis after ***","no DVT chemoprophylaxis. Ambulate TID"}
+- Anticoagulation/Antiplatelets: ***
+- Labs: ***
+- Abx:  {Blank single:19197::"periop ancef","periop vanc-ctx","periop vanc ancef"}
+- Other: *** 
+
+Carotid:
+ Mild 0-49, moderate 50-69, severe 70-99, complete 100% (compare to distal radius)
+
+Patient endorses *** weakness, numbness, tingling, visual changes, difficulty speaking.  No*** hx neck radiation or surgery. Open to surgery. Naming/repetition, visual fields***
+
+Anatomic considerations: 
+-Carotid bifurcation at ***, 
+-Plaque from *** to ***, Plaque appears >5cm from clavicle (TCAR runway)
+-Angle of mandible ***
+-Acomm present?
+-Pcomms present?
+
+- Imaging workup, 
+     CTA - stenosis? High risk fx include ulcerate plaque
+     Carotid Ultrasound - stenosis?
+     MRI Brain - stroke vs TIA, can consider MRA if c/f intramural thrombus or dissections
+     TTE - pending vs w/out cardioembolic source
+- Anticoagulation: Continue aspirin; ***load with Plavix and 24h later check Plavix response assay (P2Y12) and if nonresponder please Brilinta load
+- Other: OR ***; {Neurosurgery Preop:63073}
+
+Medical mgmt preferred in:
+- Women with mid-grade symptomatic stenosis
+- Asymptomatic stenosis of mid- and low-grade
+
+Outlier cases:
+- If c/f soft thrombus (ie target sign) the hept gtt for 72hrs, repeat CTA, see if revascularization is appropriate
+- If CTA w/ complete occlusion, then no intervention offered. Can check CUS to re-confirm but unlikely to change decision making
+- If pt had MT of ICA and now there's c/f stenosis, most likely its because the tract the wire took through clot looks like stenosis, its not something we want to re-vascularize
+
+
+CEA - good if heavily calcified plaque as stent won't be able to get through, pt cannot tolerate DAPT (GI bleed, etc), age >70 (CREST-1 CEA>periph stent),  if collateral is poor (ie isolated hemisphere) you'd need to shunt pt while CEA is performed
+TCAR - can't have circumferential calcifications otherwise you get showering of placque w/ sheath introduction, if collateral is poor (ie isolated hemisphere) then you need to work very quickly
+Periph stent - good if pt cannot tolerate general anesthesia, cannot tolerate flow reversal meaning they are dependent on that carotid circulation to perfuse brain, radiotherapy induced stenosis, restenosis after CEA, or bifurcation very high like C2/skull base which makes it surgically inaccessible, 
+
+For pituitary consults add
+
+Principal diagnosis present on admission: 
+#Suprasellar mass 
+#Neuro
+- Admit to BB7 
+- MRI brain/pituitary w/wo contrast, pituitary protocol; sedation needed for claustrophobia
+- CT w/wo
+- Ophtho consult 
+ 
+#Cardiac
+- Expedited TTE given hx
+- Hold ASA81
+- normotn 100-140 
+ 
+#Endocrine 
+- endocrine consult
+- prolactin, stat cortisol, AM cortisol/ACTH, TSH/free T4, LH/FSH, testosterone, IGF-1, GH
+ 
+#Other
+- Hold dvt ppx
+- If MRI and CT w/o acute hemorrhage, NPO at midnight
+- PropOp: EKG, ChestXR, UA, Coags 
+- Pulse ox + cont tele
+ 
+

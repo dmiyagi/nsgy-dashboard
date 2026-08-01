@@ -24,6 +24,8 @@ header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-f
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut)}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
+.gsearch{flex:1 1 220px;max-width:340px;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px}
+.gsearch::placeholder{color:var(--mut)}
 .hpill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line)}
 .hpill.e3{color:var(--e3)} .hpill.e2{color:var(--e2)} .hpill.e1{color:var(--e1)} .hpill.e0{color:var(--mut)}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;background:#101827;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
@@ -212,6 +214,7 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 /* type colour scheme */
 .tc-CONSULT{--tc:#5aa2ff} .tc-COMM{--tc:#3fd68f} .tc-CHART{--tc:#8ba7d6} .tc-PROC{--tc:#b48bff}
 .tc-PCON{--tc:#ffa94d} .tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
+.tc-BOOK{--tc:#f2d34b}
 /* snooze + calendar */
 .bg.snz{background:#1e2a1c;color:#a4d97f;border:1px solid #a4d97f}
 .snoozesec summary{color:var(--mut);font-size:13px;cursor:pointer}
@@ -224,6 +227,8 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .calrow .cwho{font-weight:700;white-space:nowrap}
 .calrow .cprob{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .calrow .ctime{font-size:11px;color:var(--mut);white-space:nowrap}
+.calrow button{margin-left:4px}
+.searchhit{outline:1px solid var(--acc)}
 /* proc kit suggestion */
 .prockit{background:var(--card2);border:1px solid var(--purp);border-left:4px solid var(--purp);border-radius:9px;padding:8px 10px;margin-top:7px}
 .prockit .pkt{font-size:12.5px;font-weight:800;color:var(--purp);margin-bottom:4px}
@@ -266,6 +271,9 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{font-size:12px;font-weight:700;padding:5px 10px;border-radius:16px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .chips button.on{background:#12283f;border-color:var(--acc);color:var(--acc)}
+.smartbox{background:#12283f;border:1px solid #274b73;border-left:4px solid var(--acc);border-radius:9px;padding:8px 10px;margin-top:7px;font-size:12px;color:#b9d6ff}
+.smartbox b{color:var(--acc)}
+.smartbox .qbtns{margin-top:6px}
 .qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .qbtns button{font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
 .qbtns button.on{border-color:var(--acc);color:var(--acc)}
@@ -325,6 +333,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <h1>NSGY Consult Triage</h1>
     <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for attending judgment</div>
   </div>
+  <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
   <button class="hpill" id="syncdot" onclick="openSync()" style="cursor:pointer;background:var(--card2);border:1px solid var(--line);color:var(--mut);font-family:var(--font)">⭘ sync</button>
 </header>
@@ -333,6 +342,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <button data-view="board" class="active"><span class="ico">🗂</span>Board</button>
   <button data-view="rounds"><span class="ico">🛏</span>Rounds</button>
   <button data-view="cal"><span class="ico">📅</span>Cal</button>
+  <button data-view="booking"><span class="ico">🏨</span>Booking</button>
   <button data-view="day"><span class="ico">🕐</span>Day</button>
   <button data-view="ref"><span class="ico">📚</span>Reference</button>
   <button data-view="check"><span class="ico">🧠</span>Self-Check</button>
@@ -342,7 +352,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ BOARD ============ -->
 <section class="view active" id="view-board">
-  <div class="banner">Use only HIPAA-compliant data — bed/initials, never full names or MRNs. Data is never stored on any server. Wipe everything with the ⚙ button below.</div>
+  <div class="banner">Use only HIPAA-compliant data — bed + first three letters of last name, never full names or MRNs. Data is never stored on any server. Wipe everything with the ⚙ button below.</div>
   <input id="cap" class="capin capin-hero" placeholder="Type anything…" autocomplete="off">
   <div id="capsugg"></div>
   <details class="addmenu">
@@ -352,8 +362,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')">📞 Comm</button>
       <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
       <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
+      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')">🎛 Quick proc</button>
       <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">🩹 POC</button>
       <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
+      <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">🏨 Booking</button>
       <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
     </div>
   </details>
@@ -362,7 +374,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
     <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseAll(false)">⊞ Expand</button>
-    <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
     <div class="oebox inline">
       <input type="text" id="oeq" placeholder="Quick evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
       <button onclick="askOEBox()">🔬 OE</button>
@@ -384,19 +395,35 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <!-- ============ CALENDAR ============ -->
 <section class="view" id="view-cal">
   <div class="banner">Longitudinal view — every task with a deadline or a ⏰ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
+  <div class="rowflex"><button class="btn" onclick="openForm(null,false,'CHART')">＋ Add dated task / event</button><button class="btn sec sm" onclick="openForm(null,false,'PROC')">＋ Procedure</button><button class="btn sec sm" onclick="openForm(null,false,'BOOK')">＋ Booking</button></div>
   <div id="calcards"></div>
+</section>
+
+<!-- ============ BOOKING ============ -->
+<section class="view" id="view-booking">
+  <div class="banner">OR booking workspace — templates, pre-op reminders, consent attending suggestions, and booking to-dos. Booking tasks also appear on the Board and Calendar.</div>
+  <div class="rowflex">
+    <button class="btn" onclick="openForm(null,false,'BOOK')">＋ OR booking to-do</button>
+    <button class="btn sec sm" onclick="openForm(null,false,'CONSENT')">＋ Consent</button>
+    <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Pre-op checklist</button>
+  </div>
+  <details class="ref" open><summary>📋 Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist2"></div></div></details>
+  <details class="ref" open><summary>✅ Pre-op reminders</summary><div class="rb">
+    <h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx held · NPO · H&P note · Pre-op note · EKG · Pregnancy test if applicable · MRSA screen.</p>
+    <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appointment/instructions · Hibiclens.</p>
+    <h4>Emergent / same-day</h4><p>Confirm attending, exact procedure name, laterality, booking classification, ICU postop destination, anesthesia/special equipment, OR front desk, Teams Booking chat, whiteboard, family update.</p>
+  </div></details>
 </section>
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <div class="banner">Paste your list below — one patient per line; <b>indent continuation lines with Tab</b> so multi-line entries stay one patient. I'll split, tag, and sort them for rounding. <b>De-identify first: bed + initials only.</b></div>
+  <div class="banner">Paste your list below — one patient per line; <b>indent continuation lines with Tab</b> so multi-line entries stay one patient. I'll split, tag, and sort them for rounding. <b>De-identify first: bed + first three letters of last name</b> (Miyagishima, Danielle → Miy).</div>
   <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type anything here… one patient per line"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
     <button class="btn sec sm" onclick="purgeRounds()">🗑 Purge list</button>
-    <button class="btn sec sm" onclick="openTC(null)">📱 Text consult</button>
   </div>
   <div class="bulkexport">
     <span style="font-size:12px;color:var(--mut)">Export whole list →</span>
@@ -404,7 +431,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
     <span class="sortbtns" id="rsort" style="margin-left:auto">
       <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
-      <button data-m="initials" onclick="setRoundSort('initials')">Sort: initials</button>
+      <button data-m="initials" onclick="setRoundSort('initials')">Sort: last 3</button>
     </span>
   </div>
   <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
@@ -651,6 +678,10 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 
 <h3 class="secgroup">2026 Survival guide</h3>
 
+<details class="ref"><summary>📄 Source bootcamp text</summary><div class="rb">
+<p>The raw source file is kept in this repo as <b>nsgy_bootcamp.txt</b> so future updates can be made against the original bootcamp document and then folded into the structured app sections.</p>
+</div></details>
+
 <details class="ref"><summary>📇 Phone directory (searchable)</summary><div class="rb">
 <input class="refsearch" id="phoneq" placeholder="Search… e.g. MRI, NCCU, blood bank" oninput="renderPhones()">
 <div class="pre" id="phonelist"></div>
@@ -784,7 +815,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld"><label>Type</label><div class="chips" id="typechips"></div>
       <div class="selhint" id="typereminder" style="display:none"></div>
     </div>
-    <div class="fld" id="fld_loc"><label>Location (bed + initials)</label><input type="text" id="f_loc" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_loc"><label>Location (bed + first three letters of last name)</label><input type="text" id="f_loc" placeholder="Type anything…"></div>
     <div class="fld" id="fld_call" style="display:none"><label>Who to call</label>
       <div style="display:flex;gap:8px">
         <input type="text" id="f_fname" placeholder="First name" style="flex:1">
@@ -795,6 +826,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="Type anything…" autocomplete="off">
       <div class="sugg" id="sugg"></div>
       <div id="prockit"></div>
+      <div id="smarthints"></div>
     </div>
     <div class="fld" id="fld_E"><div class="axhead"><label>E — urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
@@ -860,13 +892,14 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
       <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
     </details>
-    <div class="fld" id="fld_snooze"><label>⏰ Snooze until (hidden from board, resurfaces + on Calendar)</label>
+    <div class="fld" id="fld_snooze"><label>⏰ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
       <div class="qbtns">
-        <button type="button" onclick="setSnooze(1)">+1 day</button><button type="button" onclick="setSnooze(3)">+3 days</button>
-        <button type="button" onclick="setSnooze(7)">+1 wk</button><button type="button" onclick="setSnooze(30)">+1 mo</button>
+        <button type="button" onclick="setSnoozeMinutes(15)">+15 min</button><button type="button" onclick="setSnoozeMinutes(30)">+30 min</button>
+        <button type="button" onclick="setSnoozeMinutes(60)">+1 h</button><button type="button" onclick="setSnoozeMinutes(120)">+2 h</button>
+        <button type="button" onclick="setSnooze(1)">Tomorrow</button><button type="button" onclick="setSnooze(7)">+1 wk</button>
         <button type="button" onclick="setSnooze(0)">Clear</button>
       </div>
-      <input type="date" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
+      <input type="datetime-local" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <details class="moredet"><summary>▾ More details</summary>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
@@ -972,7 +1005,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <div class="overlay" id="ovSync">
   <div class="sheet">
     <h2>⇅ Sync between your devices</h2>
-    <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Your board syncs through a <b>private secret Gist</b> in your own GitHub account. The token is stored only on this device. Paste the same token on each device — the app finds or creates the Gist automatically. Keep using bed/initials only.</p>
+    <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Your board syncs through a <b>private secret Gist</b> in your own GitHub account. The token is stored only on this device. Paste the same token on each device — the app finds or creates the Gist automatically. Keep using bed + first three last-name letters only.</p>
     <div class="banner" id="syncstat">Not connected.</div>
     <div class="fld"><label>GitHub token (classic, "gist" scope only)</label>
       <input type="password" id="ghtok" placeholder="ghp_…" autocomplete="off">
@@ -1093,7 +1126,16 @@ const SUGG=[
   action:"Get MRI wwo, discuss dex with senior, clarify admission vs clinic",trig:"immediately for decline or new deficit"},
  {re:/stroke|\blvo\b|infarct|ischemi|\bbcvi\b/i,n:"Ischemia / vascular",s:{E:2,O:1,W:2,mods:["VASC"]},
   look:["Time-window-dependent ischemia / LVO = E3 vascular override","Malignant MCA infarct → raise hemicraniectomy discussion early","BCVI with evolving ischemia = E3","Document last-known-well; coordinate with vascular neurology"],
-  action:"Confirm last-known-well + imaging; call vascular neurology/senior",trig:"immediately for decline or herniation signs"}
+  action:"Confirm last-known-well + imaging; call vascular neurology/senior",trig:"immediately for decline or herniation signs"},
+ {re:/\bsah\b|subarachnoid|aneurysm|hunt.?hess|fisher/i,n:"SAH scoring reminder",s:{mods:["VASC"]},
+  look:["Use Hunt-Hess / modified Fisher when presenting aneurysmal SAH consults","Document hydrocephalus, IVH, aneurysm secured vs unsecured, BP goal, nimodipine, TCD plan","Score-driven labels help sign-out and staffing but do not replace E/O/W urgency"],
+  action:"Add Hunt-Hess + modified Fisher score to the consult presentation",trig:"decline, rebleed concern, hydrocephalus, or pupil change"},
+ {re:/admit|admission|we will admit|plan.*admit/i,n:"Admission documentation reminder",s:{mods:["DISPO"]},
+  look:["If the plan is to admit, create an H&P note task and make orders operational","Include level of care, neurochecks, BP/Na goals, diet/activity, DVT ppx, imaging/device/wound plan, and escalation criteria"],
+  action:"Add H&P note + admission orders checklist",trig:"ownership or bed delay"},
+ {re:/\bor\b|book(ed|ing)?|pre-?op|surgery|operative/i,n:"OR documentation reminder",s:{mods:["OR"]},
+  look:["If going to OR, add rH&P/H&P, pre-op note, consent, case request, labs, NPO, DVT ppx hold, postop destination","Call OR front desk for emergent/same-day/next-day cases and message Teams Booking chat"],
+  action:"Add rH&P + pre-op note + OR booking checklist",trig:"case timing changes or missing consent/labs"}
 ];
 // ---------- event types ----------
 const TYPES={
@@ -1117,6 +1159,9 @@ const TYPES={
  CONSENT:{i:"✍️",l:"Consent",probL:"Procedure — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Copy the EXACT booking name + laterality · list all plausible attendings · date + time at every signature · phone consent needs a witness · no abbreviations, never cross out · LEAVE the consent tab when done."},
+ BOOK:{i:"🏨",l:"Booking",probL:"OR booking — patient / procedure",probPh:"R crani for tumor · ED12",dlL:"Book by",
+  presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
+  rem:"OR booking to-do: exact procedure name + laterality, attending, consent, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, DVT ppx held, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
  DC:{i:"🏠",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
@@ -1124,7 +1169,7 @@ const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_state","fld_action","fl
 // ---------- procedure library (supplies + step chains, 2026 survival guide) ----------
 const PROC_LIB=[
  {re:/\bevd\b(?!.*flush)|ventriculostomy/i,name:"EVD (adult)",dvt:true,
-  supplies:["Cranial access kit","EVD tower","Sterile flushes","Razor + blade","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
+  supplies:["Cranial access kit","EVD tower","Sterile flushes","Razor + blade","Chucks","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
  {re:/evd flush/i,name:"EVD flush",
   supplies:["Alcohol pad","Sterile flush","Sterile gloves","Clave if no access port (post-OR EVD)"],
@@ -1133,40 +1178,40 @@ const PROC_LIB=[
   supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
   steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Significant event note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
-  supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
+  supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Chucks","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
   steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Note + update handoff + log"]},
  {re:/shunt tap/i,name:"Shunt tap",dvt:true,
-  supplies:["Chloraprep ×3 (iodine at WICU — clean off after)","Butterfly needle (scalp)","18g needle (CSF tube)","Syringe (10cc adult, MAX 5cc WICU)","CSF tube (empty, no preservative)","Sterile gloves","Labels printed by nurse"],
+  supplies:["Chloraprep ×3 (iodine at WICU — clean off after)","Butterfly needle (scalp)","18g needle (CSF tube)","Syringe (10cc adult, MAX 5cc WICU)","CSF tube (empty, no preservative)","Sterile gloves","Chucks","Labels printed by nurse"],
   steps:["Gather supplies + ask nurse to print labels","Tap","Send CSF labeled (initials/date/time) in biohazard bag","Log procedure"]},
  {re:/shuntogram/i,name:"Shuntogram",dvt:true,
-  supplies:["Empty syringe","Sterile flush","3-way stopcock","Sterile gloves","Iodine or chloraprep ×3","Butterfly needle"],
+  supplies:["Empty syringe","Sterile flush","3-way stopcock","Sterile gloves","Iodine or chloraprep ×3","Butterfly needle","Chucks"],
   steps:["Prep head + shunt site","Assemble syringe + flush + butterfly on stopcock","ASPIRATE — confirm CSF back before anything","Inject dye, then 1cc saline","Log the procedure"]},
  {re:/fontanelle tap/i,name:"Fontanelle tap",dvt:true,
   supplies:["Orange needle cap 25","CSF tube","Sterile gloves ×2","Chloraprep ×3 or iodine","Povidone ×2","Chucks","Laceration tray","Butterfly needles 23–25 ×3","Empty 10cc syringe","Spinal needle + IV extension tubing if big head (OR sub-sterile core)"],
   steps:["CONSENT (required for fontanelle taps, not reservoir/shunt/EVD taps)","Max 10cc/kg (0.01cc/g)","Tap","Send CSF + log"]},
  {re:/reservoir tap/i,name:"Reservoir tap",
-  supplies:["Chloraprep ×3","Butterfly needle","CSF tube","Sterile gloves","Syringe"],
+  supplies:["Chloraprep ×3","Butterfly needle","CSF tube","Sterile gloves","Syringe","Chucks"],
   steps:["No consent needed","Tap","Send CSF labeled + log"]},
  {re:/subcutaneous|subgaleal|fluid collection tap/i,name:"Subcutaneous fluid tap",
-  supplies:["23g or butterfly needle","CSF tubes ×2","Needles ×2","10cc syringes ×2","Gloves","Chlorhexidine","Ultrasound machine","Culture swab","Marking pen"],
+  supplies:["23g or butterfly needle","CSF tubes ×2","Needles ×2","10cc syringes ×2","Gloves","Chlorhexidine","Ultrasound machine","Culture swab","Marking pen","Chucks"],
   steps:["Order 'wound cx'","Find collection on ultrasound","Sterilize + sterile gloves","Aspirate like drawing CSF","Send + document"]},
  {re:/lumbar puncture|\blp\b/i,name:"Lumbar puncture",dvt:true,
-  supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
+  supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile popsicle stick","Chucks","Tape","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Note + update handoff + log"]},
  {re:/lumbar drain|\bld\b(?! ?kit)/i,name:"Lumbar drain",dvt:true,
-  supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Chloraprep ×3, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon"],
+  supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Chloroprep ×3, sterile popsicle stick, chucks, tape, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Note + update handoff + log"]},
  {re:/\bhalo\b/i,name:"Halo",
   supplies:["Needles/syringes/marker/chlorapreps","Torque wrench (BB6 halo cart)","Caliper + crown + vest + pins (brace shop — text Tom)","Weights (OR)","Traction bed (call early / steal from ED)"],
   steps:["Consent (pin infxn, skull fx, CN6, failed reduction, progression) + text brace shop","Order bacitracin + lidocaine + valium q2 + dilaudid","Gather supplies + traction bed","Time-out","Apply vest → crown (pins: 2/3 eyebrow + mastoids; adults 8 lb head / 35 lb vest)","Traction: baseline XR → add weight → exam → re-XR","Re-torque 15 min / 24 h / 48 h / wk 1 / q3–4 wk","Note + handoff + log"]},
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
-  supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
  {re:/(remove|pull|take out).{0,20}(prolene|nylon|suture|stitch|staple)|suture removal|staple removal/i,name:"Suture / staple removal",
   supplies:["Suture removal kit or staple remover","Sterile gloves","Steri strips","Gauze + tegaderm"],
   steps:["Verify POD # / wound healed (typically ≥10–14 d)","Remove sutures/staples","Steri strips","Document + update handoff"]},
  {re:/\bseps\b/i,name:"SEPS",dvt:true,
-  supplies:["SEPS kit","Cranial access kit","Chloraprep ×3","Sterile gown/gloves/drapes","Suction setup","Nylon + monocryl"],
+  supplies:["SEPS kit","Cranial access kit","Chloraprep ×3","Chucks","Sterile gown/gloves/drapes","Suction setup","Nylon + monocryl"],
   steps:["Consent + laterality","Coags + DVT ppx held","Order meds + post CTH","Time-out + laterality again","Do proc","Note + handoff + log"]}
 ];
 function procMatch(t){if(!t)return null;return PROC_LIB.find(p=>p.re.test(t))||null}
@@ -1258,6 +1303,7 @@ function applyProcKit(mode){
 }
 function renderFlags(){
   renderProcKit();
+  renderSmartHints();
   const el=document.getElementById("flags");
   if(F&&!["CONSULT","POC","PROC"].includes(F.type)){el.innerHTML="";curFlags=[];return}
   const txt=["f_prob","f_state","f_action","f_note"].map(id=>document.getElementById(id).value||"").join(" • ");
@@ -1274,6 +1320,42 @@ function applyFlag(i){const f=curFlags[i];if(!f)return;F._manual=true;
   if(f.apply.W!==undefined&&F.W<f.apply.W)F.W=f.apply.W;
   (f.apply.mods||[]).forEach(m=>{if(!F.mods.includes(m))F.mods.push(m)});
   buildSelectors();buildMods();syncWWarn();renderFlags();
+}
+function consentAttendingsFor(txt){
+  if(/tssh|transsphenoidal|pituitary|sellar|skull base/i.test(txt))return "TSSH/skull base: Prak + Ritu · Christine + Basit · Curt + Duff";
+  if(/spine|fusion|lami|acdf|tlif|xlif|alif|corpect|scoliosis|deformity/i.test(txt))return "Spine: Patti · Tim · Toki · Sampath · Williamson + fellows";
+  if(/vascular|aneurysm|sah|avm|dural avf|carotid|tcar|cea|bypass/i.test(txt))return "Vascular: Curt · Rad · Kriszy";
+  if(/tumor|mass|glioma|meningioma|crani|subdural|ich|evacuation|hemicrani|cranial/i.test(txt))return "Cranial/tumor/trauma: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak";
+  if(/alif|abdomen|laparoscopic|exposure/i.test(txt))return "Exposure: ALIF Soden/Luhrs; lap approach = check SICU/TICU/Vascular/GS attending on call";
+  return "Other: confirm attending/service list before signing";
+}
+function addUniqueLines(fieldId,lines){
+  const el=document.getElementById(fieldId);if(!el)return;
+  const cur=el.value.split("\n").map(s=>s.trim()).filter(Boolean);
+  lines.forEach(l=>{if(l&&!cur.some(x=>x.toLowerCase()===l.toLowerCase()))cur.push(l)});
+  el.value=cur.join("\n");
+}
+function addConsentAttendings(){
+  const txt=[document.getElementById("f_prob").value,document.getElementById("f_note").value].join(" ");
+  addUniqueLines("f_tasks",["Attending(s) on consent: "+consentAttendingsFor(txt)]);
+  showToast("Consent attending suggestion added");
+}
+function addAdmissionChecklist(){
+  addUniqueLines("f_tasks",["H&P note","Admission orders: level of care + neurochecks + BP/Na goals","Diet/activity + DVT ppx + antithrombotic plan","Imaging/device/wound plan + escalation criteria"]);
+}
+function addORChecklist(){
+  addUniqueLines("f_tasks",["rH&P / H&P note","Pre-op note","Consent with exact booking name + laterality","Case request / OR booking","Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed"]);
+}
+function renderSmartHints(){
+  const el=document.getElementById("smarthints");if(!el)return;
+  if(!F){el.innerHTML="";return}
+  const txt=["f_prob","f_state","f_action","f_note"].map(id=>(document.getElementById(id)||{}).value||"").join(" ");
+  const hints=[];
+  if(F.type==="CONSENT")hints.push('<div class="smartbox"><b>Suggested attending list:</b> '+esc(consentAttendingsFor(txt))+'<div class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add to checklist</button></div></div>');
+  if(F.type==="PCON")hints.push('<div class="smartbox"><b>Quick proc presets:</b> shunt tap · shuntogram · shunt dial · pump interrogation<div class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></div></div>');
+  if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push('<div class="smartbox"><b>Admit plan detected.</b> Add H&P and admission-order reminders.<div class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P checklist</button></div></div>');
+  if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push('<div class="smartbox"><b>OR/pre-op plan detected.</b> Add rH&P, pre-op note, consent, and booking reminders.<div class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></div></div>');
+  el.innerHTML=hints.join("");
 }
 // ---------- measurement parsing & threshold alerts ----------
 function parseMeas(txt){
@@ -1392,7 +1474,7 @@ function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
 }
 function useSuggAction(i){const s=curSugg[i];if(s&&s.action)document.getElementById("f_action").value=s.action}
 function useSuggTrig(i){const s=curSugg[i];if(s&&s.trig)document.getElementById("f_trig").value=s.trig}
-const CLOSE_ITEMS=["Critical orders entered","Receiving team understands the plan","Timed tasks have owners or alarms","Documentation supports cross-cover","Family communication complete or assigned","A reassessment trigger exists","Patient has reached the next safe state"];
+const CLOSE_ITEMS=["Primary team assigned","All documentation has been completed and signed","If signing off, CoC updated","If surgical patient, added to wound check list"];
 const SC_QS=["How many active consults do I have?","Can I state each patient's E/O classification?","Can I name the next action for each patient?","Does every time-dependent task have an owner and deadline?","Is anyone W3 without an explicit reassessment plan?","Is anyone still labeled E2 or O2 after the reason has resolved?","Am I holding a task that should be delegated?","Is any patient waiting only because ownership is unclear?"];
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
@@ -1403,6 +1485,7 @@ const BLOCKS=[
 ];
 // ---------- state ----------
 let S=load();
+let globalSearch="";
 function migrate(d){
   (d.consults||[]).forEach(c=>{
     if(!Array.isArray(c.tasks))c.tasks=[];
@@ -1415,11 +1498,26 @@ let lastSaved="";
 function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);schedulePush()}}
 function touch(c){if(c)c.updatedAt=Date.now()}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function searchBlob(x){return Object.keys(x||{}).map(k=>{
+  const v=x[k];return typeof v==="string"?v:(Array.isArray(v)?v.map(searchBlob).join(" "):"");
+}).join(" ").toLowerCase()}
+function matchSearch(x){const q=globalSearch.trim().toLowerCase();return !q||searchBlob(x).includes(q)}
+function renderAll(){render();renderRounds();renderPhones();renderBookings();filterRefs()}
+function filterRefs(){
+  const q=globalSearch.trim().toLowerCase();
+  document.querySelectorAll("#view-ref details.ref,#view-booking details.ref").forEach(d=>{
+    if(!q){d.style.display="";d.classList.remove("searchhit");return}
+    const hit=d.textContent.toLowerCase().includes(q);
+    d.style.display=hit?"":"none";d.classList.toggle("searchhit",hit);
+    if(hit)d.open=true;
+  });
+}
 // ---------- nav ----------
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
   document.querySelectorAll("section.view").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");document.getElementById("view-"+b.dataset.view).classList.add("active");
+  filterRefs();
   window.scrollTo(0,0);
 }));
 function goCheck(){document.querySelector('nav button[data-view="check"]').click()}
@@ -1468,6 +1566,7 @@ const TYPE_WF={
  PCON:[["done","Done"],["doc","Documented"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
+ BOOK:[["name","Name/laterality"],["consent","Consent"],["docs","H&P/rH&P + pre-op"],["labs","Labs/NPO/DVT"],["or","OR notified"],["__close","Done"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
@@ -1592,10 +1691,10 @@ let snoozeFilter="";
 function renderSnoozed(){
   const el=document.getElementById("snoozecards");if(!el)return;
   const q=snoozeFilter.toLowerCase();
-  const list=S.consults.filter(c=>!c.closed&&isSnoozed(c))
+  const list=S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c))
     .filter(c=>!q||[c.loc,c.prob,c.note,c.action].filter(Boolean).join(" ").toLowerCase().includes(q))
     .sort((a,b)=>Date.parse(a.snoozeISO)-Date.parse(b.snoozeISO));
-  document.getElementById("snoozesum").textContent="⏰ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)).length+")";
+  document.getElementById("snoozesum").textContent="⏰ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c)).length+")";
   el.innerHTML=list.map(c=>{
     const d=new Date(c.snoozeISO);
     return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
@@ -1607,7 +1706,7 @@ function renderSnoozed(){
 }
 function renderCal(){
   const el=document.getElementById("calcards");if(!el)return;
-  const items=S.consults.filter(c=>!c.closed&&(c.snoozeISO||c.deadlineISO));
+  const items=S.consults.filter(c=>!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
   const byDay={};
   items.forEach(c=>{
     const iso=isSnoozed(c)?c.snoozeISO:(c.deadlineISO||c.snoozeISO);
@@ -1631,8 +1730,8 @@ function renderCal(){
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ⏰ snooze date and it shows up here.</div>';
 }
 function render(){
-  const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)).sort(sortCs);
-  const closed=S.consults.filter(c=>c.closed);
+  const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c)).sort(sortCs);
+  const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
     '<span class="hpill e3">E3 '+counts[3]+'</span><span class="hpill e2">E2 '+counts[2]+'</span><span class="hpill e1">E1 '+counts[1]+'</span><span class="hpill e0">E0 '+counts[0]+'</span>';
@@ -1825,6 +1924,15 @@ function openForm(id,reassess,ptype){
   F._isNew=!id;
   if(!F.type)F.type="CONSULT";
   if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART")F.E=0;}
+  if(!id&&F.type==="BOOK"){
+    F.tasks=[
+      {t:"Exact procedure name + laterality confirmed with attending",done:false},
+      {t:"Case request entered + OR front desk / Teams Booking notified if same-day or next-day",done:false},
+      {t:"Consent complete with suggested attendings",done:false},
+      {t:"H&P/rH&P note + pre-op note",done:false},
+      {t:"Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed",done:false}
+    ];
+  }
   const tl=TYPES[F.type]?TYPES[F.type].l:"Consult";
   document.getElementById("formtitle").textContent=id?(reassess?"Reassess "+tl.toLowerCase():"Edit "+tl.toLowerCase()):"New "+tl.toLowerCase();
   document.getElementById("reassessBanner").style.display=reassess?"block":"none";
@@ -1832,7 +1940,7 @@ function openForm(id,reassess,ptype){
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
-  document.getElementById("f_snooze").value=F.snoozeISO?F.snoozeISO.slice(0,10):"";
+  document.getElementById("f_snooze").value=F.snoozeISO?toLocalInput(F.snoozeISO):"";
   ftcLoad(F);
   buildTypeChips();buildSelectors();buildDomains();buildMods();syncWWarn();renderSugg();renderFlags();
   document.getElementById("ov").classList.add("show");window.scrollTo(0,0);
@@ -1872,7 +1980,12 @@ function setSnooze(days){
   const el=document.getElementById("f_snooze");
   if(!days){el.value="";return}
   const d=new Date(Date.now()+days*86400000);const p=n=>String(n).padStart(2,"0");
-  el.value=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+  d.setHours(6,0,0,0);
+  el.value=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes());
+}
+function setSnoozeMinutes(min){
+  const el=document.getElementById("f_snooze");
+  el.value=toLocalInput(new Date(Date.now()+min*60000).toISOString());
 }
 function unsnooze(id){const c=S.consults.find(x=>x.id===id);if(c){c.snoozeISO=null;touch(c);render();showToast("Back on the board")}}
 let axisDetail=false;
@@ -1930,7 +2043,7 @@ function saveForm(){
   const dv=document.getElementById("f_dl").value;
   F.deadlineISO=dv?new Date(dv).toISOString():null;
   const sv=document.getElementById("f_snooze").value;
-  F.snoozeISO=sv?sv+"T06:00:00":null;
+  F.snoozeISO=sv?new Date(sv).toISOString():null;
   const tcSnap=ftcSnapshot();
   F.tc=FTC.some(k=>tcSnap[k])?tcSnap:null;
   if(!F.loc&&!F.prob){alert("Give it at least a location or problem.");return}
@@ -2017,10 +2130,20 @@ function roundTags(t){
 }
 function roundLabel(raw){
   const m=raw.match(/\b((?:ED|BB|NCCU|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J)\s?-?\d+[A-Za-z]?(?:-\d+)?|\d[AB]-?\d*)\b/i);
-  if(m)return m[1].toUpperCase().replace(/\s+/g,"");
+  const ab=last3FromText(raw);
+  if(m)return m[1].toUpperCase().replace(/\s+/g,"")+(ab?" "+ab:"");
+  if(ab)return ab;
   const first=raw.trim().split(/\s+/)[0];
   return first.length<=10?first:raw.trim().slice(0,12);
 }
+function last3FromText(raw){
+  const s=String(raw||"");
+  const par=s.match(/\(([A-Za-z]{3})\)/);if(par)return cap3(par[1]);
+  const comma=s.match(/\b([A-Z][A-Za-z'’-]{2,})\s*,\s*[A-Z][A-Za-z'’-]{1,}/);if(comma)return cap3(comma[1]);
+  const label=s.match(/\b(?:patient|pt)\s+([A-Z][A-Za-z'’-]{2,})\b/i);if(label)return cap3(label[1]);
+  return "";
+}
+function cap3(s){return String(s||"").replace(/[^A-Za-z]/g,"").slice(0,3).replace(/^./,c=>c.toUpperCase())}
 // One patient per TAB block: a tab-indented (or 4+ space) line belongs to the
 // patient above it. Indented lines become that patient's sequential to-do chain.
 function parseBlocks(txt){
@@ -2035,12 +2158,11 @@ function parseBlocks(txt){
   return out;
 }
 function splitPatients(txt){return parseBlocks(txt).map(b=>[b.main].concat(b.subs).join(" "))}
-// room + initials identity so the same patient never lands twice
+// room + last-three identity so the same patient never lands twice
 function roundIdent(label,raw){
-  const room=String(label||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
-  const p=String(raw||"").match(/\(([A-Za-z*]{1,5})\)/);
-  const ini=(p?p[1]:"").replace(/\*/g,"").toUpperCase();
-  return room+"|"+ini;
+  const room=(String(label||"").match(/^[A-Z0-9-]+/)||[""])[0].toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const ab=(last3FromText(raw)||last3FromText(label)||"").toUpperCase();
+  return room+"|"+ab;
 }
 function findRoundLike(label,raw){
   const k=roundIdent(label,raw);
@@ -2048,7 +2170,7 @@ function findRoundLike(label,raw){
   return (S.rounds||[]).find(r=>{
     const rk=roundIdent(r.label,r.raw);
     if(rk===k)return true;
-    return room&&rk.split("|")[0]===room;   // same room, initials missing on one side
+    return room&&rk.split("|")[0]===room;   // same room, abbreviation missing on one side
   })||null;
 }
 function parseRounds(){
@@ -2060,7 +2182,7 @@ function parseRounds(){
     const label=roundLabel(b.main);
     const steps=b.subs.map(t=>({t:t,done:false}));
     const ex=findRoundLike(label,b.main);
-    if(ex){                                    // same room + initials → merge, don't duplicate
+    if(ex){                                    // same room + last-three label → merge, don't duplicate
       if(b.main&&!ex.raw.includes(b.main))ex.raw=(ex.raw+" · "+b.main).trim();
       ex.steps=ex.steps||[];
       steps.forEach(s=>{if(!ex.steps.some(x=>x.t===s.t))ex.steps.push(s)});
@@ -2075,26 +2197,39 @@ function parseRounds(){
   if(merged)showToast("Merged "+merged+" into existing patient"+(merged>1?"s":""));
 }
 // sequential to-dos on a rounds patient
+let openRStepTimer=null;
+function rStepTimerBtn(r,i,s){
+  const dl=s.dueISO?fmtDL(s.dueISO):null;
+  return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togRStepTimer(\''+r.id+'\','+i+')">'+(dl?'⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−"):'⏱')+'</button>';
+}
+function rStepTimerRow(r,i){
+  if(openRStepTimer!==r.id+":"+i)return "";
+  return '<div class="steptimer">'+[["+15m",15],["+30m",30],["+1h",60],["+2h",120],["+4h",240]].map(([l,m])=>'<button onclick="setRStepDL(\''+r.id+'\','+i+','+m+')">'+l+'</button>').join("")+'<button onclick="setRStepDL(\''+r.id+'\','+i+',0)">✕ clear</button></div>';
+}
 function rStepsHtml(r){
   const st=r.steps||[];if(!st.length)return "";
   const firstOpen=st.findIndex(s=>!s.done);
   return '<div class="rsteps">'+st.map((s,i)=>{
     if(s.done)return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
-    if(i===firstOpen)return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span></div>';
-    return '<div class="step locked">○ <span class="stxt">'+esc(s.t)+'</span></div>';
+    if(i===firstOpen)return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
+    return '<div class="step locked">○ <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
 function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;r.updatedAt=Date.now();renderRounds();save();
   const nx=(r.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
 function rStepUndo(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;r.updatedAt=Date.now();renderRounds();save()}}
+function togRStepTimer(id,i){const k=id+":"+i;openRStepTimer=(openRStepTimer===k)?null:k;renderRounds()}
+function setRStepDL(id,i,min){
+  const r=S.rounds.find(x=>x.id===id);if(!r||!r.steps||!r.steps[i])return;
+  r.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
+  openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
+}
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function initialsOf(r){
-  // patient initials for sorting: prefer "(SS)"-style initials in the raw text,
-  // then multi-letter tokens in the label that aren't unit prefixes
-  const p=String(r.raw||"").match(/\(([A-Za-z*]{1,5})\)/);
-  if(p)return p[1].replace(/\*/g,"").toUpperCase();
+  const ab=last3FromText(r.raw)||last3FromText(r.label);
+  if(ab)return ab.toUpperCase();
   const m=String(r.label||"").match(/[A-Za-z]{2,4}/g)||[];
   const alpha=m.filter(x=>!/^(ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|ISC|MICW|MICS)$/i.test(x));
   if(alpha.length)return alpha.join("").toUpperCase();
@@ -2109,7 +2244,7 @@ function renderRounds(){
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
     :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
-  const list=S.rounds.slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
+  const list=S.rounds.filter(matchSearch).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
   el.innerHTML=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
       return '<div class="card" style="border-left-color:var(--e1)">'+
@@ -2174,7 +2309,19 @@ function delRound(id){
 function restoreRound(r){if(S.tomb)delete S.tomb[r.id];if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
 function scrubRemove(i){SCRUB.splice(i,1);renderScrub()}
 function scrubClear(){SCRUB=[];SCRUB.unmatched=[];document.getElementById("scrubout").innerHTML="";document.getElementById("scrubbox").value=""}
-function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){r.plan=el.value.trim();r.updatedAt=Date.now();renderRounds();save()}}
+function todoLinesFromPlan(t){
+  return String(t||"").split(/\n|;|·/).map(s=>s.trim().replace(/^[*•\-☐✓]\s*/,"")).filter(Boolean);
+}
+function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
+  const lines=todoLinesFromPlan(el.value);
+  r.steps=r.steps||[];
+  const added=[];
+  lines.forEach(t=>{if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});added.push(t)}});
+  r.plan=lines.join(" · ");
+  el.value="";
+  r.updatedAt=Date.now();renderRounds();save();
+  showToast(added.length?("Added "+added.length+" to-do"+(added.length>1?"s":"")):"No new to-dos",added.length?()=>{const rr=S.rounds.find(x=>x.id===id);if(rr){rr.steps=(rr.steps||[]).filter(s=>!added.includes(s.t));rr.updatedAt=Date.now();renderRounds();save();}}:null);
+}}
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
   document.querySelector('nav button[data-view="board"]').click();
@@ -2511,12 +2658,35 @@ function extractCallName(t){
 }
 function findRoundsMatch(t,bed){
   const T=t.toUpperCase();
+  const ab=last3FromText(t).toUpperCase();
   return (S.rounds||[]).find(r=>{
     const L=String(r.label||"").toUpperCase();
     if(!L)return false;
     if(bed&&(L.includes(bed)||bed.includes(L)))return true;
+    if(ab&&L.includes(ab))return true;
     return L.length>=3&&T.includes(L);
   });
+}
+function phoneSuggestFor(t){
+  const keys=[];
+  if(/\bmri\b/i.test(t))keys.push("MRI — Outpatient 44881 · Inpatient 48168 · Read 44267 · sedation adult 44702 · Neurorads 45828");
+  if(/\bct\b|cth|cta|ctv/i.test(t))keys.push("CT — ED 46159 · Main 44802 · Read 44314 · 5-10p 44123 · after 10p 42727");
+  if(/\bor\b|booking|book/i.test(t))keys.push("OR — Front desk 45657 · Booking 48375/45119");
+  return keys;
+}
+function capRoundsAdd(text,bed){
+  const ab=last3FromText(text);
+  const label=(bed||"")+(ab?(" "+ab):"");
+  const raw=(label?label+" — ":"")+text;
+  const ex=findRoundLike(label,raw);
+  if(ex){
+    todoLinesFromPlan(text).forEach(t=>{ex.steps=ex.steps||[];if(!ex.steps.some(s=>s.t.toLowerCase()===t.toLowerCase()))ex.steps.push({t:t,done:false})});
+    ex.updatedAt=Date.now();
+  }else{
+    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),created:Date.now(),updatedAt:Date.now()});
+  }
+  document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
+  renderRounds();save();showToast("Added to rounds");
 }
 function capConsult(text,bed){
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
@@ -2554,7 +2724,7 @@ function renderCapture(){
   const chartCue=/chart[- ]?check/i.test(text);
   const pocCue=/\bpoc\b|post-?op check/i.test(text);
   const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
-  const pconCue=/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program))\b/i.test(text);
+  const pconCue=/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|tap)|shuntogram)\b/i.test(text);
   const kit=procMatch(text);
   const verbStart=/^(remove|pull|place|replace|change|flush|tap|drain|suture|stitch|staple|inject|do|perform|take out|d\/?c)\b/i.test(text);
   const procCue=!pconCue&&(!!kit||verbStart||/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text));
@@ -2574,6 +2744,8 @@ function renderCapture(){
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
     add("primary","📞","Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
+    phoneSuggestFor(text).forEach(s=>add("","☎",s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
+    if(/\bmri\b/i.test(text))add("rl","🛏","Add MRI task to rounds/boards",(bed||last3FromText(text))?("uses "+[bed,last3FromText(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capRoundsAdd(text,bed));
     if(consentCue)add("","✍️","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
   }else if(isQ){
     add("oe primary","🔬","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
@@ -2661,7 +2833,7 @@ async function doSync(auto){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
-    render();renderBlocks();renderRounds();
+    renderAll();renderBlocks();
     setDot("● synced","var(--ok)");
   }catch(e){setDot("⚠ sync","var(--e3)")}
   finally{syncing=false}
@@ -2794,8 +2966,10 @@ Pedi sedation 46091 (same day 42035) · Pharmacy 44119,2 · Rad onc 43600 · Saf
 Surg1 thoracic 350-0693 · Surg2 CR 350-0732 · Surg3 surg onc 350-0950 · Trauma intern 350-2634 · Trauma senior 350-2727 · Vascular neurology 350-0795 · Vascular surgery 350-1006`;
 function renderPhones(){
   const el=document.getElementById("phonelist");if(!el)return;
-  const q=(document.getElementById("phoneq")?document.getElementById("phoneq").value:"").trim().toLowerCase();
-  const lines=PHONEBOOK.split("\n").filter(l=>!q||l.toLowerCase().includes(q));
+  const local=(document.getElementById("phoneq")?document.getElementById("phoneq").value:"").trim().toLowerCase();
+  const g=globalSearch.trim().toLowerCase();
+  const terms=[local,g].filter(Boolean).join(" ").split(/\s+/).filter(Boolean);
+  const lines=PHONEBOOK.split("\n").filter(l=>!terms.length||terms.every(q=>l.toLowerCase().includes(q)));
   el.textContent=lines.join("\n")||"No match.";
 }
 const BOOKING_TMPLS=[
@@ -2807,22 +2981,34 @@ const BOOKING_TMPLS=[
  "Right / left transcarotid artery revascularization with stent placement, possible carotid endarterectomy, neuromonitoring",
  "Right / left carotid endarterectomy, neuromonitoring, ultrasound, microscope",
  "Right craniectomy versus craniotomy for evacuation of subdural hematoma, possible placement of left versus right external ventricular drain, possible placement of left versus right bolt intracranial pressure monitor, all indicated procedures",
- "Placement of cervical halo system, possible traction, all indicated procedures"];
+ "Placement of cervical halo system, possible traction, all indicated procedures",
+ "Soft tissue reconstruction of back/cranial wound by Plastic Surgery",
+ "Revision of lumbar wound and repair of cerebrospinal fluid leak, possible soft tissue reconstruction of back wound by Plastic Surgery, all indicated procedures",
+ "Cervical/thoracic wound washout; CPT 22010",
+ "Lumbar/sacral wound washout; CPT 22015 or 10080",
+ "Left / right burr holes, possible craniotomy for evacuation of subdural hematoma",
+ "Cranial wound washout; CPT 10180, 13160",
+ "Left / right craniotomy for resection of brain mass, all indicated procedures, Brainlab, ultrasound, sonopet, microscope",
+ "Left / right craniotomy for arteriovenous malformation resection, microscope/Kinevo if possible, ultrasound, indocyanine green, Brainlab; CPT 61682/61686/61692 + 69990 + 61781",
+ "Left / right stent insertion carotid artery intracranial intravascular; CPT 61635",
+ "Left / right stent insertion extracranial intravascular; CPT 0075T",
+ "Left / right placement of Visualase fiber, laser ablation, brain"];
 function copyBooking(i){toClip(BOOKING_TMPLS[i]);showToast("Booking text copied")}
 function renderBookings(){
-  const el=document.getElementById("bookinglist");if(!el)return;
-  el.innerHTML=BOOKING_TMPLS.map((t,i)=>'<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+'</span><span class="ctime">⧉</span></div>').join("");
+  const q=globalSearch.trim().toLowerCase();
+  const html=BOOKING_TMPLS.map((t,i)=>[t,i]).filter(([t])=>!q||t.toLowerCase().includes(q)).map(([t,i])=>'<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+'</span><span class="ctime">⧉</span></div>').join("")||'<div class="empty" style="padding:12px">No booking template match.</div>';
+  ["bookinglist","bookinglist2"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html});
 }
 // ---------- init ----------
 let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
-render();renderBlocks();renderSC();renderRounds();renderPhones();renderBookings();
+renderAll();renderBlocks();renderSC();
 attachSwipe("cards","consult");attachSwipe("rcards","round");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 doSync(true);
-setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;render();renderBlocks()},30000);
+setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;renderAll();renderBlocks()},30000);
 </script>
 </body>
 </html>
