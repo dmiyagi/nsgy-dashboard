@@ -72,6 +72,7 @@ section.view.active{display:block}
 /* cards */
 .card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--e0);border-radius:var(--rad);padding:10px 12px;margin-bottom:10px}
 .card.E3{border-left-color:var(--e3)} .card.E2{border-left-color:var(--e2)} .card.E1{border-left-color:var(--e1)} .card.E0{border-left-color:var(--e0)}
+.card.reviewover{box-shadow:0 0 0 1px var(--e3),0 0 18px rgba(255,77,94,.22)}
 .badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:5px}
 .bg{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
 .bg.e3{background:var(--e3);color:#fff} .bg.e2{background:var(--e2);color:#231400} .bg.e1{background:var(--e1);color:#231d00} .bg.e0{background:#33415c;color:#cbd6e8}
@@ -488,9 +489,9 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <details class="ref"><summary>! E-axis & E3 override triggers</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
 <tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now.</td></tr>
-<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Active evaluation & decision generally within 1–6 h, often sooner.</td></tr>
-<tr><td><b>E1</b> Time-sensitive</td><td>Complete this shift or within ~6–24 h.</td></tr>
-<tr><td><b>E0</b> Routine</td><td>Can await scheduled review / later work block.</td></tr></table>
+<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 30 min.</td></tr>
+<tr><td><b>E1</b> Time-sensitive</td><td>Assess within 1 hour.</td></tr>
+<tr><td><b>E0</b> Routine</td><td>Can be grouped with the next consult, or assess within 1.5 hours.</td></tr></table>
 <h4>Intracranial E3 triggers</h4>
 <ul><li>Acute decline in consciousness · new anisocoria or nonreactive pupil · new posturing</li>
 <li>Rapidly progressive focal deficit · acute hydrocephalus with deterioration</li>
@@ -832,7 +833,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="selrow" id="selE"></div>
       <div class="selhint" id="hintE"></div>
       <details class="axisinfo"><summary>ℹ What counts as each E level / E3 triggers</summary><div class="ai">
-        <b>E3</b> — active or imminent neurologic/physiologic threat: interrupt, assess immediately, escalate now. · <b>E2</b> — meaningful risk of deterioration or loss of treatment window: evaluate and decide within 1–6 h, often sooner. · <b>E1</b> — complete this shift / ~6–24 h. · <b>E0</b> — can safely await scheduled review. <i>Windows are operational approximations, not disease definitions.</i><br>
+        <b>E3</b> — active or imminent neurologic/physiologic threat: interrupt, assess immediately, escalate now. · <b>E2</b> — assess within 30 min. · <b>E1</b> — assess within 1 hour. · <b>E0</b> — group with the next consult, or assess within 1.5 hours. <i>Windows are operational approximations, not disease definitions.</i><br>
         <span class="grp">Intracranial E3:</span> acute ↓consciousness · new anisocoria/nonreactive pupil · new posturing · rapidly progressive deficit · acute hydrocephalus with deterioration · EVD obstruction with decline or uncontrolled ICP · severe mass effect / impending herniation · posterior fossa lesion with brainstem compression or obstructive HCP · status epilepticus · sudden postop decline or postop hematoma with deterioration · uncontrolled ICH · severe edema with herniation syndrome.<br>
         <span class="grp">Spinal E3:</span> rapidly progressive weakness · new loss of ambulation · acute bowel/bladder dysfunction with compatible findings · retention + saddle symptoms or new weakness · acute cord/cauda equina compression · epidural hematoma or abscess with neurologic change · unstable injury with deficit · high cervical lesion with respiratory compromise.<br>
         <span class="grp">Vascular E3:</span> suspected aneurysmal rebleed · unsecured ruptured aneurysm · acute decline with a vascular lesion · time-window ischemia/LVO · expanding pseudoaneurysm or active extravasation · BCVI with evolving ischemia · post-procedure ICH.<br>
@@ -1036,15 +1037,15 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 "use strict";
 // ---------- data ----------
 const LS="nsgy_triage_v2";
-const E_DEFS=[["E0","Routine","await scheduled review"],["E1","Time-sensitive","this shift / 6–24 h"],["E2","Urgent","decide within 1–6 h"],["E3","Emergent","interrupt & escalate NOW"]];
+const E_DEFS=[["E0","Routine","group next consult / 1.5 h"],["E1","Time-sensitive","assess within 1 h"],["E2","Urgent","assess within 30 min"],["E3","Emergent","interrupt & escalate NOW"]];
 const O_DEFS=[["O0","Non-op now","observe / medical / other svc"],["O1","Potentially","depends on evolution/senior"],["O2","Likely","this shift/day"],["O3","Operative now","underway / decided"]];
 const W_DEFS=[["W0","Low risk",""],["W1","Serial exams","routine"],["W2","Evolving","explicit recheck time"],["W3","Silent risk","reassuring exam, abrupt-risk lesion"]];
 const C_DEFS=[["C1","Low","0–5"],["C2","Moderate","6–11"],["C3","High","12–23"],["C4","Extreme","24–33"]];
 const MODS=["W","NΔ","AC","VASC","OR","DEV","INF","BASE?","ANAT","IMG","CONSENT","DISPO","XFER","MULTI","OWN?"];
 const E_FULL=[
- "E0 Routine — can safely await scheduled review.",
- "E1 Time-sensitive — this shift, ~6–24 h.",
- "E2 Urgent — decide within 1–6 h.",
+ "E0 Routine — can be grouped with the next consult, or assess within 1.5 hours.",
+ "E1 Time-sensitive — assess within 1 hour.",
+ "E2 Urgent — assess within 30 minutes.",
  "E3 Emergent — assess immediately, escalate now."];
 const O_FULL=[
  "O0 Nonoperative for now (≠ low acuity).",
@@ -1502,8 +1503,10 @@ let globalSearch="";
 let startupCompactBoard=true;
 function migrate(d){
   (d.consults||[]).forEach(c=>{
+    if(!c.type)c.type="CONSULT";
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
+    if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
   return d;
 }
@@ -1541,6 +1544,29 @@ function cLevel(c){const t=domTotal(c);if(t!==null){return t<=5?1:t<=11?2:t<=23?
 function domTotal(c){if(!c.domains||!c.domains.some(d=>d!==null&&d!==undefined))return null;return c.domains.reduce((a,d)=>a+(d||0),0)}
 function cStr(c){const lv=cLevel(c);const t=domTotal(c);return lv?("C"+lv+(t!==null?" ("+t+")":"")):"C?"}
 function fmtDL(iso){if(!iso)return null;const ms=Date.parse(iso)-Date.now();const am=Math.abs(ms);const h=Math.floor(am/3600000),m=Math.round(am%3600000/60000);const str=(h?h+"h ":"")+m+"m";return ms<0?{cls:"over",txt:"OVERDUE "+str}:ms<15*60000?{cls:"soon",txt:"due in "+str}:{cls:"ok",txt:"due in "+str}}
+function reviewWindowMin(c){
+  if(!c||c.type!=="CONSULT")return null;
+  return c.E>=3?0:c.E===2?30:c.E===1?60:90;
+}
+function resetReviewClock(c,at){
+  const m=reviewWindowMin(c);if(m===null)return;
+  const t=at||Date.now();
+  c.reviewAt=t;
+  c.reviewDueISO=new Date(t+m*60000).toISOString();
+}
+function ensureReviewClock(c){
+  if(!c||c.type!=="CONSULT")return;
+  if(!c.reviewAt||!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
+}
+function reviewDL(c){
+  if(!c||c.type!=="CONSULT")return null;
+  ensureReviewClock(c);
+  return fmtDL(c.reviewDueISO);
+}
+function reviewOverdue(c){
+  const dl=reviewDL(c);
+  return !!(dl&&dl.cls==="over");
+}
 function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?new Date(c.deadlineISO).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"";
  if(c.type&&c.type!=="CONSULT")
   return "["+c.type+"] "+[c.loc,c.prob,((c.fname||"")+" "+(c.phone||"")).trim(),"E"+c.E,dl,c.owner,c.note].filter(Boolean).join(" | ");
@@ -1626,6 +1652,7 @@ function urgencyRank(c){
   else if(dl&&dl.cls==="over")r+=1000;
   else if(dl&&dl.cls==="soon")r+=500;
   if(needsConsent(c))r+=80;
+  if(reviewOverdue(c))r+=900;
   r+=consultWorkflowBoost(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
   if(missingEmergentOpDocs(c))r+=180;
@@ -1865,11 +1892,14 @@ function rowCard(c,dl,isTask){
   const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
+  const rdl=reviewDL(c);
+  const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
-  return '<div class="card crowwrap hastrash E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
+  return '<div class="card crowwrap hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
    '<div class="crow" onclick="rowTap(event,\''+c.id+'\')">'+
     (isChart?'<span class="bg t tc-CHART">▤</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+    (rOver?'<span class="bg warn">review</span>':"")+
     (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
     worryTag+
@@ -1877,7 +1907,7 @@ function rowCard(c,dl,isTask){
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
         :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
-    (dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+    (rdl&&!isChart?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
@@ -1918,6 +1948,7 @@ function undoLastDone(id){
 }
 function card(c){
   const dl=fmtDL(nextDue(c));
+  const rdl=reviewDL(c),rOver=reviewOverdue(c);
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
@@ -1943,13 +1974,13 @@ function card(c){
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
-  return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'">'+trashBtn(c.id,"consult")+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
+  return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'">'+trashBtn(c.id,"consult")+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
-   '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
+   '<div class="rowflex" style="margin:0">'+(rdl?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
@@ -2044,6 +2075,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
       if(miss.length){pinnedTopId=c.id;showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
+    if(c.type==="CONSULT"&&next&&["seen","staffedC","staffedA"].includes(k))resetReviewClock(c);
   }
   touch(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length){pinnedTopId=c.id;render();return}
@@ -2208,6 +2240,7 @@ function saveForm(){
   F.updatedAt=Date.now();
   const ix=S.consults.findIndex(x=>x.id===F.id);
   const prev=ix>=0?S.consults[ix]:null;
+  if(F.type==="CONSULT"&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
   closeForm();render();
@@ -2808,7 +2841,10 @@ function findRoundsMatch(t,bed){
   });
 }
 function last3Cue(t){
-  const m=String(t||"").match(/\b(?:for|pt|patient)\s+([A-Za-z]{3})\b/i);
+  const s=String(t||"");
+  const m=s.match(/\b(?:for|pt|patient|re|regarding|about)\s+([A-Za-z]{3})(?![A-Za-z])\b/i)||
+          s.match(/\b(?:mri|ct|cta|cth|ctv|scan|imaging)\s+(?:for\s+)?([A-Za-z]{3})(?![A-Za-z])\b/i)||
+          s.match(/\b([A-Za-z]{3})(?![A-Za-z])\s*$/);
   return m?cap3(m[1]):"";
 }
 function findPatientMatch(t,bed){
@@ -2849,7 +2885,7 @@ function phoneSuggestFor(t){
   return keys;
 }
 function capRoundsAdd(text,bed){
-  const ab=last3FromText(text);
+  const ab=last3FromText(text)||last3Cue(text);
   const label=(bed||"")+(ab?(" "+ab):"");
   const raw=(label?label+" — ":"")+text;
   const ex=findRoundLike(label,raw);
@@ -2861,6 +2897,22 @@ function capRoundsAdd(text,bed){
   }
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   renderRounds();save();showToast("Added to rounds");
+}
+function capPatientTask(text,bed,match){
+  match=match||findPatientMatch(text,bed);
+  if(match&&match.kind==="board"){
+    const c=S.consults.find(x=>x.id===match.id);
+    if(c){
+      c.tasks=c.tasks||[];
+      const t=text.replace(/\s+/g," ").trim();
+      if(t&&!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false});
+      c.updatedAt=Date.now();
+      document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
+      render();save();showToast("Added task to "+(c.loc||"board patient"));
+      return;
+    }
+  }
+  capRoundsAdd(text,bed);
 }
 function capConsult(text,bed){
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
@@ -2938,9 +2990,9 @@ function renderCapture(){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
-    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
+    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(pmatch?(" · "+pmatch.label):(bed?" · "+bed:"")),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(pmatch?pmatch.label:(rmatch?rmatch.label:"")),fname:nm,phone:ph}));
     phoneSuggestFor(text).forEach(s=>add("",PHONE_ICON,s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
-    if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to rounds/boards",(bed||last3FromText(text))?("uses "+[bed,last3FromText(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capRoundsAdd(text,bed));
+    if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to "+(pmatch?pmatch.label:"rounds/boards"),(bed||last3FromText(text)||last3Cue(text))?("uses "+[bed,last3FromText(text)||last3Cue(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capPatientTask(text,bed,pmatch));
     if(consentCue)add("","✎","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
   }else if(isQ){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
