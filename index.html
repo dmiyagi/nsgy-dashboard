@@ -22,8 +22,9 @@ html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;padding-bottom:72px}
 header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);border-top:3px solid var(--acc);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .appicon{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto}
+.apptitle{flex:1 1 0;min-width:0}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
-header .sub{font-size:11px;color:var(--mut)}
+header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
 .gsearch{flex:1 1 220px;max-width:340px;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px}
 .gsearch::placeholder{color:var(--mut)}
@@ -35,9 +36,13 @@ nav button .ico{font-size:19px;line-height:1}
 nav button.active{color:var(--acc)}
 .ico,.ci,.tbtn,.rdl{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .phoneico{display:inline-block;width:.9em;height:.9em;border:2px solid currentColor;border-top:0;border-left:0;border-radius:0 0 .35em 0;transform:rotate(45deg);vertical-align:-.08em;margin-right:.25em}
-.toolico{display:inline-block;width:.95em;height:.95em;border:2px solid currentColor;border-bottom:0;border-right:0;border-radius:.35em 0 0 0;transform:rotate(-45deg);vertical-align:-.08em;margin-right:.25em;position:relative}
-.toolico:after{content:"";position:absolute;width:.34em;height:.78em;border:2px solid currentColor;border-top:0;border-radius:0 0 .18em .18em;left:.2em;top:.42em}
-.ci .phoneico,.bg .phoneico,.ci .toolico,.bg .toolico{margin-right:0}
+.hammerico{display:inline-block;width:1em;height:1em;position:relative;vertical-align:-.12em;margin-right:.25em;transform:rotate(-35deg)}
+.hammerico:before{content:"";position:absolute;left:.1em;top:.06em;width:.74em;height:.24em;border:2px solid currentColor;border-radius:.08em}
+.hammerico:after{content:"";position:absolute;left:.4em;top:.28em;width:.18em;height:.7em;background:currentColor;border-radius:.08em}
+.screwico{display:inline-block;width:.95em;height:.95em;position:relative;vertical-align:-.12em;margin-right:.25em;transform:rotate(35deg)}
+.screwico:before{content:"";position:absolute;left:.38em;top:.08em;width:.2em;height:.72em;background:currentColor;border-radius:.12em}
+.screwico:after{content:"";position:absolute;left:.26em;top:.02em;width:.44em;height:.18em;border:2px solid currentColor;border-radius:.08em}
+.ci .phoneico,.bg .phoneico,.ci .hammerico,.bg .hammerico,.ci .screwico,.bg .screwico{margin-right:0}
 main{max-width:980px;margin:0 auto;padding:12px 12px 30px}
 section.view{display:none}
 section.view.active{display:block}
@@ -45,6 +50,12 @@ section.view.active{display:block}
   body{padding-bottom:0}
   nav{position:sticky;top:49px;bottom:auto;border-top:none;border-bottom:1px solid var(--line)}
   nav button{flex-direction:row;font-size:13px;padding:10px}
+}
+@media(max-width:520px){
+  header{align-items:center;gap:8px}
+  .gsearch{order:3;flex:1 0 100%;max-width:none}
+  .hpills{order:4;margin-left:0}
+  #syncdot{order:5;margin-left:auto}
 }
 .banner{font-size:11.5px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:8px 12px;margin-bottom:10px}
 .banner b{color:var(--e1)}
@@ -338,7 +349,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <header>
   <img class="appicon" src="icon-192.png?v=20260801" alt="" aria-hidden="true">
-  <div>
+  <div class="apptitle">
     <h1>NSGY Consult Triage</h1>
     <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for attending judgment</div>
   </div>
@@ -369,8 +380,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
       <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')"><span class="phoneico" aria-hidden="true"></span> Comm</button>
       <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
-      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="toolico" aria-hidden="true"></span> Floor proc</button>
-      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="toolico" aria-hidden="true"></span> Quick proc</button>
+      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="hammerico" aria-hidden="true"></span> Floor proc</button>
+      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="screwico" aria-hidden="true"></span> Quick proc</button>
       <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
       <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
       <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
@@ -1131,7 +1142,8 @@ const SUGG=[
 ];
 // ---------- event types ----------
 const PHONE_ICON='<span class="phoneico" aria-hidden="true"></span>';
-const TOOL_ICON='<span class="toolico" aria-hidden="true"></span>';
+const HAMMER_ICON='<span class="hammerico" aria-hidden="true"></span>';
+const SCREW_ICON='<span class="screwico" aria-hidden="true"></span>';
 const TYPES={
  CONSULT:{i:"◉",l:"Consult",probL:"Problem",probPh:"right temporal EDH",dlL:"Deadline",
   presets:[["+10 min",10],["+30 min",30],["+1 h",60],["+4 h",240],["Clear",0]],rem:""},
@@ -1141,10 +1153,10 @@ const TYPES={
  CHART:{i:"▤",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ! marks a patient to see 2–3×/day; can schedule follow-up several days out."},
- PROC:{i:TOOL_ICON,l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
+ PROC:{i:HAMMER_ICON,l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
- PCON:{i:TOOL_ICON,l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
+ PCON:{i:SCREW_ICON,l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+4 h",240],["+1 day",1440],["Clear",0]],
   rem:"Simple bedside task — dial change, pump check, interrogation, quick look. Verify valve setting / dose, document, update handoff."},
  POC:{i:"＋",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
@@ -1410,6 +1422,9 @@ function measAlerts(m,txt){
 }
 let curSugg=[],curAlerts=[];
 function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
+function knownPathAbbrev(t){
+  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|TSSH|PF|MCA|GBM)\b/i.test(t||"");
+}
 function upgradeOf(){
   const up={};
   const base=curSugg.length?curSugg[0].s:{};
@@ -2163,16 +2178,23 @@ function roundTags(t){
   if(/nylon|staple|suture/i.test(t))tags.push("Sutures");
   return [...new Set(tags)].slice(0,4);
 }
+const ROUND_BED_RE="(?:ED|BB|NCCU|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z])\\s?-?\\d+[A-Za-z]?(?:-\\d+)?|\\d[AB]-?\\d*";
+function roundBedFromText(raw){
+  const m=String(raw||"").match(new RegExp("\\b("+ROUND_BED_RE+")\\b","i"));
+  return m?m[1].toUpperCase().replace(/\s+/g,""):"";
+}
 function roundLabel(raw){
-  const m=raw.match(/\b((?:ED|BB|NCCU|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J)\s?-?\d+[A-Za-z]?(?:-\d+)?|\d[AB]-?\d*)\b/i);
+  const bed=roundBedFromText(raw);
   const ab=last3FromText(raw);
-  if(m)return m[1].toUpperCase().replace(/\s+/g,"")+(ab?" "+ab:"");
+  if(bed)return bed+(ab?" "+ab:"");
   if(ab)return ab;
   const first=raw.trim().split(/\s+/)[0];
   return first.length<=10?first:raw.trim().slice(0,12);
 }
 function last3FromText(raw){
   const s=String(raw||"");
+  const afterBed=s.match(new RegExp("\\b(?:"+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)([A-Za-z]{3})(?![A-Za-z])","i"));
+  if(afterBed)return cap3(afterBed[1]);
   const par=s.match(/\(([A-Za-z]{3})\)/);if(par)return cap3(par[1]);
   const comma=s.match(/\b([A-Z][A-Za-z'’-]{2,})\s*,\s*[A-Z][A-Za-z'’-]{1,}/);if(comma)return cap3(comma[1]);
   const label=s.match(/\b(?:patient|pt)\s+([A-Z][A-Za-z'’-]{2,})\b/i);if(label)return cap3(label[1]);
@@ -2682,7 +2704,8 @@ function renderCapture(){
   const text=document.getElementById("cap").value.trim();
   const el=document.getElementById("capsugg");
   capActions=[];
-  if(text.length<4){el.innerHTML="";return}
+  const pathAbbrev=knownPathAbbrev(text);
+  if(text.length<4&&!pathAbbrev){el.innerHTML="";return}
   const bed=extractBed(text);
   const rmatch=findRoundsMatch(text,bed);
   const pmatch=findPatientMatch(text,bed);
@@ -2693,7 +2716,7 @@ function renderCapture(){
   const sugns=SUGG.filter(s=>suggMatch(s,text));
   const alerts=measAlerts(parseMeas(text),text);
   const agey=/\b\d{1,3}\s*(?:yo|y\/?o|year|yr)/i.test(text)||/\b\d{1,3}\s?[FM]\b/.test(text);
-  const clinical=sugns.length>0||alerts.length>0||agey;
+  const clinical=sugns.length>0||alerts.length>0||agey||pathAbbrev;
   const chartCue=/chart[- ]?check/i.test(text);
   const pocCue=/\bpoc\b|post-?op check/i.test(text);
   const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
@@ -2731,16 +2754,16 @@ function renderCapture(){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary",TOOL_ICON,"Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary",SCREW_ICON,"Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart)&&!clinical){
-    add("primary",TOOL_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
+    add("primary",HAMMER_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
   }else if(clinical){
     add("primary","◉","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
     if(consentCue)add("","✎","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
   }else if(chartCue){add("primary","▤","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
   else if(pocCue){add("primary","＋","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
-  else if(procCue){add("primary",TOOL_ICON,"Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
+  else if(procCue){add("primary",HAMMER_ICON,"Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
   else if(dcCue){add("primary","⌂","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
   else if(consentCue){add("primary","✎","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
   else{
