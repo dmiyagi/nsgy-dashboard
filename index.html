@@ -437,16 +437,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <button data-m="initials" onclick="setRoundSort('initials')">Sort: last 3</button>
     </span>
   </div>
-  <details class="ref" style="margin-top:4px"><summary>Scrub Scrub a raw list → de-identified one-liners</summary><div class="rb">
-    <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. One patient = one line by default; if a patient's info wraps onto extra lines, <b>indent those continuation lines with Tab</b> so they stay grouped with that patient instead of becoming separate entries. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
-    <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Type anything here… paste the raw sign-out narrative"></textarea>
-    <div class="rowflex">
-      <button class="btn" onclick="scrubList()">Scrub Scrub</button>
-      <button class="btn sec sm" onclick="copyScrubAll()">Copy all one-liners</button>
-      <button class="btn sec sm" onclick="scrubClear()">✕ Clear results</button>
-    </div>
-    <div id="scrubout"></div>
-  </div></details>
   <div id="rcards"></div>
 </section>
 
@@ -1066,12 +1056,17 @@ const DOMAINS=[
  ["10 · Medical / physiologic",["Stable, few comorbidities","Controlled comorbidity or minor disturbance","Significant cardiopulmonary/renal/metabolic/oncologic/trauma issue","Shock, respiratory failure, severe derangement, multisystem trauma, competing life threats"]],
  ["11 · Communication, consent, dispo, tasks",["Single team, clear plan, easy dispo","One pending conversation/result/step","Multiple services, unclear ownership, delayed imaging, difficult consent, several timed tasks","Transfer, unavailable surrogate, legal/language barriers, no bed, many interdependent tasks"]]
 ];
+function isTraumaticSAHText(t){return /\b(?:tSAH|traumatic\s+(?:subarachnoid|SAH)|trauma(?:tic)?[^.]{0,35}\bSAH\b|\bSAH\b[^.]{0,35}trauma(?:tic)?)\b/i.test(t||"")}
+function isAneurysmalSAHText(t){return /\b(?:aSAH|aneurysm|aneurysmal|pcomm|acomm|ruptured aneurysm|subarachnoid)\b|\bSAH\b/i.test(t||"")&&!isTraumaticSAHText(t)}
 // ---------- problem playbook (keyword-matched grading suggestions) ----------
 const SUGG=[
  {re:/cauda|\bces\b|saddle|urinary retention/i,n:"Cauda equina syndrome",s:{E:3,O:2,W:2,mods:["NΔ"]},
   look:["Confirmed compression = spinal emergency; a 48-h window is NOT permission to wait [2]","Document saddle sensation, rectal tone, post-void residual, and motor timeline with exact times","Incomplete or progressive syndromes are the most time-critical","Emergent MRI; if unavailable, escalate or transfer"],
   action:"Check PVR, saddle exam, rectal tone; get emergent MRI",trig:"immediately for progressive weakness or new retention"},
- {re:/\bsah\b|subarachnoid|aneurysm/i,n:"SAH / aneurysm",s:{E:3,O:1,W:3,mods:["W","VASC"]},
+ {re:isTraumaticSAHText,n:"Traumatic SAH / tSAH",s:{E:1,O:0,W:1,mods:["W"]},
+  look:["Treat as traumatic intracranial hemorrhage rather than aneurysmal SAH unless the story/imaging suggests aneurysm","Use the traumatic hemorrhage workflow: neuro exam, AC/antiplatelet status, repeat CTH timing, BP/Na goals, seizure/trauma considerations","Reference traumatic-lesion thresholds and ACS TBI guidance; if associated SDH/EDH/contusion exists, let that lesion drive urgency","Institutional note: isolated tSAH may be dischargeable when exam/imaging/context allow, but confirm local pathway and senior review"],
+  action:"Review trauma CT, AC status, and associated SDH/EDH/contusion; set repeat CTH or discharge pathway per senior",trig:"exam decline, new/worsening hemorrhage, AC/reversal issue, hydrocephalus, or concerning aneurysmal pattern"},
+ {re:isAneurysmalSAHText,n:"SAH / aneurysm",s:{E:3,O:1,W:3,mods:["W","VASC"]},
   look:["Unsecured ruptured aneurysm: rebleed risk — treatment preferably within 24 h [3]","O0/O1 ≠ low acuity — can be E3 without an open operation","BP control, nimodipine, hydrocephalus watch (EVD?)","Isolated traumatic tSAH is a different animal (often home per institutional practice)"],
   action:"Confirm CTA, establish BP goal, call senior re: securing plan",trig:"immediately for decline, headache surge, or pupil change"},
  {re:/posterior fossa|cerebell|\bpf\b/i,n:"Posterior fossa lesion",s:{E:3,O:1,W:3,mods:["W"]},
@@ -1119,7 +1114,7 @@ const SUGG=[
  {re:/stroke|\blvo\b|infarct|ischemi|\bbcvi\b/i,n:"Ischemia / vascular",s:{E:2,O:1,W:2,mods:["VASC"]},
   look:["Time-window-dependent ischemia / LVO = E3 vascular override","Malignant MCA infarct → raise hemicraniectomy discussion early","BCVI with evolving ischemia = E3","Document last-known-well; coordinate with vascular neurology"],
   action:"Confirm last-known-well + imaging; call vascular neurology/senior",trig:"immediately for decline or herniation signs"},
- {re:/\bsah\b|subarachnoid|aneurysm|hunt.?hess|fisher/i,n:"SAH scoring reminder",s:{mods:["VASC"]},
+ {re:t=>isAneurysmalSAHText(t)||/hunt.?hess|fisher/i.test(t||""),n:"SAH scoring reminder",s:{mods:["VASC"]},
   look:["Use Hunt-Hess / modified Fisher when presenting aneurysmal SAH consults","Document hydrocephalus, IVH, aneurysm secured vs unsecured, BP goal, nimodipine, TCD plan","Score-driven labels help sign-out and staffing but do not replace E/O/W urgency"],
   action:"Add Hunt-Hess + modified Fisher score to the consult presentation",trig:"decline, rebleed concern, hydrocephalus, or pupil change"},
  {re:/admit|admission|we will admit|plan.*admit/i,n:"Admission documentation reminder",s:{mods:["DISPO"]},
@@ -1240,7 +1235,8 @@ const FLAGS=[
  {re:/no bed|bed (issue|pending)|dispo (unclear|issue|problem)/i,label:"Disposition bottleneck — DISPO modifier",lv:"info",apply:{mods:["DISPO"]}},
  {re:/who owns|ownership|unclear (team|service|primary)/i,label:"Ownership unclear — OWN? modifier; patients wait on this",lv:"info",apply:{mods:["OWN?"]}},
  // labs to send before staffing, by pathology
- {re:/\bsah\b|aneurysm|subarachnoid|pcomm|acomm/i,label:"Lab Labs for staffing: coags, plt, T&S, Na baseline, troponin/EKG",lv:"info",apply:{}},
+ {re:isTraumaticSAHText,label:"Lab tSAH: traumatic hemorrhage workflow — repeat CTH timing, AC/antiplatelet status, plt/coags if relevant, trauma/dispo pathway",lv:"info",apply:{}},
+ {re:isAneurysmalSAHText,label:"Lab aSAH staffing: coags, plt, T&S, Na baseline, troponin/EKG; Hunt-Hess / modified Fisher when relevant",lv:"info",apply:{}},
  {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"Lab Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
  {re:/carotid|tcar\b|\bcea\b|ica stenosis/i,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, hx neck surgery/XRT",lv:"info",apply:{}},
  {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"Lab Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
@@ -1251,6 +1247,7 @@ const FLAGS=[
  {re:/hyponatrem|low sodium|\bna 1[12]\d\b/i,label:"Lab Hyponatremia: Na trend, serum/urine osm, urine Na; hypertonic per NACU/BB7 rules (Reference)",lv:"warn",apply:{}}
 ];
 let curFlags=[];
+function flagMatch(f,t){return typeof f.re==="function"?f.re(t):f.re.test(t)}
 function flagApplied(f){
   if(f.apply.E!==undefined&&F.E<f.apply.E)return false;
   if(f.apply.W!==undefined&&F.W<f.apply.W)return false;
@@ -1300,7 +1297,7 @@ function renderFlags(){
   if(F&&!["CONSULT","POC","PROC"].includes(F.type)){el.innerHTML="";curFlags=[];return}
   const txt=["f_prob","f_state","f_action","f_note"].map(id=>document.getElementById(id).value||"").join(" • ");
   if(txt.trim().length<3){el.innerHTML="";curFlags=[];return}
-  curFlags=FLAGS.filter(f=>f.re.test(txt));
+  curFlags=FLAGS.filter(f=>flagMatch(f,txt));
   el.innerHTML=curFlags.map((f,i)=>{
     const done=flagApplied(f);
     const hasApply=(f.apply.E!==undefined||f.apply.W!==undefined||(f.apply.mods&&f.apply.mods.length));
@@ -1405,6 +1402,7 @@ function measAlerts(m,txt){
   return A;
 }
 let curSugg=[],curAlerts=[];
+function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
 function upgradeOf(){
   const up={};
   const base=curSugg.length?curSugg[0].s:{};
@@ -1435,7 +1433,7 @@ function renderSugg(){
   if(F&&F.type!=="CONSULT"){el.innerHTML="";curSugg=[];curAlerts=[];return}
   const txt=(document.getElementById("f_prob").value||"")+" "+(document.getElementById("f_state").value||"");
   if(txt.trim().length<3){el.innerHTML="";curSugg=[];curAlerts=[];return}
-  curSugg=SUGG.filter(s=>s.re.test(txt)).slice(0,3);
+  curSugg=SUGG.filter(s=>suggMatch(s,txt)).slice(0,3);
   curAlerts=measAlerts(parseMeas(txt),txt);
   const auto=autoApply();
   let head="";
@@ -2149,7 +2147,7 @@ function detectTmpl(t){
 }
 function roundTags(t){
   const tags=[];
-  const s=SUGG.filter(x=>x.re.test(t)).slice(0,2).map(x=>x.n);tags.push.apply(tags,s);
+  const s=SUGG.filter(x=>suggMatch(x,t)).slice(0,2).map(x=>x.n);tags.push.apply(tags,s);
   if(/dnr|dni|cmo/i.test(t))tags.push("Code status");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin/i.test(t))tags.push("AC");
   if(/\bjp\b|blake|drain/i.test(t))tags.push("Drain");
@@ -2335,8 +2333,6 @@ function delRound(id){
   if(r)showToast("Removed "+r.label+" from rounds",()=>restoreRound(r));
 }
 function restoreRound(r){if(S.tomb)delete S.tomb[r.id];if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
-function scrubRemove(i){SCRUB.splice(i,1);renderScrub()}
-function scrubClear(){SCRUB=[];SCRUB.unmatched=[];document.getElementById("scrubout").innerHTML="";document.getElementById("scrubbox").value=""}
 function todoLinesFromPlan(t){
   return String(t||"").split(/\n|;|·/).map(s=>s.trim().replace(/^[*•\-☐✓]\s*/,"")).filter(Boolean);
 }
@@ -2410,113 +2406,6 @@ function soToRounds(){
   renderRounds();render();save();
   showToast("Sent to rounds sign-out — "+r.label);
 }
-// ---------- list scrubber ----------
-const SCRUB_WHITE=["Patient","Post","Pre","Neurology","Consult","Spanish","English","The","This","New","Left","Right","Plan","Pupils","Foley","Keppra","Lovenox","Tylenol"];
-const DX_TAGS=[
- [/pseudomeningocele|csf leak/i,"pseudomeningocele/CSF leak"],
- [/\bsah\b|aneurysm|pcomm|acomm/i,"aSAH"],
- [/\bsdh\b|subdural/i,"SDH"],
- [/\bedh\b|epidural hematoma/i,"EDH"],
- [/\bich\b|intracerebral|occipital.{0,20}(hemorrhage|ich)/i,"ICH"],
- [/tcar|carotid|cea\b/i,"TCAR/carotid"],
- [/tssh|pituitary|sellar/i,"TSSH"],
- [/shunt/i,"shunt"],
- [/resection|crani(?!al nerve)|post-?op/i,"post-op crani"],
- [/\bevd\b|ventriculostomy/i,"EVD"],
- [/radiculopath|scoliosis|lami|fusion|\blbp\b|spine|spondy/i,"spine"],
- [/stroke|\bctp\b|\blvo\b/i,"stroke w/u"],
- [/cerebral edema|\btbi\b/i,"cerebral edema"]];
-let SCRUB=[];
-function scrubNameSeg(seg,names){
-  return seg.split(/(\s+)/).map(tok=>{
-    const w=tok.replace(/[^\w'-]/g,"");
-    if(/^(Mr|Mrs|Ms|Dr)\.?$/.test(w))return "";
-    if(/^[A-Z][a-z]{2,}$/.test(w)&&!SCRUB_WHITE.includes(w)){names.push(w);return tok.replace(w,w[0]+".")}
-    return tok;
-  }).join("").replace(/\s+/g," ").trim();
-}
-function scrubTag(t){
-  const hits=[];
-  DX_TAGS.forEach(d=>{if(hits.length<2&&d[1]&&d[0].test(t)&&!hits.includes(d[1]))hits.push(d[1])});
-  return hits.join(" + ")||"floor pt";
-}
-function scrubVals(t){
-  const v=[];
-  const na=t.match(/\bNa\s*:?[\s=]*(1\d{2})\b/);if(na&&(+na[1]>145||+na[1]<135))v.push("Na "+na[1]);
-  const tm=t.match(/tmax\s*:?[\s=]*([\d.]+)/i);if(tm&&+tm[1]>=100.4)v.push("Tmax "+tm[1]);
-  const icp=t.match(/icps?\s*(?:at|<|>|=)?\s*(\d{1,2})/i);if(icp)v.push("ICP "+t.match(/icps?\s*((?:at|<|>|=)?\s*\d{1,2})/i)[1].replace(/\s+/g,""));
-  if(/\bevd\b/i.test(t))v.push("EVD");
-  if(/lumbar drain|\bld\b/i.test(t))v.push("LD");
-  if(/(gpc|yeast|culture[^.]{0,20}positive|positive[^.]{0,20}culture|csf[^.]{0,25}positive)/i.test(t))v.push("cx+");
-  if(/intubated/i.test(t))v.push("intubated");
-  return [...new Set(v)].slice(0,4);
-}
-function scrubList(){
-  const raw=document.getElementById("scrubbox").value;
-  if(!raw.trim())return;
-  const rawLines=raw.split(/\n/);
-  let mode="pt";const blocks=[];const items=[];let cur=null;
-  rawLines.forEach(orig=>{
-    const l=orig.trim();
-    if(!l)return;
-    if(/^action items/i.test(l)){mode="act";cur=null;return}
-    if(mode==="act"){items.push(l.replace(/^[*•\-\s]*[☐✓]?\s*/,""));return}
-    const isContinuation=cur&&/^[\t]|^ {2,}/.test(orig);
-    if(isContinuation){cur.push(l)}else{cur=[l];blocks.push(cur)}
-  });
-  const pts=blocks.map(b=>b.join(" "));
-  const allNames=[];
-  SCRUB=pts.map(line=>{
-    const m=line.match(/^(.{1,70}?)\s*[—–]\s*(.*)$/)||line.match(/^(.{1,50}?):\s+(.*)$/);
-    const nameSeg=m?m[1]:line.slice(0,30);
-    let body=m?m[2]:line;
-    const names=[];
-    const label=scrubNameSeg(nameSeg,names);
-    names.forEach(n=>{if(!allNames.includes(n))allNames.push(n)});
-    const tag=scrubTag(nameSeg+" "+body);
-    const vals=scrubVals(body);
-    const pm=body.match(/\bplan:\s*(.+)$/i);
-    let plan=pm?pm[1].trim():"";
-    if(plan.length>110)plan=plan.slice(0,110)+"…";
-    return {label:label,names:names,tag:tag,vals:vals,plan:plan,body:body,todos:[]};
-  });
-  // global name replacement in bodies/plans/items
-  const scrubTxt=t=>{let o=t;allNames.forEach(n=>{o=o.replace(new RegExp("\\b(?:Mr\\.?\\s+|Mrs\\.?\\s+|Ms\\.?\\s+)?"+n+"\\b","g"),n[0]+".")});return o};
-  SCRUB.forEach(p=>{p.body=scrubTxt(p.body);p.plan=scrubTxt(p.plan)});
-  const un=[];
-  items.forEach(it=>{
-    const itS=scrubTxt(it);
-    let hit=SCRUB.find(p=>p.names.some(n=>new RegExp("\\b"+n+"\\b").test(it)));
-    if(!hit){
-      hit=SCRUB.find(p=>p.label.split(/[\s/()]+/).some(tok=>tok.length>=4&&!/patient|consult/i.test(tok)&&new RegExp(tok.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(it)));
-    }
-    if(hit)hit.todos.push(itS);else un.push(itS);
-  });
-  SCRUB.unmatched=un;
-  renderScrub();
-}
-function scrubShort(p){
-  return p.label+" — "+p.tag+(p.vals.length?" · "+p.vals.join(" · "):"")+(p.plan?" · Plan: "+p.plan:"")+(p.todos.length?" · "+p.todos.map(t=>"☐ "+t).join(" · "):"");
-}
-function renderScrub(){
-  const el=document.getElementById("scrubout");
-  el.innerHTML=SCRUB.map((p,i)=>
-   '<div class="card" style="border-left-color:var(--teal)">'+
-    '<div style="font-size:13px;font-weight:600;color:#c8d3e4">'+esc(scrubShort(p))+'</div>'+
-    '<details style="margin-top:5px"><summary style="font-size:11.5px;color:var(--mut);cursor:pointer">full scrubbed text</summary><div class="state" style="margin-top:4px">'+esc(p.label+" — "+p.body)+'</div></details>'+
-    '<div class="cardbtns"><button onclick="copyScrub('+i+')">Copy line</button><button onclick="copyScrubFull('+i+')">Copy full</button><button onclick="scrubToRounds('+i+')">＋ Rounds card</button><button onclick="scrubRemove('+i+')">✕</button></div>'+
-   '</div>').join("")+
-   ((SCRUB.unmatched&&SCRUB.unmatched.length)?'<div class="card" style="border-left-color:var(--e1)"><b style="font-size:12.5px">Unmatched to-dos</b><div class="state">'+SCRUB.unmatched.map(esc).join("<br>")+'</div></div>':"");
-}
-function copyScrub(i){toClip(scrubShort(SCRUB[i]));showToast("One-liner copied")}
-function copyScrubFull(i){const p=SCRUB[i];toClip(p.label+" — "+p.body+(p.todos.length?"\n"+p.todos.map(t=>"☐ "+t).join("\n"):""));showToast("Full scrubbed text copied")}
-function copyScrubAll(){if(!SCRUB.length)return;toClip(SCRUB.map(scrubShort).join("\n")+((SCRUB.unmatched&&SCRUB.unmatched.length)?"\nUnmatched: "+SCRUB.unmatched.join(" · "):""));showToast("All one-liners copied")}
-function scrubToRounds(i){
-  const p=SCRUB[i];
-  const raw=p.label+" — "+p.body;
-  S.rounds.push({id:"r"+uid(),raw:raw,label:p.label.split(" ")[0]||p.label.slice(0,10),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:p.todos.join(" · "),created:Date.now(),updatedAt:Date.now()});
-  renderRounds();save();showToast("Added to rounds");
-}
 // ---------- text consult formatter ----------
 const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"],[/xarelto|rivaroxaban/i,"Xarelto"],[/pradaxa|dabigatran/i,"Pradaxa"],[/plavix|clopidogrel/i,"Plavix"],[/brilinta|ticagrelor/i,"Brilinta"],[/lovenox|enoxaparin/i,"Lovenox"],[/\bdapt\b/i,"DAPT"],[/heparin gtt|on heparin/i,"heparin"],[/\basa\b|aspirin/i,"ASA"]];
 const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation/i,"known vascular malformation"]];
@@ -2546,7 +2435,7 @@ function tcExtract(text){
   if(/inr pending/i.test(text)&&!inr)labs.push("[INR pending]");
   out.labs=labs.join(", ");
   // title from playbook + measurements
-  const sugns=SUGG.filter(s=>s.re.test(text)).map(s=>s.n);
+  const sugns=SUGG.filter(s=>suggMatch(s,text)).map(s=>s.n);
   const m=parseMeas(text);
   let title=sugns[0]||sents[0].slice(0,50);
   const bits=[];if(m.thick!==undefined)bits.push(m.thick+" mm");if(m.mls!==undefined)bits.push("MLS "+m.mls+" mm");if(m.vol!==undefined)bits.push(m.vol+" cm³");
@@ -2686,7 +2575,7 @@ function extractCallName(t){
 }
 function findRoundsMatch(t,bed){
   const T=t.toUpperCase();
-  const ab=last3FromText(t).toUpperCase();
+  const ab=(last3FromText(t)||last3Cue(t)).toUpperCase();
   return (S.rounds||[]).find(r=>{
     const L=String(r.label||"").toUpperCase();
     if(!L)return false;
@@ -2694,6 +2583,40 @@ function findRoundsMatch(t,bed){
     if(ab&&L.includes(ab))return true;
     return L.length>=3&&T.includes(L);
   });
+}
+function last3Cue(t){
+  const m=String(t||"").match(/\b(?:for|pt|patient)\s+([A-Za-z]{3})\b/i);
+  return m?cap3(m[1]):"";
+}
+function findPatientMatch(t,bed){
+  const ab=(last3FromText(t)||last3Cue(t)).toUpperCase();
+  const T=String(t||"").toUpperCase();
+  const round=findRoundsMatch(t,bed);
+  if(round)return {kind:"round",id:round.id,label:round.label,raw:round.raw};
+  const consult=(S.consults||[]).find(c=>{
+    const loc=String(c.loc||"").toUpperCase();
+    if(!loc)return false;
+    if(bed&&(loc.includes(bed)||bed.includes(loc)))return true;
+    if(ab&&loc.includes(ab))return true;
+    return loc.length>=3&&T.includes(loc);
+  });
+  return consult?{kind:"board",id:consult.id,label:consult.loc,raw:[consult.prob,consult.action].filter(Boolean).join(" · ")}:null;
+}
+function bookingSuggestionFor(t){
+  const s=String(t||"");
+  let name="OR booking";
+  let template="";
+  if(/shunt|vps/i.test(s)){name="VP shunt booking";template=BOOKING_TMPLS.find(x=>/ventriculoperitoneal shunt/i.test(x))||""}
+  else if(/evd|ventric/i.test(s)){name="EVD booking";template=BOOKING_TMPLS.find(x=>/external ventricular drain/i.test(x))||""}
+  else if(/crani|tumou?r|mass|meningioma|glio|met\b/i.test(s)){name="Cranial/tumor booking";template=BOOKING_TMPLS.find(x=>/resection of brain mass/i.test(x))||BOOKING_TMPLS.find(x=>/craniotomy/i.test(x))||""}
+  else if(/sdh|subdural|burr/i.test(s)){name="SDH booking";template=BOOKING_TMPLS.find(x=>/burr holes/i.test(x))||BOOKING_TMPLS.find(x=>/subdural hematoma/i.test(x))||""}
+  else if(/tssh|transsphenoidal|sellar|pituitary/i.test(s)){name="TSSH/skull base booking";template=BOOKING_TMPLS.find(x=>/transnasal|sellar/i.test(x))||""}
+  else if(/spine|fusion|lami|acdf|tlif|xlif|corpect|wound/i.test(s)){name="Spine booking";template=BOOKING_TMPLS.find(x=>/wound|fusion|thoracic|lumbar/i.test(x))||""}
+  else if(/carotid|tcar|cea/i.test(s)){name="Carotid booking";template=BOOKING_TMPLS.find(x=>/transcarotid/i.test(x))||BOOKING_TMPLS.find(x=>/endarterectomy/i.test(x))||""}
+  else if(/avm|arteriovenous/i.test(s)){name="AVM booking";template=BOOKING_TMPLS.find(x=>/arteriovenous malformation/i.test(x))||""}
+  const tasks=["Exact procedure name + laterality confirmed with attending","Consent with suggested attendings: "+consentAttendingsFor(s),"H&P/rH&P note + pre-op note","Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed","Case request entered + OR front desk / Teams Booking notified if same-day or next-day"];
+  if(template)tasks.unshift("Booking template: "+template);
+  return {name,template,tasks};
 }
 function phoneSuggestFor(t){
   const keys=[];
@@ -2730,10 +2653,21 @@ function capTask(type,text,pre){
   if(pre.fname){F.fname=pre.fname;document.getElementById("f_fname").value=pre.fname}
   if(pre.phone){F.phone=pre.phone;document.getElementById("f_phone").value=pre.phone}
   F.prob=text;document.getElementById("f_prob").value=text;
+  if(pre.tasks){
+    F.tasks=F.tasks||[];
+    pre.tasks.forEach(t=>{if(!F.tasks.some(x=>x.t===t))F.tasks.push({t:t,done:false})});
+    document.getElementById("f_tasks").value=F.tasks.map(s=>s.t).join("\n");
+  }
+  if(pre.note){F.note=pre.note;document.getElementById("f_note").value=pre.note}
   renderFlags();
+}
+function capBooking(text,match){
+  const sug=bookingSuggestionFor(text);
+  capTask("BOOK",text,{loc:match?match.label:"",tasks:sug.tasks,note:sug.template?("Suggested booking: "+sug.template):""});
 }
 function capOE(text){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";askOE(text)}
 function capRounds(){document.querySelector('nav button[data-view="rounds"]').click()}
+function capBookingTab(){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";document.querySelector('nav button[data-view="booking"]').click()}
 function runCap(i){const a=capActions[i];if(a)a.fn()}
 function renderCapture(){
   const text=document.getElementById("cap").value.trim();
@@ -2742,10 +2676,12 @@ function renderCapture(){
   if(text.length<4){el.innerHTML="";return}
   const bed=extractBed(text);
   const rmatch=findRoundsMatch(text,bed);
+  const pmatch=findPatientMatch(text,bed);
+  const bookCue=/^book\b|\bbook(ing)?\b.*\b(case|or|crani|spine|shunt|evd|tssh|carotid|sdh|tumou?r|mass)\b/i.test(text);
   const isCall=/\b(call|page|phone|text|update)\b/i.test(text);
   const consentCue=/consent/i.test(text);
   const isQ=/\?\s*$/.test(text)||/^(what|when|why|how|should|is|does|can|do i|any evidence)\b/i.test(text);
-  const sugns=SUGG.filter(s=>s.re.test(text));
+  const sugns=SUGG.filter(s=>suggMatch(s,text));
   const alerts=measAlerts(parseMeas(text),text);
   const agey=/\b\d{1,3}\s*(?:yo|y\/?o|year|yr)/i.test(text)||/\b\d{1,3}\s?[FM]\b/.test(text);
   const clinical=sugns.length>0||alerts.length>0||agey;
@@ -2767,7 +2703,14 @@ function renderCapture(){
   }
   const rows=[];
   const add=(cls,ico,main,sub,fn)=>{capActions.push({fn:fn});rows.push('<button class="caprow '+cls+'" onclick="runCap('+(capActions.length-1)+')"><span class="ci">'+ico+'</span><span class="ct"><b>'+main+'</b>'+(sub?'<span class="csub">'+sub+'</span>':"")+'</span></button>')};
-  if(isCall){
+  if(bookCue){
+    const bs=bookingSuggestionFor(text);
+    add("primary","⊞",bs.name,(pmatch?"patient match: "+pmatch.label+" · ":"")+(bs.template||"adds OR booking + pre-op reminders"),()=>capBooking(text,pmatch));
+    add("","⊞","Open Booking tab","templates + pre-op reminders",()=>capBookingTab());
+    if(pmatch)add("rl","▤","Open matched patient — "+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+"…",()=>pmatch.kind==="round"?capRounds():openForm(pmatch.id));
+    if(bs.template)add("","⧉","Copy suggested booking template",bs.template,()=>{toClip(bs.template);showToast("Booking text copied")});
+    phoneSuggestFor(text).forEach(s=>add("","☎",s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
+  }else if(isCall){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
@@ -2795,7 +2738,7 @@ function renderCapture(){
     add("oe primary","⌕","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
     add("","◉","New consult with this text","",()=>capConsult(text,bed));
   }
-  if(rmatch)add("rl","▤","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
+  if(!bookCue&&rmatch)add("rl","▤","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
   el.innerHTML=rows.join("");
 }
 // ---------- sync engine (private GitHub Gist) ----------
