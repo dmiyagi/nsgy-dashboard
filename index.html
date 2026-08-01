@@ -885,9 +885,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
-      <div class="fld"><label>Exam</label><input type="text" id="ftc_exam" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
-      <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
       <div class="fld"><label>Plan (one per line)</label><textarea id="ftc_plan" style="min-height:64px" placeholder="Type anything here…"></textarea></div>
       <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
       <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
@@ -935,9 +935,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <details class="moredet" id="tcdet" open><summary>▾ 2 · Parsed pieces — fix anything wrong</summary>
       <div class="fld"><label>Title (one-line problem)</label><input type="text" id="tc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px" placeholder="Type anything here…"></textarea></div>
-      <div class="fld"><label>Exam</label><input type="text" id="tc_exam" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Exam</label><textarea id="tc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="tcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
-      <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="tcUseLabs()">Add relevant labs</button></div></div>
       <div class="fld"><label>Plan (one action per line — "~" added automatically)</label><textarea id="tc_plan" style="min-height:80px" placeholder="Type anything here…"></textarea></div>
     </details>
     <div class="fld"><label>3 · Ready to send</label><textarea id="tc_out" style="min-height:150px;font-size:13.5px" placeholder="Hit Parse, then Rebuild — the finished text lands here."></textarea></div>
@@ -2539,6 +2539,75 @@ function soToRounds(){
 // ---------- text consult formatter ----------
 const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"],[/xarelto|rivaroxaban/i,"Xarelto"],[/pradaxa|dabigatran/i,"Pradaxa"],[/plavix|clopidogrel/i,"Plavix"],[/brilinta|ticagrelor/i,"Brilinta"],[/lovenox|enoxaparin/i,"Lovenox"],[/\bdapt\b/i,"DAPT"],[/heparin gtt|on heparin/i,"heparin"],[/\basa\b|aspirin/i,"ASA"]];
 const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation/i,"known vascular malformation"]];
+const TC_CNS_EXAM=[
+ "Neuro:",
+ "Mental status: {Blank:19197::\"A&Ox3\",\"A&Ox2\",\"A&Ox1\",\"A&Ox0\",\"confused\",\"drowsy\",\"not assessable\"}",
+ "Pupils: {Blank:19197::\"PERRL\",\"anisocoria\",\"sluggish R\",\"sluggish L\",\"fixed R\",\"fixed L\",\"fixed bilaterally\"}, EOM: {Blank:19197::\"EOMI\",\"restricted R abduction\",\"restricted L abduction\",\"restricted R adduction\",\"restricted L adduction\",\"restricted upgaze\",\"restricted downgaze\",\"ophthalmoplegia\"}",
+ "Face: {Blank:19197::\"symmetric\",\"R droop\",\"L droop\"}",
+ "RUE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
+ "LUE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
+ "Pronator drift: {Blank:19197::\"absent\",\"R drift\",\"L drift\",\"bilateral drift\",\"unable to assess\"}",
+ "RLE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
+ "LLE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
+ "Sensation: {Blank:19197::\"intact to light touch throughout\",\"decreased in RUE\",\"decreased in LUE\",\"decreased in RLE\",\"decreased in LLE\",\"unable to assess\"}"
+].join("\n");
+const TC_SPINE_EXAM=[
+ "Spine:",
+ "***",
+ "Delt - Deltoid: shoulder abduction (C5)",
+ "Bi - Biceps: elbow flexion (C6)",
+ "Tri - Triceps: elbow extension (C7)",
+ "WE - Wrist extensors: wrist extension (C7, C8)",
+ "FF - Finger flexors: finger flexion/grip (C8)",
+ "FA - Finger abductors: spread fingers apart against resistance (T1)",
+ "***",
+ "Delt/bi/tri/we/ff/fa",
+ "R {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
+ "L {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
+ "***",
+ "IP - Iliopsoas: hip flexion against resistance (L2-L4)",
+ "Quad - Quadriceps: Quadriceps:knee extension against resistance (L2-L4)",
+ "AT - Anterior tibialis: ankle dorsiflexion against resistance (L5)",
+ "EHL - Extensor hallucis longus: great-toe extension against resistance (L5)",
+ "Gastroc - Gastrocnemius: ankle plantarflexion against resistance; alternatively, single-leg toe raises when ambulatory (S1)",
+ "***",
+ "Ip/quad/at/ehl/gastroc",
+ "R {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
+ "L {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
+ "{EWREFLEX:67896::\"- hoffmans\",\"- clonus\"}"
+].join("\n");
+const TC_BABY_EXAM=[
+ "Skin: {skin:55335}",
+ "",
+ "Neuro:",
+ "Mental status/behavior: {Blank:19197::\"awake, alert, age-appropriate interaction; consolable\",\"awake, alert, interactive; irritable but consolable\",\"awake, alert, minimally interactive\",\"sleepy but arousable\",\"drowsy, requires repeated stimulation\",\"irritable and difficult to console\",\"inconsolable\",\"lethargic\",\"not arousable\",\"limited assessment due to age\",\"limited assessment due to sedation\"}",
+ "PERRL, gaze conjugate, tracks appropriately ***",
+ "Face symmetric ***",
+ "Anterior fontanelle {Blank:19197::\"soft and flat\",\"full\",\"bulging\",\"sunken\"}",
+ "Sutures {Blank:19197::\"approximated\",\"splayed\",\"overriding\"}",
+ "Head circumference: *** cm",
+ "Moves all extremities spontaneously and symmetrically ***"
+].join("\n");
+function tcIsSpineText(t){return /spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
+function tcIsBabyText(t){return /\b(?:baby|infant|neonate|newborn|nicu|wi|w&i|pedi|peds|months?\s*old|weeks?\s*old|days?\s*old|fontanelle|head circumference|sutures?)\b/i.test(t||"")}
+function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:TC_CNS_EXAM)}
+function tcRelevantLabs(t){
+  const labs=["Na","PT/PTT/INR","platelets"];
+  const add=x=>{if(x&&!labs.includes(x))labs.push(x)};
+  if(/\bsah\b|aneurysm|subarachnoid/i.test(t)){["PT/PTT/INR","platelets","T&S","troponin/EKG","Na baseline"].forEach(add)}
+  if(/\bsdh\b|\bedh\b|\bich\b|\biph\b|hemorrhage|hematoma|tbi|trauma|fall/i.test(t)){["PT/PTT/INR","platelets","T&S","anti-Xa/DOAC timing if relevant"].forEach(add)}
+  if(tcIsSpineText(t)){["PT/PTT/INR","platelets","PVR if cauda/retention"].forEach(add)}
+  if(/infect|abscess|osteo|discitis|wound|fever|ventriculitis|meningitis/i.test(t)){["WBC","ESR","CRP","blood cultures before antibiotics"].forEach(add)}
+  if(/shunt|\bvps\b|evd|hardware/i.test(t)){["WBC","ESR/CRP if infection concern","CSF studies if tapped"].forEach(add)}
+  if(/pre-?op|\bor\b|book|surgery|operative|tumou?r|mass|crani/i.test(t)){["PT/PTT/INR","platelets","T&S","EKG","pregnancy test if applicable"].forEach(add)}
+  if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|pradaxa|dabigatran|heparin|lovenox|plavix|brilinta|dapt|doac|anticoag|\bac\b/i.test(t)){["last dose","renal function","reversal plan"].forEach(add)}
+  return labs.join(", ");
+}
+function tcMergeCsv(cur,add){
+  const out=String(cur||"").split(",").map(s=>s.trim()).filter(Boolean);
+  String(add||"").split(",").map(s=>s.trim()).filter(Boolean).forEach(x=>{if(!out.some(y=>y.toLowerCase()===x.toLowerCase()))out.push(x)});
+  return out.join(", ");
+}
 function tcExtract(text){
   const out={};
   let am=text.match(/(\d{1,3})\s*(?:yo|y\/?o|year[- ]old)\s*,?\s*(male|female|m|f)\b/i);
@@ -2608,21 +2677,33 @@ function tcParse(){
   const o=tcExtract(t);
   document.getElementById("tc_title").value=o.title||"";
   document.getElementById("tc_hpi").value=o.hpi||"";
-  document.getElementById("tc_exam").value=o.exam||"[focused neuro exam]";
+  document.getElementById("tc_exam").value=o.exam||tcSuggestedExam(t);
   document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
-  document.getElementById("tc_labs").value=o.labs||"";
+  document.getElementById("tc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(t));
   document.getElementById("tc_plan").value=o.plan||"NSGY eval";
   tcBuild();
 }
 function tcFormat(){
   const g=i=>(document.getElementById(i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
+  const exam=g("tc_exam").split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"~ "+l).join("\n");
-  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam: "+tidy(g("tc_exam")),"","Imaging: "+tidy(g("tc_img"))]
+  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("tc_img"))]
     .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
 function tcBuild(){document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
+function tcUseExam(){
+  const src=document.getElementById("tc_src").value||[document.getElementById("tc_title").value,document.getElementById("tc_hpi").value].join(" ");
+  document.getElementById("tc_exam").value=tcSuggestedExam(src);
+  tcBuild();
+}
+function tcUseLabs(){
+  const src=[document.getElementById("tc_src").value,document.getElementById("tc_title").value,document.getElementById("tc_hpi").value,document.getElementById("tc_img").value].join(" ");
+  const el=document.getElementById("tc_labs");
+  el.value=tcMergeCsv(el.value,tcRelevantLabs(src));
+  tcBuild();
+}
 // ---- text consult embedded in the consult form ----
 const FTC=["title","hpi","exam","img","labs","plan"];
 function ftcParse(){
@@ -2630,9 +2711,9 @@ function ftcParse(){
   const o=src.trim()?tcExtract(src):{};
   document.getElementById("ftc_title").value=o.title||document.getElementById("f_prob").value||"";
   document.getElementById("ftc_hpi").value=o.hpi||"";
-  document.getElementById("ftc_exam").value=o.exam||document.getElementById("f_state").value||"[focused neuro exam]";
+  document.getElementById("ftc_exam").value=o.exam||document.getElementById("f_state").value||tcSuggestedExam(src);
   document.getElementById("ftc_img").value=o.img||"[modality w/ finding vs prior]";
-  document.getElementById("ftc_labs").value=o.labs||"";
+  document.getElementById("ftc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(src));
   const plan=[document.getElementById("f_action").value].filter(Boolean)
     .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
     .concat(o.plan?o.plan.split("\n"):[]);
@@ -2642,12 +2723,24 @@ function ftcParse(){
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
+  const exam=g("exam").split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"~ "+l).join("\n");
-  return [tidy(g("title")),"",tidy(g("hpi")),"","Exam: "+tidy(g("exam")),"","Imaging: "+tidy(g("img"))]
+  return [tidy(g("title")),"",tidy(g("hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("img"))]
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
 function ftcBuild(){document.getElementById("ftc_out").value=ftcFormat();if(F)F.tc=ftcSnapshot();showToast("Text consult built")}
+function ftcUseExam(){
+  const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value]).join(" ");
+  document.getElementById("ftc_exam").value=tcSuggestedExam(src);
+  ftcBuild();
+}
+function ftcUseLabs(){
+  const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value,document.getElementById("ftc_img").value]).join(" ");
+  const el=document.getElementById("ftc_labs");
+  el.value=tcMergeCsv(el.value,tcRelevantLabs(src));
+  ftcBuild();
+}
 function ftcCopy(){const el=document.getElementById("ftc_out");if(!el.value.trim())el.value=ftcFormat();toClip(el.value.trim());showToast("Text consult copied")}
 function ftcSnapshot(){const o={};FTC.forEach(k=>o[k]=document.getElementById("ftc_"+k).value);o.out=document.getElementById("ftc_out").value;return o}
 function ftcLoad(c){
