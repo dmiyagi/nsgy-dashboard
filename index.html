@@ -1877,10 +1877,11 @@ function renderCal(){
     return '<div class="calday"><div class="cdh '+cls+'">'+lbl+'</div>'+
       byDay[k].sort((a,b)=>Date.parse(a[1])-Date.parse(b[1])).map(([c,iso])=>{
         const t=new Date(iso);
-        return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
+        return '<div class="calrow" data-id="'+c.id+'" onclick="openForm(\''+c.id+'\')">'+
          '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+" "+(TYPES[c.type]||TYPES.CONSULT).l+'</span>'+
          '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||c.action||"")+'</span>'+
-         '<span class="ctime">'+(isSnoozed(c)?"◷":"◷ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span></div>';
+         '<span class="ctime">'+(isSnoozed(c)?"◷":"◷ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span>'+
+         '<button class="rdone" title="Cancel calendar item" onclick="event.stopPropagation();del(\''+c.id+'\',true)">Cancel</button></div>';
       }).join("")+'</div>';
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
@@ -3142,7 +3143,7 @@ function attachSwipe(containerId,kind){
   el.addEventListener("touchstart",e=>{
     const t=e.target;
     if(t.closest&&t.closest("button,input,textarea,select,a,summary"))return;
-    const card=t.closest?t.closest(".card"):null;if(!card||!card.dataset.id)return;
+    const card=t.closest?t.closest(".card,.calrow"):null;if(!card||!card.dataset.id)return;
     cardEl=card;sx=e.touches[0].clientX;sy=e.touches[0].clientY;dragging=true;
     cardEl.style.transition="none";
   },{passive:true});
@@ -3277,7 +3278,7 @@ document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
 compactBoardForStartup();
 renderAll();renderBlocks();
-attachSwipe("cards","consult");attachSwipe("rcards","round");
+attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
 doSync(true);
