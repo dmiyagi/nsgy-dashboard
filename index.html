@@ -829,6 +829,17 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="prockit"></div>
       <div id="smarthints"></div>
     </div>
+    <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>▯ Text consult — build the send-ready version</summary>
+      <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
+      <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
+      <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
+      <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
+      <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
+      <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
+      <div class="fld"><label>Plan (one per line)</label><textarea id="ftc_plan" style="min-height:64px" placeholder="Type anything here…"></textarea></div>
+      <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
+      <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
+    </details>
     <div class="fld" id="fld_E"><div class="axhead"><label>E — urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
       <div class="selhint" id="hintE"></div>
@@ -882,17 +893,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
-    <details class="moredet" id="fld_tc"><summary>▯ Text consult — build the send-ready version</summary>
-      <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
-      <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
-      <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
-      <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
-      <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
-      <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
-      <div class="fld"><label>Plan (one per line)</label><textarea id="ftc_plan" style="min-height:64px" placeholder="Type anything here…"></textarea></div>
-      <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
-      <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
-    </details>
     <div class="fld" id="fld_snooze"><label>◷ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
       <div class="qbtns">
         <button type="button" onclick="setSnoozeMinutes(15)">+15 min</button><button type="button" onclick="setSnoozeMinutes(30)">+30 min</button>
@@ -1023,7 +1023,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <!-- ============ CLOSE MODAL ============ -->
 <div class="overlay" id="ovClose">
   <div class="sheet">
-    <h2>Close consult — Stage 8</h2>
+    <h2>Close consult — Stage B</h2>
     <p style="font-size:13px;color:var(--mut);margin-bottom:10px">A consult is not closed because the chief was called. It is closed when:</p>
     <div class="checklist" id="closeChecks"></div>
     <div class="sheetbtns">
@@ -1489,7 +1489,7 @@ function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
 }
 function useSuggAction(i){const s=curSugg[i];if(s&&s.action)document.getElementById("f_action").value=s.action}
 function useSuggTrig(i){const s=curSugg[i];if(s&&s.trig)document.getElementById("f_trig").value=s.trig}
-const CLOSE_ITEMS=["Primary team assigned","All documentation has been completed and signed","If signing off, CoC updated","If surgical patient, added to wound check list"];
+const CLOSE_ITEMS=["Primary team assigned or patient dispo complete","All documentation has been completed and signed","If signing off or discharged, CoC updated","If surgical patient, added to wound check list"];
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
  {id:"icu",s:"06:00",e:"07:00",t:"ICU signout — BB7 conf (1217#)",tasks:["Write every patient's exam + plan (smiley = intact; crosses for motor; sq/tu/wt/l/wd/tf)","Relay plans by secure chat to primary teams — add the day team so they don't page you all day","Clarify plans + dispo with chiefs","Eat breakfast while multitasking"]},
@@ -1634,6 +1634,14 @@ function chartCheckBoost(c){
   if(diff>=-30)return 95;
   return 70; // still visible after the check time, but not allowed to bury consults
 }
+function chartAcuityBoost(c){
+  if(c.type!=="CHART"||!chartCheckBoost(c))return 0;
+  const cx=cLevel(c)||1;
+  const txt=[c.loc,c.prob,c.state,c.action,c.note,(c.steps||[]).map(s=>s.t).join(" "),(c.tasks||[]).map(t=>t.t).join(" ")].join(" ");
+  let r=(cx-1)*14+(c.W||0)*10+(c.O||0)*6+(c.worry?28:0);
+  if(/\b(?:icu|nccu|picu|sic[u]?|evd|bolt|drain|ld|seps|shunt|sah|sdh|edh|ich|iph|hydro|hcp|cord|myelopathy|weakness|decline|q1|q2|unstable|pressors|vent|intubat|sepsis|fever|infection)\b/i.test(txt))r+=18;
+  return Math.min(r,80);
+}
 function consultWorkflowBoost(c){
   if(c.type!=="CONSULT")return 0;
   const wf=c.wf||{};
@@ -1648,7 +1656,7 @@ function consultPriorityMissing(c){
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
-  if(c.type==="CHART")r+=chartCheckBoost(c);
+  if(c.type==="CHART")r+=chartCheckBoost(c)+chartAcuityBoost(c);
   else if(dl&&dl.cls==="over")r+=1000;
   else if(dl&&dl.cls==="soon")r+=500;
   if(needsConsent(c))r+=80;
@@ -1659,6 +1667,14 @@ function urgencyRank(c){
   else if(isDeferredDocumentation(c))r-=80;
   return r;
 }
+function timerQueueSort(c){
+  const due=nextDue(c),t=due?Date.parse(due):null;
+  if(!t)return {bucket:1,time:0};
+  const ms=t-Date.now();
+  if(ms<=0)return {bucket:0,time:t};
+  if(ms<15*60000)return {bucket:0,time:t};
+  return {bucket:2,time:t};
+}
 function sortCs(a,b){
   const ar=urgencyRank(a),br=urgencyRank(b);
   if(pinnedTopId&&a.id!==b.id){
@@ -1667,8 +1683,9 @@ function sortCs(a,b){
   }
   if(br!==ar)return br-ar;
   if(b.E!==a.E)return b.E-a.E;
-  const ad=nextDue(a)?Date.parse(nextDue(a)):Infinity,bd=nextDue(b)?Date.parse(nextDue(b)):Infinity;
-  if(ad!==bd)return ad-bd;
+  const aq=timerQueueSort(a),bq=timerQueueSort(b);
+  if(aq.bucket!==bq.bucket)return aq.bucket-bq.bucket;
+  if(aq.time!==bq.time)return aq.time-bq.time;
   // equal urgency + equal timing: whatever hasn't been touched yet rises
   const as=isStarted(a)?1:0,bs=isStarted(b)?1:0;
   if(as!==bs)return as-bs;
@@ -1727,15 +1744,15 @@ function phoneHtml(c){
 }
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
-  return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
+  return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
-  const base=(c.deadlineISO&&Date.parse(c.deadlineISO)>Date.now())?Date.parse(c.deadlineISO):Date.now();
-  c.deadlineISO=new Date(base+min*60000).toISOString();touch(c);render();}
+  c.deadlineISO=new Date(Date.now()+min*60000).toISOString();touch(c);render();
+  showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h"))}
 function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
 function stepTimerBtn(c,i,s){
@@ -2739,11 +2756,16 @@ function tcUseLabs(){
 }
 // ---- text consult embedded in the consult form ----
 const FTC=["title","hpi","exam","img","labs","plan"];
+function ftcAutoHpi(){
+  const h=document.getElementById("ftc_hpi"),p=document.getElementById("f_prob");
+  if(h&&p&&!h.value.trim()&&p.value.trim())h.value=p.value.trim();
+}
 function ftcParse(){
+  const prob=document.getElementById("f_prob").value.trim();
   const src=["f_prob","f_state","f_note"].map(i=>document.getElementById(i).value||"").filter(Boolean).join(". ");
   const o=src.trim()?tcExtract(src):{};
-  document.getElementById("ftc_title").value=o.title||document.getElementById("f_prob").value||"";
-  document.getElementById("ftc_hpi").value=o.hpi||"";
+  document.getElementById("ftc_title").value=o.title||prob||"";
+  document.getElementById("ftc_hpi").value=prob||o.hpi||"";
   document.getElementById("ftc_exam").value=o.exam||document.getElementById("f_state").value||tcSuggestedExam(src);
   document.getElementById("ftc_img").value=o.img||"[modality w/ finding vs prior]";
   document.getElementById("ftc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(src));
