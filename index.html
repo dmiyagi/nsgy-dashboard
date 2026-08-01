@@ -1711,12 +1711,19 @@ function hasConsentTask(c){
   return (S.consults||[]).some(x=>x.type==="CONSENT"&&!x.closed&&x.id!==c.id&&
     ((c.roundId&&x.roundId===c.roundId)||(loc&&String(x.loc||"").toUpperCase()===loc)));
 }
+function consentCueText(c){
+  return [c.prob,c.state,c.action,c.note].filter(Boolean).join(" ");
+}
+function hasMissingConsentCue(c){
+  const txt=consentCueText(c);
+  if(!txt||/\[consented\]/i.test(txt))return false;
+  if(/\b(?:needs?|need|requires?|require)\s+consent\b|\bnot\s+consented\b|\bwithout\s+consent\b|\bconsent\s+(?:needed|required|pending|todo|to do)\b|\bno\s+consent\b/i.test(txt))return true;
+  return /\b(?:OR|surgery|case)\s*(?:date|day|on|scheduled|planned)?\s*[:\-]?\s*(?:today|tomorrow|\d{1,2}[\/.-]\d{1,2}(?:[\/.-]\d{2,4})?|\d{4}-\d{1,2}-\d{1,2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2})\b/i.test(txt);
+}
 function opBound(c){
   if(c.closed||c.type==="CONSENT")return false;
   if((c.wf||{}).consent)return false;
-  if(c.O>=2)return true;
-  if((c.mods||[]).includes("OR"))return true;
-  return /\bbook(ed|ing)?\b.*\bor\b|going to (the )?or|pre-?op|to the or|surgery (today|tomorrow|planned|scheduled)/i.test([c.prob,c.state,c.note].filter(Boolean).join(" "));
+  return hasMissingConsentCue(c);
 }
 function needsConsent(c){return opBound(c)&&!hasConsentTask(c)}
 function renderConsentBar(){
@@ -2575,7 +2582,7 @@ function hideOR(){document.getElementById("ovOR").classList.remove("show");orId=
 let consentId=null;
 function maybeConsentPopup(prev,cur){
   if(!needsConsent(cur))return;
-  if(prev&&opBound(prev))return;             // only fire when it newly becomes operative
+  if(prev&&hasMissingConsentCue(prev))return; // only fire when missing consent is newly explicit
   if(document.getElementById("ovOR").classList.contains("show"))return; // OR popup already covers it
   consentId=cur.id;
   document.getElementById("consentWho").textContent=cur.loc||cur.prob||"this patient";
@@ -2713,7 +2720,7 @@ function renderCapture(){
   const pmatch=findPatientMatch(text,bed);
   const bookCue=/^book\b|\bbook(ing)?\b.*\b(case|or|crani|spine|shunt|evd|tssh|carotid|sdh|tumou?r|mass)\b/i.test(text);
   const isCall=/\b(call|page|phone|text|update)\b/i.test(text);
-  const consentCue=/consent/i.test(text);
+  const consentCue=hasMissingConsentCue({prob:text,state:"",action:"",note:"",wf:{}});
   const isQ=/\?\s*$/.test(text)||/^(what|when|why|how|should|is|does|can|do i|any evidence)\b/i.test(text);
   const sugns=SUGG.filter(s=>suggMatch(s,text));
   const alerts=measAlerts(parseMeas(text),text);
