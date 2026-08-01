@@ -1548,6 +1548,7 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
 // ---------- board render ----------
 let pinnedTopId=null;
 const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
+const CONSULT_PRIORITY_WF=[["seen","Seen",140],["staffedC","Staffed-Chief",120],["staffedA","Staffed-Attg",110],["commplan","Comm'd Plan",90]];
 function consultGateMissing(c){
   if(!c||c.type!=="CONSULT")return [];
   const wf=c.wf||{};
@@ -1607,6 +1608,12 @@ function chartCheckBoost(c){
   if(diff>=-30)return 95;
   return 70; // still visible after the check time, but not allowed to bury consults
 }
+function consultWorkflowBoost(c){
+  if(c.type!=="CONSULT")return 0;
+  const wf=c.wf||{};
+  const miss=CONSULT_PRIORITY_WF.find(([k])=>!wf[k]);
+  return miss?miss[2]:0;
+}
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
@@ -1614,7 +1621,7 @@ function urgencyRank(c){
   else if(dl&&dl.cls==="over")r+=1000;
   else if(dl&&dl.cls==="soon")r+=500;
   if(needsConsent(c))r+=80;
-  if(c.type==="CONSULT"&&!(c.wf&&c.wf.commplan))r+=90;
+  r+=consultWorkflowBoost(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
   if(missingEmergentOpDocs(c))r+=180;
   else if(isDeferredDocumentation(c))r-=80;
@@ -1668,7 +1675,7 @@ function wfChips(c,mini){
     if(k==="__close")return '<button style="border-color:var(--ok);color:var(--ok)" onclick="startClose(\''+c.id+'\')">'+l+' ✓</button>';
     const v=c.wf&&c.wf[k];
     const label=(timed&&v)?l+" "+fmtTime(v):l;
-    const urgent=(k==="dvt"&&!v)?' style="border-color:var(--e2);color:var(--e2)"':"";
+    const urgent=((k==="dvt"||(["seen","staffedC","staffedA"].includes(k)&&c.type==="CONSULT"))&&!v)?' style="border-color:var(--e2);color:var(--e2)"':"";
     return '<button class="'+(v?"on":"")+'"'+urgent+' onclick="togWf(\''+c.id+'\',\''+k+'\')">'+label+'</button>';
   }).join("")+'</div>';
 }
@@ -1995,8 +2002,39 @@ function showToast(msg,undoFn){
   toastT=setTimeout(()=>{t.classList.remove("show");_undoFn=null},undoFn?6000:2500);
 }
 function runUndo(){if(_undoFn){const f=_undoFn;_undoFn=null;f();const t=document.getElementById("toast");if(t)t.classList.remove("show")}}
+function consultWfPrereqMissing(c,k){
+  if(!c||c.type!=="CONSULT")return [];
+  const wf=c.wf||{};
+  const req={
+    staffedC:[["list","List"],["handoff","Handoff"],["seen","Seen"]],
+    staffedA:[["staffedC","Staffed-Chief"]],
+    commplan:[["staffedA","Staffed-Attg"]],
+    note:[["commplan","Comm'd Plan"]]
+  }[k]||[];
+  return req.filter(([rk])=>!wf[rk]).map(([,l])=>l);
+}
+function clearConsultWfAfter(c,k){
+  if(!c||c.type!=="CONSULT"||!c.wf)return;
+  const downstream={
+    list:["staffedC","staffedA","commplan","note"],
+    handoff:["staffedC","staffedA","commplan","note"],
+    seen:["staffedC","staffedA","commplan","note"],
+    staffedC:["staffedA","commplan","note"],
+    staffedA:["commplan","note"],
+    commplan:["note"]
+  }[k]||[];
+  downstream.forEach(x=>{c.wf[x]=false});
+}
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
-  if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}else{c.wf[k]=!c.wf[k]}
+  if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}
+  else{
+    const next=!c.wf[k];
+    if(next){
+      const miss=consultWfPrereqMissing(c,k);
+      if(miss.length){pinnedTopId=c.id;showToast("Before "+k+": complete "+miss.join(" + "));render();return}
+    }else clearConsultWfAfter(c,k);
+    c.wf[k]=next;
+  }
   touch(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length){pinnedTopId=c.id;render();return}
   reflowQueue();render();}
