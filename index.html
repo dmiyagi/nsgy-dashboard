@@ -379,7 +379,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="collapseAll(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseAll(false)">⊞ Expand</button>
     <div class="oebox inline">
-      <input type="text" id="oeq" placeholder="Quick evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
+      <input type="text" id="oeq" placeholder="Quick Open Evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
       <button onclick="askOEBox()">⌕ OE</button>
     </div>
   </div>
@@ -1476,6 +1476,7 @@ const BLOCKS=[
 // ---------- state ----------
 let S=load();
 let globalSearch="";
+let startupCompactBoard=true;
 function migrate(d){
   (d.consults||[]).forEach(c=>{
     if(!Array.isArray(c.tasks))c.tasks=[];
@@ -1492,6 +1493,7 @@ function searchBlob(x){return Object.keys(x||{}).map(k=>{
   const v=x[k];return typeof v==="string"?v:(Array.isArray(v)?v.map(searchBlob).join(" "):"");
 }).join(" ").toLowerCase()}
 function matchSearch(x){const q=globalSearch.trim().toLowerCase();return !q||searchBlob(x).includes(q)}
+function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
 function renderAll(){render();renderRounds();renderPhones();renderBookings();filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
@@ -2798,6 +2800,7 @@ async function doSync(auto){
     }
     const merged=mergeState(S,remote);
     S.consults=merged.consults;S.rounds=merged.rounds;S.tomb=merged.tomb;S.day=merged.day;
+    compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
     const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],tomb:remote.tomb||{},day:remote.day});
     const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,tomb:merged.tomb,day:merged.day});
@@ -2806,9 +2809,10 @@ async function doSync(auto){
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
     renderAll();renderBlocks();
+    startupCompactBoard=false;
     setDot("● synced","var(--ok)");
   }catch(e){setDot("! sync","var(--e3)")}
-  finally{syncing=false}
+  finally{syncing=false;if(auto)startupCompactBoard=false}
 }
 function openSync(){
   const cfg=syncCfg();
@@ -2976,10 +2980,13 @@ let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
+compactBoardForStartup();
 renderAll();renderBlocks();
 attachSwipe("cards","consult");attachSwipe("rcards","round");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
+const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
 doSync(true);
+if(!syncAtStartup)startupCompactBoard=false;
 setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;renderAll();renderBlocks()},30000);
 </script>
 </body>
