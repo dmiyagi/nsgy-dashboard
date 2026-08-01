@@ -21,6 +21,7 @@
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;padding-bottom:72px}
 header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);border-top:3px solid var(--acc);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.appicon{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut)}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
@@ -72,6 +73,10 @@ section.view.active{display:block}
 .wf button.on{background:#123527;border-color:var(--ok);color:var(--ok)}
 .cardbtns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
 .cardbtns button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
+.webtrash{display:none;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
+.webtrash:hover{border-color:var(--e3);color:var(--e3)}
+.card.hastrash{padding-right:46px}
+@media(min-width:760px){.webtrash{display:block}}
 .empty{color:var(--mut);text-align:center;padding:30px 10px;font-size:14px}
 details.closedsec{margin-top:16px}
 details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
@@ -320,8 +325,6 @@ details.ref th{background:var(--card2);font-size:11.5px}
 .warnbox{background:#2a1e10;border:1px solid #6b4b1c;border-radius:8px;padding:8px 10px;font-size:12.5px;color:#ffca7a;margin:6px 0}
 .script{background:var(--card2);border-left:3px solid var(--acc);border-radius:8px;padding:9px 11px;font-size:13px;margin:6px 0;font-style:italic}
 pre.tpl{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin:6px 0;color:#c8d3e4}
-/* self check */
-.sc-q{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);padding:12px;margin-bottom:10px}
 .footerbar{display:flex;gap:8px;justify-content:center;margin-top:24px;flex-wrap:wrap}
 h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:16px 0 8px}
 </style>
@@ -329,6 +332,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <body>
 
 <header>
+  <img class="appicon" src="icon-192.png" alt="" aria-hidden="true">
   <div>
     <h1>NSGY Consult Triage</h1>
     <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for attending judgment</div>
@@ -339,34 +343,33 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 </header>
 
 <nav>
-  <button data-view="board" class="active"><span class="ico">🗂</span>Board</button>
-  <button data-view="rounds"><span class="ico">🛏</span>Rounds</button>
-  <button data-view="cal"><span class="ico">📅</span>Cal</button>
-  <button data-view="booking"><span class="ico">🏨</span>Booking</button>
-  <button data-view="day"><span class="ico">🕐</span>Day</button>
-  <button data-view="ref"><span class="ico">📚</span>Reference</button>
-  <button data-view="check"><span class="ico">🧠</span>Self-Check</button>
+  <button data-view="board" class="active"><span class="ico">▣</span>Board</button>
+  <button data-view="rounds"><span class="ico">▤</span>Rounds</button>
+  <button data-view="cal"><span class="ico">◷</span>Cal</button>
+  <button data-view="booking"><span class="ico">⊞</span>Booking</button>
+  <button data-view="day"><span class="ico">◴</span>Day</button>
+  <button data-view="ref"><span class="ico">≡</span>Reference</button>
 </nav>
 
 <main>
 
 <!-- ============ BOARD ============ -->
 <section class="view active" id="view-board">
-  <div class="banner">Use only HIPAA-compliant data — bed + first three letters of last name, never full names or MRNs. Data is never stored on any server. Wipe everything with the ⚙ button below.</div>
+  <div class="banner">Use only HIPAA-compliant data — bed + first three letters of last name, never full names or MRNs. Data is never stored on any server. Wipe everything with the Set button below.</div>
   <input id="cap" class="capin capin-hero" placeholder="Type anything…" autocomplete="off">
   <div id="capsugg"></div>
   <details class="addmenu">
     <summary>＋ Add by type ▾</summary>
     <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
-      <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">🧠 Consult</button>
-      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')">📞 Comm</button>
-      <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">📋 Chart check</button>
-      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')">🛠 Floor proc</button>
-      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')">🎛 Quick proc</button>
-      <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">🩹 POC</button>
-      <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✍️ Consent</button>
-      <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">🏨 Booking</button>
-      <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">🏠 DC prep</button>
+      <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
+      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')">☎ Comm</button>
+      <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
+      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')">⚒ Floor proc</button>
+      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')">◫ Quick proc</button>
+      <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
+      <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
+      <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
+      <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">⌂ DC prep</button>
     </div>
   </details>
   <div class="consentbar" id="consentbar"></div>
@@ -376,11 +379,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="collapseAll(false)">⊞ Expand</button>
     <div class="oebox inline">
       <input type="text" id="oeq" placeholder="Quick evidence question…" onkeydown="if(event.key==='Enter')askOEBox()">
-      <button onclick="askOEBox()">🔬 OE</button>
+      <button onclick="askOEBox()">⌕ OE</button>
     </div>
   </div>
   <div id="cards"></div>
-  <details class="closedsec snoozesec"><summary id="snoozesum">⏰ Scheduled / snoozed</summary>
+  <details class="closedsec snoozesec"><summary id="snoozesum">◷ Scheduled / snoozed</summary>
     <input type="text" placeholder="Search scheduled tasks… (e.g. prolenes)" oninput="snoozeFilter=this.value;renderSnoozed()">
     <div id="snoozecards"></div>
   </details>
@@ -388,13 +391,13 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="footerbar">
     <button class="btn sec sm" onclick="openSync()">⇅ Sync setup</button>
     <button class="btn sec sm" onclick="doSync(false)">⟳ Sync now</button>
-    <button class="btn sec sm" onclick="wipe()">⚙ Wipe all data</button>
+    <button class="btn sec sm" onclick="wipe()">Set / wipe all data</button>
   </div>
 </section>
 
 <!-- ============ CALENDAR ============ -->
 <section class="view" id="view-cal">
-  <div class="banner">Longitudinal view — every task with a deadline or a ⏰ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
+  <div class="banner">Longitudinal view — every task with a deadline or a ◷ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
   <div class="rowflex"><button class="btn" onclick="openForm(null,false,'CHART')">＋ Add dated task / event</button><button class="btn sec sm" onclick="openForm(null,false,'PROC')">＋ Procedure</button><button class="btn sec sm" onclick="openForm(null,false,'BOOK')">＋ Booking</button></div>
   <div id="calcards"></div>
 </section>
@@ -407,8 +410,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" onclick="openForm(null,false,'CONSENT')">＋ Consent</button>
     <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Pre-op checklist</button>
   </div>
-  <details class="ref" open><summary>📋 Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist2"></div></div></details>
-  <details class="ref" open><summary>✅ Pre-op reminders</summary><div class="rb">
+  <details class="ref" open><summary>▤ Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist2"></div></div></details>
+  <details class="ref" open><summary>✓ Pre-op reminders</summary><div class="rb">
     <h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx held · NPO · H&P note · Pre-op note · EKG · Pregnancy test if applicable · MRSA screen.</p>
     <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appointment/instructions · Hibiclens.</p>
     <h4>Emergent / same-day</h4><p>Confirm attending, exact procedure name, laterality, booking classification, ICU postop destination, anesthesia/special equipment, OR front desk, Teams Booking chat, whiteboard, family update.</p>
@@ -423,7 +426,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
-    <button class="btn sec sm" onclick="purgeRounds()">🗑 Purge list</button>
+    <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
   <div class="bulkexport">
     <span style="font-size:12px;color:var(--mut)">Export whole list →</span>
@@ -434,11 +437,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <button data-m="initials" onclick="setRoundSort('initials')">Sort: last 3</button>
     </span>
   </div>
-  <details class="ref" style="margin-top:4px"><summary>🧼 Scrub a raw list → de-identified one-liners</summary><div class="rb">
+  <details class="ref" style="margin-top:4px"><summary>Scrub Scrub a raw list → de-identified one-liners</summary><div class="rb">
     <p class="note">Paste sign-out narrative with names. Each patient becomes: initials + one disease identifier + standout values + plan, with trailing "Action items" matched back to their patient. One patient = one line by default; if a patient's info wraps onto extra lines, <b>indent those continuation lines with Tab</b> so they stay grouped with that patient instead of becoming separate entries. <b>Best-effort scrub — eyeball every line before it leaves this app.</b></p>
     <textarea id="scrubbox" class="evta" style="min-height:110px;width:100%;margin:6px 0" placeholder="Type anything here… paste the raw sign-out narrative"></textarea>
     <div class="rowflex">
-      <button class="btn" onclick="scrubList()">🧼 Scrub</button>
+      <button class="btn" onclick="scrubList()">Scrub Scrub</button>
       <button class="btn sec sm" onclick="copyScrubAll()">Copy all one-liners</button>
       <button class="btn sec sm" onclick="scrubClear()">✕ Clear results</button>
     </div>
@@ -458,7 +461,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <h3 class="secgroup">Triage core</h3>
 
-<details class="ref"><summary>📞 30-second callback triage</summary><div class="rb">
+<details class="ref"><summary>☎ 30-second callback triage</summary><div class="rb">
 <div class="script">"I'm managing another time-sensitive neurosurgical patient. Tell me the current neurologic examination, what changed, when it changed, the critical imaging finding, anticoagulation status, and what you need from neurosurgery right now."</div>
 <p>Ask in this order:</p>
 <ul>
@@ -474,7 +477,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <p class="note">Built on TeamSTEPPS principles — SBAR, call-outs, check-backs, closed-loop communication.<a class="cite" href="https://www.ahrq.gov/sites/default/files/wysiwyg/teamstepps-program/teamstepps-pocket-guide.pdf" target="_blank">[6]</a> Assign only a provisional <b>E# / O# / W</b> at intake — do not run the full complexity score during the callback.</p>
 </div></details>
 
-<details class="ref"><summary>🚨 E-axis & E3 override triggers</summary><div class="rb">
+<details class="ref"><summary>! E-axis & E3 override triggers</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
 <tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now.</td></tr>
 <tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Active evaluation & decision generally within 1–6 h, often sooner.</td></tr>
@@ -506,7 +509,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <li>CSF leak with wound failure and instability · competing emergency operation affecting neurologic safety</li></ul>
 </div></details>
 
-<details class="ref"><summary>🔪 O-axis: operative trajectory</summary><div class="rb">
+<details class="ref"><summary>O O-axis: operative trajectory</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
 <tr><td><b>O3</b></td><td>Operative now — emergency procedure underway or decision effectively made.</td></tr>
 <tr><td><b>O2</b></td><td>Likely operative this shift/day; limited decisions remain.</td></tr>
@@ -516,7 +519,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <div class="warnbox"><b>O0 ≠ low acuity.</b> An unsecured ruptured aneurysm, acute hydrocephalus, status epilepticus, or severe intracranial hypertension may be E3 while not immediately requiring an open operation.</div>
 </div></details>
 
-<details class="ref"><summary>🧩 C-axis: 11 domains & modifiers</summary><div class="rb">
+<details class="ref"><summary>C C-axis: 11 domains & modifiers</summary><div class="rb">
 <p>Score each domain 0–3, highest applicable. Max 33. Thresholds (operational, unvalidated): <b>0–5 C1</b> low · <b>6–11 C2</b> moderate · <b>12–23 C3</b> high · <b>24–33 C4</b> extreme.</p>
 <p>Domains: 1 Neuro instability/trajectory · 2 Lesion & anatomic danger · 3 Hidden-deterioration risk (W) · 4 Diagnostic uncertainty · 5 Baseline & exam interpretability · 6 Prior anatomy/devices/procedures · 7 Procedural/operative complexity · 8 Hemostasis & medication risk · 9 Infection/wound/CSF · 10 Medical/physiologic · 11 Communication/consent/dispo/task burden.</p>
 <div class="warnbox"><b>W3 mandatory interaction with E-axis:</b> W3 should generally not remain E0. If W3 is E1 rather than E2, document why immediate evaluation is not required. Define the reassessment interval, responsible examiner, and escalation trigger.</div>
@@ -528,7 +531,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <h3 class="secgroup">Clinical reference boxes</h3>
 
-<details class="ref"><summary>🩸 Traumatic-lesion thresholds (BTF / ACS)</summary><div class="rb">
+<details class="ref"><summary>● Traumatic-lesion thresholds (BTF / ACS)</summary><div class="rb">
 <p class="note">Reference thresholds, not substitutes for senior review.<a class="cite" href="https://braintrauma.org/coma/guidelines/surgical" target="_blank">[4]</a></p>
 <ul>
 <li><b>EDH:</b> evacuate when volume &gt; 30 cm³ regardless of GCS.</li>
@@ -542,7 +545,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <p>Older BTF SDH surgical criteria use <b>ICP &gt; 20 mm Hg</b> as one operative trigger (comatose, smaller SDH). More recent general severe-TBI guidance uses <b>22 mm Hg as an initial treatment threshold</b> (reasonable treatment range 20–25 mm Hg sustained &gt; 5 min). Do not silently substitute one for the other — they come from different guideline contexts.<a class="cite" href="https://braintrauma.org/coma/guidelines/surgical" target="_blank">[4]</a></p>
 </div></details>
 
-<details class="ref"><summary>💉 Anticoagulation reversal quick-reference</summary><div class="rb">
+<details class="ref"><summary>Rx Anticoagulation reversal quick-reference</summary><div class="rb">
 <p class="note">Use institutional pharmacy and neurocritical-care protocols for final dosing.</p>
 <table>
 <tr><th>Agent</th><th>Typical reversal strategy</th></tr>
@@ -557,7 +560,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <p>Capture: exact drug · indication · last dose · renal function · INR/PTT/anti-Xa/fibrinogen/platelets · recent lytic · mechanical valve · recent DVT/PE · recent stent · reversal ordered → administered → lab response · restart deadline · who owns the restart decision.</p>
 </div></details>
 
-<details class="ref"><summary>🦠 Shunt/CSF infection (IDSA)</summary><div class="rb">
+<details class="ref"><summary>INF Shunt/CSF infection (IDSA)</summary><div class="rb">
 <p>Confirmed infected CSF shunt: <b>complete removal + temporary EVD + IV antimicrobials</b>. Leaving infected hardware historically has low success; a randomized pediatric study reported <b>70% recurrence without removal</b>. Even with removal + external drainage, failure/reinfection still occurs in ~10–20%.<a class="cite" href="https://www.idsociety.org/practice-guideline/healthcare-associated-ventriculitis-and-meningitis/" target="_blank">[5]</a></p>
 <h4>Reimplantation timing</h4>
 <ul>
@@ -582,7 +585,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <li>"Review repeat CT at 22:00." · "Page chief with exam, measurements, and anticoagulation status."</li></ul>
 </div></details>
 
-<details class="ref"><summary>🪜 Consult stages & pause points</summary><div class="rb">
+<details class="ref"><summary>§ Consult stages & pause points</summary><div class="rb">
 <ul>
 <li><b>1. Intake (30–90 s):</b> only enough to classify urgency. <i>Pause 1:</i> provisional E#/O#/W. No full complexity score yet.</li>
 <li><b>2. Preserve the interrupted task (&lt;30 s):</b> write the anchor, assign a deadline, name the bedside examiner, set an alarm. <i>Pause 2:</i> interrupted patient has a restart point.</li>
@@ -595,7 +598,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 </ul>
 </div></details>
 
-<details class="ref"><summary>🎯 Destination bundles</summary><div class="rb">
+<details class="ref"><summary>◎ Destination bundles</summary><div class="rb">
 <h4>Operative</h4><p>Procedure · laterality · consent · NPO · T&S/cross · CBC + coags · reversal · antibiotics · OR booking · anesthesia · special equipment · navigation/imaging · positioning · ICU bed · family update · postop imaging · postop exam owner.</p>
 <h4>Admission</h4><p>Accepting service · level of care · neuro-check frequency · BP goals · Na goals · antithrombotics · diet/activity · seizure meds · DVT ppx · imaging schedule · device orders · wound plan · consultants · escalation criteria.</p>
 <h4>Discharge</h4><p>NSG stability · no unresolved dangerous finding · symptom control · med rec · wound/device instructions · restrictions · follow-up + imaging · return precautions · ownership of pending cultures/studies · transport/supervision.</p>
@@ -604,7 +607,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <h3 class="secgroup">Brown NSGY cribs (boot camp)</h3>
 
-<details class="ref"><summary>📝 New consult workflow (Epic)</summary><div class="rb">
+<details class="ref"><summary>N New consult workflow (Epic)</summary><div class="rb">
 <ul>
 <li>Opt in to <b>RIH ICH/IPH</b> + <b>RIH Neurosurgery ED Consult Team</b> (opt out at home or you'll get notifications).</li>
 <li>Add patient to your <b>Consults</b> list <i>and</i> shared <b>RIH NSGY</b> list immediately.</li>
@@ -627,7 +630,7 @@ ESRD MWF, eliquis (afib, 14d), JP, nylons 5/28
 Ex: PINK (RT*) L thal ICH + IVH, R EVD 5/29-, eliquis (PE), DNR/I</pre>
 </div></details>
 
-<details class="ref"><summary>🏥 Admissions, booking, consents, discharges</summary><div class="rb">
+<details class="ref"><summary>⊞ Admissions, booking, consents, discharges</summary><div class="rb">
 <h4>Admission</h4>
 <ul><li>Med rec: Nonsurgical tab → Admission → Outside Meds → dispense report → sticky note (#HTN-home amlodipine…) → copy into H&P.</li>
 <li>Orders: continue/dc all current orders; start all home meds <b>except ACE-i + blood thinners perioperatively</b> (blood thinners held 14 d after TBI). Baclofen withdrawal can be lethal — don't miss home meds.</li>
@@ -651,7 +654,7 @@ Ex: PINK (RT*) L thal ICH + IVH, R EVD 5/29-, eliquis (PE), DNR/I</pre>
 <li>If meds change after signing the summary, refresh the summary. Sign AVS → discharge order pops → sign.</li></ul>
 </div></details>
 
-<details class="ref"><summary>🗣 PM sign-out scripts</summary><div class="rb">
+<details class="ref"><summary>SO PM sign-out scripts</summary><div class="rb">
 <pre class="tpl">aSAH: one-liner (grade, coil/clip, post-bleed day) · exam @ SBP · EVD level + ICPs ·
 new events/imaging · TCDs · Na goal · BP goal · nimodipine · active problems
 
@@ -667,7 +670,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <p class="note">Floor signs out first (6 PM) — keep seeing consults and doing procedures until it's your turn. Then ICU/peds with scripts.</p>
 </div></details>
 
-<details class="ref"><summary>☎️ Key numbers & M&M criteria</summary><div class="rb">
+<details class="ref"><summary>☎ Key numbers & M&M criteria</summary><div class="rb">
 <h4>Key numbers</h4>
 <p>OR front desk 45657 · OR booking 48375 · CT ED 46159 · CT read 44314 (5–10p: 44123; after 10p: 42727) · ED read 42727 · MRI read 44267 · Neurorads 45828 · Blood bank 44529 · Bed board 45681 · BB7 conference 1217# · NCCU secretary 45286 · Language line 866-874-3972 (229076) · Neuromonitoring night/wknd (1363) 800-521-9757 · Medicine consult 350-2365 · General surgery consult 350-1018 · Ortho spine 350-1326.</p>
 <h4>M&M (drag to Skittles list + blue sticky note)</h4>
@@ -678,16 +681,16 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 
 <h3 class="secgroup">2026 Survival guide</h3>
 
-<details class="ref"><summary>📄 Source bootcamp text</summary><div class="rb">
+<details class="ref"><summary>□ Source bootcamp text</summary><div class="rb">
 <p>The raw source file is kept in this repo as <b>nsgy_bootcamp.txt</b> so future updates can be made against the original bootcamp document and then folded into the structured app sections.</p>
 </div></details>
 
-<details class="ref"><summary>📇 Phone directory (searchable)</summary><div class="rb">
+<details class="ref"><summary>☎ Phone directory (searchable)</summary><div class="rb">
 <input class="refsearch" id="phoneq" placeholder="Search… e.g. MRI, NCCU, blood bank" oninput="renderPhones()">
 <div class="pre" id="phonelist"></div>
 </div></details>
 
-<details class="ref"><summary>🔑 Room codes</summary><div class="rb"><div class="pre">5ISC wkrm 0305# · 5ISC supply 5678#
+<details class="ref"><summary># Room codes</summary><div class="rb"><div class="pre">5ISC wkrm 0305# · 5ISC supply 5678#
 APC 4 library 723 · APC 506 Neuro 5250# · APC 631 NSGY 4146#
 BB7 conference 1217 · BB7 wkrm 4646# · BB7 call room 5555# · BB7 equipment 2002#
 Biplane 0911# · Biplane 2 0922#
@@ -696,18 +699,18 @@ ED Code 9111* · HCH elevator 4152# · HCH 401 4441# · HCH 509 55551#
 MICU supply 2160# · PICU 263 supply 3214# · TICU supply (MAI597) 5752#
 W&I NICU clean supply 3452 1604</div></div></details>
 
-<details class="ref"><summary>🛏 NACU vs NCCU vs BB7 (what's allowed where)</summary><div class="rb">
+<details class="ref"><summary>▤ NACU vs NCCU vs BB7 (what's allowed where)</summary><div class="rb">
 <h4>NACU allows</h4><p>A-lines · cardene · pressors (provider-manageable — MAP push, post-op carotid fine) · hypertonics for hypoNa (NOT cerebral edema) · Q1 neuro checks · non-transducing EVD · lumbar drain · <b>NO fresh post-op AVMs</b>.</p>
 <h4>BB7 allows</h4><p>Q2 neuro checks · lumbar drain · hypertonics for hypoNa (not edema) · <b>NO other drips including cardene</b>.</p>
 <p class="note">Pushback from nursing → involve Tia/Marguerite; major issue → Rad. Providers/bed board make NACU admission decisions.</p>
 </div></details>
 
-<details class="ref"><summary>📋 Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist"></div>
+<details class="ref"><summary>▤ Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist"></div>
 <h4>Fixings</h4><p><b>Cranial:</b> brainlab, CUSA, scope, sonopet, sugita, ultrasound, neuromonitoring, Stryker plating. <b>Spine:</b> neuromonitoring, nuvasive, DePuy Expedium, mountaineer, airo, ziehm, viper, Jackson table, possible complex plastics closure.</p>
 <p class="note">Change booking name same day: post-op to floor → procedures.</p>
 </div></details>
 
-<details class="ref"><summary>✍️ Who consents what</summary><div class="rb"><div class="pre">Cranial: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak
+<details class="ref"><summary>✎ Who consents what</summary><div class="rb"><div class="pre">Cranial: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak
 Spine: Patti · Tim · Toki · Sampath · Williamson + fellows
 Vascular: Curt · Rad · Kriszy
 TSSH: Prak+Ritu · Christine+Basit · Curt+Duff
@@ -715,13 +718,13 @@ ALIF exposers: Soden · Luhrs
 PRS closers: Woo · Kwan · Beqiri · Maselli
 Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that day</div></div></details>
 
-<details class="ref"><summary>🧾 Pre-op checklists</summary><div class="rb">
+<details class="ref"><summary>✓ Pre-op checklists</summary><div class="rb">
 <h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx · NPO · H&P note · Pre-op note · EKG · Pregnancy test · MRSA screen.</p>
 <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appt via Sharonda · PAT instructions in discharge · Hibiclens.</p>
 <h4>Preemie</h4><p>No coags needed (T&S, PT/PTT) · CLD 6 h pre-op · NPO 2 h pre-op.</p>
 </div></details>
 
-<details class="ref"><summary>🕊 Death checklist</summary><div class="rb"><ul>
+<details class="ref"><summary>† Death checklist</summary><div class="rb"><ul>
 <li>Notify attending + secretary notifies medical records.</li>
 <li>Death exam: pupils, breath, carotid pulse, heartbeat.</li>
 <li>Significant event note with time of death + exam.</li>
@@ -730,7 +733,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <li>Call family; ask about autopsy if warranted.</li>
 </ul></div></details>
 
-<details class="ref"><summary>💊 Order cribs (migraine · pedi · seizure · ICP)</summary><div class="rb">
+<details class="ref"><summary>Rx Order cribs (migraine · pedi · seizure · ICP)</summary><div class="rb">
 <h4>Migraine cocktail</h4><p>Compazine 10 · Benadryl 25 · Mg sulfate 2 g · 1 L fluids · Toradol vs Tylenol.</p>
 <h4>Pedi</h4><p>Pain: PRN valium, NO robaxin. Seizures: 15 mg/kg load + 10 mg/kg BID ×7 d. Transfusion: 10 cc/kg children, 15 cc/kg neonates.</p>
 <h4>Active seizure</h4><p>Ativan 2 → versed if refractory · Keppra 1–2 g · STAT EEG + call tech · call neurology.</p>
@@ -739,7 +742,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <h4>Neuro IR recovery</h4><p>Radial compression device: note balloon volume; keep inflated — neuro standard if DAPT/heparin, else body standard expedited; sign.</p>
 </div></details>
 
-<details class="ref"><summary>🔬 MRI protocols + trials</summary><div class="rb">
+<details class="ref"><summary>⌕ MRI protocols + trials</summary><div class="rb">
 <h4>MRI protocols</h4><p>Moyamoya: MRI Brain WWO Moyamoya + MRA Brain WO (comment: "please perform MRI Brain WWO Moyamoya"). Vascular malformation: MRI Brain WWO Vasc Malf + MRA Brain WO. Medulloblastoma: MRI Brain and Spine COG Protocol.</p>
 <h4>NICO (ICH)</h4><p><b>In:</b> lobar/basal ganglia ICH · 18–80 · 30–80 cc · GCS 5–14 · NIHSS >5 · surgery within 24 h of LKW. <b>Out:</b> underlying vascular lesion · irreversible coagulopathy · thalamic/brainstem extension.</p>
 <h4>REACH (ICH)</h4><p><b>In:</b> 18–70 · GCS 5–14 · mRS 0–1 · anterior basal ganglia ICH 20–80 mL · within 24 h. <b>Out (key):</b> aneurysm/AVM/tumor · NIHSS <5 · bilateral fixed pupils · extensor posturing · IVH >50% of a lateral ventricle · thalamic >25% · non-reversible AC · plt <75K or INR >1.4 · ESRD/liver/mech valve · CMO/DNR.</p>
@@ -748,7 +751,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <h4>Baclofen pump</h4><p>1-alarm: 90 d to replacement/refill. 2-alarm: empty/battery/stopped >48 h. To-do: PT/PTT + T&S + CK + NPO · PO baclofen 20–30 q8 (up to 240/d) · cyproheptadine 4–8 q6 · IV diazepam (ICU) · propofol (intubated) · interrogate pump · CT abdomen · LD for IT baclofen.</p>
 </div></details>
 
-<details class="ref"><summary>👶 Babies + chart admin (W&I)</summary><div class="rb">
+<details class="ref"><summary>Peds Babies + chart admin (W&I)</summary><div class="rb">
 <h4>Make Epic chart for W&I baby</h4><p>Express care 43000 creates chart (BabyBoy-MomName, LastName; alias if names don't align or imaging can't push). NICU secretary faxes demographics to x444-7100.</p>
 <h4>Push imaging W&I → RIH</h4><p>W&I file room x41248,2 → LifeImage upload + fax report to RIH file room (401-444-4133) → RIH file room x45606 uploads to Epic.</p>
 <h4>Name change / merge</h4><p>RIH Admitting 46686 + NICU secretary 43300 faxes face sheet to x45139; DOH faxes birth certificate. Merge charts: data integrity 44375.</p>
@@ -756,12 +759,12 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <h4>Brainlab remote</h4><p>connect.lifespan.org → Intranet → paste link from Cam's PDF.</p>
 </div></details>
 
-<details class="ref"><summary>⚔️ Dispo battles + M&M</summary><div class="rb">
+<details class="ref"><summary>! Dispo battles + M&M</summary><div class="rb">
 <p><b>TP fractures:</b> &lt;4 lumbar/thoracic TP fx need no spine consult from ortho or NSGY. <b>Frontal sinus fx</b> through anterior AND posterior tables → NSGY consult; look for CSF leak.</p>
 <h4>M&M (report to Skittles list)</h4><p>Death (index admission or 30 d) · unplanned return to OR / 30-d readmission · new unanticipated deficit · never event / wrong site-level-patient · major systemic complication · hospital-acquired infection · significant near-miss / good catch · anything referred by chair/quality.</p>
 </div></details>
 
-<details class="ref"><summary>🗣 Spanish exam script</summary><div class="rb"><div class="pre">Soy de neurocirugía. Estoy aquí para hacerte un examen físico.
+<details class="ref"><summary>SO Spanish exam script</summary><div class="rb"><div class="pre">Soy de neurocirugía. Estoy aquí para hacerte un examen físico.
 ¿Cuál es tu nombre? · ¿Dónde estamos ahora? ¿La biblioteca? ¿El hospital? · ¿Qué año es?
 Abre los ojos y mírame. · Sigue mi dedo con tus ojos.
 Cubre tu ojo derecho/izquierdo. Mira mi nariz. ¿Cuántos dedos ves?
@@ -771,13 +774,13 @@ Levanta la pierna derecha/izquierda. Mantenla arriba. No me dejes empujar hacia 
 Mantenga la pierna recta.
 Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de los pies.</div></div></details>
 
-<details class="ref"><summary>🧰 Procedure kits (supplies + steps)</summary><div class="rb">
+<details class="ref"><summary>Kit Procedure kits (supplies + steps)</summary><div class="rb">
 <p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · EVD flush · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
 <h4>Baby EVD deltas</h4><p>Max lido 1–2 cc · sterile paper towels to square head · white drape as major drape · flat baby changes angle (aim canthus, hand lower toward tragus plane) · pass only 4.5 cm · 1–2 tack-ups TIGHT · big bites if macerated tissue.</p>
 </div></details>
 
 <h3 class="secgroup">Sources</h3>
-<details class="ref"><summary>📖 Citations</summary><div class="rb">
+<details class="ref"><summary>Ref Citations</summary><div class="rb">
 <ul>
 <li>[1] <a href="https://www.neurocriticalcare.org/Portals/0/ENLS%205.0/ENLS%206.0/Protocol%20V6_0_Intracranial%20Hypertension%20and%20Herniation.pdf" target="_blank" style="color:var(--acc)">ENLS — Intracranial Hypertension and Herniation (Neurocritical Care Society)</a></li>
 <li>[2] <a href="https://gettingitrightfirsttime.co.uk/wp-content/uploads/2026/04/National-Suspected-Cauda-Equina-Pathway-March-2026.pdf" target="_blank" style="color:var(--acc)">National Suspected Cauda Equina Syndrome Pathway (GIRFT)</a></li>
@@ -791,17 +794,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 
 </section>
 
-<!-- ============ SELF-CHECK ============ -->
-<section class="view" id="view-check">
-  <div class="banner">Run after every 3 new consults · after an operation is booked · after an acute deterioration · before leaving the ED · before sign-out · whenever you're reacting rather than directing.</div>
-  <div class="sc-q checklist" id="scq"></div>
-  <div class="rowflex">
-    <button class="btn" onclick="finishCheck()">✓ All clear — reset counter</button>
-    <button class="btn sec" onclick="failCheck()">Can't answer these</button>
-  </div>
-  <div class="banner" id="scmsg" style="display:none"><b>Stop opening new charts for ~1 minute.</b> Rebuild the master list: go to the Board, reassess each card top-to-bottom, and give every time-dependent task an owner and deadline.</div>
-</section>
-
 </main>
 
 <!-- ============ FORM MODAL ============ -->
@@ -809,7 +801,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
   <div class="sheet">
     <h2 id="formtitle">New consult</h2>
     <div id="reassessBanner" style="display:none" class="banner"><b>Downgrade checkpoint:</b> 1) E-level changed? 2) O-level changed? 3) Hidden-deterioration risk changed? 4) Can the patient be downgraded? 5) Which tasks can be removed? <span class="note">Patients otherwise keep their original priority by inertia.</span></div>
-    <details style="margin-bottom:12px" id="cbdet"><summary style="font-size:13px;color:var(--acc);cursor:pointer;font-weight:600">📞 Show 30-second callback script</summary>
+    <details style="margin-bottom:12px" id="cbdet"><summary style="font-size:13px;color:var(--acc);cursor:pointer;font-weight:600">☎ Show 30-second callback script</summary>
       <div style="font-size:12.5px;color:var(--mut);padding:8px 2px">1 Airway/pupils/consciousness/BP/motor acutely abnormal? · 2 What changed now? · 3 Best/worst/current exam? · 4 Last at baseline? · 5 Imaging + dangerous finding? · 6 AC / postop / device? · 7 Requested action? · 8 Who is with the patient repeating the exam?</div>
     </details>
     <div class="fld"><label>Type</label><div class="chips" id="typechips"></div>
@@ -881,7 +873,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
-    <details class="moredet" id="fld_tc"><summary>📱 Text consult — build the send-ready version</summary>
+    <details class="moredet" id="fld_tc"><summary>▯ Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
@@ -892,7 +884,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
       <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
     </details>
-    <div class="fld" id="fld_snooze"><label>⏰ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
+    <div class="fld" id="fld_snooze"><label>◷ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
       <div class="qbtns">
         <button type="button" onclick="setSnoozeMinutes(15)">+15 min</button><button type="button" onclick="setSnoozeMinutes(30)">+30 min</button>
         <button type="button" onclick="setSnoozeMinutes(60)">+1 h</button><button type="button" onclick="setSnoozeMinutes(120)">+2 h</button>
@@ -913,7 +905,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_state"><label>Current state</label><input type="text" id="f_state" placeholder="Type anything…"></div>
     <div class="fld" id="fld_steps"><label>To-do chain (one per line, in order)</label><textarea id="f_steps" placeholder="Type anything…"></textarea></div>
     <div class="fld" id="fld_trig"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
-    <div class="fld" id="fld_qs"><label>Evidence questions (one per line — 🔬 on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
+    <div class="fld" id="fld_qs"><label>Evidence questions (one per line — ⌕ on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
       <div class="flags" id="flags"></div>
     </div>
@@ -928,7 +920,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <!-- ============ TEXT CONSULT MODAL ============ -->
 <div class="overlay" id="ovTC">
   <div class="sheet">
-    <h2>📱 Text consult formatter</h2>
+    <h2>▯ Text consult formatter</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px"><b>1</b> Dump free text → <b>2</b> Parse into pieces → <b>3</b> Build the clean, ready-to-send version. Facts only — blanks stay as [brackets]. No names/MRNs.</p>
     <div class="fld"><label>1 · Free text in</label><textarea id="tc_src" style="min-height:90px" placeholder="Type anything here…"></textarea></div>
     <div class="rowflex"><button class="btn" onclick="tcParse()">⇣ Parse</button><button class="btn sec sm" onclick="tcBuild()">⇡ Rebuild clean version</button></div>
@@ -951,7 +943,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <!-- ============ OR ESCALATION MODAL ============ -->
 <div class="overlay" id="ovOR">
   <div class="sheet">
-    <h2>🚨 Now an emergent operative case</h2>
+    <h2>! Now an emergent operative case</h2>
     <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Don't lose the boring parts while moving fast:</p>
     <div class="checklist">
       <label><input type="checkbox"><span>Call chief</span></label>
@@ -971,7 +963,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <!-- ============ CONSENT PROMPT MODAL ============ -->
 <div class="overlay" id="ovConsent">
   <div class="sheet">
-    <h2>✍️ Consent not on the board</h2>
+    <h2>✎ Consent not on the board</h2>
     <p style="font-size:13px;color:var(--mut);margin-bottom:10px"><b id="consentWho" style="color:var(--text)"></b> is heading toward a procedure and has no open consent task.</p>
     <div class="checklist">
       <label><input type="checkbox"><span>Exact booking name + laterality copied</span></label>
@@ -1139,30 +1131,30 @@ const SUGG=[
 ];
 // ---------- event types ----------
 const TYPES={
- CONSULT:{i:"🧠",l:"Consult",probL:"Problem",probPh:"right temporal EDH",dlL:"Deadline",
+ CONSULT:{i:"◉",l:"Consult",probL:"Problem",probPh:"right temporal EDH",dlL:"Deadline",
   presets:[["+10 min",10],["+30 min",30],["+1 h",60],["+4 h",240],["Clear",0]],rem:""},
- COMM:{i:"📞",l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
+ COMM:{i:"☎",l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["Before signout","17:45"],["Clear",0]],
   rem:"Closed-loop: state exam + plan, get a read-back, note who you told and when. Secure-chat the plan so they don't page you later."},
- CHART:{i:"📋",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
+ CHART:{i:"▤",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
-  rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ⚠ marks a patient to see 2–3×/day; can schedule follow-up several days out."},
- PROC:{i:"🛠",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
+  rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ! marks a patient to see 2–3×/day; can schedule follow-up several days out."},
+ PROC:{i:"⚒",l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
- PCON:{i:"🎛",l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
+ PCON:{i:"◫",l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+4 h",240],["+1 day",1440],["Clear",0]],
   rem:"Simple bedside task — dial change, pump check, interrogation, quick look. Verify valve setting / dose, document, update handoff."},
- POC:{i:"🩹",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
+ POC:{i:"＋",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
   presets:[["+1 h",60],["+2 h",120],["+4 h",240],["+6 h",360],["Clear",0]],
   rem:"Within the anticipated window: exam vs pre-op, drains + output, post-op imaging reviewed, note pended with cosigner. You cover consults, post-op ICU, and ALL children — APPs cover adult floor."},
- CONSENT:{i:"✍️",l:"Consent",probL:"Procedure — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
+ CONSENT:{i:"✎",l:"Consent",probL:"Procedure — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Copy the EXACT booking name + laterality · list all plausible attendings · date + time at every signature · phone consent needs a witness · no abbreviations, never cross out · LEAVE the consent tab when done."},
- BOOK:{i:"🏨",l:"Booking",probL:"OR booking — patient / procedure",probPh:"R crani for tumor · ED12",dlL:"Book by",
+ BOOK:{i:"⊞",l:"Booking",probL:"OR booking — patient / procedure",probPh:"R crani for tumor · ED12",dlL:"Book by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"OR booking to-do: exact procedure name + laterality, attending, consent, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, DVT ppx held, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
- DC:{i:"🏠",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
+ DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_state","fld_action","fld_trig","fld_qs","cbdet"];
@@ -1248,15 +1240,15 @@ const FLAGS=[
  {re:/no bed|bed (issue|pending)|dispo (unclear|issue|problem)/i,label:"Disposition bottleneck — DISPO modifier",lv:"info",apply:{mods:["DISPO"]}},
  {re:/who owns|ownership|unclear (team|service|primary)/i,label:"Ownership unclear — OWN? modifier; patients wait on this",lv:"info",apply:{mods:["OWN?"]}},
  // labs to send before staffing, by pathology
- {re:/\bsah\b|aneurysm|subarachnoid|pcomm|acomm/i,label:"🧪 Labs for staffing: coags, plt, T&S, Na baseline, troponin/EKG",lv:"info",apply:{}},
- {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"🧪 Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
- {re:/carotid|tcar\b|\bcea\b|ica stenosis/i,label:"🧪 Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, hx neck surgery/XRT",lv:"info",apply:{}},
- {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"🧪 Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
- {re:/tssh|transsphenoidal|pituitary|sellar/i,label:"🧪 Pituitary: cortisol, TSH/fT4, prolactin, IGF-1, Na/osm; watch DI (UOP, spec grav)",lv:"info",apply:{}},
- {re:/pre-?op|book(ed|ing)? (the )?or|to the or/i,label:"🧪 Pre-op labs: coags, T&S, CBC, MRSA screen, pregnancy test if applicable, EKG",lv:"info",apply:{}},
- {re:/abscess|osteo|discitis|empyema|ventriculitis|meningitis/i,label:"🧪 Infection staffing: ESR/CRP, CBC, blood cx ×2 before abx if stable, CSF studies if sampled",lv:"info",apply:{}},
- {re:/\bdi\b|diabetes insipidus|polyuria|uop.{0,10}(high|200)/i,label:"🧪 DI watch: Na q6, urine spec grav (<1.005), UOP >200/h ×2h, serum osm",lv:"warn",apply:{}},
- {re:/hyponatrem|low sodium|\bna 1[12]\d\b/i,label:"🧪 Hyponatremia: Na trend, serum/urine osm, urine Na; hypertonic per NACU/BB7 rules (Reference)",lv:"warn",apply:{}}
+ {re:/\bsah\b|aneurysm|subarachnoid|pcomm|acomm/i,label:"Lab Labs for staffing: coags, plt, T&S, Na baseline, troponin/EKG",lv:"info",apply:{}},
+ {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"Lab Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
+ {re:/carotid|tcar\b|\bcea\b|ica stenosis/i,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, hx neck surgery/XRT",lv:"info",apply:{}},
+ {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"Lab Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
+ {re:/tssh|transsphenoidal|pituitary|sellar/i,label:"Lab Pituitary: cortisol, TSH/fT4, prolactin, IGF-1, Na/osm; watch DI (UOP, spec grav)",lv:"info",apply:{}},
+ {re:/pre-?op|book(ed|ing)? (the )?or|to the or/i,label:"Lab Pre-op labs: coags, T&S, CBC, MRSA screen, pregnancy test if applicable, EKG",lv:"info",apply:{}},
+ {re:/abscess|osteo|discitis|empyema|ventriculitis|meningitis/i,label:"Lab Infection staffing: ESR/CRP, CBC, blood cx ×2 before abx if stable, CSF studies if sampled",lv:"info",apply:{}},
+ {re:/\bdi\b|diabetes insipidus|polyuria|uop.{0,10}(high|200)/i,label:"Lab DI watch: Na q6, urine spec grav (<1.005), UOP >200/h ×2h, serum osm",lv:"warn",apply:{}},
+ {re:/hyponatrem|low sodium|\bna 1[12]\d\b/i,label:"Lab Hyponatremia: Na trend, serum/urine osm, urine Na; hypertonic per NACU/BB7 rules (Reference)",lv:"warn",apply:{}}
 ];
 let curFlags=[];
 function flagApplied(f){
@@ -1274,7 +1266,7 @@ function renderProcKit(){
   curProcKit=procMatch(txt);
   if(!curProcKit){el.innerHTML="";return}
   const p=curProcKit;
-  el.innerHTML='<div class="prockit"><div class="pkt">🧰 '+p.name+'</div>'+
+  el.innerHTML='<div class="prockit"><div class="pkt">Kit '+p.name+'</div>'+
    '<div class="pkl">Supplies: '+p.supplies.slice(0,4).join(" · ")+(p.supplies.length>4?" · +"+(p.supplies.length-4)+" more":"")+'</div>'+
    '<button onclick="applyProcKit(\'supplies\')">＋ Supplies checklist</button>'+
    '<button onclick="applyProcKit(\'steps\')">＋ Step chain</button>'+
@@ -1312,7 +1304,7 @@ function renderFlags(){
   el.innerHTML=curFlags.map((f,i)=>{
     const done=flagApplied(f);
     const hasApply=(f.apply.E!==undefined||f.apply.W!==undefined||(f.apply.mods&&f.apply.mods.length));
-    return '<div class="fl '+f.lv+'"><span>⚑ '+f.label+'</span>'+(hasApply?(done?'<button disabled style="opacity:.45">applied</button>':'<button onclick="applyFlag('+i+')">apply</button>'):"")+'</div>';
+    return '<div class="fl '+f.lv+'"><span>! '+f.label+'</span>'+(hasApply?(done?'<button disabled style="opacity:.45">applied</button>':'<button onclick="applyFlag('+i+')">apply</button>'):"")+'</div>';
   }).join("");
 }
 function applyFlag(i){const f=curFlags[i];if(!f)return;F._manual=true;
@@ -1450,7 +1442,7 @@ function renderSugg(){
   if(curAlerts.length){
     head+=curAlerts.map((a,i)=>{
       const has=(a.up.E!==undefined||a.up.O!==undefined||a.up.W!==undefined||(a.up.mods&&a.up.mods.length));
-      return '<div class="mal '+a.lv+'"><span>⚑ '+a.h+'</span>'+(has&&!auto?'<button onclick="applyAlert('+i+')">apply</button>':"")+'</div>';
+      return '<div class="mal '+a.lv+'"><span>! '+a.h+'</span>'+(has&&!auto?'<button onclick="applyAlert('+i+')">apply</button>':"")+'</div>';
     }).join("");
   }
   if(auto){
@@ -1475,7 +1467,6 @@ function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
 function useSuggAction(i){const s=curSugg[i];if(s&&s.action)document.getElementById("f_action").value=s.action}
 function useSuggTrig(i){const s=curSugg[i];if(s&&s.trig)document.getElementById("f_trig").value=s.trig}
 const CLOSE_ITEMS=["Primary team assigned","All documentation has been completed and signed","If signing off, CoC updated","If surgical patient, added to wound check list"];
-const SC_QS=["How many active consults do I have?","Can I state each patient's E/O classification?","Can I name the next action for each patient?","Does every time-dependent task have an owner and deadline?","Is anyone W3 without an explicit reassessment plan?","Is anyone still labeled E2 or O2 after the reason has resolved?","Am I holding a task that should be delegated?","Is any patient waiting only because ownership is unclear?"];
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
  {id:"icu",s:"06:00",e:"07:00",t:"ICU signout — BB7 conf (1217#)",tasks:["Write every patient's exam + plan (smiley = intact; crosses for motor; sq/tu/wt/l/wd/tf)","Relay plans by secure chat to primary teams — add the day team so they don't page you all day","Clarify plans + dispo with chiefs","Eat breakfast while multitasking"]},
@@ -1493,7 +1484,7 @@ function migrate(d){
   });
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{},sinceCheck:0}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
 let lastSaved="";
 function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);schedulePush()}}
 function touch(c){if(c)c.updatedAt=Date.now()}
@@ -1520,7 +1511,6 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
   filterRefs();
   window.scrollTo(0,0);
 }));
-function goCheck(){document.querySelector('nav button[data-view="check"]').click()}
 // ---------- helpers ----------
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function cLevel(c){const t=domTotal(c);if(t!==null){return t<=5?1:t<=11?2:t<=23?3:4}return c.cQuick||null}
@@ -1532,6 +1522,21 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
   return "["+c.type+"] "+[c.loc,c.prob,((c.fname||"")+" "+(c.phone||"")).trim(),"E"+c.E,dl,c.owner,c.note].filter(Boolean).join(" | ");
  return [c.loc,c.prob,"E"+c.E+"/O"+c.O+"/"+cStr(c)+(mods?"-"+mods:""),c.state,c.action,[dl,c.trig].filter(Boolean).join("; "),c.owner].filter(Boolean).join(" | ")}
 // ---------- board render ----------
+let pinnedTopId=null;
+const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
+function consultGateMissing(c){
+  if(!c||c.type!=="CONSULT")return [];
+  const wf=c.wf||{};
+  return CONSULT_GATE.filter(([k])=>!wf[k]).map(([,l])=>l);
+}
+function requireConsultGate(c){
+  const miss=consultGateMissing(c);
+  if(!miss.length)return true;
+  pinnedTopId=c.id;
+  showToast("Before advancing: complete "+miss.join(" + "));
+  render();
+  return false;
+}
 // has any work actually begun on this task?
 function isStarted(c){
   if(c.lastDone)return true;
@@ -1540,7 +1545,22 @@ function isStarted(c){
   if(c.wf&&Object.keys(c.wf).some(k=>c.wf[k]))return true;
   return false;
 }
+function urgencyRank(c){
+  const due=nextDue(c),dl=due?fmtDL(due):null;
+  let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
+  if(dl&&dl.cls==="over")r+=1000;
+  else if(dl&&dl.cls==="soon")r+=500;
+  if(needsConsent(c))r+=80;
+  if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
+  return r;
+}
 function sortCs(a,b){
+  const ar=urgencyRank(a),br=urgencyRank(b);
+  if(pinnedTopId&&a.id!==b.id){
+    if(a.id===pinnedTopId&&br<ar+75)return -1;
+    if(b.id===pinnedTopId&&ar<br+75)return 1;
+  }
+  if(br!==ar)return br-ar;
   if(b.E!==a.E)return b.E-a.E;
   const ad=nextDue(a)?Date.parse(nextDue(a)):Infinity,bd=nextDue(b)?Date.parse(nextDue(b)):Infinity;
   if(ad!==bd)return ad-bd;
@@ -1554,8 +1574,10 @@ function sortCs(a,b){
 // after any checkpoint completes, surface what should be picked up next
 function reflowQueue(){
   const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)).sort(sortCs);
-  const next=act.find(c=>!isStarted(c));
-  if(next)showToast("Next up → "+((next.loc||next.prob||"task").slice(0,32)));
+  const next=act.find(c=>c.type==="CONSULT"&&consultGateMissing(c).length)||
+             act.find(c=>!isStarted(c))||
+             act[0];
+  if(next){pinnedTopId=next.id;showToast("Next up → "+((next.loc||next.prob||"task").slice(0,32)))}
   return next||null;
 }
 const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note ✓"]];
@@ -1592,8 +1614,8 @@ function phoneHtml(c){
   let ph="";
   if(c.phone){
     ph=revealedPh.has(c.id)
-      ?'<a href="tel:'+c.phone.replace(/[^+\d]/g,"")+'">'+esc(c.phone)+'</a> <span data-ph onclick="togPh(\''+c.id+'\')">🙈</span>'
-      :'<span data-ph onclick="togPh(\''+c.id+'\')">'+esc(maskPhone(c.phone))+' 👁</span>';
+      ?'<a href="tel:'+c.phone.replace(/[^+\d]/g,"")+'">'+esc(c.phone)+'</a> <span data-ph onclick="togPh(\''+c.id+'\')">hide</span>'
+      :'<span data-ph onclick="togPh(\''+c.id+'\')">'+esc(maskPhone(c.phone))+' show</span>';
   }
   return '<div class="state phone">☎ '+esc(c.fname||"")+(c.fname&&ph?" · ":"")+ph+'</div>';
 }
@@ -1638,7 +1660,10 @@ function setStepDL(id,i,min){
   openStepTimer=null;touch(c);render();
   showToast(min?("Timer set on: "+c.steps[i].t.slice(0,40)):"Timer cleared");
 }
-function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=true;c.steps[i].dueISO=null;touch(c);reflowQueue();render()}}
+function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){
+  if(c.type==="CONSULT"&&!requireConsultGate(c))return;
+  c.steps[i].done=true;c.steps[i].dueISO=null;touch(c);reflowQueue();render()
+}}
 function undoStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=false;touch(c);render()}}
 // soonest live timer on a task: its own deadline or any open sub-task timer
 function nextDue(c){
@@ -1655,7 +1680,7 @@ function checksHtml(c){
     '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span></div>').join("")+
     '<div style="font-size:11px;color:var(--mut)">'+(open?open+" open":"all done ✓")+'</div></div>';
 }
-function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;touch(c);if(c.tasks[i].done)reflowQueue();render()}}
+function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
 // ---------- consent watch ----------
 function hasConsentTask(c){
   const loc=String(c.loc||"").toUpperCase();
@@ -1674,7 +1699,7 @@ function renderConsentBar(){
   const el=document.getElementById("consentbar");if(!el)return;
   const list=(S.consults||[]).filter(c=>!c.closed&&needsConsent(c));
   if(!list.length){el.classList.remove("show");el.innerHTML="";return}
-  el.innerHTML='<b>✍️ Consent not on the board</b> for '+list.length+' patient'+(list.length>1?"s":"")+' heading to the OR:<br>'+
+  el.innerHTML='<b>✎ Consent not on the board</b> for '+list.length+' patient'+(list.length>1?"s":"")+' heading to the OR:<br>'+
     list.map(c=>'<span style="display:inline-block;margin-top:5px">'+esc(c.loc||c.prob||"(unlabeled)")+
       '<button onclick="makeConsentFor(\''+c.id+'\')">＋ Consent</button></span>').join(" ");
   el.classList.add("show");
@@ -1694,7 +1719,7 @@ function renderSnoozed(){
   const list=S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c))
     .filter(c=>!q||[c.loc,c.prob,c.note,c.action].filter(Boolean).join(" ").toLowerCase().includes(q))
     .sort((a,b)=>Date.parse(a.snoozeISO)-Date.parse(b.snoozeISO));
-  document.getElementById("snoozesum").textContent="⏰ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c)).length+")";
+  document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c)).length+")";
   el.innerHTML=list.map(c=>{
     const d=new Date(c.snoozeISO);
     return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
@@ -1725,9 +1750,9 @@ function renderCal(){
         return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
          '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+" "+(TYPES[c.type]||TYPES.CONSULT).l+'</span>'+
          '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||c.action||"")+'</span>'+
-         '<span class="ctime">'+(isSnoozed(c)?"⏰":"⏱ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span></div>';
+         '<span class="ctime">'+(isSnoozed(c)?"◷":"⏱ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span></div>';
       }).join("")+'</div>';
-  }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ⏰ snooze date and it shows up here.</div>';
+  }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
 function render(){
   const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c)).sort(sortCs);
@@ -1747,16 +1772,19 @@ function render(){
   save();
 }
 function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+'\')">▴ collapse</button>'}
+function trashBtn(id,kind){
+  return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+(kind==="round"?'delRound':'del')+'(\''+id+'\')">⌫</button>';
+}
 function rowCard(c,dl,isTask){
   const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
-  const worryTag=(isChart&&c.worry)?'<span class="bg warn">⚠</span>':"";
+  const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
-  return '<div class="card crowwrap E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
+  return '<div class="card crowwrap hastrash E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
    '<div class="crow" onclick="rowTap(event,\''+c.id+'\')">'+
-    (isChart?'<span class="bg t tc-CHART">📋</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
-    (needsConsent(c)?'<span class="bg consent">✍️?</span>':"")+
+    (isChart?'<span class="bg t tc-CHART">▤</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+    (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
     worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
@@ -1764,7 +1792,7 @@ function rowCard(c,dl,isTask){
     (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
         :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
     (dl?'<span class="rdl dl '+dl.cls+'">⏱ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
-    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">🗣</button>':"")+
+    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
   '</div>';
@@ -1774,12 +1802,14 @@ function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed
 function collapseAll(v){S.consults.forEach(c=>{if(!c.closed&&c.collapsed!==v){c.collapsed=v;touch(c)}});render()}
 function doneAction(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
+  if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   if(c.action){
     c.lastDone=c.action;
     const st=(c.steps||[]).find(s=>!s.done&&s.t===c.action);if(st)st.done=true;
   }
   const nxt=(c.steps||[]).find(s=>!s.done);
   c.action=nxt?nxt.t:"";
+  if(c.action)pinnedTopId=c.id;
   touch(c);render();
   if(c.action){showToast("Next → "+c.action.slice(0,44)+(nxt&&nxt.dueISO?" (⏱ set)":""))}
   else{reflowQueue()}
@@ -1787,6 +1817,7 @@ function doneAction(id){
 function rowDone(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(c.action){doneAction(id);return}
+  if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   const i=(c.steps||[]).findIndex(s=>!s.done);
   if(i>=0){c.steps[i].done=true;touch(c);render();const nx=(c.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete")}
 }
@@ -1806,38 +1837,38 @@ function card(c){
   if(isTask){
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
-    const worryBadge=(isChart&&c.worry)?'<span class="bg warn">⚠ 2–3×/day</span>':"";
-    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button><button onclick="openSO(\''+c.id+'\')">🗣 Sign-out</button>'):"";
-    return '<div class="card E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+
+    const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
+    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')">SO Sign-out</button>'):"";
+    return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
-       (needsConsent(c)?'<span class="bg consent">✍️ consent?</span>':"")+worryBadge+colBtn(c)+'</div>'+
+       (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
-     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
+     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
      stepsHtml(c)+
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">📝 Copy notes</button>':"")+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
+     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
   }
-  const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3⚠ E'+c.E+'</span>':"";
+  const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3! E'+c.E+'</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
-  return '<div class="card E'+c.E+'" data-id="'+c.id+'">'+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✍️ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
+  return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'">'+trashBtn(c.id,"consult")+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">⚡ '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
-   '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">👤 '+esc(c.owner)+'</span>':"")+'</div>'+
+   '<div class="rowflex" style="margin:0">'+(dl?'<span class="dl '+dl.cls+'">⏱ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
    wf+
-   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">📝 Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">📱 Text</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
+   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button><button onclick="startClose(\''+c.id+'\')">✓ Close</button></div>'+
   '</div>';
 }
 // ---------- evidence workspace ----------
@@ -1851,14 +1882,14 @@ function evList(c){
 function evSection(c){
   const ev=evList(c);if(!ev.length)return "";
   const withF=ev.filter(e=>e.finding).length;
-  const head='<div class="evhead" onclick="togEv(\''+c.id+'\')">🔬 Evidence <span class="evn">'+ev.length+' question'+(ev.length>1?"s":"")+(withF?' · '+withF+' finding'+(withF>1?"s":"")+' saved':"")+'</span><span>'+(c.evOpen?"▾":"▸")+'</span></div>';
+  const head='<div class="evhead" onclick="togEv(\''+c.id+'\')">⌕ Evidence <span class="evn">'+ev.length+' question'+(ev.length>1?"s":"")+(withF?' · '+withF+' finding'+(withF>1?"s":"")+' saved':"")+'</span><span>'+(c.evOpen?"▾":"▸")+'</span></div>';
   if(!c.evOpen)return '<div class="evsec">'+head+'</div>';
   const items=ev.map((e,i)=>{
     const impBadge=e.impact==="up"?'<span class="impbadge up">↑ priority</span>':e.impact==="down"?'<span class="impbadge dn">↓ priority</span>':"";
     const body=e.open?
       '<div class="evbody">'+
       '<div class="evbtns">'+
-        '<button onclick="oeOpen(\''+c.id+'\','+i+')">🔬 OpenEvidence ↗</button>'+
+        '<button onclick="oeOpen(\''+c.id+'\','+i+')">⌕ OpenEvidence ↗</button>'+
         '<button onclick="pmOpen(\''+c.id+'\','+i+')">PubMed ↗</button>'+
         '<button class="imp'+(e.impact==="up"?" on":"")+'" onclick="setImpact(\''+c.id+'\','+i+',\'up\')">↑ raises priority</button>'+
         '<button class="imp dn'+(e.impact==="down"?" on":"")+'" onclick="setImpact(\''+c.id+'\','+i+',\'down\')">↓ lowers priority</button>'+
@@ -1893,7 +1924,9 @@ function showToast(msg,undoFn){
 function runUndo(){if(_undoFn){const f=_undoFn;_undoFn=null;f();const t=document.getElementById("toast");if(t)t.classList.remove("show")}}
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
   if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}else{c.wf[k]=!c.wf[k]}
-  touch(c);reflowQueue();render();}
+  touch(c);
+  if(c.type==="CONSULT"&&consultGateMissing(c).length){pinnedTopId=c.id;render();return}
+  reflowQueue();render();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
 function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
 function del(id,skipConfirm){
@@ -1912,7 +1945,7 @@ function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){naviga
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta)}
 function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, the wipe propagates to your other devices too.)")){
   const now=Date.now();S.tomb=S.tomb||{};S.consults.forEach(c=>S.tomb[c.id]=now);
-  S.consults=[];S.day={date:"",checks:{}};S.sinceCheck=0;
+  S.consults=[];S.day={date:"",checks:{}};
   save();render();renderBlocks();doSync(true);
 }}
 // ---------- form ----------
@@ -2055,7 +2088,6 @@ function saveForm(){
   const ix=S.consults.findIndex(x=>x.id===F.id);
   const prev=ix>=0?S.consults[ix]:null;
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
-  if(isNew&&F.type==="CONSULT")S.sinceCheck=(S.sinceCheck||0)+1;
   const saved=F;
   closeForm();render();
   maybeORPopup(prev,saved);
@@ -2092,10 +2124,6 @@ function renderBlocks(){
 }
 function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classList.contains("open");renderBlocks()}
 function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];renderBlocks()}
-// ---------- self check ----------
-function renderSC(){document.getElementById("scq").innerHTML=SC_QS.map(q=>'<label><input type="checkbox"><span>'+q+'</span></label>').join("")}
-function finishCheck(){S.sinceCheck=0;document.getElementById("scmsg").style.display="none";renderSC();render();document.querySelector('nav button[data-view="board"]').click()}
-function failCheck(){document.getElementById("scmsg").style.display="block"}
 // ---------- rounds ----------
 const SO_TMPLS={
  asah:{name:"aSAH",fields:[["One-liner","age, grade, aneurysm, clip/coil, post-bleed day"],["Exam @ SBP","intact at SBP 130"],["EVD","level, ICPs ok?"],["New events / imaging","today"],["TCDs","negative / velocities"],["Na goal + last","eunatremia, last 140"],["BP goal","SBP 100–200 (secured?)"],["Nimodipine","on/held"],["Active problems","and how addressed"]]},
@@ -2251,22 +2279,22 @@ function renderRounds(){
        '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(r.label)+'"></div>'+
        '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px">'+esc(r.raw)+'</textarea></div>'+
        '<div class="fld"><label>Tags (comma-separated)</label><input type="text" id="re_tags_'+r.id+'" value="'+esc((r.tags||[]).join(", "))+'" placeholder="AC, Drain, Sutures"></div>'+
-       '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">⚠ Worried — see 2–3×/day</button></div>'+
+       '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">! Worried — see 2–3×/day</button></div>'+
        '<div class="cardbtns" style="margin-top:8px"><button onclick="roundEditCancel(\''+r.id+'\')">Cancel</button><button style="border-color:var(--ok);color:var(--ok)" onclick="roundEditSave(\''+r.id+'\')">✓ Save</button></div></div>';
     }
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
-    const worry=r.worry?'<span class="bg warn">⚠ 2–3×/day</span>':"";
-    return '<div class="card'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+
-     '<div class="badges"><span class="bg t">🛏 '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+'</div>'+
+    const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
+    return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
+     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      (r.plan?'<div class="next">→ <b>'+esc(r.plan)+'</b></div>':"")+
      rStepsHtml(r)+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" onchange="planSave(\''+r.id+'\',this)">'+esc(r.plan||"")+'</textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
-      '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>⚠</button>'+
+      '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
-      '<button onclick="openSO(\''+r.id+'\')">🗣 Sign-out</button>'+
+      '<button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div>'+
      '<div class="sendto"><select id="st_'+r.id+'">'+TYPE_SELECT_OPTS+'</select>'+
@@ -2336,7 +2364,7 @@ let soId=null;
 function soLabel(r){return r.label||r.loc||"patient"}
 function openSO(id){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
-  document.getElementById("soTitle").textContent="🗣 Sign-out — "+soLabel(r);
+  document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   buildSOChips();buildSOFields();
@@ -2361,7 +2389,7 @@ function soValsHtml(c){
   const t=SO_TMPLS[c.soT||"floor"];
   const filled=t.fields.filter(f=>c.so&&c.so[f[0]]);
   if(!filled.length)return "";
-  return '<div class="sovals">🗣 '+t.name+" — "+filled.map(f=>f[0]+": "+esc(c.so[f[0]])).join(" · ")+'</div>';
+  return '<div class="sovals">SO '+t.name+" — "+filled.map(f=>f[0]+": "+esc(c.so[f[0]])).join(" · ")+'</div>';
 }
 // push a chart-check's recorded values into the rounds sign-out for the same patient
 function soToRounds(){
@@ -2743,31 +2771,31 @@ function renderCapture(){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
-    add("primary","📞","Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
+    add("primary","☎","Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(bed?" · "+bed:""),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(rmatch?rmatch.label:""),fname:nm,phone:ph}));
     phoneSuggestFor(text).forEach(s=>add("","☎",s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
-    if(/\bmri\b/i.test(text))add("rl","🛏","Add MRI task to rounds/boards",(bed||last3FromText(text))?("uses "+[bed,last3FromText(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capRoundsAdd(text,bed));
-    if(consentCue)add("","✍️","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
+    if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to rounds/boards",(bed||last3FromText(text))?("uses "+[bed,last3FromText(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capRoundsAdd(text,bed));
+    if(consentCue)add("","✎","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
   }else if(isQ){
-    add("oe primary","🔬","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
-    if(clinical)add("","🧠","New consult instead",preview,()=>capConsult(text,bed));
+    add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
+    if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary","🎛","Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary","◫","Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart)&&!clinical){
-    add("primary","🛠","Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
-    if(kit)add("","📅","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
+    add("primary","⚒","Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
+    if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
   }else if(clinical){
-    add("primary","🧠","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
-    if(consentCue)add("","✍️","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
-  }else if(chartCue){add("primary","📋","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
-  else if(pocCue){add("primary","🩹","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
-  else if(procCue){add("primary","🛠","Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
-  else if(dcCue){add("primary","🏠","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
-  else if(consentCue){add("primary","✍️","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
+    add("primary","◉","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
+    if(consentCue)add("","✎","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
+  }else if(chartCue){add("primary","▤","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
+  else if(pocCue){add("primary","＋","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
+  else if(procCue){add("primary","⚒","Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
+  else if(dcCue){add("primary","⌂","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
+  else if(consentCue){add("primary","✎","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
   else{
-    add("oe primary","🔬","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
-    add("","🧠","New consult with this text","",()=>capConsult(text,bed));
+    add("oe primary","⌕","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
+    add("","◉","New consult with this text","",()=>capConsult(text,bed));
   }
-  if(rmatch)add("rl","🛏","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
+  if(rmatch)add("rl","▤","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
   el.innerHTML=rows.join("");
 }
 // ---------- sync engine (private GitHub Gist) ----------
@@ -2784,7 +2812,7 @@ async function gh(path,opts){
   if(!r.ok)throw new Error("GitHub "+r.status);
   return r.json();
 }
-function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],tomb:S.tomb||{},day:S.day,sinceCheck:S.sinceCheck||0,ts:Date.now()}}
+function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],tomb:S.tomb||{},day:S.day,ts:Date.now()}}
 function mergeState(local,remote){
   const tomb={};[local.tomb||{},remote.tomb||{}].forEach(t=>Object.keys(t).forEach(id=>{tomb[id]=Math.max(tomb[id]||0,t[id])}));
   const byId={};
@@ -2809,7 +2837,7 @@ function mergeState(local,remote){
   const rd=remote.day||{date:"",checks:{}};
   if(rd.date===day.date){const checks=Object.assign({},rd.checks,day.checks);day={date:day.date,checks:checks}}
   else{const today=new Date().toDateString();if(rd.date===today&&day.date!==today)day=rd}
-  return {consults:consults,rounds:rounds,tomb:tomb,day:day,sinceCheck:Math.max(local.sinceCheck||0,remote.sinceCheck||0)};
+  return {consults:consults,rounds:rounds,tomb:tomb,day:day};
 }
 async function doSync(auto){
   const cfg=syncCfg();
@@ -2817,7 +2845,7 @@ async function doSync(auto){
   if(syncing)return;syncing=true;setDot("⟳ …","var(--e1)");
   try{
     const g=await gh("/gists/"+cfg.gist);
-    let remote={consults:[],tomb:{},day:{date:"",checks:{}},sinceCheck:0};
+    let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
     const f=g.files&&g.files[SYNC_FILE];
     if(f){
       let content=f.content;
@@ -2825,17 +2853,17 @@ async function doSync(auto){
       try{remote=JSON.parse(content)}catch(e){}
     }
     const merged=mergeState(S,remote);
-    S.consults=merged.consults;S.rounds=merged.rounds;S.tomb=merged.tomb;S.day=merged.day;S.sinceCheck=merged.sinceCheck;
+    S.consults=merged.consults;S.rounds=merged.rounds;S.tomb=merged.tomb;S.day=merged.day;
     const out=JSON.stringify(syncDoc());
-    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],tomb:remote.tomb||{},day:remote.day,sinceCheck:remote.sinceCheck||0});
-    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,tomb:merged.tomb,day:merged.day,sinceCheck:merged.sinceCheck});
+    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],tomb:remote.tomb||{},day:remote.day});
+    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,tomb:merged.tomb,day:merged.day});
     if(remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
     renderAll();renderBlocks();
     setDot("● synced","var(--ok)");
-  }catch(e){setDot("⚠ sync","var(--e3)")}
+  }catch(e){setDot("! sync","var(--e3)")}
   finally{syncing=false}
 }
 function openSync(){
@@ -2923,7 +2951,7 @@ function roundSend(id){
   t.updatedAt=Date.now();
   S.consults.push(t);render();save();
   const d=new Date(date+"T12:00:00");
-  showToast("📅 "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate());
+  showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate());
 }
 // A dated/board task for someone already on rounds attaches to that rounds patient
 function linkToRounds(c){
@@ -3004,7 +3032,7 @@ let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
-renderAll();renderBlocks();renderSC();
+renderAll();renderBlocks();
 attachSwipe("cards","consult");attachSwipe("rcards","round");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 doSync(true);
