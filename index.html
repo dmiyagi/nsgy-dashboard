@@ -113,6 +113,7 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .fld label{display:block;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
 .fld input[type=text],.fld input[type=tel],.fld input[type=datetime-local],.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:9px 10px}
 .fld textarea{min-height:54px;resize:vertical}
+.locgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(96px,.85fr);gap:8px}
 .selrow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .selrow button{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 4px;color:var(--mut);cursor:pointer;font-family:var(--font);transition:background .12s,border-color .12s,color .12s}
 .selrow button .t{font-weight:800;font-size:13.5px;display:block;letter-spacing:.3px}
@@ -245,6 +246,9 @@ button.rdone.finaldone{background:#123527}
 .sendto{display:flex;gap:6px;margin-top:6px}
 .sendto select{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:5px 6px}
 .sendto button{background:var(--card2);border:1px solid var(--acc);color:var(--acc);border-radius:8px;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.roundsugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.roundsugg button{background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:999px;font-size:11.5px;font-weight:800;padding:5px 8px;cursor:pointer;font-family:var(--font)}
+.roundsugg button strong{color:var(--acc)}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 /* type colour scheme */
@@ -843,7 +847,12 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld"><label>Type</label><div class="chips" id="typechips"></div>
       <div class="selhint" id="typereminder" style="display:none"></div>
     </div>
-    <div class="fld" id="fld_loc"><label>Location (bed + first three letters of last name)</label><input type="text" id="f_loc" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_loc"><label>Location</label><input type="hidden" id="f_loc">
+      <div class="locgrid">
+        <div><label>Bed / location</label><input type="text" id="f_bed" placeholder="C243"></div>
+        <div><label>Last 3</label><input type="text" id="f_last3" placeholder="Miy"></div>
+      </div>
+    </div>
     <div class="fld" id="fld_call" style="display:none"><label>Who to call</label>
       <div style="display:flex;gap:8px">
         <input type="text" id="f_fname" placeholder="First name" style="flex:1">
@@ -856,6 +865,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="prockit"></div>
       <div id="smarthints"></div>
     </div>
+    <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
     <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>▯ Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
@@ -920,18 +930,18 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       </div>
       <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
-    <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
     </div>
-    <div class="fld" id="fld_snooze"><label>◷ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
+    <div class="fld" id="fld_snooze"><label>◷ Defer / reschedule</label>
       <div class="qbtns">
-        <button type="button" onclick="setSnoozeMinutes(15)">+15 min</button><button type="button" onclick="setSnoozeMinutes(30)">+30 min</button>
-        <button type="button" onclick="setSnoozeMinutes(60)">+1 h</button><button type="button" onclick="setSnoozeMinutes(120)">+2 h</button>
+        <button type="button" onclick="setTodayDeadline(15)">+15 min</button><button type="button" onclick="setTodayDeadline(30)">+30 min</button>
+        <button type="button" onclick="setTodayDeadline(60)">+1 h</button><button type="button" onclick="setTodayDeadline(120)">+2 h</button>
         <button type="button" onclick="setSnooze(1)">Tomorrow</button><button type="button" onclick="setSnooze(7)">+1 wk</button>
         <button type="button" onclick="setSnooze(0)">Clear</button>
       </div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day defers stay on the board as deadlines. Tomorrow / +1 wk hide from the board until then.</div>
       <input type="datetime-local" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <details class="moredet"><summary>▾ More details</summary>
@@ -1190,7 +1200,7 @@ const TYPES={
  CHART:{i:"▤",l:"Chart check",probL:"Which patients (rounding list + to-do patients)",probPh:"my rounding patients + anyone with open to-dos",dlL:"Done by / follow up on",
   presets:[["+1 h",60],["+3 h",180],["Before signout","17:45"],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ! marks a patient to see 2–3×/day; can schedule follow-up several days out."},
- PROC:{i:HAMMER_ICON,l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
+ PROC:{i:HAMMER_ICON,l:"Floor proc",probL:"What — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"Tell nursing/team first · consent · hold DVT ppx if relevant · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · log it (ACGME)."},
  PCON:{i:SCREW_ICON,l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
@@ -1199,10 +1209,10 @@ const TYPES={
  POC:{i:"＋",l:"Post-op check",probL:"Case — attending",probPh:"R crani for meningioma (PS) · NCCU3",dlL:"Anticipated exam time",
   presets:[["+1 h",60],["+2 h",120],["+4 h",240],["+6 h",360],["Clear",0]],
   rem:"Within the anticipated window: exam vs pre-op, drains + output, post-op imaging reviewed, note pended with cosigner. You cover consults, post-op ICU, and ALL children — APPs cover adult floor."},
- CONSENT:{i:"✎",l:"Consent",probL:"Procedure — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
+ CONSENT:{i:"✎",l:"Consent",probL:"What — patient",probPh:"R craniotomy · ED12 (same-day = RED, do immediately)",dlL:"Needed by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+1 day",1440],["+2 days",2880],["+3 days",4320],["Clear",0]],
   rem:"Copy the EXACT booking name + laterality · list all plausible attendings · date + time at every signature · phone consent needs a witness · no abbreviations, never cross out · LEAVE the consent tab when done."},
- BOOK:{i:"⊞",l:"Booking",probL:"OR booking — patient / procedure",probPh:"R crani for tumor · ED12",dlL:"Book by",
+ BOOK:{i:"⊞",l:"Booking",probL:"What — patient",probPh:"R crani for tumor · ED12",dlL:"Book by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"OR booking to-do: exact procedure name + laterality, attending, consent, DVT ppx held, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
  DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
@@ -1575,7 +1585,7 @@ function migrate(d){
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
-  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=false});
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true});
   d.formerWounds=d.formerWounds||[];
   return d;
 }
@@ -1656,6 +1666,16 @@ function reviewDL(c){
 function reviewOverdue(c){
   const dl=reviewDL(c);
   return !!(dl&&dl.cls==="over");
+}
+function compactTimerHtml(c){
+  const cands=[];
+  const due=nextDue(c);if(due)cands.push({iso:due,label:"◷ "});
+  if(c&&c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO)cands.push({iso:c.reviewDueISO,label:"review "});
+  if(!cands.length)return "";
+  cands.sort((a,b)=>Date.parse(a.iso)-Date.parse(b.iso));
+  const x=cands[0],dl=fmtDL(x.iso);
+  const txt=dl.txt.replace("due in ","").replace("OVERDUE ","−");
+  return '<span class="rdl dl '+dl.cls+'">'+x.label+txt+'</span>';
 }
 function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?new Date(c.deadlineISO).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"";
  if(c.type&&c.type!=="CONSULT")
@@ -1974,12 +1994,13 @@ function dlBtnsHtml(c){
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
-  c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});
+  c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null}
   touch(c);render();showToast("Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
+  (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO&&Date.parse(t.dueISO)<=now){t.dueISO=null;cleared=true}});
   return cleared;
 }
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
@@ -1992,6 +2013,7 @@ function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
 function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;resetReviewClock(c);touch(c);render();showToast("Review overdue cleared")}
 function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(c.type==="CONSULT")resetReviewClock(c);touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
+let openTaskTimer=null; // "<id>:<i>"
 function stepTimerBtn(c,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
   return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togStepTimer(\''+c.id+'\','+i+')">'+
@@ -2004,6 +2026,18 @@ function stepTimerRow(c,i){
       '<button onclick="setStepDL(\''+c.id+'\','+i+','+m+')">'+l+'</button>').join("")+
     '<button onclick="setStepDL(\''+c.id+'\','+i+',0)">✕ clear</button></div>';
 }
+function taskTimerBtn(c,i,t){
+  const dl=t.dueISO?fmtDL(t.dueISO):null;
+  return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togTaskTimer(\''+c.id+'\','+i+')">'+
+    (dl?'◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−"):'◷')+'</button>';
+}
+function taskTimerRow(c,i){
+  if(openTaskTimer!==c.id+":"+i)return "";
+  return '<div class="steptimer">'+
+    [["+5m",5],["+15m",15],["+30m",30],["+1h",60],["+2h",120],["+4h",240],["tomorrow",1440]].map(([l,m])=>
+      '<button onclick="setTaskDL(\''+c.id+'\','+i+','+m+')">'+l+'</button>').join("")+
+    '<button onclick="setTaskDL(\''+c.id+'\','+i+',0)">✕ clear</button></div>';
+}
 function stepsHtml(c){
   const st=c.steps||[];if(!st.length)return "";
   return '<div class="steps">'+st.map((s,i)=>{
@@ -2012,12 +2046,20 @@ function stepsHtml(c){
   }).join("")+'</div>';
 }
 function togStepTimer(id,i){const k=id+":"+i;openStepTimer=(openStepTimer===k)?null:k;render()}
+function togTaskTimer(id,i){const k=id+":"+i;openTaskTimer=(openTaskTimer===k)?null:k;render()}
 function setStepDL(id,i,min){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.steps||!c.steps[i])return;
   if(pinnedTopId===id)pinnedTopId=null;
   c.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openStepTimer=null;touch(c);render();
   showToast(min?("Timer set on: "+c.steps[i].t.slice(0,40)):"Timer cleared");
+}
+function setTaskDL(id,i,min){
+  const c=S.consults.find(x=>x.id===id);if(!c||!c.tasks||!c.tasks[i])return;
+  if(pinnedTopId===id)pinnedTopId=null;
+  c.tasks[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
+  openTaskTimer=null;touch(c);render();
+  showToast(min?("Timer set on: "+c.tasks[i].t.slice(0,40)):"Timer cleared");
 }
 function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
@@ -2030,6 +2072,7 @@ function nextDue(c){
   const cands=[];
   if(c.deadlineISO)cands.push(c.deadlineISO);
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO)cands.push(s.dueISO)});
+  (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO)cands.push(t.dueISO)});
   if(!cands.length)return null;
   return cands.sort((a,b)=>Date.parse(a)-Date.parse(b))[0];
 }
@@ -2037,10 +2080,10 @@ function checksHtml(c){
   const ts=c.tasks||[];if(!ts.length)return "";
   const open=ts.filter(t=>!t.done).length;
   return '<div class="checks">'+ts.map((t,i)=>
-    '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span></div>').join("")+
+    '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span>'+(!t.done?taskTimerBtn(c,i,t):"")+'</div>'+taskTimerRow(c,i)).join("")+
     '<div style="font-size:11px;color:var(--mut)">'+(open?open+" open":"all done ✓")+'</div></div>';
 }
-function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
+function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;if(c.tasks[i].done)c.tasks[i].dueISO=null;touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
 // ---------- consent watch ----------
 function hasConsentTask(c){
   const loc=String(c.loc||"").toUpperCase();
@@ -2075,7 +2118,7 @@ function makeConsentFor(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   openForm(null,false,"CONSENT");
   F.loc=c.loc;F.prob=c.prob;F.roundId=c.roundId||null;
-  document.getElementById("f_loc").value=F.loc||"";
+  setLocForm(F.loc||"");
   document.getElementById("f_prob").value=F.prob||"";
   renderFlags();
 }
@@ -2168,11 +2211,16 @@ function closeDoneButton(c,compact){
 }
 function compactTimerOffButton(c){
   const hasStepT=(c.steps||[]).some(s=>s.dueISO);
-  const hasTimer=!!(c.deadlineISO||hasStepT||(c.type==="CONSULT"&&c.reviewDueISO&&!c.reviewOff));
+  const hasTaskT=(c.tasks||[]).some(t=>t.dueISO);
+  const hasTimer=!!(c.deadlineISO||hasStepT||hasTaskT||(c.type==="CONSULT"&&c.reviewDueISO&&!c.reviewOff));
   return hasTimer?'<button class="rdone" onclick="event.stopPropagation();clearCardTimers(\''+c.id+'\')">✕ timer</button>':"";
 }
 function compactAdd15Button(c){
   return '<button class="rdone" onclick="event.stopPropagation();bumpDL(\''+c.id+'\',15)">+15m</button>';
+}
+function soButtonAttrs(c){
+  if(soComplete(c))return ' style="border-color:var(--ok);color:var(--ok)"';
+  return soStarted(c)?' style="border-color:var(--e2);color:var(--e2)"':"";
 }
 function rowCard(c,dl,isTask){
   const pending=compactPending(c),act=pending?pending.t:"";
@@ -2180,8 +2228,6 @@ function rowCard(c,dl,isTask){
   const allDone=canCloseTask(c);
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
-  const rdl=reviewDL(c);
-  const showReview=rdl&&!isChart&&!sameDL(c.reviewDueISO,nextDue(c));
   const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
@@ -2199,15 +2245,18 @@ function rowCard(c,dl,isTask){
         :(allDone?closeDoneButton(c,true)+'<span class="ract"></span>'
           :(todosDone?'<button class="rdone finaldone" onclick="event.stopPropagation()">✓ to-dos done</button><span class="ract"></span>'
           :(isTask?'<span class="ract"></span>'+closeDoneButton(c,true):'<span class="ract"></span>'))))+
-    (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
+    compactTimerHtml(c)+
     (!allDone?compactAdd15Button(c):"")+
     (allDone?compactTimerOffButton(c):"")+
-    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
+    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
   '</div>';
 }
-function rowTap(e,id){if(e.target&&e.target.closest&&e.target.closest("button,input,select,textarea,a,label"))return;togCollapse(id)}
+function rowTap(e,id){
+  if(e.target&&e.target.closest&&e.target.closest("button,input,select,textarea,a,label,.wf,.dlbtns,.steps,.step,.steptimer,.checks,.chk,.cardbtns,.badges,.next,.lastdone,.evsec,.evhead,.evitem,.evq,.evfind"))return;
+  togCollapse(id);
+}
 function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render()}}
 function collapseAll(v){S.consults.forEach(c=>{if(!c.closed&&c.collapsed!==v){c.collapsed=v;touch(c)}});render()}
 function doneAction(id){
@@ -2235,7 +2284,7 @@ function rowDone(id){
     const nx=compactPending(c);touch(c);render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
   }
   if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
-    c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;
+    c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;c.tasks[p.i].dueISO=null;
     const nx=compactPending(c);touch(c);reflowQueue();render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
   }
 }
@@ -2260,8 +2309,8 @@ function card(c){
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
-    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')">SO Sign-out</button>'):"";
-    return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
+    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO Sign-out</button>'):"";
+    return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
        (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
@@ -2279,7 +2328,7 @@ function card(c){
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
-  return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'">'+trashBtn(c.id,"consult")+
+  return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
@@ -2454,6 +2503,18 @@ function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
 function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
+function splitLoc(v){
+  const s=String(v||"").trim();if(!s)return {bed:"",last3:""};
+  const m=s.match(/^(.+?)(?:\s*[-,;]\s*|\s+)([A-Za-z]{2,4})$/);
+  return m?{bed:m[1].trim(),last3:m[2].slice(0,3)}:{bed:s,last3:""};
+}
+function joinLoc(bed,last3){return [String(bed||"").trim(),String(last3||"").trim().slice(0,3)].filter(Boolean).join(" ")}
+function setLocForm(v){
+  const p=splitLoc(v);
+  document.getElementById("f_loc").value=String(v||"").trim();
+  document.getElementById("f_bed").value=p.bed;
+  document.getElementById("f_last3").value=p.last3;
+}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
@@ -2473,6 +2534,7 @@ function openForm(id,reassess,ptype){
   document.getElementById("formtitle").textContent=id?(reassess?"Reassess "+tl.toLowerCase():"Edit "+tl.toLowerCase()):"New "+tl.toLowerCase();
   document.getElementById("reassessBanner").style.display=reassess?"block":"none";
   ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>document.getElementById("f_"+k).value=F[k]||"");
+  setLocForm(F.loc||"");
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
@@ -2528,6 +2590,10 @@ function setSnoozeMinutes(min){
   const el=document.getElementById("f_snooze");
   el.value=toLocalInput(new Date(Date.now()+min*60000).toISOString());
 }
+function setTodayDeadline(min){
+  document.getElementById("f_snooze").value="";
+  document.getElementById("f_dl").value=toLocalInput(new Date(Date.now()+min*60000).toISOString());
+}
 function unsnooze(id){const c=S.consults.find(x=>x.id===id);if(c){c.snoozeISO=null;touch(c);render();showToast("Back on the board")}}
 let axisDetail=false;
 function togAxisDetail(){axisDetail=!axisDetail;buildSelectors();
@@ -2575,6 +2641,7 @@ document.getElementById("qdl").addEventListener("click",e=>{
   }
 });
 function saveForm(){
+  document.getElementById("f_loc").value=joinLoc(document.getElementById("f_bed").value,document.getElementById("f_last3").value);
   ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
   const stepLines=document.getElementById("f_steps").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
@@ -2584,7 +2651,11 @@ function saveForm(){
   const dv=document.getElementById("f_dl").value;
   F.deadlineISO=dv?new Date(dv).toISOString():null;
   const sv=document.getElementById("f_snooze").value;
-  F.snoozeISO=sv?new Date(sv).toISOString():null;
+  if(sv){
+    const sdt=new Date(sv),end=new Date();end.setHours(23,59,59,999);
+    if(sdt<=end){F.deadlineISO=sdt.toISOString();F.snoozeISO=null}
+    else F.snoozeISO=sdt.toISOString();
+  }else F.snoozeISO=null;
   F.needsInterpreter=!!document.getElementById("f_interp").checked;
   F.language=document.getElementById("f_lang").value.trim();
   const tcSnap=ftcSnapshot();
@@ -2751,7 +2822,7 @@ function parseRounds(){
       ex.updatedAt=Date.now();merged++;
       return;
     }
-    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:false,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()});
   });
   document.getElementById("dropbox").value="";
   renderRounds();save();
@@ -2838,7 +2909,8 @@ function renderRounds(){
      '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      rStepsHtml(r)+
-     '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
+     '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
+     '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
@@ -2940,6 +3012,35 @@ function tiedTypeForRoundTodo(t){
   if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
   return null;
 }
+function roundSuggestedCards(r,lines){
+  const seen={};
+  return (lines||roundOpenTodos(r)).map(line=>{
+    const type=tiedTypeForRoundTodo(line);if(!type||hasTiedTask(r,type,line))return null;
+    const key=type+"|"+line.toLowerCase();if(seen[key])return null;seen[key]=true;
+    return {type:type,line:line};
+  }).filter(Boolean);
+}
+function roundSuggestHtml(r,lines){
+  const sug=roundSuggestedCards(r,lines).slice(0,4);
+  return sug.map(s=>'<button type="button" onclick="addRoundTodoCard(\''+r.id+'\',\''+s.type+'\',\''+encodeURIComponent(s.line)+'\')"><strong>'+TYPES[s.type].l+'</strong> · '+esc(s.line.slice(0,42))+'</button>').join("");
+}
+function roundPlanPreview(id,el){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const lines=todoLinesFromPlan(el.value);
+  const sug=roundSuggestedCards(r,lines);
+  const box=document.getElementById("rsugg_"+id);if(box)box.innerHTML=roundSuggestHtml(r,lines);
+  const sel=document.getElementById("st_"+id);if(sel&&sug[0])sel.value=sug[0].type;
+}
+function addRoundTodoCard(id,type,line){
+  line=decodeURIComponent(line||"");
+  const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
+  if(hasTiedTask(r,type,line)){showToast("Already on board");return}
+  const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
+  if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
+  if(type==="CHART")t.E=0;
+  t.updatedAt=Date.now();S.consults.push(t);render();renderRounds();save();
+  showToast(TYPES[type].l+" added for "+r.label);
+}
 function hasTiedTask(r,type,text){
   const key=String(text||"").trim().toLowerCase();
   return (S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&c.type===type&&String(c.prob||"").trim().toLowerCase()===key);
@@ -2960,7 +3061,7 @@ function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   openForm(null,false,type);
   F.loc=r.label;F.prob=r.raw.slice(0,110);F.worry=!!r.worry;F.roundId=r.id;
   F.soT=r.soT||"floor";F.so=Object.assign({},r.so||{});
-  document.getElementById("f_loc").value=F.loc;document.getElementById("f_prob").value=F.prob;
+  setLocForm(F.loc);document.getElementById("f_prob").value=F.prob;
   if(type==="CHART"){
     const lines=roundOpenTodos(r);
     F.tasks=lines.map(t=>({t:t,done:false}));
@@ -3037,15 +3138,24 @@ function soText(r){
 }
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
 // recorded values shown on the chart-check card
+function soActiveFields(c){
+  if(!c||c.type!=="CHART")return [];
+  const t=SO_TMPLS[c.soT||"floor"];
+  if(!t)return [];
+  const startIdx=t.fields.findIndex(f=>/overnight events/i.test(f[0]));
+  return t.fields.slice(startIdx>=0?startIdx:Math.min(2,t.fields.length));
+}
+function soStarted(c){return soActiveFields(c).some(f=>c.so&&c.so[f[0]])}
+function soComplete(c){
+  if(!c||c.type!=="CHART")return false;
+  const t=SO_TMPLS[c.soT||"floor"];if(!t)return false;
+  return t.fields.every(f=>c.so&&c.so[f[0]]);
+}
 function soValsHtml(c){
   if(c.type!=="CHART")return "";
   const t=SO_TMPLS[c.soT||"floor"];
-  const filled=t.fields.filter(f=>c.so&&c.so[f[0]]);
-  const startIdx=t.fields.findIndex(f=>/overnight events/i.test(f[0]));
-  const activeFields=t.fields.slice(startIdx>=0?startIdx:Math.min(2,t.fields.length));
-  const activeFilled=activeFields.filter(f=>c.so&&c.so[f[0]]);
-  if(!activeFilled.length)return "";
-  const complete=filled.length===t.fields.length;
+  if(!soStarted(c))return "";
+  const complete=soComplete(c);
   return '<div class="sovals '+(complete?"done":"warn")+'">SO '+t.name+' '+(complete?"complete":"started")+'</div>';
 }
 // push a chart-check's recorded values into the rounds sign-out for the same patient
@@ -3408,7 +3518,7 @@ function capRoundsAdd(text,bed){
     todoLinesFromPlan(text).forEach(t=>{ex.steps=ex.steps||[];if(!ex.steps.some(s=>s.t.toLowerCase()===t.toLowerCase()))ex.steps.push({t:t,done:false})});
     ex.updatedAt=Date.now();
   }else{
-    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:false,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()});
   }
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   renderRounds();save();showToast("Added to rounds");
@@ -3432,14 +3542,14 @@ function capPatientTask(text,bed,match){
 function capConsult(text,bed){
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   openForm();
-  if(bed){F.loc=bed;document.getElementById("f_loc").value=bed}
+  if(bed){F.loc=bed;setLocForm(bed)}
   F.prob=text;document.getElementById("f_prob").value=text;
   renderSugg();renderFlags();
 }
 function capTask(type,text,pre){
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   openForm(null,false,type);
-  if(pre.loc){F.loc=pre.loc;document.getElementById("f_loc").value=pre.loc}
+  if(pre.loc){F.loc=pre.loc;setLocForm(pre.loc)}
   if(pre.fname){F.fname=pre.fname;document.getElementById("f_fname").value=pre.fname}
   if(pre.phone){F.phone=pre.phone;document.getElementById("f_phone").value=pre.phone}
   F.prob=text;document.getElementById("f_prob").value=text;
