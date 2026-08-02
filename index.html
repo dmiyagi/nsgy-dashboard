@@ -1182,13 +1182,13 @@ const PROC_LIB=[
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
  {re:/evd flush/i,name:"EVD flush",
   supplies:["Alcohol pad","Sterile flush","Sterile gloves","Clave if no access port (post-OR EVD)"],
-  steps:["Let the nurse know","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Drop significant event note"]},
+  steps:["Let the nurse know","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Procedure note / significant event note"]},
  {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen)/i,name:"EVD intrathecal meds",
   supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
-  steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Significant event note"]},
+  steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Procedure note / significant event note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
   supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Chucks","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
-  steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Note + update handoff + log"]},
+  steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Procedure note + update handoff + log"]},
  {re:/shunt tap/i,name:"Shunt tap",dvt:true,
   supplies:["Chloraprep ×3 (iodine at WICU — clean off after)","Butterfly needle (scalp)","18g needle (CSF tube)","Syringe (10cc adult, MAX 5cc WICU)","CSF tube (empty, no preservative)","Sterile gloves","Chucks","Labels printed by nurse"],
   steps:["Gather supplies + ask nurse to print labels","Tap","Send CSF labeled (initials/date/time) in biohazard bag","Log procedure"]},
@@ -1206,13 +1206,13 @@ const PROC_LIB=[
   steps:["Order 'wound cx'","Find collection on ultrasound","Sterilize + sterile gloves","Aspirate like drawing CSF","Send + document"]},
  {re:/lumbar puncture|\blp\b/i,name:"Lumbar puncture",dvt:true,
   supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile popsicle stick","Chucks","Tape","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
-  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Note + update handoff + log"]},
+  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Procedure note + update handoff + log"]},
  {re:/lumbar drain|\bld\b(?! ?kit)/i,name:"Lumbar drain",dvt:true,
   supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Chloroprep ×3, sterile popsicle stick, chucks, tape, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon"],
-  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Note + update handoff + log"]},
+  steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Procedure note + update handoff + log"]},
  {re:/\bhalo\b/i,name:"Halo",
   supplies:["Needles/syringes/marker/chlorapreps","Torque wrench (BB6 halo cart)","Caliper + crown + vest + pins (brace shop — text Tom)","Weights (OR)","Traction bed (call early / steal from ED)"],
-  steps:["Consent (pin infxn, skull fx, CN6, failed reduction, progression) + text brace shop","Order bacitracin + lidocaine + valium q2 + dilaudid","Gather supplies + traction bed","Time-out","Apply vest → crown (pins: 2/3 eyebrow + mastoids; adults 8 lb head / 35 lb vest)","Traction: baseline XR → add weight → exam → re-XR","Re-torque 15 min / 24 h / 48 h / wk 1 / q3–4 wk","Note + handoff + log"]},
+  steps:["Consent (pin infxn, skull fx, CN6, failed reduction, progression) + text brace shop","Order bacitracin + lidocaine + valium q2 + dilaudid","Gather supplies + traction bed","Time-out","Apply vest → crown (pins: 2/3 eyebrow + mastoids; adults 8 lb head / 35 lb vest)","Traction: baseline XR → add weight → exam → re-XR","Re-torque 15 min / 24 h / 48 h / wk 1 / q3–4 wk","Procedure note + handoff + log"]},
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
   supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
@@ -1221,7 +1221,7 @@ const PROC_LIB=[
   steps:["Verify POD # / wound healed (typically ≥10–14 d)","Remove sutures/staples","Steri strips","Document + update handoff"]},
  {re:/\bseps\b/i,name:"SEPS",dvt:true,
   supplies:["SEPS kit","Cranial access kit","Chloraprep ×3","Chucks","Sterile gown/gloves/drapes","Suction setup","Nylon + monocryl"],
-  steps:["Consent + laterality","Coags + DVT ppx held","Order meds + post CTH","Time-out + laterality again","Do proc","Note + handoff + log"]}
+  steps:["Consent + laterality","Coags + DVT ppx held","Order meds + post CTH","Time-out + laterality again","Do proc","Procedure note + handoff + log"]}
 ];
 function procMatch(t){if(!t)return null;return PROC_LIB.find(p=>p.re.test(t))||null}
 // procedures that need DVT ppx held (6 h after / before the stick)
@@ -1707,8 +1707,8 @@ const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC
 const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
- PROC:[["supplies","Gather supplies"],["consent","Consent"],["dvt","Hold DVT ppx"],["staff","Tell staff thread"],["meds","Order meds"],["doproc","Do proc"],["doc","Document proc"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
- PCON:[["done","Done"],["doc","Documented"],["handoff","Update handoff"]],
+ PROC:[["supplies","Gather supplies"],["consent","Consent"],["dvt","Hold DVT ppx"],["staff","Tell staff thread"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
+ PCON:[["done","Done"],["doc","Procedure note"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  BOOK:[["name","Name/laterality"],["consent","Consent"],["docs","H&P/rH&P + pre-op"],["labs","Labs/NPO/DVT"],["or","OR notified"],["__close","Done"]],
@@ -1744,13 +1744,14 @@ function phoneHtml(c){
 }
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
-  return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
+  return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
+  if(pinnedTopId===id)pinnedTopId=null;
   c.deadlineISO=new Date(Date.now()+min*60000).toISOString();touch(c);render();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h"))}
 function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;touch(c);render();}
@@ -1763,7 +1764,7 @@ function stepTimerBtn(c,i,s){
 function stepTimerRow(c,i){
   if(openStepTimer!==c.id+":"+i)return "";
   return '<div class="steptimer">'+
-    [["+15m",15],["+30m",30],["+1h",60],["+2h",120],["+4h",240],["tomorrow",1440]].map(([l,m])=>
+    [["+5m",5],["+15m",15],["+30m",30],["+1h",60],["+2h",120],["+4h",240],["tomorrow",1440]].map(([l,m])=>
       '<button onclick="setStepDL(\''+c.id+'\','+i+','+m+')">'+l+'</button>').join("")+
     '<button onclick="setStepDL(\''+c.id+'\','+i+',0)">✕ clear</button></div>';
 }
@@ -1779,6 +1780,7 @@ function stepsHtml(c){
 function togStepTimer(id,i){const k=id+":"+i;openStepTimer=(openStepTimer===k)?null:k;render()}
 function setStepDL(id,i,min){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.steps||!c.steps[i])return;
+  if(pinnedTopId===id)pinnedTopId=null;
   c.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openStepTimer=null;touch(c);render();
   showToast(min?("Timer set on: "+c.steps[i].t.slice(0,40)):"Timer cleared");
@@ -2084,6 +2086,19 @@ function clearConsultWfAfter(c,k){
   }[k]||[];
   downstream.forEach(x=>{c.wf[x]=false});
 }
+function admitOrPreopRelated(c){
+  const txt=[c.prob,c.state,c.action,c.note,(c.steps||[]).map(s=>s.t).join(" "),(c.tasks||[]).map(t=>t.t).join(" ")].filter(Boolean).join(" ");
+  return /\b(?:admit|admission|h&p|rH&P|pre-?op|or|book(?:ed|ing)?|operative|surgery|case request)\b/i.test(txt);
+}
+function clearNoteTimersAfterCommPlan(c){
+  if(!c||c.type!=="CONSULT"||admitOrPreopRelated(c))return;
+  let cleared=false;
+  (c.steps||[]).forEach(s=>{
+    if(!s.done&&s.dueISO&&/\b(?:note|doc|document|documentation|sign(?:ed)?)\b/i.test(s.t||"")){s.dueISO=null;cleared=true}
+  });
+  if(c.deadlineISO&&isDeferredDocumentation(c)){c.deadlineISO=null;cleared=true}
+  if(cleared)showToast("Comm'd plan checked — routine note timer cleared");
+}
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
   if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}
   else{
@@ -2093,7 +2108,8 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
       if(miss.length){pinnedTopId=c.id;showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
-    if(c.type==="CONSULT"&&next&&["seen","staffedC","staffedA"].includes(k))resetReviewClock(c);
+    if(c.type==="CONSULT"&&next&&["seen","staffedC","staffedA","commplan"].includes(k))resetReviewClock(c);
+    if(c.type==="CONSULT"&&next&&k==="commplan")clearNoteTimersAfterCommPlan(c);
   }
   touch(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length){pinnedTopId=c.id;render();return}
@@ -2990,7 +3006,8 @@ function renderCapture(){
   const pconCue=/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|tap)|shuntogram)\b/i.test(text);
   const kit=procMatch(text);
   const verbStart=/^(remove|pull|place|replace|change|flush|tap|drain|suture|stitch|staple|inject|do|perform|take out|d\/?c)\b/i.test(text);
-  const procCue=!pconCue&&(!!kit||verbStart||/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text));
+  const procKeywordCue=/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|fontanelle tap|reservoir tap)\b/i.test(text);
+  const procCue=!pconCue&&(!!kit||verbStart||procKeywordCue||/\b(place|pull|remove|do|perform)\b.{0,25}\b(evd|\bld\b|lumbar drain|shunt tap|seps|halo|reservoir tap|fontanelle tap)\b/i.test(text)||/shunt tap|fontanelle tap|reservoir tap/i.test(text));
   // preview grade for clinical
   let preview="";
   if(clinical){
@@ -3022,9 +3039,10 @@ function renderCapture(){
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
     add("primary",SCREW_ICON,"Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
-  }else if(procCue&&(kit||verbStart)&&!clinical){
+  }else if(procCue&&(kit||verbStart||procKeywordCue)){
     add("primary",HAMMER_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
+    if(clinical)add("","◉","New consult instead — "+preview,"if this is an EVD/bolt clinical issue rather than a procedure",()=>capConsult(text,bed));
   }else if(clinical){
     add("primary","◉","New consult — "+preview,"prefills problem + auto-grades",()=>capConsult(text,bed));
     if(consentCue)add("","✎","+ Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}));
