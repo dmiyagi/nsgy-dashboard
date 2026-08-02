@@ -188,8 +188,10 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .crow .rwho{font-weight:700;white-space:nowrap;font-size:13.5px}
 .crow .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:36px;font-size:13px}
 .crow .ract{color:var(--text);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
+.crow .ract.doneitem{color:var(--ok);text-decoration:line-through}
 .crow .rdl{font-size:11px;white-space:nowrap}
 button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:6px;font-weight:800;font-size:11px;padding:2px 9px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+button.rdone.finaldone{background:#123527}
 .crow .car{color:var(--mut);font-size:12px}
 .colbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:6px;font-size:10.5px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
 .lastdone{font-size:12px;color:var(--mut);text-decoration:line-through;opacity:.6;margin:2px 0}
@@ -1806,7 +1808,7 @@ function reflowQueue(){
              act.find(c=>consultPriorityMissing(c))||
              act.find(c=>!isStarted(c))||
              act[0];
-  if(next){pinnedTopId=next.id;showToast("Next up → "+((next.loc||next.prob||"task").slice(0,32)))}
+  if(next)pinnedTopId=next.id;
   return next||null;
 }
 const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note"]];
@@ -2079,8 +2081,15 @@ function compactPending(c){
   if(ti>=0)return {kind:"task",i:ti,t:c.tasks[ti].t};
   return null;
 }
+function compactDoneText(c){
+  if(c.lastDone)return c.lastDone;
+  const ds=(c.steps||[]).filter(s=>s.done).slice(-1)[0];if(ds)return ds.t;
+  const dt=(c.tasks||[]).filter(t=>t.done).slice(-1)[0];if(dt)return dt.t;
+  return "";
+}
 function rowCard(c,dl,isTask){
   const pending=compactPending(c),act=pending?pending.t:"";
+  const doneTxt=!act?compactDoneText(c):"";
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rdl=reviewDL(c);
@@ -2099,7 +2108,8 @@ function rowCard(c,dl,isTask){
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
-        :(isTask?'<span class="ract"></span>'+(canCloseTask(c)?'<button class="rdone finaldone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ ☺ Done</button>':""):'<span class="ract"></span>'))+
+        :(doneTxt?'<button class="rdone finaldone" onclick="event.stopPropagation()">✓ done</button><span class="ract doneitem">'+esc(doneTxt)+'</span>'
+          :(isTask?'<span class="ract"></span>'+(canCloseTask(c)?'<button class="rdone finaldone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ ☺ Done</button>':""):'<span class="ract"></span>')))+
     (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
@@ -2130,11 +2140,11 @@ function rowDone(id){
   if(!p)return;
   if(p.kind==="action"){doneAction(id);return}
   if(p.kind==="step"&&c.steps&&c.steps[p.i]){
-    c.steps[p.i].done=true;c.steps[p.i].dueISO=null;
+    c.lastDone=c.steps[p.i].t;c.steps[p.i].done=true;c.steps[p.i].dueISO=null;
     const nx=compactPending(c);touch(c);render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
   }
   if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
-    c.tasks[p.i].done=true;
+    c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;
     const nx=compactPending(c);touch(c);reflowQueue();render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
   }
 }
