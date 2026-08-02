@@ -89,12 +89,13 @@ section.view.active{display:block}
 @keyframes pulse{50%{opacity:.45}}
 .wf{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 2px}
 .wf button{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-family:var(--font)}
-.wf button.milestone{border-color:var(--ok);color:var(--ok)}
+.wf button.milestone{border-color:var(--e2);color:var(--e2)}
 .wf button.milestone.on{background:#123527;border-color:var(--ok);color:var(--ok)}
 .wf button.routine{border-color:var(--line);color:var(--mut)}
 .wf button.routine.on{background:var(--card2);border-color:#52647e;color:#c0cbe0}
 .cardbtns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
 .cardbtns button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
+.cardbtns button.finaldone,button.rdone.finaldone{border-color:var(--ok);color:var(--ok);background:#123527}
 .webtrash{display:none;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
@@ -913,6 +914,10 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
+    <div class="fld" id="fld_interp">
+      <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
+      <input type="text" id="f_lang" placeholder="Language">
+    </div>
     <div class="fld" id="fld_snooze"><label>◷ Snooze / reschedule until (hidden from board, resurfaces + on Calendar)</label>
       <div class="qbtns">
         <button type="button" onclick="setSnoozeMinutes(15)">+15 min</button><button type="button" onclick="setSnoozeMinutes(30)">+30 min</button>
@@ -1680,8 +1685,7 @@ function isEmergentOperative(c){
   return (c.E>=3&&c.O>=2)||c.O>=3||(c.E>=3&&mods.includes("OR"))||/\bemergent\b.{0,35}\b(?:or|op|surgery|case)\b|\b(?:or|op|surgery|case)\b.{0,35}\bemergent\b/i.test(txt);
 }
 function openWorkflowKeys(c){
-  let set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"]||[];
-  if(c.type==="PROC"&&!needsDVTHold(c))set=set.filter(([k])=>k!=="dvt");
+  let set=visibleWorkflowSet(c);
   return set.filter(([k])=>k!=="__close"&&!(c.wf&&c.wf[k])).map(([k,l])=>({k,l}));
 }
 function currentWorkText(c){
@@ -1813,6 +1817,18 @@ function workflowSet(c){
   }
   return set;
 }
+function visibleWorkflowSet(c){
+  let set=workflowSet(c);
+  if(c&&c.type==="PROC"&&!needsDVTHold(c))set=set.filter(([k])=>k!=="dvt");
+  return set;
+}
+function workflowComplete(c){
+  const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
+  return !!set.length&&set.every(([k])=>c.wf&&c.wf[k]);
+}
+function canCloseTask(c){
+  return !(c&&c.type==="PROC")||workflowComplete(c);
+}
 function chartNextDueMin(c){
   if(!c||c.type!=="CHART")return null;
   const wf=c.wf||{};
@@ -1839,10 +1855,8 @@ function isWorkflowMilestone(c,k){
   return !!(map[type]&&map[type].has(k));
 }
 function wfChips(c,mini){
-  let set=workflowSet(c);
+  let set=visibleWorkflowSet(c);
   if(!set||!set.length)return "";
-  // DVT-ppx hold chip only shows for procedures that actually need it
-  if(c.type==="PROC"&&!needsDVTHold(c))set=set.filter(x=>x[0]!=="dvt");
   const timed=c.type==="CHART";
   return '<div class="wf'+(mini?" mini":"")+'">'+set.map(([k,l])=>{
     if(k==="__close")return '<button style="border-color:var(--ok);color:var(--ok)" onclick="startClose(\''+c.id+'\')">'+l+' ✓</button>';
@@ -1864,6 +1878,9 @@ function phoneHtml(c){
       :'<span data-ph onclick="togPh(\''+c.id+'\')">'+esc(maskPhone(c.phone))+' show</span>';
   }
   return '<div class="state phone">'+PHONE_ICON+' '+esc(c.fname||"")+(c.fname&&ph?" · ":"")+ph+'</div>';
+}
+function consentInterpBadge(c){
+  return c&&c.type==="CONSENT"&&c.needsInterpreter?'<span class="bg warn">Interpreter'+(c.language?' · '+esc(c.language):"")+'</span>':"";
 }
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
@@ -2042,8 +2059,16 @@ function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+
 function trashBtn(id,kind){
   return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+(kind==="round"?'delRound':'del')+'(\''+id+'\')">⌫</button>';
 }
+function compactPending(c){
+  if(c.action&&!stepTextOpen(c,c.action))return {kind:"action",t:c.action};
+  const si=(c.steps||[]).findIndex(s=>!s.done);
+  if(si>=0)return {kind:"step",i:si,t:c.steps[si].t};
+  const ti=(c.tasks||[]).findIndex(t=>!t.done);
+  if(ti>=0)return {kind:"task",i:ti,t:c.tasks[ti].t};
+  return null;
+}
 function rowCard(c,dl,isTask){
-  const act=(c.action&&!stepTextOpen(c,c.action))?c.action:(((c.steps||[]).find(s=>!s.done)||{}).t||"");
+  const pending=compactPending(c),act=pending?pending.t:"";
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rdl=reviewDL(c);
@@ -2057,11 +2082,12 @@ function rowCard(c,dl,isTask){
     (rOver?'<span class="bg warn">review</span>':"")+
     (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
+    consentInterpBadge(c)+
     worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
-        :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
+        :(isTask?'<span class="ract"></span>'+(canCloseTask(c)?'<button class="rdone finaldone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ ☺ Done</button>':""):'<span class="ract"></span>'))+
     (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
@@ -2091,6 +2117,10 @@ function rowDone(id){
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   const i=(c.steps||[]).findIndex(s=>!s.done);
   if(i>=0){c.steps[i].done=true;touch(c);render();const nx=(c.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete")}
+  else{
+    const ti=(c.tasks||[]).findIndex(t=>!t.done);
+    if(ti>=0){c.tasks[ti].done=true;touch(c);reflowQueue();render();const nx=(c.tasks||[]).find(t=>!t.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete")}
+  }
 }
 function undoLastDone(id){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.lastDone)return;
@@ -2117,7 +2147,7 @@ function card(c){
     return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
-       (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+worryBadge+colBtn(c)+'</div>'+
+       (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
@@ -2125,7 +2155,7 @@ function card(c){
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+'<button onclick="startClose(\''+c.id+'\')">✓ Done</button></div></div>';
+     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+(canCloseTask(c)?'<button class="finaldone" onclick="startClose(\''+c.id+'\')">✓ ☺ Done</button>':"")+'</div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3! E'+c.E+'</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -2299,7 +2329,7 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
 function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
@@ -2326,6 +2356,8 @@ function openForm(id,reassess,ptype){
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
   document.getElementById("f_snooze").value=F.snoozeISO?toLocalInput(F.snoozeISO):"";
+  document.getElementById("f_interp").checked=!!F.needsInterpreter;
+  document.getElementById("f_lang").value=F.language||"";
   ftcLoad(F);
   buildTypeChips();buildSelectors();buildDomains();buildMods();syncWWarn();renderSugg();renderFlags();
   document.getElementById("ov").classList.add("show");window.scrollTo(0,0);
@@ -2354,6 +2386,7 @@ function setTypeUI(){
   const rem=document.getElementById("typereminder");
   rem.style.display=t.rem?"block":"none";rem.textContent=t.rem;
   document.getElementById("fld_call").style.display=(F.type==="COMM")?"":"none";
+  document.getElementById("fld_interp").style.display=(F.type==="CONSENT")?"":"none";
   document.getElementById("qdl").innerHTML=t.presets.map(p=>
     typeof p[1]==="number"?'<button data-min="'+p[1]+'">'+p[0]+'</button>':'<button data-at="'+p[1]+'">'+p[0]+'</button>').join("");
 }
@@ -2431,6 +2464,8 @@ function saveForm(){
   F.deadlineISO=dv?new Date(dv).toISOString():null;
   const sv=document.getElementById("f_snooze").value;
   F.snoozeISO=sv?new Date(sv).toISOString():null;
+  F.needsInterpreter=!!document.getElementById("f_interp").checked;
+  F.language=document.getElementById("f_lang").value.trim();
   const tcSnap=ftcSnapshot();
   F.tc=FTC.some(k=>tcSnap[k])?tcSnap:null;
   if(!F.loc&&!F.prob){alert("Give it at least a location or problem.");return}
@@ -2807,7 +2842,7 @@ function soValsHtml(c){
   const t=SO_TMPLS[c.soT||"floor"];
   const filled=t.fields.filter(f=>c.so&&c.so[f[0]]);
   if(!filled.length)return "";
-  return '<div class="sovals">SO '+t.name+" — "+filled.map(f=>f[0]+": "+esc(c.so[f[0]])).join(" · ")+'</div>';
+  return '<div class="sovals">SO '+t.name+' started</div>';
 }
 // push a chart-check's recorded values into the rounds sign-out for the same patient
 function soToRounds(){
