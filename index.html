@@ -1599,7 +1599,13 @@ function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">"
 function cLevel(c){const t=domTotal(c);if(t!==null){return t<=5?1:t<=11?2:t<=23?3:4}return c.cQuick||null}
 function domTotal(c){if(!c.domains||!c.domains.some(d=>d!==null&&d!==undefined))return null;return c.domains.reduce((a,d)=>a+(d||0),0)}
 function cStr(c){const lv=cLevel(c);const t=domTotal(c);return lv?("C"+lv+(t!==null?" ("+t+")":"")):"C?"}
-function fmtDL(iso){if(!iso)return null;const ms=Date.parse(iso)-Date.now();const am=Math.abs(ms);const h=Math.floor(am/3600000),m=Math.round(am%3600000/60000);const str=(h?h+"h ":"")+m+"m";return ms<0?{cls:"over",txt:"OVERDUE "+str}:ms<15*60000?{cls:"soon",txt:"due in "+str}:{cls:"ok",txt:"due in "+str}}
+function fmtDL(iso){
+  if(!iso)return null;
+  const ms=Date.parse(iso)-Date.now(),over=ms<=0,am=Math.abs(ms);
+  const mins=over?Math.floor(am/60000):Math.ceil(ms/60000);
+  const h=Math.floor(mins/60),m=mins%60,str=(h?h+"h ":"")+m+"m";
+  return over?{cls:"over",txt:"OVERDUE "+str}:ms<15*60000?{cls:"soon",txt:"due in "+str}:{cls:"ok",txt:"due in "+str};
+}
 function reviewWindowMin(c){
   if(!c||c.type!=="CONSULT")return null;
   return c.E>=3?0:c.E===2?30:c.E===1?60:90;
