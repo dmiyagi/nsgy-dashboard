@@ -1667,6 +1667,14 @@ function reviewOverdue(c){
   const dl=reviewDL(c);
   return !!(dl&&dl.cls==="over");
 }
+function overdueISO(iso){return !!(iso&&Date.parse(iso)<=Date.now())}
+function hasOverdueTimers(c){
+  if(!c)return false;
+  if(overdueISO(c.deadlineISO))return true;
+  if((c.steps||[]).some(s=>!s.done&&overdueISO(s.dueISO)))return true;
+  if((c.tasks||[]).some(t=>!t.done&&overdueISO(t.dueISO)))return true;
+  return !!(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO));
+}
 function compactTimerHtml(c){
   const cands=[];
   const due=nextDue(c);if(due)cands.push({iso:due,label:"◷ "});
@@ -1985,14 +1993,14 @@ function consentInterpBadge(c){
   return c&&c.type==="CONSENT"&&c.needsInterpreter?'<span class="bg warn">Interpreter'+(c.language?' · '+esc(c.language):"")+'</span>':"";
 }
 function dlBtnsHtml(c){
-  const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
+  const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO)||(c.tasks||[]).some(t=>!t.done&&t.dueISO);
   return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
-   (reviewOverdue(c)?'<button onclick="clearReviewDL(\''+c.id+'\')" title="Clear review overdue">✕ review</button>':"")+
+   (hasOverdueTimers(c)?'<button onclick="clearOverdueTimers(\''+c.id+'\')" title="Clear only overdue timers">✕ overdue</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
-  (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
+  (c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null}
@@ -2003,6 +2011,15 @@ function clearOverdueStepDL(c){
   (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO&&Date.parse(t.dueISO)<=now){t.dueISO=null;cleared=true}});
   return cleared;
 }
+function clearOverdueTimers(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  let n=0;
+  if(overdueISO(c.deadlineISO)){c.deadlineISO=null;n++}
+  (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
+  (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
+  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;n++}
+  touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
+}
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
   const cleared=clearOverdueStepDL(c);
@@ -2010,7 +2027,7 @@ function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(c.type==="CONSULT"){c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
   touch(c);render();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
-function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;resetReviewClock(c);touch(c);render();showToast("Review overdue cleared")}
+function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();showToast("Review timer cleared")}
 function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(c.type==="CONSULT")resetReviewClock(c);touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
@@ -2218,6 +2235,9 @@ function compactTimerOffButton(c){
 function compactAdd15Button(c){
   return '<button class="rdone" onclick="event.stopPropagation();bumpDL(\''+c.id+'\',15)">+15m</button>';
 }
+function compactClearOverdueButton(c){
+  return hasOverdueTimers(c)?'<button class="rdone" onclick="event.stopPropagation();clearOverdueTimers(\''+c.id+'\')">✕ overdue</button>':"";
+}
 function soButtonAttrs(c){
   if(soComplete(c))return ' style="border-color:var(--ok);color:var(--ok)"';
   return soStarted(c)?' style="border-color:var(--e2);color:var(--e2)"':"";
@@ -2246,6 +2266,7 @@ function rowCard(c,dl,isTask){
           :(todosDone?'<button class="rdone finaldone" onclick="event.stopPropagation()">✓ to-dos done</button><span class="ract"></span>'
           :(isTask?'<span class="ract"></span>'+closeDoneButton(c,true):'<span class="ract"></span>'))))+
     compactTimerHtml(c)+
+    compactClearOverdueButton(c)+
     (!allDone?compactAdd15Button(c):"")+
     (allDone?compactTimerOffButton(c):"")+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>':"")+
