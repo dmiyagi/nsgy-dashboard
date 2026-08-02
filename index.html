@@ -1061,6 +1061,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="checklist" id="closeChecks"></div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideClose()">Cancel</button>
+      <button class="btn sec" onclick="addCloseItemsToTodos()">Add unchecked to-dos</button>
       <button class="btn" onclick="confirmClose()">Close consult</button>
     </div>
   </div>
@@ -2593,6 +2594,21 @@ function startClose(id){
   document.getElementById("ovClose").classList.add("show");
 }
 function hideClose(){document.getElementById("ovClose").classList.remove("show");closingId=null}
+function uncheckedCloseItems(){
+  return Array.from(document.querySelectorAll("#closeChecks label")).map((lab,i)=>({
+    checked:!!lab.querySelector("input").checked,
+    text:CLOSE_ITEMS[i]
+  })).filter(x=>!x.checked&&x.text).map(x=>x.text);
+}
+function addCloseItemsToTodos(){
+  const c=S.consults.find(x=>x.id===closingId);if(!c)return;
+  const items=uncheckedCloseItems();
+  c.tasks=c.tasks||[];
+  let n=0;
+  items.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
+  c.closed=false;touch(c);hideClose();render();
+  showToast(n?("Added "+n+" Stage B to-do"+(n>1?"s":"")):"No new Stage B to-dos");
+}
 function confirmClose(){const c=S.consults.find(x=>x.id===closingId);if(c){c.closed=true;c.closedAt=Date.now();touch(c)}hideClose();render()}
 // ---------- day schedule ----------
 function todayStr(){return new Date().toDateString()}
