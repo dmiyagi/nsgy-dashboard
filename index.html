@@ -287,8 +287,8 @@ details.moredet[open]>summary{margin-bottom:8px}
 .checks{margin:5px 0 2px;display:flex;flex-direction:column;gap:3px}
 .chk{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--mut);cursor:pointer}
 .chk .bx{border:1px solid var(--line);border-radius:5px;width:16px;height:16px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
-.chk.on{opacity:.55;text-decoration:line-through}
-.chk.on .bx{border-color:var(--ok);color:var(--ok)}
+.chk.on{color:var(--ok);text-decoration:line-through}
+.chk.on .bx{border-color:var(--ok);color:var(--ok);background:#123527}
 /* consent alert */
 .consentbar{background:#33122a;border:1px solid #ff85c0;border-left:4px solid #ff85c0;color:#ffb3d8;border-radius:var(--rad);padding:9px 12px;font-size:12.5px;margin-bottom:10px;display:none}
 .consentbar.show{display:block}
@@ -2125,13 +2125,17 @@ function doneAction(id){
 }
 function rowDone(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
-  if(c.action){doneAction(id);return}
+  const p=compactPending(c);
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
-  const i=(c.steps||[]).findIndex(s=>!s.done);
-  if(i>=0){c.steps[i].done=true;touch(c);render();const nx=(c.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete")}
-  else{
-    const ti=(c.tasks||[]).findIndex(t=>!t.done);
-    if(ti>=0){c.tasks[ti].done=true;touch(c);reflowQueue();render();const nx=(c.tasks||[]).find(t=>!t.done);showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete")}
+  if(!p)return;
+  if(p.kind==="action"){doneAction(id);return}
+  if(p.kind==="step"&&c.steps&&c.steps[p.i]){
+    c.steps[p.i].done=true;c.steps[p.i].dueISO=null;
+    const nx=compactPending(c);touch(c);render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
+  }
+  if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
+    c.tasks[p.i].done=true;
+    const nx=compactPending(c);touch(c);reflowQueue();render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
   }
 }
 function undoLastDone(id){
