@@ -193,6 +193,12 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .addmenu summary{display:inline-block;font-size:12px;font-weight:700;color:var(--mut);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;list-style:none;font-family:var(--font)}
 .addmenu summary::-webkit-details-marker{display:none}
 .addmenu[open] summary{color:var(--acc);border-color:var(--acc)}
+.boardtools{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
+.boardtools .addmenu{margin-bottom:0}
+.typefilters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.typefilters button{font-size:11.5px;font-weight:800;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
+.typefilters button.on{border-color:var(--tc,var(--acc));color:var(--tc,var(--acc));background:#12283f}
+.typefilters button.all.on{border-color:var(--acc);color:var(--acc)}
 .wf.mini button{font-size:9.5px;padding:2px 7px}
 .crowwrap{padding:7px 10px}
 .crowwrap .crow{padding:0;background:none;border:none;margin:0}
@@ -360,7 +366,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <img class="appicon" src="icon-192.png?v=20260801" alt="" aria-hidden="true">
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
-    <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for attending judgment</div>
+    <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for clinical judgment</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -383,20 +389,23 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="banner">Use only HIPAA-compliant data — bed + first three letters of last name, never full names or MRNs. Data is never stored on any server. Wipe everything with the Set button below.</div>
   <input id="cap" class="capin capin-hero" placeholder="Type anything…" autocomplete="off">
   <div id="capsugg"></div>
-  <details class="addmenu">
-    <summary>＋ Add by type ▾</summary>
-    <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
-      <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
-      <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')"><span class="phoneico" aria-hidden="true"></span> Comm</button>
-      <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
-      <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="hammerico" aria-hidden="true"></span> Floor proc</button>
-      <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="screwico" aria-hidden="true"></span> Quick proc</button>
-      <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
-      <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
-      <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
-      <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">⌂ DC prep</button>
-    </div>
-  </details>
+  <div class="boardtools">
+    <details class="addmenu">
+      <summary>＋ Add by type ▾</summary>
+      <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
+        <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
+        <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')"><span class="phoneico" aria-hidden="true"></span> Comm</button>
+        <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
+        <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="hammerico" aria-hidden="true"></span> Floor proc</button>
+        <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="screwico" aria-hidden="true"></span> Quick proc</button>
+        <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
+        <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
+        <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
+        <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">⌂ DC prep</button>
+      </div>
+    </details>
+    <div class="typefilters" id="typefilters"></div>
+  </div>
   <div class="consentbar" id="consentbar"></div>
   <div class="rowflex">
     <button class="btn sec sm" onclick="copyAll()">Copy full list</button>
@@ -1601,6 +1610,22 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
  return [c.loc,c.prob,"E"+c.E+"/O"+c.O+"/"+cStr(c)+(mods?"-"+mods:""),c.state,c.action,[dl,c.trig].filter(Boolean).join("; "),c.owner].filter(Boolean).join(" | ")}
 // ---------- board render ----------
 let pinnedTopId=null;
+const boardTypeFilters=new Set();
+function boardType(c){return (c.type&&TYPES[c.type])?c.type:"CONSULT"}
+function matchBoardType(c){return !boardTypeFilters.size||boardTypeFilters.has(boardType(c))}
+function togBoardType(k){
+  if(k==="ALL")boardTypeFilters.clear();
+  else if(boardTypeFilters.has(k))boardTypeFilters.delete(k);
+  else boardTypeFilters.add(k);
+  render();
+}
+function renderTypeFilters(list){
+  const el=document.getElementById("typefilters");if(!el)return;
+  const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
+  const keys=["CONSULT","COMM","CHART","PROC","PCON","POC","CONSENT","BOOK","DC"].filter(k=>TYPES[k]);
+  el.innerHTML='<button class="all '+(!boardTypeFilters.size?"on":"")+'" onclick="togBoardType(\'ALL\')">All '+list.length+'</button>'+
+    keys.map(k=>'<button class="tc-'+k+(boardTypeFilters.has(k)?" on":"")+'" onclick="togBoardType(\''+k+'\')">'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</button>').join("");
+}
 const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
 const CONSULT_PRIORITY_WF=[["seen","Seen",140],["staffedC","Staffed-Chief",120],["staffedA","Staffed-Attg",110],["commplan","Comm'd Plan",90]];
 function consultGateMissing(c){
@@ -1797,10 +1822,12 @@ function clearOverdueStepDL(c){
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
   const cleared=clearOverdueStepDL(c);
-  c.deadlineISO=new Date(Date.now()+min*60000).toISOString();touch(c);render();
+  c.deadlineISO=new Date(Date.now()+min*60000).toISOString();
+  if(c.type==="CONSULT"){c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
+  touch(c);render();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
 function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;resetReviewClock(c);touch(c);render();showToast("Review overdue cleared")}
-function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(reviewOverdue(c))resetReviewClock(c);touch(c);render();}
+function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(c.type==="CONSULT")resetReviewClock(c);touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
 function stepTimerBtn(c,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
@@ -1933,7 +1960,9 @@ function renderCal(){
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
 function render(){
-  const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c)).sort(sortCs);
+  const baseAct=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c));
+  renderTypeFilters(baseAct);
+  const act=baseAct.filter(matchBoardType).sort(sortCs);
   const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
