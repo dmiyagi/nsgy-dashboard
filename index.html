@@ -186,7 +186,7 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .crow{display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:nowrap;overflow:hidden;cursor:pointer}
 .crow .rwho{font-weight:700;white-space:nowrap;font-size:13.5px}
 .crow .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:36px;font-size:13px}
-.crow .ract{color:var(--ok);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
+.crow .ract{color:var(--text);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
 .crow .rdl{font-size:11px;white-space:nowrap}
 button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:6px;font-weight:800;font-size:11px;padding:2px 9px;cursor:pointer;font-family:var(--font);white-space:nowrap}
 .crow .car{color:var(--mut);font-size:12px}
@@ -198,10 +198,10 @@ button.rdone{border:1px solid var(--ok);color:var(--ok);background:transparent;b
 .addmenu[open] summary{color:var(--acc);border-color:var(--acc)}
 .boardtools{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
 .boardtools .addmenu{margin-bottom:0}
-.typefilters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.typefilters button{font-size:11.5px;font-weight:800;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
-.typefilters button.on{border-color:var(--tc,var(--acc));color:var(--tc,var(--acc));background:#12283f}
-.typefilters button.all.on{border-color:var(--acc);color:var(--acc)}
+.typefilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filterctrl{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:var(--mut);font-size:11.5px;font-weight:800}
+.filterctrl select{appearance:none;background:transparent;border:0;color:var(--text);font-family:var(--font);font-size:12px;font-weight:800;outline:0;min-width:112px}
+.filterctrl select option{background:var(--card);color:var(--text)}
 .wf.mini button{font-size:9.5px;padding:2px 7px}
 .crowwrap{padding:7px 10px}
 .crowwrap .crow{padding:0;background:none;border:none;margin:0}
@@ -457,12 +457,14 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <div class="banner">Paste your list below — one patient per line; <b>indent continuation lines with Tab</b> so multi-line entries stay one patient. I'll split, tag, and sort them for rounding. <b>De-identify first: bed + first three letters of last name</b> (Miyagishima, Danielle → Miy).</div>
-  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type anything here… one patient per line"></textarea>
+  <div class="banner">Type Loc/Bed and first three letters of last name and handoff one liner. Example: <b>B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31</b>. Indent continuation lines with Tab so multi-line entries stay one patient.</div>
+  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type Loc/Bed and first three letters of last name and handoff one liner: B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
+    <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
+    <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
   <div class="bulkexport">
@@ -1557,6 +1559,7 @@ function migrate(d){
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=false});
   return d;
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
@@ -1622,21 +1625,32 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
  return [c.loc,c.prob,"E"+c.E+"/O"+c.O+"/"+cStr(c)+(mods?"-"+mods:""),c.state,c.action,[dl,c.trig].filter(Boolean).join("; "),c.owner].filter(Boolean).join(" | ")}
 // ---------- board render ----------
 let pinnedTopId=null;
-const boardTypeFilters=new Set();
+let boardTypeFilter="ALL";
+let boardOwnerFilter="ALL";
 function boardType(c){return (c.type&&TYPES[c.type])?c.type:"CONSULT"}
-function matchBoardType(c){return !boardTypeFilters.size||boardTypeFilters.has(boardType(c))}
-function togBoardType(k){
-  if(k==="ALL")boardTypeFilters.clear();
-  else if(boardTypeFilters.has(k))boardTypeFilters.delete(k);
-  else boardTypeFilters.add(k);
+function ownerKey(c){return (c.owner||"").trim()||"Unassigned"}
+function matchBoardType(c){return boardTypeFilter==="ALL"||boardType(c)===boardTypeFilter}
+function matchBoardOwner(c){return boardOwnerFilter==="ALL"||ownerKey(c)===boardOwnerFilter}
+function setBoardType(k){
+  boardTypeFilter=k||"ALL";
   render();
 }
+function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
   const keys=["CONSULT","COMM","CHART","PROC","PCON","POC","CONSENT","BOOK","DC"].filter(k=>TYPES[k]);
-  el.innerHTML='<button class="all '+(!boardTypeFilters.size?"on":"")+'" onclick="togBoardType(\'ALL\')">All '+list.length+'</button>'+
-    keys.map(k=>'<button class="tc-'+k+(boardTypeFilters.has(k)?" on":"")+'" onclick="togBoardType(\''+k+'\')">'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</button>').join("");
+  if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
+  const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
+    '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
+  const owners=Array.from(new Set(list.map(ownerKey))).sort((a,b)=>a.localeCompare(b));
+  if(boardOwnerFilter!=="ALL"&&!owners.includes(boardOwnerFilter))boardOwnerFilter="ALL";
+  const ownerOpts=['<option value="ALL" '+(boardOwnerFilter==="ALL"?"selected":"")+'>Anyone '+list.length+'</option>'].concat(owners.map(o=>{
+    const n=list.filter(c=>ownerKey(c)===o).length;
+    return '<option value="'+esc(o)+'" '+(boardOwnerFilter===o?"selected":"")+'>@ '+esc(o)+' '+n+'</option>';
+  })).join("");
+  el.innerHTML='<label class="filterctrl">Type <select onchange="setBoardType(this.value)">'+typeOpts+'</select></label>'+
+    '<label class="filterctrl">Assigned <select onchange="setBoardOwner(this.value)">'+ownerOpts+'</select></label>';
 }
 const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
 const CONSULT_PRIORITY_WF=[["seen","Seen",140],["staffedC","Staffed-Chief",120],["staffedA","Staffed-Attg",110],["commplan","Comm'd Plan",90]];
@@ -1988,7 +2002,7 @@ function renderCal(){
 function render(){
   const baseAct=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
-  const act=baseAct.filter(matchBoardType).sort(sortCs);
+  const act=baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)).sort(sortCs);
   const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
@@ -2026,7 +2040,7 @@ function rowCard(c,dl,isTask){
     worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
-    (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
+    (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
         :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
     (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
@@ -2520,7 +2534,7 @@ function parseRounds(){
       ex.updatedAt=Date.now();merged++;
       return;
     }
-    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:false,created:Date.now(),updatedAt:Date.now()});
   });
   document.getElementById("dropbox").value="";
   renderRounds();save();
@@ -2555,6 +2569,9 @@ function setRStepDL(id,i,min){
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
+function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
+function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
+function collapseRounds(v){S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
 function initialsOf(r){
   const ab=last3FromText(r.raw)||last3FromText(r.label);
   if(ab)return ab.toUpperCase();
@@ -2562,6 +2579,21 @@ function initialsOf(r){
   const alpha=m.filter(x=>!/^(ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|ISC|MICW|MICS)$/i.test(x));
   if(alpha.length)return alpha.join("").toUpperCase();
   return String(r.label||"").toUpperCase();
+}
+function roundRowCard(r){
+  const nx=(r.steps||[]).find(s=>!s.done);
+  const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
+  const tags=(r.tags||[]).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
+  return '<div class="card crowwrap hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
+   '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
+    '<span class="bg t">▤</span>'+
+    (r.worry?'<span class="bg warn">!</span>':"")+
+    tags+
+    '<span class="rwho">'+esc(r.label)+'</span>'+
+    '<span class="rprob">'+esc((r.raw||"").replace(String(r.label||""),"").trim()||SO_TMPLS[r.soT].name)+'</span>'+
+    (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();togSeen(\''+r.id+'\')">'+(r.seen?'↩':'✓ seen')+'</button>')+
+    (dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+    '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){
   S.rounds=S.rounds||[];
@@ -2582,14 +2614,14 @@ function renderRounds(){
        '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">! Worried — see 2–3×/day</button></div>'+
        '<div class="cardbtns" style="margin-top:8px"><button onclick="roundEditCancel(\''+r.id+'\')">Cancel</button><button style="border-color:var(--ok);color:var(--ok)" onclick="roundEditSave(\''+r.id+'\')">✓ Save</button></div></div>';
     }
+    if(r.collapsed)return roundRowCard(r);
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
-     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+'</div>'+
+     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
-     (r.plan?'<div class="next">→ <b>'+esc(r.plan)+'</b></div>':"")+
      rStepsHtml(r)+
-     '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" onchange="planSave(\''+r.id+'\',this)">'+esc(r.plan||"")+'</textarea>'+
+     '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
@@ -3091,7 +3123,7 @@ function capRoundsAdd(text,bed){
     todoLinesFromPlan(text).forEach(t=>{ex.steps=ex.steps||[];if(!ex.steps.some(s=>s.t.toLowerCase()===t.toLowerCase()))ex.steps.push({t:t,done:false})});
     ex.updatedAt=Date.now();
   }else{
-    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:false,created:Date.now(),updatedAt:Date.now()});
   }
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   renderRounds();save();showToast("Added to rounds");
