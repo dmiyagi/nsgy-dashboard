@@ -202,10 +202,13 @@ button.rdone.finaldone{background:#123527}
 .addmenu[open] summary{color:var(--acc);border-color:var(--acc)}
 .boardtools{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}
 .boardtools .addmenu{margin-bottom:0}
-.typefilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.filterctrl{display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;color:var(--mut);font-size:11.5px;font-weight:800}
-.filterctrl select{appearance:none;background:transparent;border:0;color:var(--text);font-family:var(--font);font-size:12px;font-weight:800;outline:0;min-width:112px}
+.typefilters{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;min-width:0}
+.filterctrl{display:flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:5px 6px;color:var(--mut);font-size:10.5px;font-weight:800;min-width:0}
+.filterctrl select{appearance:none;background:transparent;border:0;color:var(--text);font-family:var(--font);font-size:11px;font-weight:800;outline:0;min-width:0;max-width:112px}
 .filterctrl select option{background:var(--card);color:var(--text)}
+.caremeta{font-size:12px;color:var(--mut);margin:3px 0}
+.caregrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:520px){.boardtools{gap:6px}.filterctrl{padding:4px 5px;font-size:9.5px}.filterctrl select{font-size:10px;max-width:84px}.caregrid{grid-template-columns:1fr}}
 .wf.mini button{font-size:9.5px;padding:2px 7px}
 .crowwrap{padding:7px 10px}
 .crowwrap .crow{padding:0;background:none;border:none;margin:0}
@@ -378,7 +381,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <img class="appicon" src="icon-192.png?v=20260801" alt="" aria-hidden="true">
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
-    <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for clinical judgment</div>
+    <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -484,7 +487,8 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
     <span class="sortbtns" id="rsort" style="margin-left:auto">
       <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
-      <button data-m="initials" onclick="setRoundSort('initials')">Sort: last 3</button>
+      <button data-m="initials" onclick="setRoundSort('initials')">Sort: patient</button>
+      <button data-m="team" onclick="setRoundSort('team')">Sort: team</button>
     </span>
   </div>
   <div id="rcards"></div>
@@ -865,7 +869,13 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="prockit"></div>
       <div id="smarthints"></div>
     </div>
-    <div class="fld" id="fld_owner"><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
+    <div class="fld" id="fld_owner"><label>Owner / service</label>
+      <div class="caregrid">
+        <div><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
+        <div><label>Team</label><input type="text" id="f_team" placeholder="PINK"></div>
+        <div><label>Attending</label><input type="text" id="f_attg" placeholder="KS"></div>
+      </div>
+    </div>
     <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>▯ Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
@@ -1696,6 +1706,22 @@ let boardOwnerFilter="ALL";
 let boardSortMode="bubble";
 function boardType(c){return (c.type&&TYPES[c.type])?c.type:"CONSULT"}
 function ownerKey(c){return (c.owner||"").trim()||"Unassigned"}
+function teamFromText(t){const m=String(t||"").match(/\b(PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b/i);return m?m[1].toUpperCase():""}
+function attgFromText(t){const m=String(t||"").match(/\b(?:PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b\s*\(([A-Z]{1,4}\*?)\)/i);return m?m[1].toUpperCase():""}
+function ensureCareMeta(c){
+  if(!c)return;
+  const txt=[c.team,c.attg,c.loc,c.prob,c.state,c.note].filter(Boolean).join(" ");
+  if(!c.team)c.team=teamFromText(txt);
+  if(!c.attg)c.attg=attgFromText(txt);
+}
+function careMetaHtml(c){
+  ensureCareMeta(c);
+  const parts=[];
+  if(c.owner)parts.push("@ "+esc(c.owner));
+  if(c.team)parts.push("Team "+esc(c.team));
+  if(c.attg)parts.push("Attg "+esc(c.attg));
+  return parts.length?'<div class="caremeta">'+parts.join(" · ")+'</div>':"";
+}
 function matchBoardType(c){return boardTypeFilter==="ALL"||boardType(c)===boardTypeFilter}
 function matchBoardOwner(c){return boardOwnerFilter==="ALL"||ownerKey(c)===boardOwnerFilter}
 function setBoardType(k){
@@ -1718,12 +1744,12 @@ function renderTypeFilters(list){
     return '<option value="'+esc(o)+'" '+(boardOwnerFilter===o?"selected":"")+'>@ '+esc(o)+' '+n+'</option>';
   })).join("");
   const sortOpts=[
-    ["bubble","Bubble"],
+    ["bubble","Priority"],
     ["room","Room"],
-    ["last3","Last 3"]
+    ["last3","Patient"]
   ].map(([k,l])=>'<option value="'+k+'" '+(boardSortMode===k?"selected":"")+'>'+l+'</option>').join("");
-  el.innerHTML='<label class="filterctrl">Type <select onchange="setBoardType(this.value)">'+typeOpts+'</select></label>'+
-    '<label class="filterctrl">Assigned <select onchange="setBoardOwner(this.value)">'+ownerOpts+'</select></label>'+
+  el.innerHTML='<label class="filterctrl">Type <select aria-label="Type" onchange="setBoardType(this.value)">'+typeOpts+'</select></label>'+
+    '<label class="filterctrl">Assigned <select aria-label="Assigned" onchange="setBoardOwner(this.value)">'+ownerOpts+'</select></label>'+
     '<label class="filterctrl">Sort <select onchange="setBoardSort(this.value)">'+sortOpts+'</select></label>';
 }
 const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
@@ -2337,7 +2363,8 @@ function card(c){
        (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
-     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
+     careMetaHtml(c)+
+     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
      stepsHtml(c)+
      checksHtml(c)+
      dcwf+
@@ -2353,9 +2380,10 @@ function card(c){
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
+   careMetaHtml(c)+
    (c.action&&!stepTextOpen(c,c.action)?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
-   '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
+   '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
@@ -2520,7 +2548,7 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 }}
 // ---------- form ----------
 let F=null; // working copy
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
 function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
@@ -2554,7 +2582,8 @@ function openForm(id,reassess,ptype){
   const tl=TYPES[F.type]?TYPES[F.type].l:"Consult";
   document.getElementById("formtitle").textContent=id?(reassess?"Reassess "+tl.toLowerCase():"Edit "+tl.toLowerCase()):"New "+tl.toLowerCase();
   document.getElementById("reassessBanner").style.display=reassess?"block":"none";
-  ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>document.getElementById("f_"+k).value=F[k]||"");
+  ensureCareMeta(F);
+  ["loc","prob","state","action","trig","owner","team","attg","note","qs","fname","phone"].forEach(k=>document.getElementById("f_"+k).value=F[k]||"");
   setLocForm(F.loc||"");
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
@@ -2663,7 +2692,8 @@ document.getElementById("qdl").addEventListener("click",e=>{
 });
 function saveForm(){
   document.getElementById("f_loc").value=joinLoc(document.getElementById("f_bed").value,document.getElementById("f_last3").value);
-  ["loc","prob","state","action","trig","owner","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
+  ["loc","prob","state","action","trig","owner","team","attg","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
+  ensureCareMeta(F);
   const stepLines=document.getElementById("f_steps").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
@@ -2840,10 +2870,11 @@ function parseRounds(){
       ex.steps=ex.steps||[];
       steps.forEach(s=>{if(!ex.steps.some(x=>x.t===s.t))ex.steps.push(s)});
       ex.tags=[...new Set((ex.tags||[]).concat(roundTags(b.main)))].slice(0,4);
+      ex.team=ex.team||teamFromText(b.main);ex.attg=ex.attg||attgFromText(b.main);
       ex.updatedAt=Date.now();merged++;
       return;
     }
-    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()});
   });
   document.getElementById("dropbox").value="";
   renderRounds();save();
@@ -2889,6 +2920,9 @@ function initialsOf(r){
   if(alpha.length)return alpha.join("").toUpperCase();
   return String(r.label||"").toUpperCase();
 }
+function roundTeam(r){return teamFromText([r.team,r.raw,r.label].filter(Boolean).join(" "))}
+function roundAttg(r){return attgFromText([r.team,r.raw,r.label].filter(Boolean).join(" "))}
+function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
@@ -2897,6 +2931,7 @@ function roundRowCard(r){
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     '<span class="bg t">▤</span>'+
     (r.worry?'<span class="bg warn">!</span>':"")+
+    (roundTeam(r)?'<span class="bg mod">'+esc(roundTeam(r))+(roundAttg(r)?' ('+esc(roundAttg(r))+')':"")+'</span>':"")+
     tags+
     '<span class="rwho">'+esc(r.label)+'</span>'+
     '<span class="rprob">'+esc((r.raw||"").replace(String(r.label||""),"").trim()||SO_TMPLS[r.soT].name)+'</span>'+
@@ -2912,7 +2947,9 @@ function renderRounds(){
   const key=r=>r.seen?2:(r.worry?0:1);
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
-    :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
+    :(S.roundSort==="team")
+      ?(a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true})
+      :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
   const list=S.rounds.filter(matchSearch).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
   const mainHtml=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
@@ -2927,7 +2964,7 @@ function renderRounds(){
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
-     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+rColBtn(r)+'</div>'+
+     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+(roundTeam(r)?'<span class="bg mod">'+esc(roundTeam(r))+(roundAttg(r)?' ('+esc(roundAttg(r))+')':"")+'</span>':"")+worry+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      rStepsHtml(r)+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
@@ -2984,7 +3021,7 @@ function roundEditSave(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
   if(lab)r.label=lab.value.trim()||r.label;
-  if(raw){r.raw=raw.value.trim()||r.raw;r.soT=detectTmpl(r.raw)}
+  if(raw){r.raw=raw.value.trim()||r.raw;r.team=teamFromText(r.raw);r.attg=attgFromText(r.raw);r.soT=detectTmpl(r.raw)}
   if(tg)r.tags=tg.value.split(",").map(t=>t.trim()).filter(Boolean);
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
 }
@@ -3056,7 +3093,7 @@ function addRoundTodoCard(id,type,line){
   line=decodeURIComponent(line||"");
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
   if(hasTiedTask(r,type,line)){showToast("Already on board");return}
-  const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
+  const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
   if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
   if(type==="CHART")t.E=0;
   t.updatedAt=Date.now();S.consults.push(t);render();renderRounds();save();
@@ -3070,7 +3107,7 @@ function addTiedRoundTasks(r,lines){
   let n=0;
   (lines||roundOpenTodos(r)).forEach(line=>{
     const type=tiedTypeForRoundTodo(line);if(!type||hasTiedTask(r,type,line))return;
-    const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
+    const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
     if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
     t.updatedAt=Date.now();S.consults.push(t);n++;
   });
@@ -3080,9 +3117,9 @@ function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
   document.querySelector('nav button[data-view="board"]').click();
   openForm(null,false,type);
-  F.loc=r.label;F.prob=r.raw.slice(0,110);F.worry=!!r.worry;F.roundId=r.id;
+  F.loc=r.label;F.prob=r.raw.slice(0,110);F.team=roundTeam(r);F.attg=roundAttg(r);F.worry=!!r.worry;F.roundId=r.id;
   F.soT=r.soT||"floor";F.so=Object.assign({},r.so||{});
-  setLocForm(F.loc);document.getElementById("f_prob").value=F.prob;
+  setLocForm(F.loc);document.getElementById("f_prob").value=F.prob;document.getElementById("f_team").value=F.team||"";document.getElementById("f_attg").value=F.attg||"";
   if(type==="CHART"){
     const lines=roundOpenTodos(r);
     F.tasks=lines.map(t=>({t:t,done:false}));
@@ -3187,9 +3224,11 @@ function soToRounds(){
   let r=(c.roundId&&S.rounds.find(x=>x.id===c.roundId))||
         S.rounds.find(x=>String(x.label||"").toUpperCase()===String(c.loc||"").toUpperCase()&&c.loc);
   if(!r){
-    r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:roundTags(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,created:Date.now(),updatedAt:Date.now()};
+    r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:roundTags(c.prob||""),team:c.team||teamFromText(c.prob||""),attg:c.attg||attgFromText(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,collapsed:true,created:Date.now(),updatedAt:Date.now()};
     S.rounds.push(r);c.roundId=r.id;
   }
+  r.team=r.team||c.team||teamFromText(c.prob||"");
+  r.attg=r.attg||c.attg||attgFromText(c.prob||"");
   r.soT=c.soT||r.soT||"floor";
   r.so=Object.assign({},r.so||{});
   Object.keys(c.so||{}).forEach(k=>{if(c.so[k])r.so[k]=c.so[k]});
@@ -3537,9 +3576,10 @@ function capRoundsAdd(text,bed){
   const ex=findRoundLike(label,raw);
   if(ex){
     todoLinesFromPlan(text).forEach(t=>{ex.steps=ex.steps||[];if(!ex.steps.some(s=>s.t.toLowerCase()===t.toLowerCase()))ex.steps.push({t:t,done:false})});
+    ex.team=ex.team||teamFromText(raw);ex.attg=ex.attg||attgFromText(raw);
     ex.updatedAt=Date.now();
   }else{
-    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),team:teamFromText(raw),attg:attgFromText(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()});
   }
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   renderRounds();save();showToast("Added to rounds");
@@ -3822,7 +3862,7 @@ function attachSwipe(containerId,kind){
 // ---------- bed board export ----------
 function sendRoundTo(id,type){
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
-  const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART")t.E=0;t.updatedAt=Date.now();
+  const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART")t.E=0;t.updatedAt=Date.now();
   S.consults.push(t);render();save();showToast(TYPES[type].l+" created for "+r.label);
 }
 function sendRoundToSel(id){const sel=document.getElementById("st_"+id);if(sel)sendRoundTo(id,sel.value)}
@@ -3834,7 +3874,7 @@ function roundSend(id){
   if(!date){roundToBoard(id,type);return}
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const t=blankC();
-  t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";
+  t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";
   t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
   if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}
   t.snoozeISO=date+"T06:00:00";
@@ -3858,7 +3898,7 @@ function exportRoundsTo(type){
   let n=0;
   S.rounds.forEach(r=>{
     if(existing.has(r.id))return;
-    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}t.updatedAt=Date.now();
+    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}t.updatedAt=Date.now();
     S.consults.push(t);n++;
     if(type==="CHART")n+=addTiedRoundTasks(r,t.tasks.map(x=>x.t))*0;
   });
