@@ -89,7 +89,10 @@ section.view.active{display:block}
 @keyframes pulse{50%{opacity:.45}}
 .wf{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 2px}
 .wf button{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-family:var(--font)}
-.wf button.on{background:#123527;border-color:var(--ok);color:var(--ok)}
+.wf button.milestone{border-color:var(--ok);color:var(--ok)}
+.wf button.milestone.on{background:#123527;border-color:var(--ok);color:var(--ok)}
+.wf button.routine{border-color:var(--line);color:var(--mut)}
+.wf button.routine.on{background:var(--card2);border-color:#52647e;color:#c0cbe0}
 .cardbtns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
 .cardbtns button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
 .webtrash{display:none;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
@@ -848,6 +851,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
+      <div id="ftc_flags"></div>
       <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
       <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
@@ -951,6 +955,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <details class="moredet" id="tcdet" open><summary>▾ 2 · Parsed pieces — fix anything wrong</summary>
       <div class="fld"><label>Title (one-line problem)</label><input type="text" id="tc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px" placeholder="Type anything here…"></textarea></div>
+      <div id="tc_flags"></div>
       <div class="fld"><label>Exam</label><textarea id="tc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="tcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
       <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="tcUseLabs()">Add relevant labs</button></div></div>
@@ -1362,6 +1367,13 @@ function renderFlags(){
     const hasApply=(f.apply.E!==undefined||f.apply.W!==undefined||(f.apply.mods&&f.apply.mods.length));
     return '<div class="fl '+f.lv+'"><span>! '+f.label+'</span>'+(hasApply?(done?'<button disabled style="opacity:.45">applied</button>':'<button onclick="applyFlag('+i+')">apply</button>'):"")+'</div>';
   }).join("");
+}
+function renderTextConsultFlags(targetId,txt){
+  const el=document.getElementById(targetId);if(!el)return;
+  if(!String(txt||"").trim()){el.innerHTML="";return}
+  const fs=FLAGS.filter(f=>flagMatch(f,txt));
+  el.innerHTML=fs.length?('<div class="sgnote">Consider / evaluate before sending:</div>'+fs.map(f=>
+    '<div class="fl '+f.lv+'"><span>! '+f.label+'</span></div>').join("")):"";
 }
 function applyFlag(i){const f=curFlags[i];if(!f)return;F._manual=true;
   if(f.apply.E!==undefined&&F.E<f.apply.E)F.E=f.apply.E;
@@ -1778,6 +1790,20 @@ const TYPE_WF={
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
+function isWorkflowMilestone(c,k){
+  const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
+  const map={
+    CONSULT:new Set(["seen","staffedC","staffedA","commplan"]),
+    PROC:new Set(["staff","dvt","consent","doproc","handoff"]),
+    CHART:new Set(["cc1","cc4"]),
+    BOOK:new Set(["consent","docs","or"]),
+    PCON:new Set(["done","handoff"]),
+    POC:new Set(["seen","attg"]),
+    COMM:new Set(["attempted"]),
+    DC:new Set(["medrec","coc","summ","order"])
+  };
+  return !!(map[type]&&map[type].has(k));
+}
 function wfChips(c,mini){
   let set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"];
   if(!set||!set.length)return "";
@@ -1788,8 +1814,8 @@ function wfChips(c,mini){
     if(k==="__close")return '<button style="border-color:var(--ok);color:var(--ok)" onclick="startClose(\''+c.id+'\')">'+l+' ✓</button>';
     const v=c.wf&&c.wf[k];
     const label=(timed&&v)?l+" "+fmtTime(v):l;
-    const urgent=((k==="dvt"||(["seen","staffedC","staffedA"].includes(k)&&c.type==="CONSULT"))&&!v)?' style="border-color:var(--e2);color:var(--e2)"':"";
-    return '<button class="'+(v?"on":"")+'"'+urgent+' onclick="togWf(\''+c.id+'\',\''+k+'\')">'+label+'</button>';
+    const cls=(isWorkflowMilestone(c,k)?"milestone":"routine")+(v?" on":"");
+    return '<button class="'+cls+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+label+'</button>';
   }).join("")+'</div>';
 }
 const revealedPh=new Set();
@@ -1987,6 +2013,7 @@ function rowCard(c,dl,isTask){
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rdl=reviewDL(c);
+  const showReview=rdl&&!isChart&&!sameDL(c.reviewDueISO,nextDue(c));
   const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
@@ -2001,7 +2028,7 @@ function rowCard(c,dl,isTask){
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<span class="ract">→ '+esc(act)+'</span><button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓</button>'
         :(isTask?'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();startClose(\''+c.id+'\')">✓ done</button>':'<span class="ract"></span>'))+
-    (rdl&&!isChart?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
+    (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
@@ -2041,9 +2068,11 @@ function undoLastDone(id){
   showToast("Undone — back to: "+c.action.slice(0,44));
 }
 function stepTextOpen(c,t){return !!(t&&(c.steps||[]).some(s=>!s.done&&s.t===t))}
+function sameDL(a,b){return !!(a&&b&&Math.abs(Date.parse(a)-Date.parse(b))<30000)}
 function card(c){
   const dl=fmtDL(nextDue(c));
   const rdl=reviewDL(c),rOver=reviewOverdue(c);
+  const showReview=rdl&&!sameDL(c.reviewDueISO,nextDue(c));
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
@@ -2075,7 +2104,7 @@ function card(c){
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    (c.action&&!stepTextOpen(c,c.action)?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
-   '<div class="rowflex" style="margin:0">'+(rdl?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
+   '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
@@ -2270,6 +2299,8 @@ function setTypeUI(){
 }
 let suggT=null;
 ["f_prob","f_state","f_action","f_note"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)}));
+["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",renderTCFlags)});
+["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",renderFTCFlags)});
 function closeForm(){document.getElementById("ov").classList.remove("show");F=null}
 function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
 function setSnooze(days){
@@ -2869,8 +2900,11 @@ function tcParse(){
   document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
   document.getElementById("tc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(t));
   document.getElementById("tc_plan").value=o.plan||"Review imaging + priors";
+  renderTCFlags();
   tcBuild();
 }
+function tcFlagText(){return ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ")}
+function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText())}
 function tcFormat(){
   const g=i=>(document.getElementById(i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
@@ -2880,7 +2914,7 @@ function tcFormat(){
     .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
-function tcBuild(){document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
+function tcBuild(){renderTCFlags();document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
 function tcUseExam(){
   const src=document.getElementById("tc_src").value||[document.getElementById("tc_title").value,document.getElementById("tc_hpi").value].join(" ");
   document.getElementById("tc_exam").value=tcSuggestedExam(src);
@@ -2897,6 +2931,7 @@ const FTC=["title","hpi","exam","img","labs","plan"];
 function ftcAutoHpi(){
   const h=document.getElementById("ftc_hpi"),p=document.getElementById("f_prob");
   if(h&&p&&!h.value.trim()&&p.value.trim())h.value=p.value.trim();
+  renderFTCFlags();
 }
 function ftcParse(){
   const prob=document.getElementById("f_prob").value.trim();
@@ -2911,8 +2946,11 @@ function ftcParse(){
     .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
     .concat(o.plan?o.plan.split("\n"):[]);
   document.getElementById("ftc_plan").value=[...new Set(plan.map(s=>String(s).trim()).filter(Boolean))].join("\n")||"Review imaging + priors";
+  renderFTCFlags();
   ftcBuild();
 }
+function ftcFlagText(){return ["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat(["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"")).join(" ")}
+function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText())}
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
@@ -2922,7 +2960,7 @@ function ftcFormat(){
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
-function ftcBuild(){document.getElementById("ftc_out").value=ftcFormat();if(F)F.tc=ftcSnapshot();showToast("Text consult built")}
+function ftcBuild(){renderFTCFlags();document.getElementById("ftc_out").value=ftcFormat();if(F)F.tc=ftcSnapshot();showToast("Text consult built")}
 function ftcUseExam(){
   const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value]).join(" ");
   document.getElementById("ftc_exam").value=tcSuggestedExam(src);
@@ -3274,7 +3312,14 @@ async function connectSync(){
   }catch(e){document.getElementById("syncstat").textContent="Could not connect — check the token has the gist scope. ("+e.message+")"}
 }
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)doSync(true)});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){doSync(true);boardClockTick(true)}});
+let boardClockMinute=null;
+function boardClockTick(force){
+  const m=nowMin();
+  if(!force&&m===boardClockMinute)return;
+  boardClockMinute=m;
+  renderAll();renderBlocks();
+}
 // ---------- swipe to delete ----------
 function attachSwipe(containerId,kind){
   const el=document.getElementById(containerId);if(!el||el._swipeBound)return;el._swipeBound=true;
@@ -3417,12 +3462,13 @@ document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
 compactBoardForStartup();
 renderAll();renderBlocks();
+boardClockTick(true);
 attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
 doSync(true);
 if(!syncAtStartup)startupCompactBoard=false;
-setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;renderAll();renderBlocks()},30000);
+setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;boardClockTick(false)},15000);
 </script>
 </body>
 </html>
