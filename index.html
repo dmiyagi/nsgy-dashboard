@@ -92,7 +92,7 @@ section.view.active{display:block}
 .wf button.milestone{border-color:var(--e2);color:var(--e2)}
 .wf button.milestone.on{background:#123527;border-color:var(--ok);color:var(--ok)}
 .wf button.routine{border-color:var(--line);color:var(--mut)}
-.wf button.routine.on{background:var(--card2);border-color:#52647e;color:#c0cbe0}
+.wf button.routine.on{background:#123527;border-color:var(--ok);color:var(--ok)}
 .cardbtns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
 .cardbtns button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
 .cardbtns button.finaldone,button.rdone.finaldone{border-color:var(--ok);color:var(--ok);background:#123527}
@@ -296,6 +296,8 @@ details.moredet[open]>summary{margin-bottom:8px}
 .consentbar button{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;border:1px solid #ff85c0;background:transparent;color:#ff85c0;cursor:pointer;font-family:var(--font);margin-left:6px}
 .bg.consent{background:#33122a;color:#ff85c0;border:1px solid #ff85c0}
 .sovals{font-size:11.5px;color:var(--mut);background:var(--card2);border-left:3px solid var(--teal);border-radius:6px;padding:5px 8px;margin:5px 0;white-space:pre-wrap}
+.sovals.warn{border-left-color:var(--e2);color:var(--e2);background:#2a1e10}
+.sovals.done{border-left-color:var(--ok);color:var(--ok);background:#10231c}
 .sohint{font-size:12px;line-height:1.45;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-top:6px;color:var(--mut);white-space:pre-wrap}
 .sohint .upd{color:var(--e2);font-weight:800}
 .sohint .lab{color:var(--teal);font-weight:800}
@@ -458,7 +460,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type Loc/Bed and first three letters of last name and handoff one liner: B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31"></textarea>
+  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type Loc/Bed and first three letters of last name and handoff one-liner:
+B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
+	Call MRI
+	Pre-op labs"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
@@ -1754,6 +1759,7 @@ function procWorkflowBoost(c){
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
+  if(dl&&dl.cls==="over")r+=1200;
   if(isChartDeferred(c))r-=120;
   if(c.type==="CHART")r+=chartCheckBoost(c)+chartAcuityBoost(c);
   else if(dl&&dl.cls==="over")r+=1000;
@@ -1803,13 +1809,13 @@ function reflowQueue(){
   if(next){pinnedTopId=next.id;showToast("Next up → "+((next.loc||next.prob||"task").slice(0,32)))}
   return next||null;
 }
-const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note ✓"]];
+const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note"]];
 const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
  PROC:[["staff","Tell nursing/team"],["dvt","Hold DVT ppx"],["consent","Consent"],["supplies","Gather supplies"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
  PCON:[["done","Done"],["doc","Procedure note"],["handoff","Update handoff"]],
- POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
+ POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  BOOK:[["name","Name/laterality"],["consent","Consent"],["labs","Hold DVT + labs/NPO"],["docs","H&P/rH&P + pre-op"],["or","OR notified"],["__close","Done"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
@@ -2767,6 +2773,32 @@ function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
   r.updatedAt=Date.now();renderRounds();save();
   showToast(added.length?("Added "+added.length+" to-do"+(added.length>1?"s":"")):"No new to-dos",added.length?()=>{const rr=S.rounds.find(x=>x.id===id);if(rr){rr.steps=(rr.steps||[]).filter(s=>!added.includes(s.t));rr.updatedAt=Date.now();renderRounds();save();}}:null);
 }}
+function roundOpenTodos(r){
+  const lines=(r.steps||[]).filter(s=>!s.done).map(s=>String(s.t||"").trim()).filter(Boolean);
+  todoLinesFromPlan(r.plan||"").forEach(t=>{if(t&&!lines.some(x=>x.toLowerCase()===t.toLowerCase()))lines.push(t)});
+  return lines;
+}
+function tiedTypeForRoundTodo(t){
+  const s=String(t||"");
+  if(/\b(?:call|page|text|contact|notify|reach)\b/i.test(s)||/\b(?:mri|ct|cta|ctv|x-?ray|xr|ultrasound|us)\b/i.test(s))return "COMM";
+  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram)\b/i.test(s))return "PCON";
+  if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
+  return null;
+}
+function hasTiedTask(r,type,text){
+  const key=String(text||"").trim().toLowerCase();
+  return (S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&c.type===type&&String(c.prob||"").trim().toLowerCase()===key);
+}
+function addTiedRoundTasks(r,lines){
+  let n=0;
+  (lines||roundOpenTodos(r)).forEach(line=>{
+    const type=tiedTypeForRoundTodo(line);if(!type||hasTiedTask(r,type,line))return;
+    const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
+    if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
+    t.updatedAt=Date.now();S.consults.push(t);n++;
+  });
+  return n;
+}
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
   document.querySelector('nav button[data-view="board"]').click();
@@ -2774,6 +2806,13 @@ function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   F.loc=r.label;F.prob=r.raw.slice(0,110);F.worry=!!r.worry;F.roundId=r.id;
   F.soT=r.soT||"floor";F.so=Object.assign({},r.so||{});
   document.getElementById("f_loc").value=F.loc;document.getElementById("f_prob").value=F.prob;
+  if(type==="CHART"){
+    const lines=roundOpenTodos(r);
+    F.tasks=lines.map(t=>({t:t,done:false}));
+    document.getElementById("f_tasks").value=lines.join("\n");
+    const tied=addTiedRoundTasks(r,lines);
+    if(tied)showToast("Suggested "+tied+" tied task card"+(tied>1?"s":"")+" from rounds to-dos");
+  }
   renderFlags();}
 function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.label+(r.plan?" | PLAN: "+r.plan:"")+" | "+r.raw).join("\n")||"(empty)");showToast("Rounds list copied")}
 // sign-out builder (works for rounds cards or chart-check consults)
@@ -2848,7 +2887,8 @@ function soValsHtml(c){
   const t=SO_TMPLS[c.soT||"floor"];
   const filled=t.fields.filter(f=>c.so&&c.so[f[0]]);
   if(!filled.length)return "";
-  return '<div class="sovals">SO '+t.name+' started</div>';
+  const complete=filled.length===t.fields.length;
+  return '<div class="sovals '+(complete?"done":"warn")+'">SO '+t.name+' '+(complete?"complete":"started")+'</div>';
 }
 // push a chart-check's recorded values into the rounds sign-out for the same patient
 function soToRounds(){
@@ -3493,12 +3533,14 @@ function roundSend(id){
   const t=blankC();
   t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";
   t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
-  if(type==="CHART")t.E=0;
+  if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}
   t.snoozeISO=date+"T06:00:00";
   t.updatedAt=Date.now();
-  S.consults.push(t);render();save();
+  S.consults.push(t);
+  const tied=type==="CHART"?addTiedRoundTasks(r,t.tasks.map(x=>x.t)):0;
+  render();save();
   const d=new Date(date+"T12:00:00");
-  showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate());
+  showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate()+(tied?" · "+tied+" tied task"+(tied>1?"s":""):""));
 }
 // A dated/board task for someone already on rounds attaches to that rounds patient
 function linkToRounds(c){
@@ -3513,8 +3555,9 @@ function exportRoundsTo(type){
   let n=0;
   S.rounds.forEach(r=>{
     if(existing.has(r.id))return;
-    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART")t.E=0;t.updatedAt=Date.now();
+    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}t.updatedAt=Date.now();
     S.consults.push(t);n++;
+    if(type==="CHART")n+=addTiedRoundTasks(r,t.tasks.map(x=>x.t))*0;
   });
   render();save();
   showToast(n?("Exported "+n+" to "+TYPES[type].l):"Nothing new to export — already exported");
