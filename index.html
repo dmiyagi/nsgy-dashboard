@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>NSGY Consult Triage</title>
+<title>Brown NSGY Triage</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0d131e">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -286,6 +286,12 @@ details.moredet[open]>summary{margin-bottom:8px}
 .consentbar button{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;border:1px solid #ff85c0;background:transparent;color:#ff85c0;cursor:pointer;font-family:var(--font);margin-left:6px}
 .bg.consent{background:#33122a;color:#ff85c0;border:1px solid #ff85c0}
 .sovals{font-size:11.5px;color:var(--mut);background:var(--card2);border-left:3px solid var(--teal);border-radius:6px;padding:5px 8px;margin:5px 0;white-space:pre-wrap}
+.sohint{font-size:12px;line-height:1.45;background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-top:6px;color:var(--mut);white-space:pre-wrap}
+.sohint .upd{color:var(--e2);font-weight:800}
+.sohint .lab{color:var(--teal);font-weight:800}
+.sohint .bp{color:var(--acc);font-weight:800}
+.sohint .drain{color:var(--e3);font-weight:800}
+.soprev{font-size:11.5px;color:var(--mut);border-left:3px solid var(--acc);padding:5px 8px;margin-top:5px;background:rgba(90,162,255,.08);border-radius:6px;white-space:pre-wrap}
 details.axisinfo{margin-top:5px}
 details.axisinfo>summary{font-size:12px;color:var(--acc);cursor:pointer;font-weight:600}
 details.axisinfo .ai{font-size:12px;color:var(--mut);padding:6px 2px 2px;line-height:1.5}
@@ -353,7 +359,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <header>
   <img class="appicon" src="icon-192.png?v=20260801" alt="" aria-hidden="true">
   <div class="apptitle">
-    <h1>NSGY Consult Triage</h1>
+    <h1>Brown NSGY Triage</h1>
     <div class="sub">E/O/C rubric · nonvalidated cognitive aid — not a substitute for attending judgment</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
@@ -431,7 +437,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   </div>
   <details class="ref" open><summary>▤ Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist2"></div></div></details>
   <details class="ref" open><summary>✓ Pre-op reminders</summary><div class="rb">
-    <h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx held · NPO · H&P note · Pre-op note · EKG · Pregnancy test if applicable · MRSA screen.</p>
+    <h4>Inpatient</h4><p>Consent · DVT ppx held · Booking · Coags · NPO · H&P note · Pre-op note · EKG · Pregnancy test if applicable · MRSA screen.</p>
     <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appointment/instructions · Hibiclens.</p>
     <h4>Emergent / same-day</h4><p>Confirm attending, exact procedure name, laterality, booking classification, ICU postop destination, anesthesia/special equipment, OR front desk, Teams Booking chat, whiteboard, family update.</p>
   </div></details>
@@ -728,7 +734,7 @@ PRS closers: Woo · Kwan · Beqiri · Maselli
 Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that day</div></div></details>
 
 <details class="ref"><summary>✓ Pre-op checklists</summary><div class="rb">
-<h4>Inpatient</h4><p>Booking · Consent · Coags · DVT ppx · NPO · H&P note · Pre-op note · EKG · Pregnancy test · MRSA screen.</p>
+<h4>Inpatient</h4><p>Consent · DVT ppx · Booking · Coags · NPO · H&P note · Pre-op note · EKG · Pregnancy test · MRSA screen.</p>
 <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appt via Sharonda · PAT instructions in discharge · Hibiclens.</p>
 <h4>Preemie</h4><p>No coags needed (T&S, PT/PTT) · CLD 6 h pre-op · NPO 2 h pre-op.</p>
 </div></details>
@@ -957,9 +963,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="checklist">
       <label><input type="checkbox"><span>Call chief</span></label>
       <label><input type="checkbox"><span>Call attending</span></label>
-      <label><input type="checkbox"><span>Pre-op: NPO now · STAT T&S · CBC/PT/PTT resulted · reversal if AC</span></label>
-      <label><input type="checkbox"><span>H&P / consult note updated & signed</span></label>
       <label><input type="checkbox"><span>Consent — exact booking name + laterality (life-threatening emergency classification if DHC)</span></label>
+      <label><input type="checkbox"><span>Hold DVT ppx · Pre-op: NPO now · STAT T&S · CBC/PT/PTT resulted · reversal if AC</span></label>
+      <label><input type="checkbox"><span>H&P / consult note updated & signed</span></label>
       <label><input type="checkbox"><span>Book OR + Teams "Booking" chat + call OR front desk (45647) + whiteboard</span></label>
     </div>
     <div class="sheetbtns">
@@ -1158,7 +1164,7 @@ const TYPES={
   rem:"Toolbar order: Handoff → Vitals → FS → I/O → Rad → Labs → Diet → Meds → Held orders → Charge Review (all notes signed?). AM Seen / 1pm / 4pm check times track below. ! marks a patient to see 2–3×/day; can schedule follow-up several days out."},
  PROC:{i:HAMMER_ICON,l:"Floor proc",probL:"Procedure — patient",probPh:"LD placement · PICU4",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
-  rem:"Consent first · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · hold DVT ppx 6 h after · log it (ACGME)."},
+  rem:"Tell nursing/team first · consent · hold DVT ppx if relevant · time-out with a NURSE (not MD/APP) · kit from the NCCU cabinet (MRN on sign-out sheet) · log it (ACGME)."},
  PCON:{i:SCREW_ICON,l:"Quick proc",probL:"What — patient",probPh:"shunt dial to 1.5 · pump interrogation",dlL:"Do by",
   presets:[["+30 min",30],["+1 h",60],["+4 h",240],["+1 day",1440],["Clear",0]],
   rem:"Simple bedside task — dial change, pump check, interrogation, quick look. Verify valve setting / dose, document, update handoff."},
@@ -1170,7 +1176,7 @@ const TYPES={
   rem:"Copy the EXACT booking name + laterality · list all plausible attendings · date + time at every signature · phone consent needs a witness · no abbreviations, never cross out · LEAVE the consent tab when done."},
  BOOK:{i:"⊞",l:"Booking",probL:"OR booking — patient / procedure",probPh:"R crani for tumor · ED12",dlL:"Book by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
-  rem:"OR booking to-do: exact procedure name + laterality, attending, consent, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, DVT ppx held, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
+  rem:"OR booking to-do: exact procedure name + laterality, attending, consent, DVT ppx held, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
  DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
@@ -1234,6 +1240,29 @@ function needsDVTHold(c){
 }
 const STAFF_THREAD_STEP="Tell the staff thread (nurse + charge + covering APP)";
 const DVT_STEP="Hold DVT ppx — confirm held 6 h pre/post + order held";
+function consentThenDVT(lines){
+  const out=(lines||[]).filter(Boolean);
+  let d=out.findIndex(s=>/dvt/i.test(s));
+  let dvt=d>=0?out.splice(d,1)[0]:DVT_STEP;
+  const c=out.findIndex(s=>/consent/i.test(s));
+  out.splice(c>=0?c+1:0,0,dvt);
+  return out;
+}
+function dvtThenConsent(lines){
+  const out=(lines||[]).filter(Boolean);
+  let d=out.findIndex(s=>/dvt/i.test(s));
+  const dvt=d>=0?out.splice(d,1)[0]:DVT_STEP;
+  const c=out.findIndex(s=>/consent/i.test(s));
+  out.splice(c>=0?c:0,0,dvt);
+  return out;
+}
+function staffDVTThenConsent(lines){
+  let out=dvtThenConsent(lines);
+  const s=out.findIndex(x=>/staff thread|nursing\/team|tell .*(nurse|team|staff)|let the nurse know/i.test(x));
+  const staff=s>=0?out.splice(s,1)[0]:STAFF_THREAD_STEP;
+  out.unshift(staff);
+  return out;
+}
 // ---------- live note flags ----------
 const FLAGS=[
  {re:/blown pupil|fixed.{0,10}dilat|dilat.{0,10}fixed|anisocoria|nonreactive pupil|unequal pupils|pupil (change|asym)/i,label:"Pupil change — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
@@ -1296,16 +1325,15 @@ function applyProcKit(mode){
   const p=curProcKit;
   if(mode!=="steps"){
     F.tasks=F.tasks||[];
-    const supp=p.supplies.slice();
-    if(p.dvt&&!supp.some(s=>/dvt/i.test(s)))supp.push(DVT_STEP);
+    const supp=p.dvt?dvtThenConsent(p.supplies.slice()):p.supplies.slice();
     supp.forEach(t=>{if(!F.tasks.some(x=>x.t===t))F.tasks.push({t:t,done:false})});
     document.getElementById("f_tasks").value=F.tasks.map(s=>s.t).join("\n");
   }
   if(mode!=="supplies"){
     F.steps=F.steps||[];
-    const st=p.steps.slice();
+    let st=p.dvt?staffDVTThenConsent(p.steps.slice()):p.steps.slice();
     if(!st.some(s=>/staff thread/i.test(s)))st.splice(Math.min(1,st.length),0,STAFF_THREAD_STEP);
-    if(p.dvt&&!st.some(s=>/dvt/i.test(s)))st.splice(Math.min(2,st.length),0,DVT_STEP);
+    if(p.dvt)st=staffDVTThenConsent(st);
     st.forEach(t=>{if(!F.steps.some(x=>x.t===t))F.steps.push({t:t,done:false})});
     document.getElementById("f_steps").value=F.steps.map(s=>s.t).join("\n");
     if(!document.getElementById("f_action").value)document.getElementById("f_action").value=F.steps[0].t;
@@ -1355,7 +1383,7 @@ function addAdmissionChecklist(){
   addUniqueLines("f_tasks",["H&P note","Admission orders: level of care + neurochecks + BP/Na goals","Diet/activity + DVT ppx + antithrombotic plan","Imaging/device/wound plan + escalation criteria"]);
 }
 function addORChecklist(){
-  addUniqueLines("f_tasks",["rH&P / H&P note","Pre-op note","Consent with exact booking name + laterality","Case request / OR booking","Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed"]);
+  addUniqueLines("f_tasks",["Consent with exact booking name + laterality","Hold DVT ppx if relevant","rH&P / H&P note","Pre-op note","Case request / OR booking","Pre-op: NPO, CBC/PT/PTT/T&S, antibiotics/equipment, postop bed"]);
 }
 function renderSmartHints(){
   const el=document.getElementById("smarthints");if(!el)return;
@@ -1602,7 +1630,8 @@ function isEmergentOperative(c){
   return (c.E>=3&&c.O>=2)||c.O>=3||(c.E>=3&&mods.includes("OR"))||/\bemergent\b.{0,35}\b(?:or|op|surgery|case)\b|\b(?:or|op|surgery|case)\b.{0,35}\bemergent\b/i.test(txt);
 }
 function openWorkflowKeys(c){
-  const set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"]||[];
+  let set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"]||[];
+  if(c.type==="PROC"&&!needsDVTHold(c))set=set.filter(([k])=>k!=="dvt");
   return set.filter(([k])=>k!=="__close"&&!(c.wf&&c.wf[k])).map(([k,l])=>({k,l}));
 }
 function currentWorkText(c){
@@ -1653,6 +1682,14 @@ function consultPriorityMissing(c){
   const wf=c.wf||{};
   return CONSULT_PRIORITY_WF.find(([k])=>!wf[k])||null;
 }
+function procWorkflowBoost(c){
+  if(c.type!=="PROC")return 0;
+  const open=openWorkflowKeys(c);
+  if(!open.length)return 0;
+  if(open.length===1&&open[0].k==="proclist")return -140;
+  const w={staff:90,dvt:135,consent:125,supplies:70,meds:70,doproc:145,doc:55,handoff:55,proclist:-140};
+  return w[open[0].k]||0;
+}
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
@@ -1662,6 +1699,7 @@ function urgencyRank(c){
   if(needsConsent(c))r+=80;
   if(reviewOverdue(c))r+=900;
   r+=consultWorkflowBoost(c);
+  r+=procWorkflowBoost(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
   if(missingEmergentOpDocs(c))r+=180;
   else if(isDeferredDocumentation(c))r-=80;
@@ -1707,11 +1745,11 @@ const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC
 const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
- PROC:[["supplies","Gather supplies"],["consent","Consent"],["dvt","Hold DVT ppx"],["staff","Tell staff thread"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
+ PROC:[["staff","Tell nursing/team"],["dvt","Hold DVT ppx"],["consent","Consent"],["supplies","Gather supplies"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
  PCON:[["done","Done"],["doc","Procedure note"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note ✓"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
- BOOK:[["name","Name/laterality"],["consent","Consent"],["docs","H&P/rH&P + pre-op"],["labs","Labs/NPO/DVT"],["or","OR notified"],["__close","Done"]],
+ BOOK:[["name","Name/laterality"],["consent","Consent"],["labs","Hold DVT + labs/NPO"],["docs","H&P/rH&P + pre-op"],["or","OR notified"],["__close","Done"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
@@ -1746,15 +1784,23 @@ function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO);
   return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
+   (reviewOverdue(c)?'<button onclick="clearReviewDL(\''+c.id+'\')" title="Clear review overdue">✕ review</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
+function clearOverdueStepDL(c){
+  let cleared=false,now=Date.now();
+  (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
+  return cleared;
+}
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
+  const cleared=clearOverdueStepDL(c);
   c.deadlineISO=new Date(Date.now()+min*60000).toISOString();touch(c);render();
-  showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h"))}
-function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;touch(c);render();}
+  showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
+function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;resetReviewClock(c);touch(c);render();showToast("Review overdue cleared")}
+function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(reviewOverdue(c))resetReviewClock(c);touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
 function stepTimerBtn(c,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
@@ -1770,11 +1816,9 @@ function stepTimerRow(c,i){
 }
 function stepsHtml(c){
   const st=c.steps||[];if(!st.length)return "";
-  const firstOpen=st.findIndex(s=>!s.done);
   return '<div class="steps">'+st.map((s,i)=>{
     if(s.done)return '<div class="step done" onclick="undoStep(\''+c.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
-    if(i===firstOpen)return '<div class="step active"><button onclick="doneStep(\''+c.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+stepTimerBtn(c,i,s)+'</div>'+stepTimerRow(c,i);
-    return '<div class="step locked">○ <span class="stxt">'+esc(s.t)+'</span>'+stepTimerBtn(c,i,s)+'</div>'+stepTimerRow(c,i);
+    return '<div class="step active"><button onclick="doneStep(\''+c.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+stepTimerBtn(c,i,s)+'</div>'+stepTimerRow(c,i);
   }).join("")+'</div>';
 }
 function togStepTimer(id,i){const k=id+":"+i;openStepTimer=(openStepTimer===k)?null:k;render()}
@@ -1787,6 +1831,7 @@ function setStepDL(id,i,min){
 }
 function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
+  if(c.action===c.steps[i].t)c.action="";
   c.steps[i].done=true;c.steps[i].dueISO=null;touch(c);reflowQueue();render()
 }}
 function undoStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=false;touch(c);render()}}
@@ -1909,7 +1954,7 @@ function trashBtn(id,kind){
   return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+(kind==="round"?'delRound':'del')+'(\''+id+'\')">⌫</button>';
 }
 function rowCard(c,dl,isTask){
-  const act=c.action||(((c.steps||[]).find(s=>!s.done)||{}).t||"");
+  const act=(c.action&&!stepTextOpen(c,c.action))?c.action:(((c.steps||[]).find(s=>!s.done)||{}).t||"");
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rdl=reviewDL(c);
@@ -1966,6 +2011,7 @@ function undoLastDone(id){
   touch(c);render();
   showToast("Undone — back to: "+c.action.slice(0,44));
 }
+function stepTextOpen(c,t){return !!(t&&(c.steps||[]).some(s=>!s.done&&s.t===t))}
 function card(c){
   const dl=fmtDL(nextDue(c));
   const rdl=reviewDL(c),rOver=reviewOverdue(c);
@@ -1998,7 +2044,7 @@ function card(c){
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
-   (c.action?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
+   (c.action&&!stepTextOpen(c,c.action)?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
    '<div class="rowflex" style="margin:0">'+(rdl?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+(c.owner?'<span style="font-size:12px;color:var(--mut)">@ '+esc(c.owner)+'</span>':"")+'</div>'+
    stepsHtml(c)+
@@ -2147,10 +2193,11 @@ function openForm(id,reassess,ptype){
   if(!id&&F.type==="BOOK"){
     F.tasks=[
       {t:"Exact procedure name + laterality confirmed with attending",done:false},
-      {t:"Case request entered + OR front desk / Teams Booking notified if same-day or next-day",done:false},
       {t:"Consent complete with suggested attendings",done:false},
+      {t:"Hold DVT ppx if relevant",done:false},
       {t:"H&P/rH&P note + pre-op note",done:false},
-      {t:"Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed",done:false}
+      {t:"Pre-op: NPO, CBC/PT/PTT/T&S, antibiotics/equipment, postop bed",done:false},
+      {t:"Case request entered + OR front desk / Teams Booking notified if same-day or next-day",done:false}
     ];
   }
   const tl=TYPES[F.type]?TYPES[F.type].l:"Consult";
@@ -2431,11 +2478,9 @@ function rStepTimerRow(r,i){
 }
 function rStepsHtml(r){
   const st=r.steps||[];if(!st.length)return "";
-  const firstOpen=st.findIndex(s=>!s.done);
   return '<div class="rsteps">'+st.map((s,i)=>{
     if(s.done)return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
-    if(i===firstOpen)return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
-    return '<div class="step locked">○ <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
+    return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
 function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;r.updatedAt=Date.now();renderRounds();save();
@@ -2568,9 +2613,51 @@ function buildSOChips(){const r=findAny(soId);if(!r)return;
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();buildSOChips();buildSOFields();save()});}
 function buildSOFields(){const r=findAny(soId);if(!r)return;
-  document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>
-   '<div class="fld"><label>'+esc(f[0])+'</label><input type="text" class="evta" data-so="'+esc(f[0])+'" value="'+esc((r.so&&r.so[f[0]])||"")+'" placeholder="'+esc(f[1])+'" onchange="soSave(this)"></div>').join("");}
-function soSave(el){const r=findAny(soId);if(r){r.so=r.so||{};r.so[el.dataset.so]=el.value.trim();r.updatedAt=Date.now();save();render()}}
+  r.so=r.so||{};
+  const one=SO_TMPLS[r.soT].fields[0][0];
+  if(!r.so[one])r.so[one]=soSourceOneLiner(r);
+  document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("");
+  renderSOHints();
+}
+function soSourceOneLiner(r){
+  if(!r)return "";
+  if(r.raw)return r.raw;
+  const rr=r.roundId&&(S.rounds||[]).find(x=>x.id===r.roundId);
+  return (rr&&rr.raw)||r.prob||"";
+}
+function soFieldHtml(r,f){
+  const k=f[0],v=(r.so&&r.so[k])||"";
+  const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
+  if(k==="One-liner")return '<div class="fld"><label>'+esc(k)+'</label><textarea '+attrs+' style="min-height:72px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div><div class="soprev" data-soprev="'+esc(k)+'"></div></div>';
+  return '<div class="fld"><label>'+esc(k)+'</label><input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div><div class="soprev" data-soprev="'+esc(k)+'"></div></div>';
+}
+function soIsExamField(k){return /\bexam\b|motor|baseline/i.test(k||"")}
+function soFocus(el){el.dataset.prev=el.value||""}
+function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
+  const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
+  if(!quiet&&soIsExamField(k)&&prev&&prev!==val)r.soPrev[k]=prev;
+  r.so[k]=val;r.updatedAt=Date.now();renderSOHints();if(!quiet){save();render()}}}
+function renderSOHints(){
+  document.querySelectorAll("#sofields [data-sohint]").forEach(h=>{
+    const inp=h.parentElement.querySelector(".soinput");
+    h.innerHTML=soHighlight(inp?inp.value:"");
+    h.style.display=h.textContent.trim()?"":"none";
+  });
+  const r=findAny(soId);
+  document.querySelectorAll("#sofields [data-soprev]").forEach(p=>{
+    const k=p.dataset.soprev,prev=r&&r.soPrev&&r.soPrev[k];
+    p.innerHTML=prev?("<b>Previous exam:</b> "+soHighlight(prev)):"";
+    p.style.display=prev?"":"none";
+  });
+}
+function soHighlight(s){
+  let x=esc(s||"");
+  x=x.replace(/\b(EVD|JP|blake|hemovac|drain(?:s)?|LD|lumbar drain|SEPS|bolt)\b/gi,'<span class="drain">$1</span>');
+  x=x.replace(/\b(Na|WBC|Hgb|Hct|Plt|INR|PTT|PT|ESR|CRP|Cr|K|Mg|CSF|culture(?:s)?)\b(?:\s*[=:]?\s*[\w./+-]+)?/gi,'<span class="lab">$&</span>');
+  x=x.replace(/\b(SBP|BP|MAP|ICP)\b(?:\s*[<>=-]?\s*\d{1,3}(?:-\d{1,3})?)?/gi,'<span class="bp">$&</span>');
+  x=x.replace(/\b(pending|today|tomorrow|overnight|last|output|goal|level|clamp|trial|POD\d*|post-?op|repeat|follow(?:-|\s)?up)\b/gi,'<span class="upd">$1</span>');
+  return x;
+}
 function soText(r){
   const t=SO_TMPLS[r.soT||"floor"];
   return t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n");
@@ -2693,7 +2780,7 @@ function tcExtract(text){
   const rest=sents.length>1?sents.slice(1):sents;
   const examRe=/exam|gcs|perrl|oriented|intact|strength|\b[0-5]\/5\b|\bfnd\b|withdraw|localiz|pupil|moving all|silt|a&o/i;
   const imgRe=/\bcth?\b|\bcta\b|\bctv\b|mri|x-?ray|\bxr\b|imaging|myelogram|angio/i;
-  out.exam=rest.filter(s=>examRe.test(s)).slice(0,3).join("; ").replace(/^exam:?\s*/i,"");
+  out.exam=stripExamSmartLists(rest.filter(s=>examRe.test(s)).slice(0,3).join("; ").replace(/^exam:?\s*/i,""));
   out.img=rest.filter(s=>imgRe.test(s)&&!examRe.test(s)).slice(0,2).join("; ").replace(/^imaging:?\s*/i,"")
     ||(imgRe.test(sents[0])?sents[0].replace(/^.*?(?=\b(?:CTH?|CTA|MRI|XR)\b)/i,""):"");
   const labs=[];
@@ -2721,7 +2808,7 @@ function tcExtract(text){
   const pmhPart=pmh.length?" w/ "+pmh.join(", "):(meds.length?"":" w/ [relevant PMH]");
   out.hpi=(out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".";
   // plan
-  const plan=["NSGY eval","Review imaging + priors"];
+  const plan=["Review imaging + priors"];
   if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("Repeat CTH in 6h or sooner for exam change");plan.push("SBP <140, Na eunatremia")}
   if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
   if(/fusion|lami|stenosis|radiculopath|spine|fracture/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
@@ -2752,14 +2839,14 @@ function tcParse(){
   document.getElementById("tc_exam").value=o.exam||tcSuggestedExam(t);
   document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
   document.getElementById("tc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(t));
-  document.getElementById("tc_plan").value=o.plan||"NSGY eval";
+  document.getElementById("tc_plan").value=o.plan||"Review imaging + priors";
   tcBuild();
 }
 function tcFormat(){
   const g=i=>(document.getElementById(i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
-  const exam=g("tc_exam").split("\n").map(tidy).filter(Boolean).join("\n");
-  const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"~ "+l).join("\n");
+  const exam=stripExamSmartLists(g("tc_exam")).split("\n").map(tidy).filter(Boolean).join("\n");
+  const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"- "+l).join("\n");
   return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("tc_img"))]
     .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
@@ -2794,14 +2881,14 @@ function ftcParse(){
   const plan=[document.getElementById("f_action").value].filter(Boolean)
     .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
     .concat(o.plan?o.plan.split("\n"):[]);
-  document.getElementById("ftc_plan").value=[...new Set(plan.map(s=>String(s).trim()).filter(Boolean))].join("\n")||"NSGY eval";
+  document.getElementById("ftc_plan").value=[...new Set(plan.map(s=>String(s).trim()).filter(Boolean))].join("\n")||"Review imaging + priors";
   ftcBuild();
 }
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
-  const exam=g("exam").split("\n").map(tidy).filter(Boolean).join("\n");
-  const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"~ "+l).join("\n");
+  const exam=stripExamSmartLists(g("exam")).split("\n").map(tidy).filter(Boolean).join("\n");
+  const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"- "+l).join("\n");
   return [tidy(g("title")),"",tidy(g("hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("img"))]
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
@@ -2853,7 +2940,7 @@ function makeConsentNow(){const id=consentId;hideConsent();if(id)makeConsentFor(
 function addORChain(){
   const c=S.consults.find(x=>x.id===orId);
   if(c){
-    const chain=["Call chief","Call attending","Pre-op: NPO, STAT T&S, CBC/PT/PTT, reversal if AC","Update + sign H&P/consult note","Consent — exact booking name + laterality","Book OR + Teams Booking chat + OR desk 45647 + whiteboard"];
+    const chain=["Call chief","Call attending","Consent — exact booking name + laterality","Hold DVT ppx if relevant","Pre-op: NPO, STAT T&S, CBC/PT/PTT, reversal if AC","Update + sign H&P/consult note","Book OR + Teams Booking chat + OR desk 45647 + whiteboard"];
     c.steps=c.steps||[];
     chain.forEach(t=>{if(!c.steps.some(s=>s.t===t))c.steps.push({t:t,done:false})});
     if(!c.action)c.action=c.steps.find(s=>!s.done).t;
@@ -2917,7 +3004,7 @@ function bookingSuggestionFor(t){
   else if(/spine|fusion|lami|acdf|tlif|xlif|corpect|wound/i.test(s)){name="Spine booking";template=BOOKING_TMPLS.find(x=>/wound|fusion|thoracic|lumbar/i.test(x))||""}
   else if(/carotid|tcar|cea/i.test(s)){name="Carotid booking";template=BOOKING_TMPLS.find(x=>/transcarotid/i.test(x))||BOOKING_TMPLS.find(x=>/endarterectomy/i.test(x))||""}
   else if(/avm|arteriovenous/i.test(s)){name="AVM booking";template=BOOKING_TMPLS.find(x=>/arteriovenous malformation/i.test(x))||""}
-  const tasks=["Exact procedure name + laterality confirmed with attending","Consent with suggested attendings: "+consentAttendingsFor(s),"H&P/rH&P note + pre-op note","Pre-op: NPO, CBC/PT/PTT/T&S, DVT ppx held, antibiotics/equipment, postop bed","Case request entered + OR front desk / Teams Booking notified if same-day or next-day"];
+  const tasks=["Exact procedure name + laterality confirmed with attending","Consent with suggested attendings: "+consentAttendingsFor(s),"Hold DVT ppx if relevant","H&P/rH&P note + pre-op note","Pre-op: NPO, CBC/PT/PTT/T&S, antibiotics/equipment, postop bed","Case request entered + OR front desk / Teams Booking notified if same-day or next-day"];
   if(template)tasks.unshift("Booking template: "+template);
   return {name,template,tasks};
 }
