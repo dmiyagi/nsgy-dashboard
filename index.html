@@ -1624,15 +1624,18 @@ function reviewWindowMin(c){
 function resetReviewClock(c,at){
   const m=reviewWindowMin(c);if(m===null)return;
   const t=at||Date.now();
+  delete c.reviewOff;
   c.reviewAt=t;
   c.reviewDueISO=new Date(t+m*60000).toISOString();
 }
 function ensureReviewClock(c){
   if(!c||c.type!=="CONSULT")return;
+  if(c.reviewOff)return;
   if(!c.reviewAt||!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
 }
 function reviewDL(c){
   if(!c||c.type!=="CONSULT")return null;
+  if(c.reviewOff)return null;
   ensureReviewClock(c);
   return fmtDL(c.reviewDueISO);
 }
@@ -1724,6 +1727,7 @@ function currentWorkText(c){
 }
 function isDeferredDocumentation(c){
   if(isEmergentOperative(c))return false;
+  if(admitOrPreopRelated(c))return false;
   return /\b(?:doc|document|documentation|note|sign(?:ed)?|h&p|rH&P|pre-?op)\b/i.test(currentWorkText(c));
 }
 function missingEmergentOpDocs(c){
@@ -1796,7 +1800,7 @@ function urgencyRank(c){
   r+=procWorkflowBoost(c);
   if(c.type==="CONSULT"&&consultGateMissing(c).length)r+=30;
   if(missingEmergentOpDocs(c))r+=180;
-  else if(isDeferredDocumentation(c))r-=80;
+  else if(isDeferredDocumentation(c))r-=220;
   return r;
 }
 function timerQueueSort(c){
@@ -1909,7 +1913,7 @@ function isWorkflowMilestone(c,k){
   const map={
     CONSULT:new Set(["seen","staffedC","staffedA","commplan"]),
     PROC:new Set(["staff","dvt","consent","doproc","handoff"]),
-    CHART:new Set(["wseen1","wseen2","wseen3","cc1","cc4"]),
+    CHART:new Set(["wseen1","wseen2","wseen3"]),
     BOOK:new Set(["consent","docs","or"]),
     PCON:new Set(["done","handoff"]),
     POC:new Set(["seen","attg"]),
@@ -1955,6 +1959,10 @@ function dlBtnsHtml(c){
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
+function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
+  c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});
+  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null}
+  touch(c);render();showToast("Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
@@ -2139,14 +2147,20 @@ function compactDoneText(c){
 }
 function closeDoneButton(c,compact){
   if(!canCloseTask(c))return "";
-  const cls=(compact?"rdone ":"")+"finaldone";
+  const cls=compact?"rdone":"";
   const label="✓ ☺ Done";
   const stop=compact?"event.stopPropagation();":"";
   return '<button class="'+cls.trim()+'" onclick="'+stop+'startClose(\''+c.id+'\')">'+label+'</button>';
 }
+function compactTimerOffButton(c){
+  const hasStepT=(c.steps||[]).some(s=>s.dueISO);
+  const hasTimer=!!(c.deadlineISO||hasStepT||(c.type==="CONSULT"&&c.reviewDueISO&&!c.reviewOff));
+  return hasTimer?'<button class="rdone" onclick="event.stopPropagation();clearCardTimers(\''+c.id+'\')">✕ timer</button>':"";
+}
 function rowCard(c,dl,isTask){
   const pending=compactPending(c),act=pending?pending.t:"";
   const todosDone=!act&&!!compactDoneText(c);
+  const allDone=canCloseTask(c);
   const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rdl=reviewDL(c);
@@ -2165,9 +2179,11 @@ function rowCard(c,dl,isTask){
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
-        :(todosDone?'<button class="rdone finaldone" onclick="event.stopPropagation()">✓ to-dos done</button><span class="ract"></span>'
-          :(isTask?'<span class="ract"></span>'+closeDoneButton(c,true):'<span class="ract"></span>')))+
+        :(allDone?closeDoneButton(c,true)+'<span class="ract"></span>'
+          :(todosDone?'<button class="rdone finaldone" onclick="event.stopPropagation()">✓ to-dos done</button><span class="ract"></span>'
+          :(isTask?'<span class="ract"></span>'+closeDoneButton(c,true):'<span class="ract"></span>'))))+
     (showReview?'<span class="rdl dl '+rdl.cls+'">review '+rdl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':(dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':""))+
+    (allDone?compactTimerOffButton(c):"")+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')">SO</button>':"")+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
