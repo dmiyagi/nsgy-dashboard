@@ -939,7 +939,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="fld"><label>Exam</label><textarea id="tc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="tcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
       <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="tcUseLabs()">Add relevant labs</button></div></div>
-      <div class="fld"><label>Plan (one action per line — "~" added automatically)</label><textarea id="tc_plan" style="min-height:80px" placeholder="Type anything here…"></textarea></div>
+      <div class="fld"><label>Plan (one action per line — "-" added automatically)</label><textarea id="tc_plan" style="min-height:80px" placeholder="Type anything here…"></textarea></div>
     </details>
     <div class="fld"><label>3 · Ready to send</label><textarea id="tc_out" style="min-height:150px;font-size:13.5px" placeholder="Hit Parse, then Rebuild — the finished text lands here."></textarea></div>
     <div class="sheetbtns">
@@ -2608,15 +2608,15 @@ const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"]
 const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation/i,"known vascular malformation"]];
 const TC_CNS_EXAM=[
  "Neuro:",
- "Mental status: {Blank:19197::\"A&Ox3\",\"A&Ox2\",\"A&Ox1\",\"A&Ox0\",\"confused\",\"drowsy\",\"not assessable\"}",
- "Pupils: {Blank:19197::\"PERRL\",\"anisocoria\",\"sluggish R\",\"sluggish L\",\"fixed R\",\"fixed L\",\"fixed bilaterally\"}, EOM: {Blank:19197::\"EOMI\",\"restricted R abduction\",\"restricted L abduction\",\"restricted R adduction\",\"restricted L adduction\",\"restricted upgaze\",\"restricted downgaze\",\"ophthalmoplegia\"}",
- "Face: {Blank:19197::\"symmetric\",\"R droop\",\"L droop\"}",
- "RUE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
- "LUE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
- "Pronator drift: {Blank:19197::\"absent\",\"R drift\",\"L drift\",\"bilateral drift\",\"unable to assess\"}",
- "RLE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
- "LLE {Blank:19197::\"5/5\",\"4+/5\",\"4/5\",\"4-/5\",\"3/5\",\"2/5\",\"1/5\",\"0/5\"}",
- "Sensation: {Blank:19197::\"intact to light touch throughout\",\"decreased in RUE\",\"decreased in LUE\",\"decreased in RLE\",\"decreased in LLE\",\"unable to assess\"}"
+ "Mental status: A&Ox3",
+ "Pupils: PERRL, EOM: EOMI",
+ "Face: symmetric",
+ "RUE 5/5",
+ "LUE 5/5",
+ "Pronator drift: absent",
+ "RLE 5/5",
+ "LLE 5/5",
+ "Sensation: intact to light touch throughout"
 ].join("\n");
 const TC_SPINE_EXAM=[
  "Spine:",
@@ -2629,8 +2629,8 @@ const TC_SPINE_EXAM=[
  "FA - Finger abductors: spread fingers apart against resistance (T1)",
  "***",
  "Delt/bi/tri/we/ff/fa",
- "R {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
- "L {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
+ "R 5/5/5/5/5/5",
+ "L 5/5/5/5/5/5",
  "***",
  "IP - Iliopsoas: hip flexion against resistance (L2-L4)",
  "Quad - Quadriceps: Quadriceps:knee extension against resistance (L2-L4)",
@@ -2639,22 +2639,27 @@ const TC_SPINE_EXAM=[
  "Gastroc - Gastrocnemius: ankle plantarflexion against resistance; alternatively, single-leg toe raises when ambulatory (S1)",
  "***",
  "Ip/quad/at/ehl/gastroc",
- "R {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
- "L {5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}/{5:67895::\"5\"}",
- "{EWREFLEX:67896::\"- hoffmans\",\"- clonus\"}"
+ "R 5/5/5/5/5",
+ "L 5/5/5/5/5",
+ "- hoffmans, - clonus"
 ].join("\n");
 const TC_BABY_EXAM=[
- "Skin: {skin:55335}",
+ "Skin: ***",
  "",
  "Neuro:",
- "Mental status/behavior: {Blank:19197::\"awake, alert, age-appropriate interaction; consolable\",\"awake, alert, interactive; irritable but consolable\",\"awake, alert, minimally interactive\",\"sleepy but arousable\",\"drowsy, requires repeated stimulation\",\"irritable and difficult to console\",\"inconsolable\",\"lethargic\",\"not arousable\",\"limited assessment due to age\",\"limited assessment due to sedation\"}",
+ "Mental status/behavior: awake, alert, age-appropriate interaction; consolable",
  "PERRL, gaze conjugate, tracks appropriately ***",
  "Face symmetric ***",
- "Anterior fontanelle {Blank:19197::\"soft and flat\",\"full\",\"bulging\",\"sunken\"}",
- "Sutures {Blank:19197::\"approximated\",\"splayed\",\"overriding\"}",
+ "Anterior fontanelle soft and flat",
+ "Sutures approximated",
  "Head circumference: *** cm",
  "Moves all extremities spontaneously and symmetrically ***"
 ].join("\n");
+function stripExamSmartLists(s){
+  return String(s||"")
+    .replace(/\{[^{}:]+:\d+::((?:"[^"]*"\s*,?\s*)+)\}/g,(_,opts)=>{const m=opts.match(/"([^"]*)"/);return m?m[1]:""})
+    .replace(/\{[^{}]*:\d+\}/g,"***");
+}
 function tcIsSpineText(t){return /spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
 function tcIsBabyText(t){return /\b(?:baby|infant|neonate|newborn|nicu|wi|w&i|pedi|peds|months?\s*old|weeks?\s*old|days?\s*old|fontanelle|head circumference|sutures?)\b/i.test(t||"")}
 function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:TC_CNS_EXAM)}
