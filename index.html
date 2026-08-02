@@ -379,9 +379,9 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <nav>
   <button data-view="board" class="active"><span class="ico">▣</span>Board</button>
   <button data-view="rounds"><span class="ico">▤</span>Rounds</button>
+  <button data-view="day"><span class="ico">◴</span>Day</button>
   <button data-view="cal"><span class="ico">◷</span>Cal</button>
   <button data-view="booking"><span class="ico">⊞</span>Booking</button>
-  <button data-view="day"><span class="ico">◴</span>Day</button>
   <button data-view="ref"><span class="ico">≡</span>Reference</button>
 </nav>
 
@@ -457,7 +457,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <div class="banner">Type Loc/Bed and first three letters of last name and handoff one liner. Example: <b>B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31</b>. Indent continuation lines with Tab so multi-line entries stay one patient.</div>
   <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Type Loc/Bed and first three letters of last name and handoff one liner: B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31"></textarea>
   <div class="rowflex">
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
@@ -1704,8 +1703,9 @@ function missingEmergentOpDocs(c){
 }
 function chartCheckBoost(c){
   if(c.type!=="CHART")return 0;
+  if(isChartDeferred(c))return 0;
   const wf=c.wf||{};
-  const due=!wf.cc1?13*60:(!wf.cc4?16*60:null);
+  const due=chartNextDueMin(c);
   if(due===null)return 0;
   const diff=due-nowMin();
   if(diff>90)return 0;
@@ -1744,6 +1744,7 @@ function procWorkflowBoost(c){
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
   let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
+  if(isChartDeferred(c))r-=120;
   if(c.type==="CHART")r+=chartCheckBoost(c)+chartAcuityBoost(c);
   else if(dl&&dl.cls==="over")r+=1000;
   else if(dl&&dl.cls==="soon")r+=500;
@@ -1784,7 +1785,7 @@ function sortCs(a,b){
 }
 // after any checkpoint completes, surface what should be picked up next
 function reflowQueue(){
-  const act=S.consults.filter(c=>!c.closed&&!isSnoozed(c)).sort(sortCs);
+  const act=S.consults.filter(c=>!c.closed&&!isHiddenSnoozed(c)).sort(sortCs);
   const next=act.find(c=>c.type==="CONSULT"&&consultGateMissing(c).length)||
              act.find(c=>consultPriorityMissing(c))||
              act.find(c=>!isStarted(c))||
@@ -1804,12 +1805,31 @@ const TYPE_WF={
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
+function workflowSet(c){
+  const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
+  let set=TYPE_WF[type]||[];
+  if(type==="CHART"&&c.worry){
+    set=[["wseen1","Seen 1"],["wseen2","Seen 2"],["wseen3","Seen 3"]].concat(set.filter(([k])=>k!=="seen"));
+  }
+  return set;
+}
+function chartNextDueMin(c){
+  if(!c||c.type!=="CHART")return null;
+  const wf=c.wf||{};
+  if(c.worry){
+    if(!wf.wseen1)return 8*60;
+    if(!wf.wseen2)return 12*60;
+    if(!wf.wseen3)return 16*60;
+    return null;
+  }
+  return !wf.cc1?13*60:(!wf.cc4?16*60:null);
+}
 function isWorkflowMilestone(c,k){
   const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
   const map={
     CONSULT:new Set(["seen","staffedC","staffedA","commplan"]),
     PROC:new Set(["staff","dvt","consent","doproc","handoff"]),
-    CHART:new Set(["cc1","cc4"]),
+    CHART:new Set(["wseen1","wseen2","wseen3","cc1","cc4"]),
     BOOK:new Set(["consent","docs","or"]),
     PCON:new Set(["done","handoff"]),
     POC:new Set(["seen","attg"]),
@@ -1819,7 +1839,7 @@ function isWorkflowMilestone(c,k){
   return !!(map[type]&&map[type].has(k));
 }
 function wfChips(c,mini){
-  let set=TYPE_WF[(c.type&&TYPES[c.type])?c.type:"CONSULT"];
+  let set=workflowSet(c);
   if(!set||!set.length)return "";
   // DVT-ppx hold chip only shows for procedures that actually need it
   if(c.type==="PROC"&&!needsDVTHold(c))set=set.filter(x=>x[0]!=="dvt");
@@ -1960,10 +1980,10 @@ let snoozeFilter="";
 function renderSnoozed(){
   const el=document.getElementById("snoozecards");if(!el)return;
   const q=snoozeFilter.toLowerCase();
-  const list=S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c))
+  const list=S.consults.filter(c=>!c.closed&&isHiddenSnoozed(c)&&matchSearch(c))
     .filter(c=>!q||[c.loc,c.prob,c.note,c.action].filter(Boolean).join(" ").toLowerCase().includes(q))
     .sort((a,b)=>Date.parse(a.snoozeISO)-Date.parse(b.snoozeISO));
-  document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isSnoozed(c)&&matchSearch(c)).length+")";
+  document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isHiddenSnoozed(c)&&matchSearch(c)).length+")";
   el.innerHTML=list.map(c=>{
     const d=new Date(c.snoozeISO);
     return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
@@ -2000,7 +2020,7 @@ function renderCal(){
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
 function render(){
-  const baseAct=S.consults.filter(c=>!c.closed&&!isSnoozed(c)&&matchSearch(c));
+  const baseAct=S.consults.filter(c=>!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
   const act=baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)).sort(sortCs);
   const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
@@ -2217,8 +2237,32 @@ function clearNoteTimersAfterCommPlan(c){
   if(c.deadlineISO&&isDeferredDocumentation(c)){c.deadlineISO=null;cleared=true}
   if(cleared)showToast("Comm'd plan checked — routine note timer cleared");
 }
+function nextLocalISOAt(minOfDay){
+  const d=new Date();
+  d.setHours(Math.floor(minOfDay/60),minOfDay%60,0,0);
+  return d.toISOString();
+}
+function chartSeenFollowupISO(k){
+  const m=nowMin();
+  if(k==="wseen1"){
+    if(m<12*60)return nextLocalISOAt(12*60);
+    if(m<16*60)return nextLocalISOAt(16*60);
+  }
+  if(k==="wseen2"&&m<16*60)return nextLocalISOAt(16*60);
+  return null;
+}
+function applyChartSeenSnooze(c,k,on){
+  if(!c||c.type!=="CHART"||!c.worry||!/^wseen[123]$/.test(k))return;
+  if(!on){c.snoozeISO=null;return}
+  c.snoozeISO=chartSeenFollowupISO(k);
+  if(k==="wseen3")c.snoozeISO=null;
+}
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
-  if(c.type==="CHART"){c.wf[k]=c.wf[k]?null:Date.now()}
+  if(c.type==="CHART"){
+    const next=!c.wf[k];
+    c.wf[k]=next?Date.now():null;
+    applyChartSeenSnooze(c,k,next);
+  }
   else{
     const next=!c.wf[k];
     if(next){
@@ -2257,6 +2301,8 @@ function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, th
 let F=null; // working copy
 function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
+function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
+function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
 function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
