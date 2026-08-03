@@ -1477,7 +1477,7 @@ function renderGcsAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
     '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div>';
 }
-function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderGcsContext(ns)}
+function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderGcsContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderGcsContext(ns){
   if(ns==="form")renderGcsAid("form","f_gcs",false);
   else if(ns==="tc")renderGcsAid("tc","tc_gcs",false);
@@ -1529,7 +1529,7 @@ function renderIchAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
     '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div>';
 }
-function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns)}
+function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderIchContext(ns){
   if(ns==="form")renderIchAid("form","f_ich",false);
   else if(ns==="tc")renderIchAid("tc","tc_ich",false);
@@ -1552,6 +1552,7 @@ function syncFormScoreFields(){
   copyScoreState("ich","form","ftc");
   renderFlags();
   renderFTCFlags();
+  ftcAutoBuild();
 }
 function flagApplied(f){
   if(f.apply.E!==undefined&&F.E<f.apply.E)return false;
@@ -2946,7 +2947,12 @@ function setTypeUI(){
 let suggT=null;
 ["f_prob","f_state","f_action","f_note"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)}));
 ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",renderTCFlags)});
-["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",renderFTCFlags)});
+["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].forEach(id=>{
+  const el=document.getElementById(id);if(!el)return;
+  el.addEventListener("input",renderFTCFlags);
+  el.addEventListener("change",ftcAutoBuild);
+  el.addEventListener("blur",ftcAutoBuild);
+});
 function closeForm(){document.getElementById("ov").classList.remove("show");F=null}
 function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
 function todayDateStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
@@ -3911,7 +3917,11 @@ function ftcFormat(){
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
-function ftcBuild(){renderFTCFlags();document.getElementById("ftc_out").value=ftcFormat();if(F)F.tc=ftcSnapshot();showToast("Text consult built")}
+function ftcAutoBuild(){
+  const out=document.getElementById("ftc_out");if(!out)return;
+  renderFTCFlags();out.value=ftcFormat();if(F)F.tc=ftcSnapshot();
+}
+function ftcBuild(){ftcAutoBuild();showToast("Text consult built")}
 function ftcUseExam(){
   const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value]).join(" ");
   document.getElementById("ftc_exam").value=tcSuggestedExam(src);
@@ -3980,35 +3990,47 @@ function extractCallName(t){
 }
 function findRoundsMatch(t,bed){
   const T=t.toUpperCase();
-  const ab=(last3FromText(t)||last3Cue(t)).toUpperCase();
+  const tokens=patientRefTokens(t);
   return (S.rounds||[]).find(r=>{
-    const L=String(r.label||"").toUpperCase();
-    if(!L)return false;
-    if(bed&&(L.includes(bed)||bed.includes(L)))return true;
-    if(ab&&L.includes(ab))return true;
+    const L=String(r.label||"").toUpperCase(),room=roundRoom(r).toUpperCase(),ab=roundPatient3(r).toUpperCase();
+    if(!L&&!room&&!ab)return false;
+    if(bed&&(L.includes(bed)||bed.includes(L)||room===bed||room.includes(bed)||bed.includes(room)))return true;
+    if(ab&&tokens.includes(ab))return true;
     return L.length>=3&&T.includes(L);
   });
 }
 function last3Cue(t){
   const s=String(t||"");
   const m=s.match(/\b(?:for|pt|patient|re|regarding|about)\s+([A-Za-z]{3})(?![A-Za-z])\b/i)||
+          s.match(/\b(?:call|page|phone|text|update|message|tell|ask|book|order|check|remove|place|do|perform)\s+([A-Za-z]{3})(?![A-Za-z])\b/i)||
+          s.match(/\b(?:family|wife|husband|mother|father|mom|dad|daughter|son|sister|brother|guardian)\s+(?:of|for|re|regarding|about)?\s*([A-Za-z]{3})(?![A-Za-z])\b/i)||
           s.match(/\b(?:mri|ct|cta|cth|ctv|scan|imaging)\s+(?:for\s+)?([A-Za-z]{3})(?![A-Za-z])\b/i)||
           s.match(/\b([A-Za-z]{3})(?![A-Za-z])\s*$/);
   return m?cap3(m[1]):"";
 }
+function patientRefTokens(t){
+  const stop=/^(the|and|for|re|pt|mri|cth|cta|ctv|rn|mom|dad|son|wife|call|page|text|book|evd|ld|or|ed|icu)$/i;
+  const out=[];
+  const cue=last3Cue(t);if(cue)out.push(cue.toUpperCase());
+  String(t||"").replace(/\b[A-Za-z]{3}\b/g,w=>{if(!stop.test(w)&&!out.includes(w.toUpperCase()))out.push(w.toUpperCase());return w});
+  return out;
+}
+function boardPatientMatch(c,bed,tokens,T){
+  const loc=String(c.loc||"").toUpperCase(),room=patientRoom(c).toUpperCase(),ab=patientLast3(c).toUpperCase();
+  if(bed&&(loc.includes(bed)||bed.includes(loc)||room===bed||room.includes(bed)||bed.includes(room)))return true;
+  if(ab&&tokens.includes(ab))return true;
+  return loc.length>=3&&T.includes(loc);
+}
 function findPatientMatch(t,bed){
-  const ab=(last3FromText(t)||last3Cue(t)).toUpperCase();
+  const tokens=patientRefTokens(t);
   const T=String(t||"").toUpperCase();
-  const round=findRoundsMatch(t,bed);
-  if(round)return {kind:"round",id:round.id,label:round.label,raw:round.raw};
   const consult=(S.consults||[]).find(c=>{
-    const loc=String(c.loc||"").toUpperCase();
-    if(!loc)return false;
-    if(bed&&(loc.includes(bed)||bed.includes(loc)))return true;
-    if(ab&&loc.includes(ab))return true;
-    return loc.length>=3&&T.includes(loc);
+    if(c.closed)return false;
+    return boardPatientMatch(c,bed,tokens,T);
   });
-  return consult?{kind:"board",id:consult.id,label:consult.loc,raw:[consult.prob,consult.action].filter(Boolean).join(" · ")}:null;
+  if(consult)return {kind:"board",id:consult.id,label:consult.loc,raw:[consult.prob,consult.action].filter(Boolean).join(" · ")};
+  const round=findRoundsMatch(t,bed);
+  return round?{kind:"round",id:round.id,label:round.label,raw:round.raw}:null;
 }
 function bookingSuggestionFor(t){
   const s=String(t||"");
@@ -4072,9 +4094,15 @@ function capConsult(text,bed){
   renderSugg();renderFlags();
 }
 function capTask(type,text,pre){
+  pre=pre||{};
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   openForm(null,false,type);
   if(pre.loc){F.loc=pre.loc;setLocForm(pre.loc)}
+  if(pre.linkTo&&pre.linkTo.kind==="board"){
+    const c=S.consults.find(x=>x.id===pre.linkTo.id);
+    if(c){const gid=c.linkGroupId||("pg"+uid());c.linkGroupId=gid;F.linkGroupId=gid;F.sourceId=c.id;touch(c)}
+  }
+  if(pre.linkTo&&pre.linkTo.kind==="round")F.roundId=pre.linkTo.id;
   if(pre.fname){F.fname=pre.fname;document.getElementById("f_fname").value=pre.fname}
   if(pre.phone){F.phone=pre.phone;document.getElementById("f_phone").value=pre.phone}
   F.prob=text;document.getElementById("f_prob").value=text;
@@ -4109,7 +4137,7 @@ function renderCapture(){
   const rmatch=findRoundsMatch(text,bed);
   const pmatch=findPatientMatch(text,bed);
   const bookCue=/^book\b|\bbook(ing)?\b.*\b(case|or|crani|spine|shunt|evd|tssh|carotid|sdh|tumou?r|mass)\b/i.test(text);
-  const isCall=/\b(call|page|phone|text|update)\b/i.test(text);
+  const isCall=/\b(call|page|phone|text|update|message|tell|ask)\b/i.test(text);
   const consentCue=hasMissingConsentCue({prob:text,state:"",action:"",note:"",wf:{}});
   const isQ=/\?\s*$/.test(text)||/^(what|when|why|how|should|is|does|can|do i|any evidence)\b/i.test(text);
   const sugns=SUGG.filter(s=>suggMatch(s,text));
@@ -4146,7 +4174,7 @@ function renderCapture(){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
-    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(pmatch?(" · "+pmatch.label):(bed?" · "+bed:"")),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(pmatch?pmatch.label:(rmatch?rmatch.label:"")),fname:nm,phone:ph}));
+    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(pmatch?(" · "+pmatch.label):(bed?" · "+bed:"")),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:bed||(pmatch?pmatch.label:(rmatch?rmatch.label:"")),fname:nm,phone:ph,linkTo:pmatch}));
     phoneSuggestFor(text).forEach(s=>add("",PHONE_ICON,s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
     if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to "+(pmatch?pmatch.label:"rounds/boards"),(bed||last3FromText(text)||last3Cue(text))?("uses "+[bed,last3FromText(text)||last3Cue(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capPatientTask(text,bed,pmatch));
     if(consentCue)add("","✎","+ Consent task","exact booking name, laterality, witness if phone",()=>capTask("CONSENT",text,{loc:bed||(rmatch?rmatch.label:"")}));
@@ -4170,6 +4198,9 @@ function renderCapture(){
   else{
     add("oe primary","⌕","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
     add("","◉","New consult with this text","",()=>capConsult(text,bed));
+  }
+  if(pmatch&&!bookCue&&!/\bmri\b/i.test(text)){
+    add("rl","▤","Add/link action to patient — "+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+(pmatch.raw?"…":"")+" from "+(pmatch.kind==="round"?"Rounds":"Board"),()=>capPatientTask(text,bed,pmatch));
   }
   if(!bookCue&&rmatch)add("rl","▤","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
   el.innerHTML=rows.join("");
