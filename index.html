@@ -114,12 +114,13 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .fld input[type=text],.fld input[type=tel],.fld input[type=datetime-local],.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:9px 10px}
 .fld textarea{min-height:54px;resize:vertical}
 .locgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(96px,.85fr);gap:8px}
-.selrow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.selrow button{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 4px;color:var(--mut);cursor:pointer;font-family:var(--font);transition:background .12s,border-color .12s,color .12s}
-.selrow button .t{font-weight:800;font-size:13.5px;display:block;letter-spacing:.3px}
-.selrow button .d{font-size:9.5px;display:block;line-height:1.2;margin-top:2px;opacity:.85}
+.selrow{display:grid;grid-template-columns:repeat(4,minmax(64px,1fr));gap:10px;justify-items:center}
+.selrow button{background:transparent;border:2px solid var(--line);border-radius:50%;width:86px;height:86px;padding:6px;color:var(--mut);cursor:pointer;font-family:var(--font);transition:background .12s,border-color .12s,color .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.selrow button .t{font-weight:900;font-size:19px;display:block;letter-spacing:.3px;line-height:1}
+.selrow button .d{font-size:11px;display:block;line-height:1.15;margin-top:7px;opacity:.85}
 .selrow button .d2{display:none}
-.selrow.showall button .d2{display:block;font-size:9px;opacity:.7;line-height:1.15;margin-top:1px}
+.selrow.showall button{width:106px;height:106px}
+.selrow.showall button .d2{display:block;font-size:8.5px;opacity:.7;line-height:1.1;margin-top:3px;max-width:92px}
 .selrow button.on{color:var(--text)}
 .axhead{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
 .axhead label{margin:0}
@@ -296,6 +297,12 @@ details.moredet{margin:2px 0 12px;border-top:1px solid var(--line);padding-top:1
 details.moredet>summary{font-size:12.5px;font-weight:700;color:var(--acc);cursor:pointer;list-style:none;padding:4px 0}
 details.moredet>summary::-webkit-details-marker{display:none}
 details.moredet[open]>summary{margin-bottom:8px}
+#fld_tc{border:1px solid var(--acc);border-radius:10px;padding:0;margin:8px 0 14px;background:#102138}
+#fld_tc>summary{display:flex;align-items:center;justify-content:center;gap:7px;color:var(--text);background:#15345f;border-radius:9px;padding:10px 12px;font-size:14px}
+#fld_tc>summary::before{content:"▯";color:var(--acc);font-weight:900}
+#fld_tc[open]{padding:0 10px 10px}
+#fld_tc[open]>summary{margin:0 -10px 10px}
+@media(max-width:520px){.selrow{gap:7px;grid-template-columns:repeat(4,minmax(56px,1fr))}.selrow button{width:68px;height:68px}.selrow button .t{font-size:16px}.selrow button .d{font-size:9px;margin-top:5px}.selrow.showall button{width:82px;height:82px}}
 /* independent (non-sequential) checklist */
 .checks{margin:5px 0 2px;display:flex;flex-direction:column;gap:3px}
 .chk{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--mut);cursor:pointer}
@@ -510,7 +517,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 
 <h3 class="secgroup">Triage core</h3>
 
-<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> 30-second callback triage</summary><div class="rb">
+<details class="ref"><summary>30-second callback triage</summary><div class="rb">
 <div class="script">"I'm managing another time-sensitive neurosurgical patient. Tell me the current neurologic examination, what changed, when it changed, the critical imaging finding, anticoagulation status, and what you need from neurosurgery right now."</div>
 <p>Ask in this order:</p>
 <ul>
@@ -526,7 +533,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <p class="note">Built on TeamSTEPPS principles — SBAR, call-outs, check-backs, closed-loop communication.<a class="cite" href="https://www.ahrq.gov/sites/default/files/wysiwyg/teamstepps-program/teamstepps-pocket-guide.pdf" target="_blank">[6]</a> Assign only a provisional <b>E# / O# / W</b> at intake — do not run the full complexity score during the callback.</p>
 </div></details>
 
-<details class="ref"><summary>! E-axis & E3 override triggers</summary><div class="rb">
+<details class="ref"><summary>E-axis & E3 override triggers</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
 <tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now.</td></tr>
 <tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 30 min.</td></tr>
@@ -558,7 +565,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <li>CSF leak with wound failure and instability · competing emergency operation affecting neurologic safety</li></ul>
 </div></details>
 
-<details class="ref"><summary>O O-axis: operative trajectory</summary><div class="rb">
+<details class="ref"><summary>O-axis: operative trajectory</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
 <tr><td><b>O3</b></td><td>Operative now — emergency procedure underway or decision effectively made.</td></tr>
 <tr><td><b>O2</b></td><td>Likely operative this shift/day; limited decisions remain.</td></tr>
@@ -568,7 +575,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <div class="warnbox"><b>O0 ≠ low acuity.</b> An unsecured ruptured aneurysm, acute hydrocephalus, status epilepticus, or severe intracranial hypertension may be E3 while not immediately requiring an open operation.</div>
 </div></details>
 
-<details class="ref"><summary>C C-axis: 11 domains & modifiers</summary><div class="rb">
+<details class="ref"><summary>C-axis: 11 domains & modifiers</summary><div class="rb">
 <p>Score each domain 0–3, highest applicable. Max 33. Thresholds (operational, unvalidated): <b>0–5 C1</b> low · <b>6–11 C2</b> moderate · <b>12–23 C3</b> high · <b>24–33 C4</b> extreme.</p>
 <p>Domains: 1 Neuro instability/trajectory · 2 Lesion & anatomic danger · 3 Hidden-deterioration risk (W) · 4 Diagnostic uncertainty · 5 Baseline & exam interpretability · 6 Prior anatomy/devices/procedures · 7 Procedural/operative complexity · 8 Hemostasis & medication risk · 9 Infection/wound/CSF · 10 Medical/physiologic · 11 Communication/consent/dispo/task burden.</p>
 <div class="warnbox"><b>W3 mandatory interaction with E-axis:</b> W3 should generally not remain E0. If W3 is E1 rather than E2, document why immediate evaluation is not required. Define the reassessment interval, responsible examiner, and escalation trigger.</div>
@@ -580,7 +587,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 
 <h3 class="secgroup">Clinical reference boxes</h3>
 
-<details class="ref"><summary>● Traumatic-lesion thresholds (BTF / ACS)</summary><div class="rb">
+<details class="ref"><summary>Traumatic-lesion thresholds (BTF / ACS)</summary><div class="rb">
 <p class="note">Reference thresholds, not substitutes for senior review.<a class="cite" href="https://braintrauma.org/coma/guidelines/surgical" target="_blank">[4]</a></p>
 <ul>
 <li><b>EDH:</b> evacuate when volume &gt; 30 cm³ regardless of GCS.</li>
@@ -594,7 +601,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <p>Older BTF SDH surgical criteria use <b>ICP &gt; 20 mm Hg</b> as one operative trigger (comatose, smaller SDH). More recent general severe-TBI guidance uses <b>22 mm Hg as an initial treatment threshold</b> (reasonable treatment range 20–25 mm Hg sustained &gt; 5 min). Do not silently substitute one for the other — they come from different guideline contexts.<a class="cite" href="https://braintrauma.org/coma/guidelines/surgical" target="_blank">[4]</a></p>
 </div></details>
 
-<details class="ref"><summary>Rx Anticoagulation reversal quick-reference</summary><div class="rb">
+<details class="ref"><summary>Anticoagulation reversal quick-reference</summary><div class="rb">
 <p class="note">Use institutional pharmacy and neurocritical-care protocols for final dosing.</p>
 <table>
 <tr><th>Agent</th><th>Typical reversal strategy</th></tr>
@@ -609,7 +616,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <p>Capture: exact drug · indication · last dose · renal function · INR/PTT/anti-Xa/fibrinogen/platelets · recent lytic · mechanical valve · recent DVT/PE · recent stent · reversal ordered → administered → lab response · restart deadline · who owns the restart decision.</p>
 </div></details>
 
-<details class="ref"><summary>INF Shunt/CSF infection (IDSA)</summary><div class="rb">
+<details class="ref"><summary>Shunt/CSF infection (IDSA)</summary><div class="rb">
 <p>Confirmed infected CSF shunt: <b>complete removal + temporary EVD + IV antimicrobials</b>. Leaving infected hardware historically has low success; a randomized pediatric study reported <b>70% recurrence without removal</b>. Even with removal + external drainage, failure/reinfection still occurs in ~10–20%.<a class="cite" href="https://www.idsociety.org/practice-guideline/healthcare-associated-ventriculitis-and-meningitis/" target="_blank">[5]</a></p>
 <h4>Reimplantation timing</h4>
 <ul>
@@ -623,7 +630,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 
 <h3 class="secgroup">Workflow</h3>
 
-<details class="ref"><summary>⚓ Task-switching anchor</summary><div class="rb">
+<details class="ref"><summary>Task-switching anchor</summary><div class="rb">
 <p>Before leaving any patient, record: <b>current state | next physical action | deadline or trigger | owner</b>. A physical action begins with a verb and can be completed without reinterpreting what you meant.</p>
 <h4>Avoid</h4><p>"Follow up" · "Work on shunt" · "Finish consult" · "Check imaging" · "Figure out disposition"</p>
 <h4>Use</h4>
@@ -634,7 +641,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <li>"Review repeat CT at 22:00." · "Page chief with exam, measurements, and anticoagulation status."</li></ul>
 </div></details>
 
-<details class="ref"><summary>§ Consult stages & pause points</summary><div class="rb">
+<details class="ref"><summary>Consult stages & pause points</summary><div class="rb">
 <ul>
 <li><b>1. Intake (30–90 s):</b> only enough to classify urgency. <i>Pause 1:</i> provisional E#/O#/W. No full complexity score yet.</li>
 <li><b>2. Preserve the interrupted task (&lt;30 s):</b> write the anchor, assign a deadline, name the bedside examiner, set an alarm. <i>Pause 2:</i> interrupted patient has a restart point.</li>
@@ -647,7 +654,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 </ul>
 </div></details>
 
-<details class="ref"><summary>◎ Destination bundles</summary><div class="rb">
+<details class="ref"><summary>Destination bundles</summary><div class="rb">
 <h4>Operative</h4><p>Procedure · laterality · consent · NPO · T&S/cross · CBC + coags · reversal · antibiotics · OR booking · anesthesia · special equipment · navigation/imaging · positioning · ICU bed · family update · postop imaging · postop exam owner.</p>
 <h4>Admission</h4><p>Accepting service · level of care · neuro-check frequency · BP goals · Na goals · antithrombotics · diet/activity · seizure meds · DVT ppx · imaging schedule · device orders · wound plan · consultants · escalation criteria.</p>
 <h4>Discharge</h4><p>NSG stability · no unresolved dangerous finding · symptom control · med rec · wound/device instructions · restrictions · follow-up + imaging · return precautions · ownership of pending cultures/studies · transport/supervision.</p>
@@ -656,7 +663,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 
 <h3 class="secgroup">Brown NSGY cribs (boot camp)</h3>
 
-<details class="ref"><summary>N New consult workflow (Epic)</summary><div class="rb">
+<details class="ref"><summary>New consult workflow (Epic)</summary><div class="rb">
 <ul>
 <li>Opt in to <b>RIH ICH/IPH</b> + <b>RIH Neurosurgery ED Consult Team</b> (opt out at home or you'll get notifications).</li>
 <li>Add patient to your <b>Consults</b> list <i>and</i> shared <b>RIH NSGY</b> list immediately.</li>
@@ -679,7 +686,7 @@ ESRD MWF, eliquis (afib, 14d), JP, nylons 5/28
 Ex: PINK (RT*) L thal ICH + IVH, R EVD 5/29-, eliquis (PE), DNR/I</pre>
 </div></details>
 
-<details class="ref"><summary>⊞ Admissions, booking, consents, discharges</summary><div class="rb">
+<details class="ref"><summary>Admissions, booking, consents, discharges</summary><div class="rb">
 <h4>Admission</h4>
 <ul><li>Med rec: Nonsurgical tab → Admission → Outside Meds → dispense report → sticky note (#HTN-home amlodipine…) → copy into H&P.</li>
 <li>Orders: continue/dc all current orders; start all home meds <b>except ACE-i + blood thinners perioperatively</b> (blood thinners held 14 d after TBI). Baclofen withdrawal can be lethal — don't miss home meds.</li>
@@ -703,7 +710,7 @@ Ex: PINK (RT*) L thal ICH + IVH, R EVD 5/29-, eliquis (PE), DNR/I</pre>
 <li>If meds change after signing the summary, refresh the summary. Sign AVS → discharge order pops → sign.</li></ul>
 </div></details>
 
-<details class="ref"><summary>SO PM sign-out scripts</summary><div class="rb">
+<details class="ref"><summary>PM sign-out scripts</summary><div class="rb">
 <pre class="tpl">aSAH: one-liner (grade, coil/clip, post-bleed day) · exam @ SBP · EVD level + ICPs ·
 new events/imaging · TCDs · Na goal · BP goal · nimodipine · active problems
 
@@ -719,7 +726,7 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 <p class="note">Floor signs out first (6 PM) — keep seeing consults and doing procedures until it's your turn. Then ICU/peds with scripts.</p>
 </div></details>
 
-<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> Key numbers & M&M criteria</summary><div class="rb">
+<details class="ref"><summary>Key numbers & M&M criteria</summary><div class="rb">
 <h4>Key numbers</h4>
 <p>OR front desk 45657 · OR booking 48375 · CT ED 46159 · CT read 44314 (5–10p: 44123; after 10p: 42727) · ED read 42727 · MRI read 44267 · Neurorads 45828 · Blood bank 44529 · Bed board 45681 · BB7 conference 1217# · NCCU secretary 45286 · Language line 866-874-3972 (229076) · Neuromonitoring night/wknd (1363) 800-521-9757 · Medicine consult 350-2365 · General surgery consult 350-1018 · Ortho spine 350-1326.</p>
 <h4>M&M (drag to Skittles list + blue sticky note)</h4>
@@ -730,16 +737,16 @@ ICP mgmt (mannitol, sedation) · BP goal · seizure meds/LTM · active medical i
 
 <h3 class="secgroup">2026 Survival guide</h3>
 
-<details class="ref"><summary>□ Source bootcamp text</summary><div class="rb">
+<details class="ref"><summary>Source bootcamp text</summary><div class="rb">
 <p>The raw source file is kept in this repo as <b>nsgy_bootcamp.txt</b> so future updates can be made against the original bootcamp document and then folded into the structured app sections.</p>
 </div></details>
 
-<details class="ref"><summary><span class="phoneico" aria-hidden="true"></span> Phone directory (searchable)</summary><div class="rb">
+<details class="ref"><summary>Phone directory (searchable)</summary><div class="rb">
 <input class="refsearch" id="phoneq" placeholder="Search… e.g. MRI, NCCU, blood bank" oninput="renderPhones()">
 <div class="pre" id="phonelist"></div>
 </div></details>
 
-<details class="ref"><summary># Room codes</summary><div class="rb"><div class="pre">5ISC wkrm 0305# · 5ISC supply 5678#
+<details class="ref"><summary>Room codes</summary><div class="rb"><div class="pre">5ISC wkrm 0305# · 5ISC supply 5678#
 APC 4 library 723 · APC 506 Neuro 5250# · APC 631 NSGY 4146#
 BB7 conference 1217 · BB7 wkrm 4646# · BB7 call room 5555# · BB7 equipment 2002#
 Biplane 0911# · Biplane 2 0922#
@@ -748,18 +755,18 @@ ED Code 9111* · HCH elevator 4152# · HCH 401 4441# · HCH 509 55551#
 MICU supply 2160# · PICU 263 supply 3214# · TICU supply (MAI597) 5752#
 W&I NICU clean supply 3452 1604</div></div></details>
 
-<details class="ref"><summary>▤ NACU vs NCCU vs BB7 (what's allowed where)</summary><div class="rb">
+<details class="ref"><summary>NACU vs NCCU vs BB7 (what's allowed where)</summary><div class="rb">
 <h4>NACU allows</h4><p>A-lines · cardene · pressors (provider-manageable — MAP push, post-op carotid fine) · hypertonics for hypoNa (NOT cerebral edema) · Q1 neuro checks · non-transducing EVD · lumbar drain · <b>NO fresh post-op AVMs</b>.</p>
 <h4>BB7 allows</h4><p>Q2 neuro checks · lumbar drain · hypertonics for hypoNa (not edema) · <b>NO other drips including cardene</b>.</p>
 <p class="note">Pushback from nursing → involve Tia/Marguerite; major issue → Rad. Providers/bed board make NACU admission decisions.</p>
 </div></details>
 
-<details class="ref"><summary>▤ Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist"></div>
+<details class="ref"><summary>Booking templates (tap to copy)</summary><div class="rb"><div id="bookinglist"></div>
 <h4>Fixings</h4><p><b>Cranial:</b> brainlab, CUSA, scope, sonopet, sugita, ultrasound, neuromonitoring, Stryker plating. <b>Spine:</b> neuromonitoring, nuvasive, DePuy Expedium, mountaineer, airo, ziehm, viper, Jackson table, possible complex plastics closure.</p>
 <p class="note">Change booking name same day: post-op to floor → procedures.</p>
 </div></details>
 
-<details class="ref"><summary>✎ Who consents what</summary><div class="rb"><div class="pre">Cranial: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak
+<details class="ref"><summary>Who consents what</summary><div class="rb"><div class="pre">Cranial: Athar · Christine · Clark · Curt · Deus · Konstantina · Prak
 Spine: Patti · Tim · Toki · Sampath · Williamson + fellows
 Vascular: Curt · Rad · Kriszy
 TSSH: Prak+Ritu · Christine+Basit · Curt+Duff
@@ -767,13 +774,13 @@ ALIF exposers: Soden · Luhrs
 PRS closers: Woo · Kwan · Beqiri · Maselli
 Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that day</div></div></details>
 
-<details class="ref"><summary>✓ Pre-op checklists</summary><div class="rb">
+<details class="ref"><summary>Pre-op checklists</summary><div class="rb">
 <h4>Inpatient</h4><p>Consent · DVT ppx · Booking · Coags · NPO · H&P note · Pre-op note · EKG · Pregnancy test · MRSA screen.</p>
 <h4>Outpatient</h4><p>Booking · Consent · Coags + MRSA + UA · H&P · Pre-op note · PAT appt via Sharonda · PAT instructions in discharge · Hibiclens.</p>
 <h4>Preemie</h4><p>No coags needed (T&S, PT/PTT) · CLD 6 h pre-op · NPO 2 h pre-op.</p>
 </div></details>
 
-<details class="ref"><summary>† Death checklist</summary><div class="rb"><ul>
+<details class="ref"><summary>Death checklist</summary><div class="rb"><ul>
 <li>Notify attending + secretary notifies medical records.</li>
 <li>Death exam: pupils, breath, carotid pulse, heartbeat.</li>
 <li>Significant event note with time of death + exam.</li>
@@ -782,7 +789,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <li>Call family; ask about autopsy if warranted.</li>
 </ul></div></details>
 
-<details class="ref"><summary>Rx Order cribs (migraine · pedi · seizure · ICP)</summary><div class="rb">
+<details class="ref"><summary>Order cribs (migraine · pedi · seizure · ICP)</summary><div class="rb">
 <h4>Migraine cocktail</h4><p>Compazine 10 · Benadryl 25 · Mg sulfate 2 g · 1 L fluids · Toradol vs Tylenol.</p>
 <h4>Pedi</h4><p>Pain: PRN valium, NO robaxin. Seizures: 15 mg/kg load + 10 mg/kg BID ×7 d. Transfusion: 10 cc/kg children, 15 cc/kg neonates.</p>
 <h4>Active seizure</h4><p>Ativan 2 → versed if refractory · Keppra 1–2 g · STAT EEG + call tech · call neurology.</p>
@@ -791,7 +798,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <h4>Neuro IR recovery</h4><p>Radial compression device: note balloon volume; keep inflated — neuro standard if DAPT/heparin, else body standard expedited; sign.</p>
 </div></details>
 
-<details class="ref"><summary>⌕ MRI protocols + trials</summary><div class="rb">
+<details class="ref"><summary>MRI protocols + trials</summary><div class="rb">
 <h4>MRI protocols</h4><p>Moyamoya: MRI Brain WWO Moyamoya + MRA Brain WO (comment: "please perform MRI Brain WWO Moyamoya"). Vascular malformation: MRI Brain WWO Vasc Malf + MRA Brain WO. Medulloblastoma: MRI Brain and Spine COG Protocol.</p>
 <h4>NICO (ICH)</h4><p><b>In:</b> lobar/basal ganglia ICH · 18–80 · 30–80 cc · GCS 5–14 · NIHSS >5 · surgery within 24 h of LKW. <b>Out:</b> underlying vascular lesion · irreversible coagulopathy · thalamic/brainstem extension.</p>
 <h4>REACH (ICH)</h4><p><b>In:</b> 18–70 · GCS 5–14 · mRS 0–1 · anterior basal ganglia ICH 20–80 mL · within 24 h. <b>Out (key):</b> aneurysm/AVM/tumor · NIHSS <5 · bilateral fixed pupils · extensor posturing · IVH >50% of a lateral ventricle · thalamic >25% · non-reversible AC · plt <75K or INR >1.4 · ESRD/liver/mech valve · CMO/DNR.</p>
@@ -808,7 +815,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <h4>Brainlab remote</h4><p>connect.lifespan.org → Intranet → paste link from Cam's PDF.</p>
 </div></details>
 
-<details class="ref"><summary>! Dispo battles + M&M</summary><div class="rb">
+<details class="ref"><summary>Dispo battles + M&M</summary><div class="rb">
 <p><b>TP fractures:</b> &lt;4 lumbar/thoracic TP fx need no spine consult from ortho or NSGY. <b>Frontal sinus fx</b> through anterior AND posterior tables → NSGY consult; look for CSF leak.</p>
 <h4>M&M (report to Skittles list)</h4><p>Death (index admission or 30 d) · unplanned return to OR / 30-d readmission · new unanticipated deficit · never event / wrong site-level-patient · major systemic complication · hospital-acquired infection · significant near-miss / good catch · anything referred by chair/quality.</p>
 </div></details>
@@ -823,13 +830,13 @@ Levanta la pierna derecha/izquierda. Mantenla arriba. No me dejes empujar hacia 
 Mantenga la pierna recta.
 Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de los pies.</div></div></details>
 
-<details class="ref"><summary>Kit Procedure kits (supplies + steps)</summary><div class="rb">
+<details class="ref"><summary>Procedure kits (supplies + steps)</summary><div class="rb">
 <p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · EVD flush · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
 <h4>Baby EVD deltas</h4><p>Max lido 1–2 cc · sterile paper towels to square head · white drape as major drape · flat baby changes angle (aim canthus, hand lower toward tragus plane) · pass only 4.5 cm · 1–2 tack-ups TIGHT · big bites if macerated tissue.</p>
 </div></details>
 
 <h3 class="secgroup">Sources</h3>
-<details class="ref"><summary>Ref Citations</summary><div class="rb">
+<details class="ref"><summary>Citations</summary><div class="rb">
 <ul>
 <li>[1] <a href="https://www.neurocriticalcare.org/Portals/0/ENLS%205.0/ENLS%206.0/Protocol%20V6_0_Intracranial%20Hypertension%20and%20Herniation.pdf" target="_blank" style="color:var(--acc)">ENLS — Intracranial Hypertension and Herniation (Neurocritical Care Society)</a></li>
 <li>[2] <a href="https://gettingitrightfirsttime.co.uk/wp-content/uploads/2026/04/National-Suspected-Cauda-Equina-Pathway-March-2026.pdf" target="_blank" style="color:var(--acc)">National Suspected Cauda Equina Syndrome Pathway (GIRFT)</a></li>
@@ -881,7 +888,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         <div><label>Attending</label><input type="text" id="f_attg" placeholder="KS"></div>
       </div>
     </div>
-    <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>▯ Text consult — build the send-ready version</summary>
+    <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
       <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
       <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
