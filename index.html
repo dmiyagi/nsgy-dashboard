@@ -3125,7 +3125,7 @@ const SO_TMPLS={
  shunt:{name:"Shunt",fields:[["One-liner","shunt type, valve + setting, indication"],["Baseline vs current exam","who knows baseline"],["Prior failure phenotype","how they failed before"],["Imaging comparison","which prior CT is the comparison"],["Valve plan","setting change, recheck after MRI"],["Escalation trigger","somnolence, vomiting, pupil"],["Family / collateral","who to call"]]},
  evd:{name:"EVD / IVH",fields:[["One-liner","pathology, EVD side + date"],["Exam",""],["EVD","level, output/hr, ICP range"],["Clamp trial","status, f@level date"],["CSF labs / cultures","cells, cx pending"],["Imaging","ventricle size vs prior"],["Wean plan","and who decides"],["Escalation trigger","ICP >, exam change"]]},
  csdh:{name:"SDH",fields:[["One-liner","side, thickness, acute-on-chronic?"],["Exam + baseline",""],["Imaging","thickness, MLS, stable × how long"],["AC status","drug, held since, restart date"],["Operative plan","burr holes / SEPS / observe — senior decision"],["Seizure ppx",""],["Escalation trigger","exam or pupil change"]]},
- floor:{name:"Floor pt",fields:[["One-liner",""],["Exam + change from baseline",""],["Overnight events",""],["Pending studies","and who follows up"],["Meds of consequence","AC, abx, steroids, ASM"],["Goals","BP / Na / pain"],["Dispo + barriers",""],["Contingency","if X happens, do Y"]]}
+ floor:{name:"General",fields:[["One-liner",""],["Exam + change from baseline",""],["Overnight events",""],["Pending studies","and who follows up"],["Meds of consequence","AC, abx, steroids, ASM"],["Goals","BP / Na / pain"],["Dispo + barriers",""],["Contingency","if X happens, do Y"]]}
 };
 function detectTmpl(t){
   if(/\bsah\b|aneurysm|subarachnoid|coil|pcomm|acomm/i.test(t))return "asah";
@@ -3178,10 +3178,27 @@ function normalizeRoundTags(tags){
   (tags||[]).map(normalizeRoundTag).filter(Boolean).forEach(t=>{if(!out.includes(t))out.push(t)});
   return out.slice(0,4);
 }
-const ROUND_BED_RE="(?:ED|BB|NCCU|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z])\\s?-?\\d+[A-Za-z]?(?:-\\d+)?|\\d[AB]-?\\d*";
+const ROUND_BED_RE="(?:ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z]+)\\s?-?\\d+[A-Za-z0-9-]*(?:-\\d+)?|\\d[AB]-?\\d*";
+function spineLevelToken(raw,token,end){
+  const s=String(raw||""),t=String(token||"").toUpperCase().replace(/\s+/g,"");
+  if(!/^C\d+$/.test(t))return false;
+  const tail=s.slice(end,end+36);
+  if(/^\s*(?:[-–—:;,]?\s*)[A-Za-z]{3}(?![A-Za-z])/.test(tail))return false;
+  if(/^\s*[,/]\s*\d/.test(tail))return true;
+  if(/^\s*(?:-|to|through|and)\s*C?\d/i.test(tail))return true;
+  return /^\s*(?:fx|fracture|stenosis|disc|herniation|radiculopathy|myelopathy|cord|injury|laminectomy|lami)\b/i.test(tail);
+}
+function firstRoomToken(raw){
+  const s=String(raw||""),re=new RegExp("\\b("+ROUND_BED_RE+")\\b","ig");
+  let m;
+  while((m=re.exec(s))){
+    if(spineLevelToken(s,m[1],m.index+m[0].length))continue;
+    return m[1].toUpperCase().replace(/\s+/g,"");
+  }
+  return "";
+}
 function roundBedFromText(raw){
-  const m=String(raw||"").match(new RegExp("\\b("+ROUND_BED_RE+")\\b","i"));
-  return m?m[1].toUpperCase().replace(/\s+/g,""):"";
+  return firstRoomToken(raw);
 }
 function roundLabel(raw){
   const bed=roundBedFromText(raw);
@@ -3194,10 +3211,11 @@ function roundLabel(raw){
 function last3FromText(raw){
   const s=String(raw||"");
   const afterBed=s.match(new RegExp("\\b(?:"+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)([A-Za-z]{3})(?![A-Za-z])","i"));
-  if(afterBed)return cap3(afterBed[1]);
-  const bedMatch=s.match(new RegExp("\\b("+ROUND_BED_RE+")\\b","i"));
-  if(bedMatch){
-    const tail=s.slice((bedMatch.index||0)+bedMatch[0].length)
+  if(afterBed&&!spineLevelToken(s,afterBed[0].split(/\s+/)[0],(afterBed.index||0)+afterBed[0].length))return cap3(afterBed[1]);
+  const bed=firstRoomToken(s);
+  if(bed){
+    const at=s.toUpperCase().indexOf(bed);
+    const tail=s.slice((at>=0?at:0)+bed.length)
       .replace(/\b(PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b/ig," ")
       .replace(/\([A-Za-z]{1,4}\)/g," ")
       .replace(/^[-–—:;,\s]+/," ");
@@ -4013,8 +4031,7 @@ function addORChain(){
 // ---------- smart capture ----------
 let capActions=[];
 function extractBed(t){
-  const m=t.match(/\b((?:ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J)\s?-?\d+[A-Za-z]?(?:-\d+)?|\d[AB]-?\d+)\b/i);
-  return m?m[1].toUpperCase().replace(/\s+/g,""):null;
+  return firstRoomToken(t)||null;
 }
 function extractCallName(t){
   const m=t.match(/\b(?:call|page|phone|text|update)\s+(?:the\s+)?([A-Z][a-zA-Z]{2,})/);
