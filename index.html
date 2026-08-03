@@ -15,6 +15,7 @@
   --bg:#0d131e; --card:#161e2c; --card2:#1c2636; --line:#283652; --text:#e9eef7; --mut:#93a3bc;
   --e3:#ff4d5e; --e2:#ff9f3c; --e1:#f2d34b; --e0:#5b6b85;
   --ok:#3fd68f; --acc:#5aa2ff; --purp:#b48bff; --teal:#3ecfd4;
+  --w1:#6f8dff; --w2:#49b8ff; --w3:#2fe0ff;
   --rad:12px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -77,6 +78,9 @@ section.view.active{display:block}
 .bg{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
 .bg.e3{background:var(--e3);color:#fff} .bg.e2{background:var(--e2);color:#231400} .bg.e1{background:var(--e1);color:#231d00} .bg.e0{background:#33415c;color:#cbd6e8}
 .bg.o{background:#2a3752;color:var(--purp)} .bg.c{background:#173a3c;color:var(--teal)}
+.bg.w1{background:#182849;color:var(--w1);border:1px solid var(--w1)}
+.bg.w2{background:#12304c;color:var(--w2);border:1px solid var(--w2)}
+.bg.w3{background:#0d3a4a;color:var(--w3);border:1px solid var(--w3)}
 .bg.mod{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:700}
 .bg.warn{background:#3a1220;color:var(--e3);border:1px solid var(--e3)}
 .card .who{font-weight:700;font-size:15px}
@@ -130,7 +134,9 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .selrow button.selE1.on{background:var(--e1);color:#231d00;border-color:var(--e1)} .selrow button.selE1.on .d{color:#5c5210}
 .selrow button.selE0.on{background:#33415c;border-color:#4d5f80} .selrow button.on .d{color:inherit}
 .selrow button.selO.on{background:#3b2f63;border-color:var(--purp)}
-.selrow button.selW.on{background:#3a1220;border-color:var(--e3)}
+.selrow button.selW{border-color:#2d456c}
+.selrow button.selW.on{background:#12304c;border-color:var(--w2);color:#eaf8ff}
+.selrow button.selW.on .d{color:#bcecff}
 .selrow button.selC.on{background:#173a3c;border-color:var(--teal)}
 .formwarn{font-size:12.5px;color:var(--e3);background:#2a0f18;border:1px solid #5c1f30;border-radius:8px;padding:8px 10px;margin-bottom:10px;display:none}
 .formwarn.show{display:block}
@@ -2534,13 +2540,13 @@ function card(c){
      soValsHtml(c)+
      '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
   }
-  const w3warn=(c.W===3&&c.E<2)?'<span class="bg warn">W3! E'+c.E+'</span>':"";
+  const w3warn=(c.W===3&&c.E<2)?'<span class="bg w3">W3 needs E review</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
   return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg mod" style="color:var(--e2);border-color:var(--e2)">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg w'+c.W+'">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    careMetaHtml(c)+
