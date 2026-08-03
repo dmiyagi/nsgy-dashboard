@@ -185,8 +185,12 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .step.locked{opacity:.65}
 .step button{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:6px;border:1px solid var(--ok);background:transparent;color:var(--ok);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .step .stxt{flex:1}
-.step button.tbtn{border-color:var(--line);color:var(--mut);font-weight:700;padding:2px 6px}
-.step button.tbtn.set{border-color:var(--e2);color:var(--e2)}
+button.tbtn{border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--font);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;cursor:pointer;white-space:nowrap}
+button.tbtn.set{border-color:var(--e2);color:var(--e2)}
+.clockico{display:inline-block;width:.95em;height:.95em;border:2px solid currentColor;border-radius:50%;position:relative;box-sizing:border-box;vertical-align:-.13em;margin-right:3px;background:transparent;color:#eef4ff}
+.clockico:before,.clockico:after{content:"";position:absolute;left:50%;top:50%;width:2px;background:currentColor;border-radius:2px;transform-origin:50% 0}
+.clockico:before{height:34%;transform:translate(-50%,-88%) rotate(0deg)}
+.clockico:after{height:30%;transform:translate(-50%,-10%) rotate(90deg)}
 .steptimer{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 4px 9px}
 .steptimer button{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--acc);cursor:pointer;font-family:var(--font)}
 .rsteps{margin:6px 0 2px;border-left:2px solid var(--teal);padding-left:9px}
@@ -261,6 +265,7 @@ button.rdone.finaldone{background:#123527}
 .roundsugg button strong{color:var(--acc)}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
+@media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
 /* type colour scheme */
 .tc-CONSULT{--tc:#5aa2ff} .tc-COMM{--tc:#3fd68f} .tc-CHART{--tc:#8ba7d6} .tc-PROC{--tc:#b48bff}
 .tc-PCON{--tc:#ffa94d} .tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
@@ -517,12 +522,12 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
+    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
   <div class="bulkexport">
-    <span style="font-size:12px;color:var(--mut)">Export whole list →</span>
+    <span style="font-size:12px;color:var(--mut)">Export to</span>
     <select id="bulkExportType"></select>
-    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
     <span class="sortbtns" id="rsort" style="margin-left:auto">
       <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
       <button data-m="initials" onclick="setRoundSort('initials')">Sort: patient</button>
@@ -1371,7 +1376,7 @@ function staffDVTThenConsent(lines){
 // ---------- live note flags ----------
 const FLAGS=[
  {re:t=>traumaLowGcsCue(t),label:"Trauma GCS <8 — definite action: airway/ICU-level concern, senior review, consider Bolt/Licox task",lv:"e3",apply:{E:3,mods:["NΔ"]}},
- {re:t=>isTraumaConsultText(t)&&(()=>{const m=parseMeas(t||"");return m.gcs!==undefined&&m.gcs>=8&&m.gcs<=12})(),label:"Trauma GCS 8–12 — concerning; define repeat exam/CT timing and escalation trigger",lv:"warn",apply:{W:2,mods:["NΔ"]}},
+ {re:t=>isTraumaConsultText(t)&&(()=>{const m=parseMeas(t||"");return m.gcs!==undefined&&m.gcs>=8&&m.gcs<=10})(),label:"Trauma GCS 8–10 — borderline action range; define repeat exam/CT timing and escalation trigger",lv:"warn",apply:{W:2,mods:["NΔ"]}},
  {re:t=>{const m=parseMeas(t||"");return m.mls!==undefined&&m.mls>5},label:"Midline shift >5 mm — definite action threshold for traumatic extra-axial hemorrhage",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
  {re:t=>{const m=parseMeas(t||"");return m.thick!==undefined&&m.thick>10&&/\bsdh\b|subdural/i.test(t||"")},label:"SDH thickness >10 mm — definite operative-threshold concern",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
  {re:t=>{const m=parseMeas(t||"");return m.icp!==undefined&&m.icp>=22},label:"ICP ≥22 — definite action threshold; troubleshoot/treat and escalate",lv:"e3",apply:{E:3}},
@@ -1456,6 +1461,10 @@ function mergeScoreLines(text,lines){
 function formScoreLines(){
   return [completedGcsLine("form"),completedIchLine("form")].filter(Boolean);
 }
+function copyScoreState(kind,src,dst){
+  const store=kind==="gcs"?GCS_STATE:ICH_STATE;
+  store[dst]=Object.assign({},store[dst]||{},store[src]||{});
+}
 function renderGcsAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"trauma SDH TBI"));
@@ -1539,6 +1548,8 @@ function insertIchScore(ns){
 function syncFormScoreFields(){
   const st=document.getElementById("f_state");
   if(st)st.value=mergeScoreLines(st.value,formScoreLines());
+  copyScoreState("gcs","form","ftc");
+  copyScoreState("ich","form","ftc");
   renderFlags();
   renderFTCFlags();
 }
@@ -1720,7 +1731,15 @@ function parseMeas(txt){
   const v=/(\d+(?:\.\d+)?)\s*(?:cc|ml|cm3|cm³)\b/i.exec(txt);if(v)m.vol=parseFloat(v[1]);
   const gd=/gcs[^0-9]{0,14}(\d{1,2})\s*(?:→|->|-->|to)\s*(\d{1,2})/i.exec(txt);
   if(gd){m.gcsFrom=+gd[1];m.gcs=+gd[2]}
-  else{const g=/gcs[^0-9]{0,8}(\d{1,2})/i.exec(txt);if(g)m.gcs=+g[1]}
+  else{
+    const comp=/gcs\s+e(\d|NT)\s+v(\d|NT)\s+m(\d|NT)(?:\s*=\s*(\d{1,2}))?/i.exec(txt);
+    if(comp){
+      if(comp[4])m.gcs=+comp[4];
+      else if(!/NT/i.test(comp[1]+comp[2]+comp[3]))m.gcs=Number(comp[1])+Number(comp[2])+Number(comp[3]);
+    }else{
+      const g=/gcs(?!\s+[evm])[^0-9]{0,8}(\d{1,2})/i.exec(txt);if(g)m.gcs=+g[1]
+    }
+  }
   const ic=/icps?[^0-9]{0,8}(\d{1,3})/i.exec(txt);if(ic)m.icp=+ic[1];
   return m;
 }
@@ -2349,10 +2368,11 @@ function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.
 function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(c.type==="CONSULT")resetReviewClock(c);touch(c);render();}
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
+function clockIcon(){return '<span class="clockico" aria-hidden="true"></span>'}
 function stepTimerBtn(c,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
   return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togStepTimer(\''+c.id+'\','+i+')">'+
-    (dl?'◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−"):'◷')+'</button>';
+    clockIcon()+(dl?dl.txt.replace("due in ","").replace("OVERDUE ","−"):'')+'</button>';
 }
 function stepTimerRow(c,i){
   if(openStepTimer!==c.id+":"+i)return "";
@@ -2364,7 +2384,7 @@ function stepTimerRow(c,i){
 function taskTimerBtn(c,i,t){
   const dl=t.dueISO?fmtDL(t.dueISO):null;
   return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togTaskTimer(\''+c.id+'\','+i+')">'+
-    (dl?'◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−"):'◷')+'</button>';
+    clockIcon()+(dl?dl.txt.replace("due in ","").replace("OVERDUE ","−"):'')+'</button>';
 }
 function taskTimerRow(c,i){
   if(openTaskTimer!==c.id+":"+i)return "";
@@ -2663,7 +2683,7 @@ function card(c){
      phoneHtml(c)+
      careMetaHtml(c)+
      linkedCardsHtml(c,false)+
-     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
+     '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
      stepsHtml(c)+
      checksHtml(c)+
      dcwf+
@@ -2683,7 +2703,7 @@ function card(c){
    linkedCardsHtml(c,false)+
    (c.action&&!stepTextOpen(c,c.action)?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
-   '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
+   '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
@@ -3233,7 +3253,7 @@ function parseRounds(){
 let openRStepTimer=null;
 function rStepTimerBtn(r,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
-  return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togRStepTimer(\''+r.id+'\','+i+')">'+(dl?'◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−"):'◷')+'</button>';
+  return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togRStepTimer(\''+r.id+'\','+i+')">'+clockIcon()+(dl?dl.txt.replace("due in ","").replace("OVERDUE ","−"):'')+'</button>';
 }
 function rStepTimerRow(r,i){
   if(openRStepTimer!==r.id+":"+i)return "";
@@ -3314,7 +3334,7 @@ function roundRowCard(r){
     tags+
     '<span class="rprob">'+esc((r.raw||"").replace(String(r.label||""),"").trim()||SO_TMPLS[r.soT].name)+'</span>'+
     (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();togSeen(\''+r.id+'\')">'+(r.seen?'↩':'✓ seen')+'</button>')+
-    (dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+    (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
     '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){
