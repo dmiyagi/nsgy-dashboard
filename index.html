@@ -1370,6 +1370,16 @@ function staffDVTThenConsent(lines){
 }
 // ---------- live note flags ----------
 const FLAGS=[
+ {re:t=>traumaLowGcsCue(t),label:"Trauma GCS <8 — definite action: airway/ICU-level concern, senior review, consider Bolt/Licox task",lv:"e3",apply:{E:3,mods:["NΔ"]}},
+ {re:t=>isTraumaConsultText(t)&&(()=>{const m=parseMeas(t||"");return m.gcs!==undefined&&m.gcs>=8&&m.gcs<=12})(),label:"Trauma GCS 8–12 — concerning; define repeat exam/CT timing and escalation trigger",lv:"warn",apply:{W:2,mods:["NΔ"]}},
+ {re:t=>{const m=parseMeas(t||"");return m.mls!==undefined&&m.mls>5},label:"Midline shift >5 mm — definite action threshold for traumatic extra-axial hemorrhage",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
+ {re:t=>{const m=parseMeas(t||"");return m.thick!==undefined&&m.thick>10&&/\bsdh\b|subdural/i.test(t||"")},label:"SDH thickness >10 mm — definite operative-threshold concern",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
+ {re:t=>{const m=parseMeas(t||"");return m.icp!==undefined&&m.icp>=22},label:"ICP ≥22 — definite action threshold; troubleshoot/treat and escalate",lv:"e3",apply:{E:3}},
+ {re:/herniat|uncal|tonsillar|brainstem compression|effaced cistern|cisternal effacement/i,label:"Herniation/brainstem-compression language — definite action trigger",lv:"e3",apply:{E:3,W:3,mods:["NΔ","W"]}},
+ {re:/hydrocephalus|ventriculomegaly|temporal horns|transependymal/i,label:"Hydrocephalus/ventricle concern — may need urgent EVD/recheck timing",lv:"warn",apply:{W:2}},
+ {re:/\bivh\b|intraventricular hemorrhage/i,label:"IVH present — watch hydrocephalus, EVD need, and exam trajectory",lv:"warn",apply:{W:2}},
+ {re:/ICH Score\s+[3-6]\b/i,label:"ICH Score ≥3 — high-risk score; document exam, IVH/hydrocephalus, volume, AC/reversal, and senior discussion",lv:"e3",apply:{E:2,W:3,mods:["W"]}},
+ {re:/ICH Score\s+2\b/i,label:"ICH Score 2 — concerning score; confirm volume, IVH, location, GCS trend, and dispo level",lv:"warn",apply:{W:2}},
  {re:/blown pupil|fixed.{0,10}dilat|dilat.{0,10}fixed|anisocoria|nonreactive pupil|unequal pupils|pupil (change|asym)/i,label:"Pupil change — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:/postur|decerebrat|decorticat/i,label:"Posturing — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:/gcs (drop|decline|down|fell)|declining|deteriorat|less responsive|unresponsive|obtund|acutely altered/i,label:"Declining consciousness — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
@@ -1430,6 +1440,22 @@ function gcsSummary(ns){
   const total=["e","v","m"].reduce((a,k)=>a+Number(s[k]||0),0);
   return "GCS E"+s.e+" V"+s.v+" M"+s.m+" = "+total;
 }
+function completedGcsLine(ns){
+  const line=gcsSummary(ns);
+  return /^GCS /.test(line)?line:"";
+}
+function completedIchLine(ns){
+  const line=ichSummary(ns);
+  return /^ICH Score \d/.test(line)?line:"";
+}
+function mergeScoreLines(text,lines){
+  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l));
+  lines.filter(Boolean).forEach(l=>{if(!out.some(x=>x.trim().toLowerCase()===l.toLowerCase()))out.unshift(l)});
+  return out.filter(Boolean).join("\n");
+}
+function formScoreLines(){
+  return [completedGcsLine("form"),completedIchLine("form")].filter(Boolean);
+}
 function renderGcsAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"trauma SDH TBI"));
@@ -1442,7 +1468,7 @@ function renderGcsAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
     '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div>';
 }
-function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;renderGcsContext(ns)}
+function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderGcsContext(ns)}
 function renderGcsContext(ns){
   if(ns==="form")renderGcsAid("form","f_gcs",false);
   else if(ns==="tc")renderGcsAid("tc","tc_gcs",false);
@@ -1494,7 +1520,7 @@ function renderIchAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
     '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div>';
 }
-function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;renderIchContext(ns)}
+function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns)}
 function renderIchContext(ns){
   if(ns==="form")renderIchAid("form","f_ich",false);
   else if(ns==="tc")renderIchAid("tc","tc_ich",false);
@@ -1509,6 +1535,12 @@ function insertIchScore(ns){
   const cur=el.value.replace(/\s*ICH Score \d+.*/i,"").trim();
   el.value=(cur?cur+" ":"")+line+".";
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
+function syncFormScoreFields(){
+  const st=document.getElementById("f_state");
+  if(st)st.value=mergeScoreLines(st.value,formScoreLines());
+  renderFlags();
+  renderFTCFlags();
 }
 function flagApplied(f){
   if(f.apply.E!==undefined&&F.E<f.apply.E)return false;
@@ -1607,6 +1639,56 @@ function addAdmissionChecklist(){
 function addORChecklist(){
   addUniqueLines("f_tasks",["Consent with exact booking name + laterality","Hold DVT ppx if relevant","rH&P / H&P note","Pre-op note","Case request / OR booking","Pre-op: NPO, CBC/PT/PTT/T&S, antibiotics/equipment, postop bed"]);
 }
+function isTraumaConsultText(t){
+  return /\b(?:trauma|tbi|fall|found down|mvc|mva|pedestrian|assault|head strike|head injury|sdh|subdural|edh|epidural|contusion|tSAH|traumatic\s+sah|skull fracture|multisystem)\b/i.test(t||"");
+}
+function traumaLowGcsCue(t){
+  const m=parseMeas(t||"");
+  return isTraumaConsultText(t)&&m.gcs!==undefined&&m.gcs<8;
+}
+function boltKit(){return procMatch("bolt")||PROC_LIB.find(p=>/Bolt/i.test(p.name))}
+function addKitToCard(c,p,mode){
+  if(!c||!p)return;
+  if(mode!=="steps"){
+    c.tasks=c.tasks||[];
+    const supp=p.dvt?dvtThenConsent(p.supplies.slice()):p.supplies.slice();
+    supp.forEach(t=>{if(!c.tasks.some(x=>x.t===t))c.tasks.push({t:t,done:false})});
+  }
+  if(mode!=="supplies"){
+    c.steps=c.steps||[];
+    let st=p.dvt?staffDVTThenConsent(p.steps.slice()):p.steps.slice();
+    if(!st.some(s=>/staff thread/i.test(s)))st.splice(Math.min(1,st.length),0,STAFF_THREAD_STEP);
+    if(p.dvt)st=staffDVTThenConsent(st);
+    st.forEach(t=>{if(!c.steps.some(x=>x.t===t))c.steps.push({t:t,done:false})});
+    if(!c.action)c.action=(c.steps.find(s=>!s.done)||{}).t||"";
+  }
+}
+function linkedBoltExists(c){
+  if(!c)return false;
+  const loc=String(c.loc||"").toUpperCase();
+  return (S.consults||[]).some(x=>!x.closed&&x.type==="PROC"&&/bolt|licox|icp monitor/i.test(x.prob||"")&&
+    (x.sourceId===c.id||(c.roundId&&x.roundId===c.roundId)||(loc&&String(x.loc||"").toUpperCase()===loc)));
+}
+function createLinkedBoltTask(c){
+  if(!c||linkedBoltExists(c))return null;
+  const t=blankC();
+  t.type="PROC";t.loc=c.loc;t.prob="Bolt / Licox for "+(c.prob||"trauma GCS <8");
+  t.sourceId=c.id;t.roundId=c.roundId||null;t.owner=c.owner||"me";t.team=c.team||"";t.attg=c.attg||"";t.worry=!!c.worry;
+  t.E=Math.max(c.E||2,2);t.deadlineISO=new Date(Date.now()+30*60000).toISOString();
+  t.note="Linked consult: "+[c.loc,c.prob].filter(Boolean).join(" · ");
+  addKitToCard(t,boltKit(),"both");
+  t.updatedAt=Date.now();S.consults.push(t);touch(c);
+  return t;
+}
+function addLinkedBoltFromForm(){
+  if(!F)return;
+  document.getElementById("f_loc").value=joinLoc(document.getElementById("f_bed").value,document.getElementById("f_last3").value);
+  ["loc","prob","state","action","trig","owner","team","attg","note"].forEach(k=>{const el=document.getElementById("f_"+k);if(el)F[k]=el.value.trim()});
+  ensureCareMeta(F);
+  const t=createLinkedBoltTask(F);
+  render();renderFlags();
+  showToast(t?"Linked Bolt/Licox proc task added":"Bolt/Licox task already linked");
+}
 function renderSmartHints(){
   const el=document.getElementById("smarthints");if(!el)return;
   if(!F){el.innerHTML="";return}
@@ -1616,6 +1698,7 @@ function renderSmartHints(){
   if(F.type==="PCON")hints.push('<div class="smartbox"><b>Quick proc presets:</b> shunt tap · shuntogram · shunt dial · pump interrogation<div class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></div></div>');
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push('<div class="smartbox"><b>Admit plan detected.</b> Add H&P and admission-order reminders.<div class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P checklist</button></div></div>');
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push('<div class="smartbox"><b>OR/pre-op plan detected.</b> Add rH&P, pre-op note, consent, and booking reminders.<div class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></div></div>');
+  if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push('<div class="smartbox"><b>Trauma GCS &lt;8 detected.</b> Consider Bolt/Licox task with full procedure checklist.<div class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Linked Bolt/Licox task</button></div></div>');
   el.innerHTML=hints.join("");
 }
 // ---------- measurement parsing & threshold alerts ----------
@@ -1760,9 +1843,9 @@ function migrate(d){
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
-  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date});
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
-  d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date});
+  d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   return d;
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
@@ -1774,6 +1857,39 @@ function searchBlob(x){return Object.keys(x||{}).map(k=>{
   const v=x[k];return typeof v==="string"?v:(Array.isArray(v)?v.map(searchBlob).join(" "):"");
 }).join(" ").toLowerCase()}
 function matchSearch(x){const q=globalSearch.trim().toLowerCase();return !q||searchBlob(x).includes(q)}
+function patientRoom(c){return roundBedFromText([c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" "))||""}
+function patientLast3(c){return last3FromText([c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" "))||""}
+function patientKey(c){
+  const room=patientRoom(c).toUpperCase().replace(/[^A-Z0-9]/g,""),ab=patientLast3(c).toUpperCase();
+  return room&&ab?room+"|"+ab:"";
+}
+function patientTag(c){const ab=patientLast3(c);return ab?'<span class="bg mod">'+esc(ab)+'</span>':""}
+function linkedCards(c){
+  const gid=c&&c.linkGroupId;
+  return (S.consults||[]).filter(x=>!x.closed&&x.id!==c.id&&((gid&&x.linkGroupId===gid)||(c.sourceId&&x.id===c.sourceId)||(x.sourceId&&x.sourceId===c.id)));
+}
+function linkedCardsHtml(c,compact){
+  const xs=linkedCards(c);
+  if(!xs.length)return "";
+  if(compact)return '<span class="bg mod">↔'+xs.length+'</span>';
+  return '<div class="caremeta">Linked: '+xs.map(x=>'<button class="rdone" onclick="openForm(\''+x.id+'\')">'+esc((TYPES[x.type]||TYPES.CONSULT).l+" · "+(x.prob||x.action||"").slice(0,36))+'</button>').join(" ")+'</div>';
+}
+function alreadyDeclinedLink(c,id){return (c.linkDeclined||[]).includes(id)}
+function declineLink(c,id){
+  c.linkDeclined=c.linkDeclined||[];
+  if(!c.linkDeclined.includes(id))c.linkDeclined.push(id);
+}
+function maybePromptPatientLink(c){
+  const key=patientKey(c);if(!key)return false;
+  const xs=(S.consults||[]).filter(x=>!x.closed&&x.id!==c.id&&patientKey(x)===key&&x.linkGroupId!==c.linkGroupId&&x.sourceId!==c.id&&c.sourceId!==x.id&&!alreadyDeclinedLink(c,x.id));
+  if(!xs.length)return false;
+  const other=xs[0],label=[patientRoom(c),patientLast3(c)].filter(Boolean).join(" ");
+  if(confirm("This looks like the same patient ("+label+") as "+(TYPES[other.type]||TYPES.CONSULT).l+": "+(other.prob||other.action||"").slice(0,60)+". Link these cards?")){
+    const gid=c.linkGroupId||other.linkGroupId||("pg"+uid());
+    c.linkGroupId=gid;other.linkGroupId=gid;touch(other);touch(c);return true;
+  }
+  declineLink(c,other.id);declineLink(other,c.id);touch(other);touch(c);return false;
+}
 function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
 function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderIchAid("ref","ref_ich",true);filterRefs()}
 function filterRefs(){
@@ -2428,6 +2544,9 @@ function closeDoneButton(c,compact){
   const stop=compact?"event.stopPropagation();":"";
   return '<button class="'+cls.trim()+'" onclick="'+stop+'startClose(\''+c.id+'\')">'+label+'</button>';
 }
+function linkedSourceButton(c){
+  return c.sourceId&&S.consults.some(x=>x.id===c.sourceId)?'<button onclick="openForm(\''+c.sourceId+'\')">Linked consult</button>':"";
+}
 function compactTimerOffButton(c){
   const hasStepT=(c.steps||[]).some(s=>s.dueISO);
   const hasTaskT=(c.tasks||[]).some(t=>t.dueISO);
@@ -2459,6 +2578,8 @@ function rowCard(c,dl,isTask){
     (rOver?'<span class="bg warn">review</span>':"")+
     (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
+    patientTag(c)+
+    linkedCardsHtml(c,true)+
     consentInterpBadge(c)+
     worryTag+
     '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
@@ -2536,16 +2657,18 @@ function card(c){
     return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+       patientTag(c)+linkedCardsHtml(c,true)+
        (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
      phoneHtml(c)+
      careMetaHtml(c)+
+     linkedCardsHtml(c,false)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
      stepsHtml(c)+
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
+     '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg w3">W3 needs E review</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -2553,10 +2676,11 @@ function card(c){
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
   return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
-   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg w'+c.W+'">W'+c.W+'</span>':"")+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
+   '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg w'+c.W+'">W'+c.W+'</span>':"")+patientTag(c)+linkedCardsHtml(c,true)+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
    careMetaHtml(c)+
+   linkedCardsHtml(c,false)+
    (c.action&&!stepTextOpen(c,c.action)?'<div class="next">→ <b>'+esc(c.action)+'</b> <button class="rdone" onclick="doneAction(\''+c.id+'\')">✓ done</button>'+(c.trig?'<br><span style="font-size:11.5px;color:var(--mut)">! '+esc(c.trig)+'</span>':"")+'</div>':"")+
    (c.lastDone?'<div class="lastdone" title="Tap to undo" onclick="undoLastDone(\''+c.id+'\')">✓ '+esc(c.lastDone)+' <span style="text-decoration:none">↺</span></div>':"")+
    '<div class="rowflex" style="margin:0">'+(showReview?'<span class="dl '+rdl.cls+'">review '+rdl.txt+'</span>':"")+(dl?'<span class="dl '+dl.cls+'">◷ '+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
@@ -2870,6 +2994,10 @@ document.getElementById("qdl").addEventListener("click",e=>{
 function saveForm(){
   document.getElementById("f_loc").value=joinLoc(document.getElementById("f_bed").value,document.getElementById("f_last3").value);
   ["loc","prob","state","action","trig","owner","team","attg","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
+  if(F.type==="CONSULT"){
+    F.state=mergeScoreLines(F.state,formScoreLines());
+    document.getElementById("f_state").value=F.state;
+  }
   ensureCareMeta(F);
   const stepLines=document.getElementById("f_steps").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
@@ -2899,7 +3027,11 @@ function saveForm(){
   if(F.type==="CONSULT"&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
+  const boltAuto=F.type==="CONSULT"&&traumaLowGcsCue([F.prob,F.state,F.action,F.note].filter(Boolean).join(" "))?createLinkedBoltTask(saved):null;
+  const linkedNow=maybePromptPatientLink(saved);
   closeForm();render();
+  if(boltAuto)showToast("Linked Bolt/Licox proc task added");
+  else if(linkedNow)showToast("Linked cards for "+[patientRoom(saved),patientLast3(saved)].filter(Boolean).join(" "));
   maybeORPopup(prev,saved);
   maybeConsentPopup(prev,saved);
 }
@@ -2974,12 +3106,43 @@ function detectTmpl(t){
 }
 function roundTags(t){
   const tags=[];
-  const s=SUGG.filter(x=>suggMatch(x,t)).slice(0,2).map(x=>x.n);tags.push.apply(tags,s);
-  if(/dnr|dni|cmo/i.test(t))tags.push("Code status");
-  if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin/i.test(t))tags.push("AC");
-  if(/\bjp\b|blake|drain/i.test(t))tags.push("Drain");
-  if(/nylon|staple|suture/i.test(t))tags.push("Sutures");
-  return [...new Set(tags)].slice(0,4);
+  const add=x=>{if(x&&!tags.includes(x))tags.push(x)};
+  const s=String(t||"");
+  if(isTraumaticSAHText(s))add("tSAH");else if(/\bsah\b|subarachnoid|aneurysm/i.test(s))add("SAH");
+  if(/\bsdh\b|subdural|seps/i.test(s))add("SDH");
+  if(/\bedh\b|epidural hematoma|extradural/i.test(s))add("EDH");
+  if(/\bich\b|\biph\b|intracerebral|intraparenchymal|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage|thalamic hemorrhage|cerebellar hemorrhage|pontine hemorrhage/i.test(s))add("ICH");
+  if(/\bevd\b|ventriculostomy|external ventricular/i.test(s))add("EVD");
+  if(/shunt|\bvps\b/i.test(s))add("Shunt");
+  if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
+  if(/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
+  if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
+  if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
+  if(/\bjp\b|blake|drain|hemovac/i.test(s))add("Drain");
+  if(/nylon|staple|suture|prolene/i.test(s))add("Sutures");
+  if(/dnr|dni|cmo/i.test(s))add("Code");
+  return tags.slice(0,4);
+}
+function normalizeRoundTag(t){
+  const s=String(t||"").trim();
+  if(!s)return "";
+  if(/\bIPH\b|intraparenchymal|intracerebral|hemorrhage/i.test(s))return "ICH";
+  if(/anticoag|antiplatelet|coumadin|warfarin|eliquis|xarelto|plavix|heparin/i.test(s))return "AC";
+  if(/infection|wound concern|wound/i.test(s))return "Infection";
+  if(/EVD/i.test(s))return "EVD";
+  if(/tumou?r|mass|glioma|meningioma|metast/i.test(s))return "Tumor";
+  if(/subdural|SDH/i.test(s))return "SDH";
+  if(/epidural hematoma|EDH/i.test(s))return "EDH";
+  if(/shunt/i.test(s))return "Shunt";
+  if(/spine|fracture|cord|myelopath/i.test(s))return "Spine";
+  if(/drain/i.test(s))return "Drain";
+  if(/suture|staple/i.test(s))return "Sutures";
+  return s.replace(/\s+(patient|problem|issue|concern|on board)$/i,"").slice(0,18);
+}
+function normalizeRoundTags(tags){
+  const out=[];
+  (tags||[]).map(normalizeRoundTag).filter(Boolean).forEach(t=>{if(!out.includes(t))out.push(t)});
+  return out.slice(0,4);
 }
 const ROUND_BED_RE="(?:ED|BB|NCCU|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z])\\s?-?\\d+[A-Za-z]?(?:-\\d+)?|\\d[AB]-?\\d*";
 function roundBedFromText(raw){
@@ -2998,6 +3161,15 @@ function last3FromText(raw){
   const s=String(raw||"");
   const afterBed=s.match(new RegExp("\\b(?:"+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)([A-Za-z]{3})(?![A-Za-z])","i"));
   if(afterBed)return cap3(afterBed[1]);
+  const bedMatch=s.match(new RegExp("\\b("+ROUND_BED_RE+")\\b","i"));
+  if(bedMatch){
+    const tail=s.slice((bedMatch.index||0)+bedMatch[0].length)
+      .replace(/\b(PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b/ig," ")
+      .replace(/\([A-Za-z]{1,4}\)/g," ")
+      .replace(/^[-–—:;,\s]+/," ");
+    const nm=tail.match(/\b([A-Za-z]{3})(?![A-Za-z])\b/);
+    if(nm)return cap3(nm[1]);
+  }
   const par=s.match(/\(([A-Za-z]{3})\)/);if(par)return cap3(par[1]);
   const comma=s.match(/\b([A-Z][A-Za-z'’-]{2,})\s*,\s*[A-Z][A-Za-z'’-]{1,}/);if(comma)return cap3(comma[1]);
   const label=s.match(/\b(?:patient|pt)\s+([A-Z][A-Za-z'’-]{2,})\b/i);if(label)return cap3(label[1]);
@@ -3046,12 +3218,12 @@ function parseRounds(){
       if(b.main&&!ex.raw.includes(b.main))ex.raw=(ex.raw+" · "+b.main).trim();
       ex.steps=ex.steps||[];
       steps.forEach(s=>{if(!ex.steps.some(x=>x.t===s.t))ex.steps.push(s)});
-      ex.tags=[...new Set((ex.tags||[]).concat(roundTags(b.main)))].slice(0,4);
+      ex.tags=normalizeRoundTags((ex.tags||[]).concat(roundTags(b.main)));
       ex.team=ex.team||teamFromText(b.main);ex.attg=ex.attg||attgFromText(b.main);
       ex.updatedAt=Date.now();merged++;
       return;
     }
-    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:roundTags(b.main),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:b.main,label:label,tags:normalizeRoundTags(roundTags(b.main)),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()});
   });
   document.getElementById("dropbox").value="";
   renderRounds();save();
@@ -3101,6 +3273,13 @@ function roundTeam(r){return cleanTeam(r.team)||teamFromText([r.raw,r.label].fil
 function roundAttg(r){return cleanAttg(r.attg)||attgFromText([r.team,r.raw,r.label].filter(Boolean).join(" "))}
 function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundAttgKey(r){return [roundAttg(r)||"ZZZ",roundTeam(r)||"ZZZ",String(r.label||"")].join(" ")}
+function roundRoom(r){return roundBedFromText(r.label)||roundBedFromText(r.raw)||String(r.label||"").split(/\s+/)[0]||""}
+function roundPatient3(r){
+  const room=roundRoom(r);
+  const fromLabel=String(r.label||"").replace(room,"").trim();
+  return last3FromText(r.raw)||last3FromText(r.label)||(fromLabel.match(/[A-Za-z]{3}/)||[""])[0]||"";
+}
+function roundIdentityText(r){return [roundRoom(r),roundTeam(r),roundPatient3(r)].filter(Boolean).join(" ")}
 function teamBadgeClass(t){
   const x=String(t||"").toUpperCase();
   if(x==="PINK")return "team-pink";
@@ -3113,6 +3292,13 @@ function roundCareBadges(r){
   return (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
+function roundIdentityBadges(r){
+  const room=roundRoom(r),team=roundTeam(r),pt=roundPatient3(r),attg=roundAttg(r);
+  return (room?'<span class="bg t">'+esc(room)+'</span>':"")+
+    (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
+    (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
+    (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
+}
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
@@ -3121,9 +3307,11 @@ function roundRowCard(r){
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     '<span class="bg t">▤</span>'+
     (r.worry?'<span class="bg warn">!</span>':"")+
-    roundCareBadges(r)+
+    (roundRoom(r)?'<span class="rwho">'+esc(roundRoom(r))+'</span>':"")+
+    (roundTeam(r)?'<span class="bg '+teamBadgeClass(roundTeam(r))+'">'+esc(roundTeam(r))+'</span>':"")+
+    (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
+    (roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"")+
     tags+
-    '<span class="rwho">'+esc(r.label)+'</span>'+
     '<span class="rprob">'+esc((r.raw||"").replace(String(r.label||""),"").trim()||SO_TMPLS[r.soT].name)+'</span>'+
     (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();togSeen(\''+r.id+'\')">'+(r.seen?'↩':'✓ seen')+'</button>')+
     (dl?'<span class="rdl dl '+dl.cls+'">◷ '+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
@@ -3156,7 +3344,7 @@ function renderRounds(){
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
-     '<div class="badges"><span class="bg t">▤ '+esc(r.label)+'</span><span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+roundCareBadges(r)+worry+tags+rColBtn(r)+'</div>'+
+     '<div class="badges">'+roundIdentityBadges(r)+'<span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(r.raw)+'</div>'+
      rStepsHtml(r)+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
@@ -3180,14 +3368,14 @@ function woundRoundCandidate(r){
   return /s\/p|post-?op|crani|fusion|lami|tlif|acdf|\bevd\b|shunt|drain|incision|wound|suture|staple|pod\s?\d|burr|prolene|nylon/i.test(txt);
 }
 function renderWoundRounds(list){
-  const items=(list||[]).filter(woundRoundCandidate);
+  const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
   return '<details class="closedsec" open><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+
     items.map(r=>woundRow(r,false)).join("")+
     '</details>';
 }
 function renderFormerWounds(){
-  const items=S.formerWounds||[];
+  const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
   return '<details class="closedsec"><summary>Former Patients: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
     items.map(r=>woundRow(r,true)).join("")+
@@ -3197,7 +3385,7 @@ function woundRow(r,former){
   const open=!!r.woundOpen;
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   return '<div class="calrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
-    '<span class="bg mod">'+(former?"Former":"Wound")+'</span><span class="cwho">'+esc(r.label||"")+'</span>'+
+    '<span class="bg mod">'+(former?"Former":"Wound")+'</span><span class="cwho">'+esc(roundIdentityText(r)||r.label||"")+'</span>'+
     '<span class="cprob">'+esc((r.raw||"").slice(0,110))+'</span>'+
     (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
     (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
@@ -3211,12 +3399,23 @@ function toggleWoundOpen(id,former){
 function dateInputHtml(id,kind,val){
   return '<input type="date" id="'+kind+'_'+id+'" value="'+esc(val||"")+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">';
 }
+function woundComplete(r){
+  const w=r.woundChecks||{};
+  return !!(w.seen&&w.thread&&w.note);
+}
+function woundNextAt(r){
+  if(!r.woundNextDate)return null;
+  return Date.parse(r.woundNextDate+"T04:00:00");
+}
+function woundHiddenUntilNext(r){
+  const t=woundNextAt(r);
+  return woundComplete(r)&&t&&Date.now()<t;
+}
 function woundDateControls(r,former){
   return '<span class="woundchecks">'+
-    '<label><span>checked</span>'+dateInputHtml(r.id,"wd",todayDateStr())+'</label>'+
     '<button class="rdone" onclick="addWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Log check</button>'+
-    '<label><span>next</span>'+dateInputHtml(r.id,"wn",r.woundNextDate||"")+'</label>'+
-    '<button class="rdone" onclick="snoozeWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Snooze</button>'+
+    dateInputHtml(r.id,"wn",r.woundNextDate||"")+
+    '<button class="rdone" onclick="snoozeWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Next check</button>'+
     '</span>';
 }
 function woundLogHtml(r,former){
@@ -3236,25 +3435,23 @@ function woundCheckBoxes(r,former){
 }
 function toggleWoundCheck(id,k,former,on){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;r.updatedAt=Date.now();save();
+  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;r.updatedAt=Date.now();renderRounds();save();
 }
 function addWoundCheck(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  const el=document.getElementById("wd_"+id),date=el?el.value:"";
-  if(!date){showToast("Pick a wound-check date first");return}
-  const t=blankC();t.type="CHART";t.loc=r.label;t.prob="Wound / suture / staple check";t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=date+"T06:00:00";t.updatedAt=Date.now();
+  const date=todayDateStr();
   r.woundChecks=r.woundChecks||{};r.woundChecks.seen=true;r.woundLog=r.woundLog||[];
   if(!r.woundLog.some(x=>x.date===date))r.woundLog.push({date:date,ts:Date.now()});
   r.updatedAt=Date.now();
-  S.consults.push(t);render();renderRounds();save();
+  renderRounds();save();
   const d=new Date(date+"T12:00:00");showToast("Wound check added for "+(d.getMonth()+1)+"/"+d.getDate());
 }
 function snoozeWoundCheck(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("wn_"+id),date=el?el.value:"";
   if(!date){showToast("Pick the next wound-check date");return}
-  r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.woundChecks.seen=false;r.updatedAt=Date.now();
-  renderRounds();save();showToast("Wound check snoozed to "+date);
+  r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  renderRounds();save();showToast("Next wound check "+date+" at 4 AM");
 }
 function removeWoundLog(id,date,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -3270,7 +3467,7 @@ function roundEditSave(id){
   const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
   if(lab)r.label=lab.value.trim()||r.label;
   if(raw){r.raw=raw.value.trim()||r.raw;r.team=teamFromText(r.raw);r.attg=attgFromText(r.raw);r.soT=detectTmpl(r.raw)}
-  if(tg)r.tags=tg.value.split(",").map(t=>t.trim()).filter(Boolean);
+  if(tg)r.tags=normalizeRoundTags(tg.value.split(",").map(t=>t.trim()).filter(Boolean));
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
 }
 function findAny(id){return (S.rounds||[]).find(x=>x.id===id)||(S.consults||[]).find(x=>x.id===id)}
@@ -3472,7 +3669,7 @@ function soToRounds(){
   let r=(c.roundId&&S.rounds.find(x=>x.id===c.roundId))||
         S.rounds.find(x=>String(x.label||"").toUpperCase()===String(c.loc||"").toUpperCase()&&c.loc);
   if(!r){
-    r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:roundTags(c.prob||""),team:c.team||teamFromText(c.prob||""),attg:c.attg||attgFromText(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,collapsed:true,created:Date.now(),updatedAt:Date.now()};
+    r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:normalizeRoundTags(roundTags(c.prob||"")),team:c.team||teamFromText(c.prob||""),attg:c.attg||attgFromText(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,collapsed:true,created:Date.now(),updatedAt:Date.now()};
     S.rounds.push(r);c.roundId=r.id;
   }
   r.team=r.team||c.team||teamFromText(c.prob||"");
@@ -3672,7 +3869,7 @@ function ftcParse(){
   const o=src.trim()?tcExtract(src):{};
   document.getElementById("ftc_title").value=o.title||prob||"";
   document.getElementById("ftc_hpi").value=prob||o.hpi||"";
-  document.getElementById("ftc_exam").value=o.exam||document.getElementById("f_state").value||tcSuggestedExam(src);
+  document.getElementById("ftc_exam").value=mergeScoreLines(o.exam||document.getElementById("f_state").value||tcSuggestedExam(src),[completedGcsLine("form")]);
   document.getElementById("ftc_img").value=o.img||"[modality w/ finding vs prior]";
   document.getElementById("ftc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(src));
   const plan=[document.getElementById("f_action").value].filter(Boolean)
@@ -3687,9 +3884,10 @@ function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());rend
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
-  const exam=stripExamSmartLists(g("exam")).split("\n").map(tidy).filter(Boolean).join("\n");
+  const exam=mergeScoreLines(stripExamSmartLists(g("exam")), [completedGcsLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"- "+l).join("\n");
-  return [tidy(g("title")),"",tidy(g("hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("img"))]
+  const hpi=mergeScoreLines(g("hpi"),[completedIchLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
+  return [tidy(g("title")),"",hpi,"","Exam:\n"+exam,"","Imaging: "+tidy(g("img"))]
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
@@ -3822,10 +4020,10 @@ function capRoundsAdd(text,bed){
   const ex=findRoundLike(label,raw);
   if(ex){
     todoLinesFromPlan(text).forEach(t=>{ex.steps=ex.steps||[];if(!ex.steps.some(s=>s.t.toLowerCase()===t.toLowerCase()))ex.steps.push({t:t,done:false})});
-    ex.team=ex.team||teamFromText(raw);ex.attg=ex.attg||attgFromText(raw);
+    ex.team=ex.team||teamFromText(raw);ex.attg=ex.attg||attgFromText(raw);ex.tags=normalizeRoundTags((ex.tags||[]).concat(roundTags(raw)));
     ex.updatedAt=Date.now();
   }else{
-    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:roundTags(raw),team:teamFromText(raw),attg:attgFromText(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()});
+    S.rounds.push({id:"r"+uid(),raw:raw,label:label||roundLabel(text),tags:normalizeRoundTags(roundTags(raw)),team:teamFromText(raw),attg:attgFromText(raw),soT:detectTmpl(raw),so:{},seen:false,plan:"",steps:todoLinesFromPlan(text).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()});
   }
   document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
   renderRounds();save();showToast("Added to rounds");
