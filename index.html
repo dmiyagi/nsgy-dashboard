@@ -2953,6 +2953,14 @@ let suggT=null;
   el.addEventListener("change",ftcAutoBuild);
   el.addEventListener("blur",ftcAutoBuild);
 });
+{
+  const el=document.getElementById("ftc_out");
+  if(el){
+    el.addEventListener("input",()=>{ftcOutDirty=true});
+    el.addEventListener("change",ftcApplyReadyToFields);
+    el.addEventListener("blur",ftcApplyReadyToFields);
+  }
+}
 function closeForm(){document.getElementById("ov").classList.remove("show");F=null}
 function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
 function todayDateStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
@@ -3884,6 +3892,7 @@ function tcUseLabs(){
 }
 // ---- text consult embedded in the consult form ----
 const FTC=["title","hpi","exam","img","labs","plan"];
+let ftcOutDirty=false;
 function ftcAutoHpi(){
   const h=document.getElementById("ftc_hpi"),p=document.getElementById("f_prob");
   if(h&&p&&!h.value.trim()&&p.value.trim())h.value=p.value.trim();
@@ -3917,11 +3926,36 @@ function ftcFormat(){
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .concat(["","Plan:",plan]).join("\n");
 }
+function ftcReadySection(lines,idx,re){
+  if(idx<0)return "";
+  const heads=lines.map((l,i)=>({i:i,h:/^(Exam|Imaging|Labs\/Vitals|Labs|Vitals|Plan):/i.test(l.trim())})).filter(x=>x.h&&x.i>idx).map(x=>x.i);
+  const end=heads.length?heads[0]:lines.length;
+  const chunk=lines.slice(idx,end);
+  chunk[0]=chunk[0].replace(re,"").trim();
+  return chunk.map(s=>s.trim()).filter(Boolean).join("\n");
+}
+function ftcApplyReadyToFields(){
+  const out=document.getElementById("ftc_out");if(!out||!ftcOutDirty||!out.value.trim())return false;
+  const lines=out.value.replace(/\r/g,"").split("\n");
+  const find=re=>lines.findIndex(l=>re.test(l.trim()));
+  const examI=find(/^Exam:/i),imgI=find(/^Imaging:/i),labsI=find(/^(Labs\/Vitals|Labs|Vitals):/i),planI=find(/^Plan:/i);
+  const firstHead=[examI,imgI,labsI,planI].filter(i=>i>=0).sort((a,b)=>a-b)[0];
+  const intro=lines.slice(0,firstHead===undefined?lines.length:firstHead).map(s=>s.trim()).filter(Boolean);
+  const set=(id,val)=>{const el=document.getElementById("ftc_"+id);if(el&&val)el.value=val};
+  if(intro[0])set("title",intro[0]);
+  if(intro.length>1)set("hpi",intro.slice(1).join(" "));
+  set("exam",ftcReadySection(lines,examI,/^Exam:\s*/i));
+  set("img",ftcReadySection(lines,imgI,/^Imaging:\s*/i).replace(/\n+/g," "));
+  set("labs",ftcReadySection(lines,labsI,/^(Labs\/Vitals|Labs|Vitals):\s*/i).replace(/\n+/g,", "));
+  set("plan",ftcReadySection(lines,planI,/^Plan:\s*/i).split("\n").map(s=>s.replace(/^\s*[-–—•]\s*/,"").trim()).filter(Boolean).join("\n"));
+  ftcOutDirty=false;renderFTCFlags();if(F)F.tc=ftcSnapshot();
+  return true;
+}
 function ftcAutoBuild(){
   const out=document.getElementById("ftc_out");if(!out)return;
-  renderFTCFlags();out.value=ftcFormat();if(F)F.tc=ftcSnapshot();
+  renderFTCFlags();out.value=ftcFormat();ftcOutDirty=false;if(F)F.tc=ftcSnapshot();
 }
-function ftcBuild(){ftcAutoBuild();showToast("Text consult built")}
+function ftcBuild(){ftcApplyReadyToFields();ftcAutoBuild();showToast("Text consult built")}
 function ftcUseExam(){
   const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value]).join(" ");
   document.getElementById("ftc_exam").value=tcSuggestedExam(src);
@@ -3938,7 +3972,7 @@ function ftcSnapshot(){const o={};FTC.forEach(k=>o[k]=document.getElementById("f
 function ftcLoad(c){
   const tc=(c&&c.tc)||{};
   FTC.forEach(k=>document.getElementById("ftc_"+k).value=tc[k]||"");
-  document.getElementById("ftc_out").value=tc.out||"";
+  document.getElementById("ftc_out").value=tc.out||"";ftcOutDirty=false;
 }
 function tcCopy(){
   const el=document.getElementById("tc_out");
