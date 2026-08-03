@@ -282,6 +282,13 @@ button.rdone.finaldone{background:#123527}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--ok);width:14px;height:14px}
 .woundchecks input:checked+span{color:var(--ok);text-decoration:line-through}
+.bg.team-pink{background:#3b1732;color:#ff8ad8;border:1px solid #ff8ad8}
+.bg.team-blue{background:#12304c;color:#6db7ff;border:1px solid #6db7ff}
+.bg.team-purple{background:#2b1d45;color:#b48bff;border:1px solid #b48bff}
+.wounddetail{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 9px 9px;margin:-5px 0 7px;padding:7px 10px}
+.woundlog{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.woundlog button{font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
+.woundlog button:hover{border-color:var(--e3);color:var(--e3)}
 .searchhit{outline:1px solid var(--acc)}
 /* proc kit suggestion */
 .prockit{background:var(--card2);border:1px solid var(--purp);border-left:4px solid var(--purp);border-radius:9px;padding:8px 10px;margin-top:7px}
@@ -1753,9 +1760,9 @@ function migrate(d){
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
-  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[]});
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date});
   d.formerWounds=d.formerWounds||[];
-  d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[]});
+  d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date});
   return d;
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
@@ -3094,9 +3101,17 @@ function roundTeam(r){return cleanTeam(r.team)||teamFromText([r.raw,r.label].fil
 function roundAttg(r){return cleanAttg(r.attg)||attgFromText([r.team,r.raw,r.label].filter(Boolean).join(" "))}
 function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundAttgKey(r){return [roundAttg(r)||"ZZZ",roundTeam(r)||"ZZZ",String(r.label||"")].join(" ")}
+function teamBadgeClass(t){
+  const x=String(t||"").toUpperCase();
+  if(x==="PINK")return "team-pink";
+  if(x==="BLUE")return "team-blue";
+  if(x==="PURPLE")return "team-purple";
+  return "mod";
+}
 function roundCareBadges(r){
-  return (roundTeam(r)?'<span class="bg mod">'+esc(roundTeam(r))+'</span>':"")+
-    (roundAttg(r)?'<span class="bg mod">Attg '+esc(roundAttg(r))+'</span>':"");
+  const team=roundTeam(r),attg=roundAttg(r);
+  return (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
+    (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
@@ -3168,20 +3183,30 @@ function renderWoundRounds(list){
   const items=(list||[]).filter(woundRoundCandidate);
   if(!items.length)return "";
   return '<details class="closedsec" open><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+
-    items.map(r=>'<div class="calrow"><span class="bg mod">Wound</span><span class="cwho">'+esc(r.label||"")+'</span><span class="cprob">'+esc((r.raw||"").slice(0,110))+'</span>'+
-      woundCheckBoxes(r,false)+
-      woundDateControls(r,false)+'</div>'+woundLogHtml(r)).join("")+
+    items.map(r=>woundRow(r,false)).join("")+
     '</details>';
 }
 function renderFormerWounds(){
   const items=S.formerWounds||[];
   if(!items.length)return "";
   return '<details class="closedsec"><summary>Former Patients: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
-    items.map(r=>'<div class="calrow"><span class="bg mod">Former</span><span class="cwho">'+esc(r.label||"")+'</span><span class="cprob">'+esc((r.raw||"").slice(0,110))+'</span>'+
-      woundCheckBoxes(r,true)+
-      woundDateControls(r,true)+
-      '<button class="rdone" onclick="removeFormerWound(\''+r.id+'\')">Remove</button></div>'+woundLogHtml(r)).join("")+
+    items.map(r=>woundRow(r,true)).join("")+
     '</details>';
+}
+function woundRow(r,former){
+  const open=!!r.woundOpen;
+  const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
+  return '<div class="calrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
+    '<span class="bg mod">'+(former?"Former":"Wound")+'</span><span class="cwho">'+esc(r.label||"")+'</span>'+
+    '<span class="cprob">'+esc((r.raw||"").slice(0,110))+'</span>'+
+    (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
+    (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
+    '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
+    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former)+(former?'<button class="rdone" onclick="removeFormerWound(\''+r.id+'\')">Remove</button>':"")+woundLogHtml(r,former)+'</div>':"");
+}
+function toggleWoundOpen(id,former){
+  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+  r.woundOpen=!r.woundOpen;r.updatedAt=Date.now();renderRounds();save();
 }
 function dateInputHtml(id,kind,val){
   return '<input type="date" id="'+kind+'_'+id+'" value="'+esc(val||"")+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">';
@@ -3194,17 +3219,18 @@ function woundDateControls(r,former){
     '<button class="rdone" onclick="snoozeWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Snooze</button>'+
     '</span>';
 }
-function woundLogHtml(r){
+function woundLogHtml(r,former){
   const log=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,6);
   const parts=[];
   if(r.woundNextDate)parts.push("next "+r.woundNextDate);
-  if(log.length)parts.push("checked "+log.map(x=>x.date).join(", "));
-  return parts.length?'<div class="caremeta" style="margin:-2px 10px 7px 10px">'+esc(parts.join(" · "))+'</div>':"";
+  const summary=parts.length?'<div class="caremeta">'+esc(parts.join(" · "))+'</div>':"";
+  const chips=log.length?'<div class="woundlog">'+log.map(x=>'<button onclick="removeWoundLog(\''+r.id+'\',\''+String(x.date).replace(/[^0-9-]/g,"")+'\','+(former?'true':'false')+')">× '+esc(x.date)+'</button>').join("")+'</div>':"";
+  return summary+chips;
 }
 function woundCheckBoxes(r,former){
   const w=r.woundChecks||{};
   return '<span class="woundchecks">'+
-    [["date","date check"],["thread","staffing thread"],["note","note"]].map(([k,l])=>
+    [["seen","seen"],["thread","staffing thread"],["note","note"]].map(([k,l])=>
       '<label><input type="checkbox" '+(w[k]?"checked":"")+' onchange="toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+',this.checked)"><span>'+l+'</span></label>').join("")+
     '</span>';
 }
@@ -3217,7 +3243,7 @@ function addWoundCheck(id,former){
   const el=document.getElementById("wd_"+id),date=el?el.value:"";
   if(!date){showToast("Pick a wound-check date first");return}
   const t=blankC();t.type="CHART";t.loc=r.label;t.prob="Wound / suture / staple check";t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=date+"T06:00:00";t.updatedAt=Date.now();
-  r.woundChecks=r.woundChecks||{};r.woundChecks.date=true;r.woundLog=r.woundLog||[];
+  r.woundChecks=r.woundChecks||{};r.woundChecks.seen=true;r.woundLog=r.woundLog||[];
   if(!r.woundLog.some(x=>x.date===date))r.woundLog.push({date:date,ts:Date.now()});
   r.updatedAt=Date.now();
   S.consults.push(t);render();renderRounds();save();
@@ -3227,8 +3253,14 @@ function snoozeWoundCheck(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("wn_"+id),date=el?el.value:"";
   if(!date){showToast("Pick the next wound-check date");return}
-  r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.woundChecks.date=false;r.updatedAt=Date.now();
+  r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.woundChecks.seen=false;r.updatedAt=Date.now();
   renderRounds();save();showToast("Wound check snoozed to "+date);
+}
+function removeWoundLog(id,date,former){
+  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+  r.woundLog=(r.woundLog||[]).filter(x=>x.date!==date);
+  if(!(r.woundLog||[]).length&&r.woundChecks)r.woundChecks.seen=false;
+  r.updatedAt=Date.now();renderRounds();save();showToast("Removed logged check "+date);
 }
 function removeFormerWound(id){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);renderRounds();save()}
 function roundEdit(id){REDIT.add(id);renderRounds()}
