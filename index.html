@@ -429,7 +429,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.1 · GitHub modified 2026-08-08 14:28 EDT</div>
+    <div class="buildmeta">v0.0.1 · 2026-08-08 14:28 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1276,18 +1276,18 @@ function pituitaryText(t){const s=t||"";return /\b(?:pituitary|sellar|suprasella
 function ichTrialText(t){return /\b(?:NICO|REACH|lobar hemorrhage|basal ganglia hemorrhage|spontaneous ICH|ICH volume|NIHSS|mRS|trial criteria)\b/i.test(t||"")}
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
 function infectionConcernText(t){return /\b(?:r\/o|rule out|concern for|c\/f|possible|suspected)?\s*(?:SSI|surgical site infection|infection|infected|wound infection|wound dehisc|wound drainage|purulen|abscess|osteomyelitis|discitis|empyema|ventriculitis|meningitis|shunt infection|hardware infection|fever|febrile)\b/i.test(t||"")}
-function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet dislocation|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar)\b/i.test(t||"")}
-function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|translation|subluxation|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
+function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet(?:\s+(?:fx|fracture|dislocation|disloc|sublux))?|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar|fx)\b/i.test(t||"")}
+function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|fx.dislocation|fx.disloc|translation|sublux(?:ation)?|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
 function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|areflexia|bulbocavernosus|spinal shock|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|hypoventilation|diaphragmatic|respiratory arrest|bowel control|bladder control|high cervical|C[3-5].{0,20}(?:cord|SCI|injury))\b/i.test(t||"")}
 function collarClearBlockText(t){return /\b(?:midline tenderness|neck pain|focal neurologic|neuro deficit|altered|obtunded|intoxicated|distracting injur|unreliable exam|persistent pain|collar not cleared|cannot clear|can't clear)\b/i.test(t||"")}
 function spineRadiographicInstabilityText(t){const s=t||"";return spineTraumaText(s)&&(/\b(?:>|greater than|over)\s*50\s*%?\s*(?:vertebral body |VB )?height loss\b/i.test(s)||/\b(?:vertebral body |VB )?height loss\s*(?:>|greater than|over)?\s*50\s*%/i.test(s)||/\bkyphosis\b.{0,20}(?:1[5-9]|[2-9]\d)\s*(?:deg|degree|°)/i.test(s)||/\b(?:two|three)[- ]column\b|\b[23][ -]?column\b/i.test(s))}
-function spineStableUpperText(t){const s=t||"";return spineTraumaText(s)&&/\b(?:type\s*(?:I|1|III|3)\s+(?:odontoid|dens)|(?:minimally displaced|stable)\s+type\s*(?:I|1)\s+hangman|isolated\s+(?:spinous process|clay[- ]shoveler|transverse process)|clay[- ]shoveler|occipital condyle.{0,30}type\s*(?:I|1|II|2)|C1\s+(?:arch|lateral mass).{0,35}(?:intact TAL|TAL intact|nondisplaced))\b/i.test(s)&&!/\b(?:displaced|TAL disrupted|TAL rupture|transverse atlantal ligament disrupted|AOD|subluxation|translation|neuro deficit|cord injury)\b/i.test(s)}
-function aoHighRiskText(t){const s=t||"";return spineRadiographicInstabilityText(s)||/\bAO\s*Spine\b.{0,80}\b(?:B[1-3]|type\s*C|F3|F4|BL|N3|N4)\b/i.test(s)||(/\b(?:B[1-3]|F3|F4)\b.{0,35}\b(?:spine|fracture|facet|tension band|floating lateral mass|perched|jumped|dislocated|subluxation)/i.test(s))||(/\b(?:type\s*C|AO\s*C|translation|fracture[- ]dislocation|perched facet|jumped facet|bilateral facet|atlanto-?occipital|AOD)\b/i.test(s)&&spineTraumaText(s))}
-function aoPotentialRiskText(t){const s=t||"";return /\bAO\s*Spine\b.{0,80}\b(?:A3|A4|F2|N1|N2|NX|M1|M2|M3|M4)\b/i.test(s)||(/\b(?:A3|A4|F2)\b.{0,35}\b(?:spine|fracture|facet|burst|canal|PLC|ligament)/i.test(s))||(/\b(?:incomplete burst|complete burst|burst fracture|facet fracture|posterior ligamentous complex|PLC|critical disc|ankylosing|DISH|ankylosing spondylitis)\b/i.test(s)&&spineTraumaText(s))}
-function spineCompressionStableText(t){const s=t||"";return (spineStableUpperText(s)||/\bAO\s*Spine\b.{0,80}\b(?:A0|A1|A2|F1|N0|M0)\b/i.test(s)||/\b(?:wedge compression|compression fracture|minor nonstructural|nondisplaced facet|spinous process fracture|clay[- ]shoveler)\b/i.test(s))&&spineTraumaText(s)&&!aoHighRiskText(s)&&!aoPotentialRiskText(s)}
+function spineStableUpperText(t){const s=t||"";return spineTraumaText(s)&&/\b(?:type\s*(?:I|1|III|3)\s+(?:odontoid|dens)|(?:minimally displaced|stable)\s+type\s*(?:I|1)\s+hangman|isolated\s+(?:spinous process|SP|clay[- ]shoveler|transverse process|TP)(?:\s+(?:fx|fracture))?|clay[- ]shoveler|occipital condyle.{0,30}type\s*(?:I|1|II|2)|C1\s+(?:arch|lateral mass).{0,35}(?:intact TAL|TAL intact|nondisplaced))\b/i.test(s)&&!/\b(?:displaced|TAL disrupted|TAL rupture|transverse atlantal ligament disrupted|AOD|sublux(?:ation)?|translation|neuro deficit|cord injury)\b/i.test(s)}
+function aoHighRiskText(t){const s=t||"";return spineRadiographicInstabilityText(s)||/\bAO\s*Spine\b.{0,80}\b(?:B[1-3]|type\s*C|F3|F4|BL|N3|N4)\b/i.test(s)||(/\b(?:B[1-3]|F3|F4)\b.{0,35}\b(?:spine|fracture|fx|facet|tension band|floating lateral mass|perched|jumped|dislocated|disloc|sublux(?:ation)?)/i.test(s))||(/\b(?:type\s*C|AO\s*C|translation|fracture[- ]dislocation|fx[- ]disloc(?:ation)?|perched facet|jumped facet|bilateral facet|atlanto-?occipital|AOD)\b/i.test(s)&&spineTraumaText(s))}
+function aoPotentialRiskText(t){const s=t||"";return /\bAO\s*Spine\b.{0,80}\b(?:A3|A4|F2|N1|N2|NX|M1|M2|M3|M4)\b/i.test(s)||(/\b(?:A3|A4|F2)\b.{0,35}\b(?:spine|fracture|fx|facet|burst|canal|PLC|ligament)/i.test(s))||(/\b(?:incomplete burst|complete burst|burst (?:fracture|fx)|facet (?:fracture|fx)|posterior ligamentous complex|PLC|critical disc|ankylosing|DISH|ankylosing spondylitis)\b/i.test(s)&&spineTraumaText(s))}
+function spineCompressionStableText(t){const s=t||"";return (spineStableUpperText(s)||/\bAO\s*Spine\b.{0,80}\b(?:A0|A1|A2|F1|N0|M0)\b/i.test(s)||/\b(?:wedge compression|compression (?:fracture|fx)|minor nonstructural|nondisplaced facet|spinous process (?:fracture|fx)|SP (?:fracture|fx)|clay[- ]shoveler)\b/i.test(s))&&spineTraumaText(s)&&!aoHighRiskText(s)&&!aoPotentialRiskText(s)}
 function spineBCVIText(t){const s=t||"";return spineTraumaText(s)&&/\b(?:foramen transversarium|transverse foramen|vertebral artery|BCVI|Horner|cervical bruit|expanding neck hematoma|Le Fort ?(?:II|III|2|3)|carotid canal|basilar skull|hanging|strangulation|M4|DAI.{0,20}GCS\s*(?:<|less than)?\s*6)\b/i.test(s)}
 function spineTPFxText(t){const s=t||"";return /\b(?:TP|transverse process)\s*(?:fx|fracture)s?\b|\b(?:fx|fracture)s?\s+(?:of\s+)?(?:the\s+)?(?:TP|transverse process)\b/i.test(s)}
-function spineOdontoidHangmanText(t){const s=t||"";return spineTraumaText(s)&&!spineStableUpperText(s)&&/\b(?:odontoid|dens|type\s*ii\s*(?:dens|odontoid)|hangman|pars fracture|C2 fracture|Jefferson|C1 ring|TAL|transverse atlantal ligament)\b/i.test(s)}
+function spineOdontoidHangmanText(t){const s=t||"";return spineTraumaText(s)&&!spineStableUpperText(s)&&/\b(?:odontoid|dens|type\s*ii\s*(?:dens|odontoid)|hangman|pars (?:fracture|fx)|C2 (?:fracture|fx)|Jefferson|C1 ring|TAL|transverse atlantal ligament)\b/i.test(s)}
 // ---------- problem playbook (keyword-matched grading suggestions) ----------
 const SUGG=[
  {re:/cauda|\bces\b|saddle|urinary retention/i,n:"Cauda equina syndrome",s:{E:3,O:2,W:2,mods:["NΔ"]},
@@ -2105,7 +2105,7 @@ let curSugg=[],curAlerts=[];
 function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
 function knownPathAbbrev(t){
   const s=t||"";
-  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|dAVF|MMD|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM|NICO|REACH)\b/i.test(s)||(/\b(?:AO Spine|spine|cervical|thoracic|lumbar|fracture|facet)\b/i.test(s)&&/\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL|N[0-4X]|M[1-4])\b/i.test(s));
+  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|dAVF|MMD|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM|NICO|REACH)\b/i.test(s)||(/\b(?:AO Spine|spine|cervical|thoracic|lumbar|fracture|fx|facet|dens|odontoid|hangman|jefferson|TAL|PLC)\b/i.test(s)&&/\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL|N[0-4X]|M[1-4])\b/i.test(s))||/\b(?:facet|dens|odontoid|hangman|jefferson|TP|SP)\s*(?:fx|fracture)\b/i.test(s);
 }
 function upgradeOf(){
   const up={};
@@ -3470,8 +3470,8 @@ function roundTags(t){
   if(/shunt|\bvps\b/i.test(s))add("Shunt");
   if(pituitaryText(s))add("Pituitary");
   if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
-  if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
-  if(/\bAO Spine\b|\b(?:spine|cervical|thoracic|lumbar|fracture|facet)\b.{0,35}\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL)\b/i.test(s))add("AO");
+  if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic|\bfx\b|fracture|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(s))add("Spine");
+  if(/\bAO Spine\b|\b(?:spine|cervical|thoracic|lumbar|fracture|fx|facet|dens|odontoid|hangman|jefferson|TAL|PLC)\b.{0,35}\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL)\b|\b(?:facet|dens|odontoid|TP|SP)\s*(?:fx|fracture)\b/i.test(s))add("AO");
   if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
   if(vascularMalformationText(s)||/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
@@ -3502,7 +3502,7 @@ function normalizeRoundTag(t){
   if(/subdural|SDH/i.test(s))return "SDH";
   if(/epidural hematoma|EDH/i.test(s))return "EDH";
   if(/shunt/i.test(s))return "Shunt";
-  if(/spine|fracture|cord|myelopath/i.test(s))return "Spine";
+  if(/spine|fracture|\bfx\b|facet|dens|odontoid|cord|myelopath/i.test(s))return "Spine";
   if(/drain/i.test(s))return "Drain";
   if(/suture|staple/i.test(s))return "Sutures";
   return s.replace(/\s+(patient|problem|issue|concern|on board)$/i,"").slice(0,18);
@@ -4181,7 +4181,7 @@ function stripExamSmartLists(s){
     .replace(/\{[^{}:]+:\d+::((?:"[^"]*"\s*,?\s*)+)\}/g,(_,opts)=>{const m=opts.match(/"([^"]*)"/);return m?m[1]:""})
     .replace(/\{[^{}]*:\d+\}/g,"***");
 }
-function tcIsSpineText(t){return !carotidText(t)&&/spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
+function tcIsSpineText(t){return !carotidText(t)&&/spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
 function tcIsBabyText(t){return /\b(?:baby|infant|neonate|newborn|nicu|wi|w&i|pedi|peds|months?\s*old|weeks?\s*old|days?\s*old|fontanelle|head circumference|sutures?)\b/i.test(t||"")}
 function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:TC_CNS_EXAM)}
 function tcRelevantLabs(t){
@@ -4251,7 +4251,7 @@ function tcExtract(text){
   const plan=["Review imaging + priors"];
   if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("Repeat CTH in 6h or sooner for exam change");plan.push("SBP <140, Na eunatremia")}
   if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
-  if(/fusion|lami|stenosis|radiculopath|spine|fracture/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
+  if(/fusion|lami|stenosis|radiculopath|spine|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
   if(/fever|infect|abscess|osteo|wound/i.test(text))plan.push("ESR/CRP, blood cx; MRI w/ contrast if deep infection concern");
   if(/shunt|\bvps\b/i.test(text))plan.push("Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
   if(/seizure|postictal/i.test(text))plan.push("Keppra; ASM levels");
