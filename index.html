@@ -93,7 +93,7 @@ section.view.active{display:block}
 @keyframes pulse{50%{opacity:.45}}
 .wf{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 2px}
 .wf button{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:14px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-family:var(--font)}
-.wf button.milestone{border-color:var(--e2);color:var(--e2)}
+.wf button.milestone{border-color:#eef4ff;color:#eef4ff}
 .wf button.milestone.on{background:#123527;border-color:var(--ok);color:var(--ok)}
 .wf button.routine{border-color:var(--line);color:var(--mut)}
 .wf button.routine.on{background:#123527;border-color:var(--ok);color:var(--ok)}
@@ -334,6 +334,9 @@ details.moredet[open]>summary{margin-bottom:8px}
 .gcsout{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--mut)}
 .gcsout b{color:var(--ok);font-size:13px}
 .gcsout button{font-size:11px;font-weight:800;padding:4px 9px;border-radius:7px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer;font-family:var(--font)}
+.aohint{font-size:11.5px;color:var(--mut);line-height:1.4;margin-top:7px}
+.aochipgrp{margin-top:8px}
+.aochipgrp .glabel{font-size:11.5px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
 @media(max-width:520px){.selrow{gap:7px;grid-template-columns:repeat(4,minmax(56px,1fr))}.selrow button{width:68px;height:68px}.selrow button .t{font-size:16px}.selrow button .d{font-size:9px;margin-top:5px}.selrow.showall button{width:82px;height:82px}}
 /* independent (non-sequential) checklist */
 .checks{margin:5px 0 2px;display:flex;flex-direction:column;gap:3px}
@@ -663,6 +666,9 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <li>Acute SCI: ICU monitoring; MAP goal 85-90 for 7 days if adopted by senior/local protocol.</li>
 <li>Cauda equina/conus: saddle symptoms, urinary retention, bowel/bladder dysfunction, new leg weakness. Decompress as soon as practical; do not treat 24-48 h as permission to wait.</li>
 </ul>
+<h4>AO Spine morphology quick guide</h4>
+<p class="note">Text-based version of the local AO Spine Classification and Management Guide. Select the dominant morphology first, then facet/bilateral/neuro modifiers.</p>
+<div id="ref_ao"></div>
 </div></details>
 
 <details class="ref"><summary>GCS calculator</summary><div class="rb">
@@ -995,6 +1001,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="f_gcs"></div>
       <div id="f_hh"></div>
       <div id="f_ich"></div>
+      <div id="f_ao"></div>
     </div>
     <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
@@ -1004,6 +1011,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="ftc_gcs"></div>
       <div id="ftc_hh"></div>
       <div id="ftc_ich"></div>
+      <div id="ftc_ao"></div>
       <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
       <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
@@ -1111,6 +1119,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="tc_gcs"></div>
       <div id="tc_hh"></div>
       <div id="tc_ich"></div>
+      <div id="tc_ao"></div>
       <div class="fld"><label>Exam</label><textarea id="tc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="tcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
       <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="tc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="tcUseLabs()">Add relevant labs</button></div></div>
@@ -1264,6 +1273,7 @@ function baclofenPumpText(t){const s=t||"";return /\b(?:baclofen|baclofen pump|i
 function pituitaryText(t){const s=t||"";return /\b(?:pituitary|sellar|suprasellar|transsphenoidal|TSSH|macroadenoma|craniopharyngioma|DI watch)\b/i.test(s)||(/\b(?:apoplexy|bitemporal|visual field)\b/i.test(s)&&/\b(?:pituitary|sellar|suprasellar|macroadenoma)\b/i.test(s))}
 function ichTrialText(t){return /\b(?:NICO|REACH|lobar hemorrhage|basal ganglia hemorrhage|spontaneous ICH|ICH volume|NIHSS|mRS|trial criteria)\b/i.test(t||"")}
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
+function infectionConcernText(t){return /\b(?:r\/o|rule out|concern for|c\/f|possible|suspected)?\s*(?:SSI|surgical site infection|infection|infected|wound infection|wound dehisc|wound drainage|purulen|abscess|osteomyelitis|discitis|empyema|ventriculitis|meningitis|shunt infection|hardware infection|fever|febrile)\b/i.test(t||"")}
 function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet dislocation|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar)\b/i.test(t||"")}
 function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|translation|subluxation|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
 function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|bulbocavernosus|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|diaphragmatic|respiratory arrest|high cervical)\b/i.test(t||"")}
@@ -1325,8 +1335,8 @@ const SUGG=[
   look:["Uncontrolled seizure / status = E3 override","Postictal state degrades exam reliability (Domain 5) — timestamp the last event","Is the imaging finding actually causative, or incidental to a seizure presentation? (Domain 4)","Check ASM levels and adherence"],
   action:"Timestamp last seizure, check ASM levels, reassess exam post-ictally",trig:"immediately for recurrent seizure or non-clearing exam"},
  {re:spineTraumaText,n:"Spine fracture / trauma",s:{E:1,O:1,W:1,mods:["IMG"]},
-  look:["Unstable injury WITH deficit = E3 — document motor/sensory level, sphincters, sacral sparing, and respiratory status precisely","Unstable patterns: two/three-column injury, burst with ligament/TAL concern, Chance/flexion-distraction, fracture-dislocation/translation, flexion teardrop, AOD, bilateral facets, Type II dens","Imaging: CT first; MRI STIR for persistent pain/deficit or ligament/cord concern; CTA head/neck for foramen transversarium fracture, subluxation, Le Fort II/III, carotid canal/basilar skull, DAI GCS <6, hanging/strangulation, or BCVI signs","Collar: clear only if reliable + no midline tenderness + no focal deficit + alert + not intoxicated + no distracting injury, or normal CT with no persistent pain/deficit per senior/local protocol"],
-  action:"Keep immobilized until clearance criteria met; document ASIA-style exam; decide CT/MRI/CTA and brace vs surgery",trig:"immediately for deficit, unstable pattern, neurogenic shock, high-cervical breathing issue, or cauda equina"},
+  look:["Use AO Spine classifier: A=compression, B=tension band, C=translation/displacement, F=facet, BL=bilateral; add N neuro and M modifiers","Unstable injury WITH deficit = E3 — document motor/sensory level, sphincters, sacral sparing, and respiratory status precisely","Unstable patterns: AO B/C, F3/F4, BL, two/three-column injury, burst with ligament/TAL concern, Chance/flexion-distraction, fracture-dislocation/translation, flexion teardrop, AOD, bilateral facets, Type II dens","Imaging: CT first; MRI STIR for persistent pain/deficit or ligament/cord concern; CTA head/neck for foramen transversarium fracture, subluxation, Le Fort II/III, carotid canal/basilar skull, DAI GCS <6, hanging/strangulation, or BCVI signs","Collar: clear only if reliable + no midline tenderness + no focal deficit + alert + not intoxicated + no distracting injury, or normal CT with no persistent pain/deficit per senior/local protocol"],
+  action:"Keep immobilized until clearance criteria met; document AO Spine class + ASIA-style exam; decide CT/MRI/CTA and brace vs surgery",trig:"immediately for deficit, AO B/C/F4/BL pattern, neurogenic shock, high-cervical breathing issue, or cauda equina"},
  {re:/tumor|\bmass\b|met(s\b|astas)|glio|meningioma|lesion/i,n:"Tumor / mass",s:{E:1,O:1,W:1},
  look:["Escalate E for herniation risk, obstructive hydrocephalus, or posterior fossa location","Edema → dexamethasone per senior; ask about seizures","MRI wwo + eloquence/vascular planning — rarely same-night surgery","The real questions are usually steroids, imaging timeline, and dispo"],
   action:"Get MRI wwo, discuss dex with senior, clarify admission vs clinic",trig:"immediately for decline or new deficit"},
@@ -1486,6 +1496,8 @@ const FLAGS=[
  {re:/ICH Score\s+[3-6]\b/i,label:"ICH Score ≥3 — high-risk score; document exam, IVH/hydrocephalus, volume, AC/reversal, and senior discussion",lv:"e3",apply:{E:2,W:3,mods:["W"]}},
  {re:/ICH Score\s+2\b/i,label:"ICH Score 2 — concerning score; confirm volume, IVH, location, GCS trend, and dispo level",lv:"warn",apply:{W:2}},
  {re:t=>spineTraumaText(t)&&unstableSpineText(t),label:"Unstable spine pattern — keep immobilized, call senior, CT full spine ± MRI STIR; operative/brace decision cannot wait",lv:"e3",apply:{E:3,O:2,W:3,mods:["NΔ","IMG"]}},
+ {re:/\bAO Spine\b.{0,50}\b(?:B[1-3]|C|F3|F4|BL|N3|N4)\b|\b(?:B[1-3]|C|F3|F4)\b.{0,20}(?:fracture|spine|facet|translation|tension band)/i,label:"AO Spine high-instability class — B/C/F3/F4/BL or N3/N4 should bubble up for senior spine review",lv:"e3",apply:{E:3,O:2,W:3,mods:["IMG","NΔ"]}},
+ {re:/\bAO Spine\b.{0,50}\b(?:A3|A4|F2|N1|N2|NX|M1|M2|M3|M4)\b|\b(?:A3|A4|F2)\b.{0,20}(?:fracture|spine|facet|burst)/i,label:"AO Spine potential-instability class — confirm PLC/disc/canal, neuro exam, and brace vs operative pathway",lv:"warn",apply:{E:2,W:2,mods:["IMG"]}},
  {re:t=>spineTraumaText(t)&&sciRedText(t),label:"Severe SCI/autonomic red flag — ICU-level concern; document ASIA/sacral sparing, respiratory status, MAP 85–90 if acute SCI",lv:"e3",apply:{E:3,W:3,mods:["NΔ"]}},
  {re:/foramen transversarium|transverse foramen|vertebral artery|bcvi|horner|cervical bruit|expanding neck hematoma|le fort (ii|iii)|carotid canal|hanging|strangulation/i,label:"BCVI screen cue — CTA head/neck if cervical fracture/risk factor or neuro deficit inconsistent with head CT",lv:"warn",apply:{mods:["VASC","IMG"]}},
  {re:t=>spineTraumaText(t)&&collarClearBlockText(t),label:"C-collar clearance blocker — do not clear until reliable exam/normal CT pathway; MRI STIR if persistent pain/deficit or ligament concern",lv:"warn",apply:{mods:["IMG"]}},
@@ -1503,6 +1515,7 @@ const FLAGS=[
  {re:/retention|saddle|bowel or bladder|incontinen|post-?void/i,label:"Saddle/sphincter symptoms — screen for cauda equina [2]",lv:"warn",apply:{}},
  {re:/vomit|emesis|worst headache|thunderclap/i,label:"Vomiting / thunderclap — ICP or SAH signal",lv:"warn",apply:{}},
  {re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|\bdapt\b|\bdoac\b|anticoag|\binr\b/i,label:"Anticoagulant/antiplatelet mentioned — AC modifier + reversal plan",lv:"warn",apply:{mods:["AC"]}},
+ {re:infectionConcernText,label:"R/o SSI/infection — verify if antibiotics already given; if stable and not started, ask chief/attending before antibiotics if sampling/cultures should happen first",lv:"warn",apply:{E:2,W:2,mods:["INF"]}},
  {re:/fever|febrile|purulen|drainage|dehis|erythema|wound (open|leak)/i,label:"Infection signal — INF modifier; cultures before abx if stable",lv:"warn",apply:{mods:["INF"]}},
  {re:/gcs ?1[45]\b|neuro(logically)? intact|nonfocal|exam intact/i,label:"Reassuring exam — does the lesion still warrant W3? (silent-risk check)",lv:"info",apply:{W:3}},
  {re:/shunt|\bevd\b|\bdbs\b|\bvns\b|\brns\b|baclofen pump|hardware|implant|lumbar drain/i,label:"Device on board — DEV modifier",lv:"info",apply:{mods:["DEV"]}},
@@ -1542,6 +1555,40 @@ const HH_OPTS=[
  ["5","Comatose, severe neurologic impairment/posturing"]
 ];
 const HH_STATE={form:{v:null},tc:{v:null},ftc:{v:null},ref:{v:null}};
+const AO_MORPH=[
+ ["A0","Minor, nonstructural fracture","Usually lowest instability morphology; confirm no posterior tension band/translation/neuro issue."],
+ ["A1","Wedge-compression","Single endplate wedge compression; check posterior wall and PLC."],
+ ["A2","Split / pincer","Coronal split/pincer morphology; check both endplates and canal."],
+ ["A3","Incomplete burst","Single endplate burst with posterior wall involvement; check canal compromise and PLC."],
+ ["A4","Complete burst","Both endplates/posterior wall; higher instability/canal concern."],
+ ["B1","Posterior tension band injury, bony","Bony Chance-type posterior tension band injury."],
+ ["B2","Posterior tension band injury, bony/capsuloligamentous/ligamentous","Posterior tension band disruption; unstable until proven otherwise."],
+ ["B3","Anterior tension band injury","Hyperextension/anterior tension band failure; often unstable."],
+ ["C","Translation / displacement","Translation/displacement of one vertebral body relative to another in any direction; high instability."]
+];
+const AO_FACET=[
+ ["F0","No facet injury"],
+ ["F1","Nondisplaced facet fracture"],
+ ["F2","Facet fracture with potential instability"],
+ ["F3","Floating lateral mass"],
+ ["F4","Pathologic subluxation, perched, or dislocated facet"]
+];
+const AO_NEURO=[
+ ["N0","Neurologically intact"],
+ ["N1","Transient neurologic deficit resolved"],
+ ["N2","Radicular symptoms"],
+ ["N3","Incomplete spinal cord injury or cauda equina"],
+ ["N4","Complete spinal cord injury"],
+ ["NX","Exam not obtainable"]
+];
+const AO_MODS=[
+ ["M0","No key modifier"],
+ ["M1","Posterior capsuloligamentous/PLC injury indeterminate"],
+ ["M2","Critical disc herniation / disc material relevant to reduction"],
+ ["M3","Stiff spine / ankylosing condition"],
+ ["M4","Vertebral artery injury concern"]
+];
+const AO_STATE={form:{m:null,f:null,n:null,mx:null,bl:false},tc:{m:null,f:null,n:null,mx:null,bl:false},ftc:{m:null,f:null,n:null,mx:null,bl:false},ref:{m:null,f:null,n:null,mx:null,bl:false}};
 const ICH_OPTS={
   gcs:[["0","GCS 13-15"],["1","GCS 5-12"],["2","GCS 3-4"]],
   age:[["0","Age <80"],["1","Age >=80"]],
@@ -1584,13 +1631,17 @@ function completedHhLine(ns){
   const line=hhSummary(ns);
   return /^Hunt-Hess \d/.test(line)?line:"";
 }
+function completedAoLine(ns){
+  const line=aoSummary(ns);
+  return /^AO Spine /.test(line)?line:"";
+}
 function mergeScoreLines(text,lines){
-  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l)&&!/^\s*Hunt-Hess\b/i.test(l));
+  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l)&&!/^\s*Hunt-Hess\b/i.test(l)&&!/^\s*AO Spine\b/i.test(l));
   lines.filter(Boolean).forEach(l=>{if(!out.some(x=>x.trim().toLowerCase()===l.toLowerCase()))out.unshift(l)});
   return out.filter(Boolean).join("\n");
 }
 function formScoreLines(){
-  return [completedGcsLine("form"),completedHhLine("form"),completedIchLine("form")].filter(Boolean);
+  return [completedGcsLine("form"),completedHhLine("form"),completedIchLine("form"),completedAoLine("form")].filter(Boolean);
 }
 function copyScoreState(kind,src,dst){
   const store=kind==="gcs"?GCS_STATE:ICH_STATE;
@@ -1655,6 +1706,63 @@ function insertHhScore(ns){
   el.value=(cur?cur+" ":"")+line+".";
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
+function aoSummary(ns){
+  const s=AO_STATE[ns]||{};
+  const parts=["AO Spine"];
+  if(s.m)parts.push(s.m);
+  if(s.f&&s.f!=="F0")parts.push(s.f);
+  if(s.bl)parts.push("BL");
+  if(s.n)parts.push(s.n);
+  if(s.mx&&s.mx!=="M0")parts.push(s.mx);
+  return parts.length>1?parts.join(" + "):"Select AO Spine morphology";
+}
+function aoConcern(ns){
+  const s=AO_STATE[ns]||{};
+  const high=/^(B|C)/.test(s.m||"")||/^(F3|F4)$/.test(s.f||"")||s.bl||/^(N3|N4)$/.test(s.n||"");
+  const warn=/^(A3|A4)$/.test(s.m||"")||/^(F2)$/.test(s.f||"")||/^(N1|N2|NX)$/.test(s.n||"")||/^(M1|M2|M3|M4)$/.test(s.mx||"");
+  if(high)return {cls:"crit",txt:"High-instability / neurologic-risk pattern: immobilize, senior review, CT/MRI as needed, operative/brace plan."};
+  if(warn)return {cls:"warn",txt:"Potential instability: check PLC/disc/canal, neuro exam, upright/brace vs operative pathway per senior."};
+  return {cls:"ok",txt:"Lower morphology concern only if exam, alignment, PLC, canal, and pain context are reassuring."};
+}
+function aoLookup(code){
+  return AO_MORPH.concat(AO_FACET,AO_NEURO,AO_MODS).find(x=>x[0]===code);
+}
+function renderAoAid(ns,targetId,force){
+  const el=document.getElementById(targetId);if(!el)return;
+  const txt=scoreContextText(ns);
+  const show=force||spineTraumaText(txt)||/\bAO\s*Spine\b|\bA[0-4]\b|\bB[1-3]\b|\bF[1-4]\b|\bN[0-4X]\b|\bM[1-4]\b/i.test(txt);
+  const s=AO_STATE[ns]||{};
+  const btn=(group,key)=>group.map(o=>'<button type="button" class="'+(s[key]===o[0]?"on":"")+'" title="'+esc(o[1])+'" onclick="setAoPart(\''+ns+'\',\''+key+'\',\''+o[0]+'\')">'+o[0]+'</button>').join("");
+  const cx=aoConcern(ns);
+  const selected=[s.m,s.f,s.n,s.mx].filter(Boolean).map(c=>{const x=aoLookup(c);return x?c+": "+x[1]:""}).filter(Boolean).join("\n");
+  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>AO Spine classifier</h4>'+
+    '<div class="note">Subaxial/thoracolumbar morphology aid. Pick dominant morphology first; add facet, bilateral, neuro, and modifier details.</div>'+
+    '<div class="aochipgrp"><div class="glabel">Morphology</div><div class="gcsopts">'+btn(AO_MORPH,"m")+'</div></div>'+
+    '<div class="aochipgrp"><div class="glabel">Facet</div><div class="gcsopts">'+btn(AO_FACET,"f")+'<button type="button" class="'+(s.bl?"on":"")+'" onclick="toggleAoBL(\''+ns+'\')">BL</button></div></div>'+
+    '<div class="aochipgrp"><div class="glabel">Neuro</div><div class="gcsopts">'+btn(AO_NEURO,"n")+'</div></div>'+
+    '<div class="aochipgrp"><div class="glabel">Modifiers</div><div class="gcsopts">'+btn(AO_MODS,"mx")+'</div></div>'+
+    (selected?'<div class="pre" style="margin-top:8px">'+esc(selected)+'</div>':"")+
+    '<div class="mal '+cx.cls+'" style="margin-top:8px"><span>'+cx.txt+'</span></div>'+
+    '<div class="gcsout"><b>'+aoSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertAoScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div>'+
+    '<div class="aohint"><b>Type A:</b> compression A0-A4. <b>Type B:</b> tension band B1-B3. <b>Type C:</b> translation/displacement. <b>Type F:</b> facet F1-F4. <b>BL:</b> bilateral injury.</div></div>';
+}
+function setAoPart(ns,key,v){AO_STATE[ns][key]=(AO_STATE[ns][key]===v?null:v);if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function toggleAoBL(ns){AO_STATE[ns].bl=!AO_STATE[ns].bl;if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function renderAoContext(ns){
+  if(ns==="form")renderAoAid("form","f_ao",false);
+  else if(ns==="tc")renderAoAid("tc","tc_ao",false);
+  else if(ns==="ftc")renderAoAid("ftc","ftc_ao",false);
+  else renderAoAid("ref","ref_ao",true);
+}
+function insertAoScore(ns){
+  const line=aoSummary(ns);
+  if(!/^AO Spine /.test(line)){showToast("Select AO Spine morphology first");return}
+  const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value.replace(/\s*AO Spine [^\n.]+\.?/i,"").trim();
+  el.value=(cur?cur+" ":"")+line+".";
+  if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
 function scoreContextText(ns){
   return ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"ICH"));
 }
@@ -1713,6 +1821,7 @@ function syncFormScoreFields(){
   copyScoreState("gcs","form","ftc");
   HH_STATE.ftc=Object.assign({},HH_STATE.ftc||{},HH_STATE.form||{});
   copyScoreState("ich","form","ftc");
+  AO_STATE.ftc=Object.assign({},AO_STATE.ftc||{},AO_STATE.form||{});
   renderFlags();
   renderFTCFlags();
   ftcAutoBuild();
@@ -1814,6 +1923,25 @@ function addAdmissionChecklist(){
 function addORChecklist(){
   addUniqueLines("f_tasks",["Consent with exact booking name + laterality","Hold DVT ppx if relevant","rH&P / H&P note","Pre-op note","Case request / OR booking","Pre-op: NPO, CBC/PT/PTT/T&S, antibiotics/equipment, postop bed"]);
 }
+const INFECTION_TASKS=[
+  "Ask/verify: has patient already received antibiotics?",
+  "If antibiotics not started and patient stable, hold until chief/attending confirms whether wound/CSF/blood sampling should happen first",
+  "Escalate SSI/infection sampling + antibiotic plan to chief/attending now",
+  "Send cultures/sample before antibiotics if stable and sampling is indicated"
+];
+function addInfectionChecklist(){
+  addUniqueLines("f_tasks",INFECTION_TASKS);
+  showToast("Infection sampling/antibiotic checklist added");
+}
+function ensureInfectionChecklistOnCard(c,txt){
+  if(!c||!infectionConcernText(txt))return;
+  c.tasks=c.tasks||[];
+  INFECTION_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
+  if((c.E||0)<2)c.E=2;
+  if((c.W||0)<2)c.W=2;
+  c.mods=c.mods||[];
+  if(!c.mods.includes("INF"))c.mods.push("INF");
+}
 function isTraumaConsultText(t){
   return /\b(?:trauma|tbi|fall|found down|mvc|mva|pedestrian|assault|head strike|head injury|sdh|subdural|edh|epidural|contusion|tSAH|traumatic\s+sah|skull fracture|multisystem)\b/i.test(t||"");
 }
@@ -1873,6 +2001,7 @@ function renderSmartHints(){
   if(F.type==="PCON")hints.push('<div class="smartbox"><b>Quick proc presets:</b> shunt tap · shuntogram · shunt dial · pump interrogation<div class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></div></div>');
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push('<div class="smartbox"><b>Admit plan detected.</b> Add H&P and admission-order reminders.<div class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P checklist</button></div></div>');
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push('<div class="smartbox"><b>OR/pre-op plan detected.</b> Add rH&P, pre-op note, consent, and booking reminders.<div class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></div></div>');
+  if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push('<div class="smartbox"><b>R/o SSI/infection detected.</b> Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.<div class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection checklist</button></div></div>');
   if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push('<div class="smartbox"><b>Trauma GCS &lt;8 detected.</b> Consider Bolt/Licox task with full procedure checklist.<div class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Linked Bolt/Licox task</button></div></div>');
   el.innerHTML=hints.join("");
 }
@@ -1942,7 +2071,8 @@ function measAlerts(m,txt){
 let curSugg=[],curAlerts=[];
 function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
 function knownPathAbbrev(t){
-  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|dAVF|MMD|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM|NICO|REACH)\b/i.test(t||"");
+  const s=t||"";
+  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|dAVF|MMD|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM|NICO|REACH)\b/i.test(s)||(/\b(?:AO Spine|spine|cervical|thoracic|lumbar|fracture|facet)\b/i.test(s)&&/\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL|N[0-4X]|M[1-4])\b/i.test(s));
 }
 function upgradeOf(){
   const up={};
@@ -1971,10 +2101,11 @@ function applyAlert(i){const a=curAlerts[i];if(!a)return;F._manual=true;
 }
 function renderSugg(){
   const el=document.getElementById("sugg");
-  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
+  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich","f_ao"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
   renderGcsAid("form","f_gcs",false);
   renderHhAid("form","f_hh",false);
   renderIchAid("form","f_ich",false);
+  renderAoAid("form","f_ao",false);
   const txt=(document.getElementById("f_prob").value||"")+" "+(document.getElementById("f_state").value||"");
   if(txt.trim().length<3){el.innerHTML="";curSugg=[];curAlerts=[];return}
   curSugg=SUGG.filter(s=>suggMatch(s,txt)).slice(0,3);
@@ -2073,7 +2204,7 @@ function maybePromptPatientLink(c){
   declineLink(c,other.id);declineLink(other,c.id);touch(other);touch(c);return false;
 }
 function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
-function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);filterRefs()}
+function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
   document.querySelectorAll("#view-ref details.ref,#view-booking details.ref").forEach(d=>{
@@ -3189,6 +3320,7 @@ function saveForm(){
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
+  ensureInfectionChecklistOnCard(F,[F.prob,F.state,F.action,F.note].filter(Boolean).join(" "));
   if(F.type==="CHART")F.E=0;
   F.deadlineISO=null;
   const sv=document.getElementById("f_snooze").value;
@@ -3306,6 +3438,7 @@ function roundTags(t){
   if(pituitaryText(s))add("Pituitary");
   if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
   if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
+  if(/\bAO Spine\b|\b(?:spine|cervical|thoracic|lumbar|fracture|facet)\b.{0,35}\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL)\b/i.test(s))add("AO");
   if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
   if(vascularMalformationText(s)||/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
@@ -3329,6 +3462,7 @@ function normalizeRoundTag(t){
   if(/baclofen|pump alarm|pump failure/i.test(s))return "Pump";
   if(/icp|intracranial pressure|herniation/i.test(s))return "ICP";
   if(/NICO|REACH|trial criteria/i.test(s))return "Trial";
+  if(/AO Spine|AO class|AO classification/i.test(s))return "AO";
   if(/vascular|bcvi|avm|dural avf|fistula|moyamoya/i.test(s))return "VASC";
   if(/EVD/i.test(s))return "EVD";
   if(/tumou?r|mass|glioma|meningioma|metast/i.test(s))return "Tumor";
@@ -4117,7 +4251,7 @@ function tcParse(){
   tcBuild();
 }
 function tcFlagText(){return ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ")}
-function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderHhAid("tc","tc_hh",false);renderIchAid("tc","tc_ich",false)}
+function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderHhAid("tc","tc_hh",false);renderIchAid("tc","tc_ich",false);renderAoAid("tc","tc_ao",false)}
 function tcFormat(){
   const g=i=>(document.getElementById(i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
@@ -4164,7 +4298,7 @@ function ftcParse(){
   ftcBuild();
 }
 function ftcFlagText(){return ["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat(["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"")).join(" ")}
-function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderHhAid("ftc","ftc_hh",false);renderIchAid("ftc","ftc_ich",false)}
+function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderHhAid("ftc","ftc_hh",false);renderIchAid("ftc","ftc_ich",false);renderAoAid("ftc","ftc_ao",false)}
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
