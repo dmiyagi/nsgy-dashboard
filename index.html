@@ -2011,9 +2011,9 @@ function ownerKey(c){return (c.owner||"").trim()||"Unassigned"}
 function teamFromText(t){const m=String(t||"").match(/\b(PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b/i);return m?m[1].toUpperCase():""}
 function attgFromText(t){
   const s=String(t||"");
-  const after=s.match(/\b(?:PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b\s*\(([A-Z]{1,4}\*?)\)/i);
+  const after=s.match(/\b(?:PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b\s*\(([A-Z]{1,4}(?:\/[A-Z]{1,4}){0,5}\*?)\)/i);
   if(after)return after[1].toUpperCase();
-  const any=s.match(/\(([A-Z]{1,4}\*?)\)/);
+  const any=s.match(/\(([A-Z]{1,4}(?:\/[A-Z]{1,4}){0,5}\*?)\)/);
   return any?any[1].toUpperCase():"";
 }
 function cleanTeam(t){const s=String(t||"");return teamFromText(s)||s.split(String.fromCharCode(40))[0].trim().toUpperCase()}
@@ -3365,13 +3365,17 @@ function roundIdentityBadges(r){
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
+function stripRoundAttgParens(s,r){
+  const attg=roundAttg(r);
+  if(!attg)return s;
+  return String(s||"").replace(new RegExp("\\(\\s*"+attg.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*\\)","ig")," ");
+}
 function roundProblemText(r){
-  let s=String(r.raw||"");
+  let s=stripRoundAttgParens(String(r.raw||""),r);
   [roundRoom(r),roundPatient3(r),roundTeam(r),roundAttg(r)].filter(Boolean).forEach(x=>{
-    s=s.replace(new RegExp("\\b"+x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","ig")," ");
+    s=s.replace(new RegExp("(^|\\s)"+x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?=\\s|$)","ig")," ");
   });
-  s=s.replace(/\([A-Za-z/]{1,12}\)/g," ")
-     .replace(/\b(?:PINK|BLUE|PURPLE)\b/ig," ")
+  s=s.replace(/\b(?:PINK|BLUE|PURPLE)\b/ig," ")
      .replace(/\s*[-–—:;,]\s*/g," ")
      .replace(/\s+/g," ").trim();
   return s||SO_TMPLS[r.soT].name;
