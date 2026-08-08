@@ -670,6 +670,11 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <div id="ref_gcs"></div>
 </div></details>
 
+<details class="ref"><summary>Hunt-Hess score</summary><div class="rb">
+<p class="note">Aneurysmal SAH grading aid. Use with modified Fisher and senior judgment.</p>
+<div id="ref_hh"></div>
+</div></details>
+
 <details class="ref"><summary>ICH score calculator</summary><div class="rb">
 <p class="note">Original ICH Score components: GCS, age, ICH volume, intraventricular hemorrhage, and infratentorial origin. Mortality estimates below are from the original 2001 cohort and should not drive goals-of-care decisions by themselves.<a class="cite" href="https://pubmed.ncbi.nlm.nih.gov/11283388/" target="_blank">[8]</a></p>
 <div id="ref_ich"></div>
@@ -764,7 +769,7 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 
 <details class="ref"><summary>New consult workflow (Epic)</summary><div class="rb">
 <ul>
-<li>Opt in to <b>RIH ICH/IPH</b> + <b>RIH Neurosurgery ED Consult Team</b> (opt out at home or you'll get notifications).</li>
+<li>Opt in to <b>RIH ICH</b> + <b>RIH Neurosurgery ED Consult Team</b> (opt out at home or you'll get notifications).</li>
 <li>Add patient to your <b>Consults</b> list <i>and</i> shared <b>RIH NSGY</b> list immediately.</li>
 <li>Update the handoff (list format below).</li>
 <li>Prep consult note: New Note → type Consults, service Neurosurgery/138, cosigner = on-call attending. Delete preformatted note, use <b>.ewconsult</b>; make time called/initiated accurate. Pend (alt-P) or Sign (alt-S). Notes can be backdated, never forward-dated.</li>
@@ -979,18 +984,17 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div style="font-size:11px;color:var(--mut);margin-top:4px">Masked on the board (last 3 digits) — tap to reveal & call.</div>
     </div>
     <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="Type anything…" autocomplete="off">
-      <div class="sugg" id="sugg"></div>
-      <div id="prockit"></div>
-      <div id="smarthints"></div>
-      <div id="f_gcs"></div>
-      <div id="f_ich"></div>
-    </div>
-    <div class="fld" id="fld_owner"><label>Owner / service</label>
-      <div class="caregrid">
+      <div id="fld_owner" class="caregrid" style="margin-top:8px">
         <div><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
         <div><label>Team</label><input type="text" id="f_team" placeholder="PINK"></div>
         <div><label>Attending</label><input type="text" id="f_attg" placeholder="KS"></div>
       </div>
+      <div class="sugg" id="sugg"></div>
+      <div id="prockit"></div>
+      <div id="smarthints"></div>
+      <div id="f_gcs"></div>
+      <div id="f_hh"></div>
+      <div id="f_ich"></div>
     </div>
     <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
@@ -998,6 +1002,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
       <div id="ftc_flags"></div>
       <div id="ftc_gcs"></div>
+      <div id="ftc_hh"></div>
       <div id="ftc_ich"></div>
       <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
@@ -1052,24 +1057,20 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </div>
     <div class="fld" id="fld_action"><label>Next action</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
     <div class="fld" id="fld_tasks"><label id="tasksLabel">Checklist — independent items, any order (one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
-    <div class="fld" id="fld_dlwrap"><label id="dlLabel">Deadline</label>
-      <div class="qbtns" id="qdl">
-        <button data-min="10">+10 min</button><button data-min="30">+30 min</button><button data-min="60">+1 h</button><button data-min="240">+4 h</button><button data-min="0">Clear</button>
-      </div>
-      <input type="datetime-local" id="f_dl" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
-    </div>
+    <input type="hidden" id="f_dl">
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
     </div>
-    <div class="fld" id="fld_snooze"><label>◷ Defer / reschedule</label>
+    <div class="fld" id="fld_snooze"><label id="dlLabel">◷ Timing / reschedule</label>
       <div class="qbtns">
+        <button type="button" onclick="setTodayDeadline(5)">+5 min</button>
         <button type="button" onclick="setTodayDeadline(15)">+15 min</button><button type="button" onclick="setTodayDeadline(30)">+30 min</button>
         <button type="button" onclick="setTodayDeadline(60)">+1 h</button><button type="button" onclick="setTodayDeadline(120)">+2 h</button>
         <button type="button" onclick="setSnooze(1)">Tomorrow</button><button type="button" onclick="setSnooze(7)">+1 wk</button>
         <button type="button" onclick="setSnooze(0)">Clear</button>
       </div>
-      <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day defers stay on the board as deadlines. Tomorrow / +1 wk hide from the board until then.</div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
       <input type="datetime-local" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <details class="moredet"><summary>▾ More details</summary>
@@ -1108,6 +1109,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="tc_hpi" style="min-height:48px" placeholder="Type anything here…"></textarea></div>
       <div id="tc_flags"></div>
       <div id="tc_gcs"></div>
+      <div id="tc_hh"></div>
       <div id="tc_ich"></div>
       <div class="fld"><label>Exam</label><textarea id="tc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="tcUseExam()">Use suggested exam</button></div></div>
       <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="tc_img" placeholder="Type anything here…"></div>
@@ -1258,7 +1260,7 @@ function isAneurysmalSAHText(t){const s=t||"";return !isTraumaticSAHText(s)&&(un
 function carotidText(t){return /\b(?:ICA stenosis|carotid stenosis|carotid artery stenosis|internal carotid|carotid bifurcation|carotid plaque|TCAR|CEA|carotid endarterectomy|carotid stent|carotid revascularization|NASCET)\b/i.test(t||"")}
 function symptomaticCarotidText(t){return carotidText(t)&&/\b(?:symptomatic|TIA|amaurosis|transient monocular|stroke|infarct|weakness|numbness|visual changes|difficulty speaking|aphasia|dysarthria|crescendo)\b/i.test(t||"")}
 function icpCrisisText(t){return /\b(?:ICP crisis|elevated ICP|intracranial pressure|refractory ICP|icp\s*(?:>|>=|over|above)\s*(?:20|22|25)|decompensat|herniat|DECRA|hyperosmolar|mannitol|23\.?4?%|3% saline|HTS)\b/i.test(t||"")}
-function baclofenPumpText(t){const s=t||"";return /\b(?:baclofen pump|intrathecal baclofen|IT baclofen|pump alarm|pump refill|pump failure|pump stopped|battery dead|out of medication|cyproheptadine)\b/i.test(s)||(/\bwithdrawal\b/i.test(s)&&/\b(?:baclofen|pump)\b/i.test(s))}
+function baclofenPumpText(t){const s=t||"";return /\b(?:baclofen|baclofen pump|intrathecal baclofen|IT baclofen|pump alarm|pump refill|pump failure|pump stopped|battery dead|out of medication|cyproheptadine)\b/i.test(s)||(/\bwithdrawal\b/i.test(s)&&/\b(?:baclofen|pump)\b/i.test(s))}
 function pituitaryText(t){const s=t||"";return /\b(?:pituitary|sellar|suprasellar|transsphenoidal|TSSH|macroadenoma|craniopharyngioma|DI watch)\b/i.test(s)||(/\b(?:apoplexy|bitemporal|visual field)\b/i.test(s)&&/\b(?:pituitary|sellar|suprasellar|macroadenoma)\b/i.test(s))}
 function ichTrialText(t){return /\b(?:NICO|REACH|lobar hemorrhage|basal ganglia hemorrhage|spontaneous ICH|ICH volume|NIHSS|mRS|trial criteria)\b/i.test(t||"")}
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
@@ -1289,8 +1291,8 @@ const SUGG=[
  {re:/\bsdh\b|subdural/i,n:"Subdural hematoma",s:{E:2,O:1,W:3,mods:["W"]},
   look:["Evacuate if thickness &gt;10 mm or MLS &gt;5 mm regardless of GCS [4]","Comatose + smaller SDH still operative for: GCS drop ≥2, asymmetric/fixed pupils, or ICP &gt;20 [4]","Large SDH with preserved exam = W3","AC/antiplatelets + last dose; acute vs chronic changes the whole calculus"],
   action:"Measure maximal SDH thickness and midline shift",trig:"immediately for any exam or pupil change"},
- {re:/\biph\b|\bich\b|intraparenchymal|intracerebral|contusion/i,n:"IPH / contusion",s:{E:2,O:1,W:2,mods:["W"]},
-  look:["Progressive deterioration, refractory ICP, or significant mass effect each independently support operation [4]","ACS 2024: evacuate a large hematoma &gt;25 mL before deterioration; lower threshold in posterior fossa","Anticoagulated ICH = W3 — reverse early; normal PT/PTT does NOT exclude DOAC","Contusions blossom — set an explicit repeat-CT time"],
+ {re:/\biph\b|\bich\b|intraparenchymal|intracerebral|contusion/i,n:"ICH / contusion",s:{E:2,O:1,W:2,mods:["W"]},
+  look:["Progressive deterioration, refractory ICP, or significant mass effect each independently support operation [4]","ACS 2024: evacuate a large hematoma &gt;25 mL before deterioration; lower threshold in posterior fossa","Anticoagulated ICH = W3 — reverse early; normal PT/PTT does NOT exclude DOAC","Use GCS + ICH Score; check NICO/REACH criteria: age, volume, GCS, NIHSS/mRS, LKW, platelets/INR, and vascular/tumor exclusions"],
   action:"Review CT measurements, confirm AC status, set repeat-CT time",trig:"immediately for decline in consciousness or new deficit"},
  {re:/shunt|\bvps\b|programmable valve/i,n:"Shunt patient",s:{E:2,O:1,W:3,mods:["W","DEV","BASE?"]},
   look:["Ventricles may NOT enlarge in failure — compare with the CT from the last CONFIRMED malfunction, not just the most recent","Identify valve type + current setting; MRI can reprogram a programmable valve","Get prior failure phenotype + baseline from family/facility collateral","Infected shunt: complete removal + EVD + IV abx per IDSA (70% recurrence without removal) [5]"],
@@ -1532,6 +1534,14 @@ const GCS_OPTS={
   m:[["6","Obeys commands"],["5","Localizes"],["4","Withdraws"],["3","Flexion"],["2","Extension"],["1","No motor"],["NT","Not testable"]]
 };
 const GCS_STATE={form:{e:null,v:null,m:null},tc:{e:null,v:null,m:null},ftc:{e:null,v:null,m:null},ref:{e:null,v:null,m:null}};
+const HH_OPTS=[
+ ["1","Mild headache, alert/oriented, minimal nuchal rigidity"],
+ ["2","Moderate-severe headache or full nuchal rigidity; alert/oriented, no deficit except CN palsy"],
+ ["3","Lethargy/confusion or mild focal neurologic deficit"],
+ ["4","Stuporous or more severe focal deficit"],
+ ["5","Comatose, severe neurologic impairment/posturing"]
+];
+const HH_STATE={form:{v:null},tc:{v:null},ftc:{v:null},ref:{v:null}};
 const ICH_OPTS={
   gcs:[["0","GCS 13-15"],["1","GCS 5-12"],["2","GCS 3-4"]],
   age:[["0","Age <80"],["1","Age >=80"]],
@@ -1552,6 +1562,16 @@ function gcsSummary(ns){
   const total=["e","v","m"].reduce((a,k)=>a+Number(s[k]||0),0);
   return "GCS E"+s.e+" V"+s.v+" M"+s.m+" = "+total;
 }
+function gcsTotal(ns){
+  const s=GCS_STATE[ns]||{};
+  if(["e","v","m"].some(k=>!s[k]||s[k]==="NT"))return null;
+  return ["e","v","m"].reduce((a,k)=>a+Number(s[k]||0),0);
+}
+function syncGcsToIch(ns){
+  const t=gcsTotal(ns);if(t===null)return;
+  ICH_STATE[ns]=ICH_STATE[ns]||{};
+  ICH_STATE[ns].gcs=t<=4?"2":(t<=12?"1":"0");
+}
 function completedGcsLine(ns){
   const line=gcsSummary(ns);
   return /^GCS /.test(line)?line:"";
@@ -1560,13 +1580,17 @@ function completedIchLine(ns){
   const line=ichSummary(ns);
   return /^ICH Score \d/.test(line)?line:"";
 }
+function completedHhLine(ns){
+  const line=hhSummary(ns);
+  return /^Hunt-Hess \d/.test(line)?line:"";
+}
 function mergeScoreLines(text,lines){
-  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l));
+  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l)&&!/^\s*Hunt-Hess\b/i.test(l));
   lines.filter(Boolean).forEach(l=>{if(!out.some(x=>x.trim().toLowerCase()===l.toLowerCase()))out.unshift(l)});
   return out.filter(Boolean).join("\n");
 }
 function formScoreLines(){
-  return [completedGcsLine("form"),completedIchLine("form")].filter(Boolean);
+  return [completedGcsLine("form"),completedHhLine("form"),completedIchLine("form")].filter(Boolean);
 }
 function copyScoreState(kind,src,dst){
   const store=kind==="gcs"?GCS_STATE:ICH_STATE;
@@ -1575,7 +1599,7 @@ function copyScoreState(kind,src,dst){
 function renderGcsAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"trauma SDH TBI"));
-  const show=force||traumaScoreText(txt);
+  const show=force||traumaScoreText(txt)||ichScoreText(txt)||ichTrialText(txt);
   const s=GCS_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+GCS_OPTS[k].map(o=>
     '<button type="button" class="'+(s[k]===o[0]?"on":"")+'" onclick="setGcsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="NT"?"":"+"+o[0])+'</button>').join("")+'</div></div>';
@@ -1584,7 +1608,7 @@ function renderGcsAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
     '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div>';
 }
-function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderGcsContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;syncGcsToIch(ns);if(ns==="form")syncFormScoreFields();renderGcsContext(ns);renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderGcsContext(ns){
   if(ns==="form")renderGcsAid("form","f_gcs",false);
   else if(ns==="tc")renderGcsAid("tc","tc_gcs",false);
@@ -1600,8 +1624,39 @@ function insertGcsExam(ns){
   el.value=[line].concat(existing).filter(Boolean).join("\n");
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
+function hhSummary(ns){
+  const v=(HH_STATE[ns]||{}).v;
+  return v?"Hunt-Hess "+v:"Select Hunt-Hess grade";
+}
+function renderHhAid(ns,targetId,force){
+  const el=document.getElementById(targetId);if(!el)return;
+  const txt=scoreContextText(ns);
+  const show=force||isAneurysmalSAHText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
+  const s=HH_STATE[ns]||{};
+  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>Hunt-Hess score</h4>'+
+    '<div class="note">Aneurysmal SAH aid. Use with modified Fisher and clinical judgment.</div>'+
+    '<div class="gcsopts">'+HH_OPTS.map(o=>'<button type="button" class="'+(s.v===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\''+o[0]+'\')">HH'+o[0]+'</button>').join("")+'</div>'+
+    '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]).join("\n")+'</div>'+
+    '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div>';
+}
+function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function renderHhContext(ns){
+  if(ns==="form")renderHhAid("form","f_hh",false);
+  else if(ns==="tc")renderHhAid("tc","tc_hh",false);
+  else if(ns==="ftc")renderHhAid("ftc","ftc_hh",false);
+  else renderHhAid("ref","ref_hh",true);
+}
+function insertHhScore(ns){
+  const line=hhSummary(ns);
+  if(!/^Hunt-Hess \d/.test(line)){showToast("Select Hunt-Hess grade first");return}
+  const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value.replace(/\s*Hunt-Hess \d+.*/i,"").trim();
+  el.value=(cur?cur+" ":"")+line+".";
+  if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
 function scoreContextText(ns){
-  return ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"ICH IPH"));
+  return ns==="tc"?tcFlagText():(ns==="ftc"?ftcFlagText():(ns==="form"?["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").join(" "):"ICH"));
 }
 function ichTotal(ns){
   const s=ICH_STATE[ns]||{};
@@ -1656,6 +1711,7 @@ function syncFormScoreFields(){
   const st=document.getElementById("f_state");
   if(st)st.value=mergeScoreLines(st.value,formScoreLines());
   copyScoreState("gcs","form","ftc");
+  HH_STATE.ftc=Object.assign({},HH_STATE.ftc||{},HH_STATE.form||{});
   copyScoreState("ich","form","ftc");
   renderFlags();
   renderFTCFlags();
@@ -1915,8 +1971,9 @@ function applyAlert(i){const a=curAlerts[i];if(!a)return;F._manual=true;
 }
 function renderSugg(){
   const el=document.getElementById("sugg");
-  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_ich"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
+  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
   renderGcsAid("form","f_gcs",false);
+  renderHhAid("form","f_hh",false);
   renderIchAid("form","f_ich",false);
   const txt=(document.getElementById("f_prob").value||"")+" "+(document.getElementById("f_state").value||"");
   if(txt.trim().length<3){el.innerHTML="";curSugg=[];curAlerts=[];return}
@@ -1939,9 +1996,7 @@ function renderSugg(){
     const sug=(parts.length?parts.join("/"):"")+((s.s.mods&&s.s.mods.length)?(parts.length?" + ":"")+s.s.mods.join(", "):"");
     return '<div class="sg"><div class="sgt">'+s.n+'</div>'+(sug?'<div class="sgs">Suggest: '+sug+'</div>':"")+
      '<ul>'+s.look.map(l=>'<li>'+l+'</li>').join("")+'</ul>'+
-     '<div class="sgb"><button onclick="applySugg('+i+')">Apply '+(parts.length?parts.join("/"):"mods")+'</button>'+
-     (s.action?'<button onclick="useSuggAction('+i+')">Use action</button>':"")+
-     (s.trig?'<button onclick="useSuggTrig('+i+')">Use trigger</button>':"")+'</div></div>';
+     '<div class="sgb"><button onclick="applySugg('+i+')">Apply '+(parts.length?parts.join("/"):"mods")+'</button></div></div>';
   }).join("")):"");
 }
 function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
@@ -2018,7 +2073,7 @@ function maybePromptPatientLink(c){
   declineLink(c,other.id);declineLink(other,c.id);touch(other);touch(c);return false;
 }
 function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
-function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderIchAid("ref","ref_ich",true);filterRefs()}
+function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
   document.querySelectorAll("#view-ref details.ref,#view-booking details.ref").forEach(d=>{
@@ -3016,7 +3071,7 @@ function openForm(id,reassess,ptype){
   document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");
   document.getElementById("f_tasks").value=(F.tasks||[]).map(s=>s.t).join("\n");
   document.getElementById("f_dl").value=F.deadlineISO?toLocalInput(F.deadlineISO):"";
-  document.getElementById("f_snooze").value=F.snoozeISO?toLocalInput(F.snoozeISO):"";
+  document.getElementById("f_snooze").value=F.snoozeISO?toLocalInput(F.snoozeISO):(F.deadlineISO?toLocalInput(F.deadlineISO):"");
   document.getElementById("f_interp").checked=!!F.needsInterpreter;
   document.getElementById("f_lang").value=F.language||"";
   ftcLoad(F);
@@ -3043,13 +3098,11 @@ function setTypeUI(){
     : "Checklist — independent items, any order (one per line)";
   document.getElementById("probLabel").textContent=t.probL;
   document.getElementById("f_prob").placeholder="Type anything here…";
-  document.getElementById("dlLabel").textContent=t.dlL;
+  document.getElementById("dlLabel").textContent="◷ "+t.dlL+" / reschedule";
   const rem=document.getElementById("typereminder");
   rem.style.display=t.rem?"block":"none";rem.textContent=t.rem;
   document.getElementById("fld_call").style.display=(F.type==="COMM")?"":"none";
   document.getElementById("fld_interp").style.display=(F.type==="CONSENT")?"":"none";
-  document.getElementById("qdl").innerHTML=t.presets.map(p=>
-    typeof p[1]==="number"?'<button data-min="'+p[1]+'">'+p[0]+'</button>':'<button data-at="'+p[1]+'">'+p[0]+'</button>').join("");
 }
 let suggT=null;
 ["f_prob","f_state","f_action","f_note"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)}));
@@ -3073,6 +3126,7 @@ function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2
 function todayDateStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
 function setSnooze(days){
   const el=document.getElementById("f_snooze");
+  document.getElementById("f_dl").value="";
   if(!days){el.value="";return}
   const d=new Date(Date.now()+days*86400000);const p=n=>String(n).padStart(2,"0");
   d.setHours(6,0,0,0);
@@ -3083,8 +3137,9 @@ function setSnoozeMinutes(min){
   el.value=toLocalInput(new Date(Date.now()+min*60000).toISOString());
 }
 function setTodayDeadline(min){
-  document.getElementById("f_snooze").value="";
-  document.getElementById("f_dl").value=toLocalInput(new Date(Date.now()+min*60000).toISOString());
+  const v=toLocalInput(new Date(Date.now()+min*60000).toISOString());
+  document.getElementById("f_dl").value=v;
+  document.getElementById("f_snooze").value=v;
 }
 function unsnooze(id){const c=S.consults.find(x=>x.id===id);if(c){c.snoozeISO=null;touch(c);render();showToast("Back on the board")}}
 let axisDetail=false;
@@ -3122,16 +3177,6 @@ function buildMods(){
   el.innerHTML=MODS.map(m=>'<button class="'+((F.mods||[]).includes(m)?"on":"")+'">'+m+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{const m=MODS[i];const ix=F.mods.indexOf(m);if(ix>=0)F.mods.splice(ix,1);else F.mods.push(m);buildMods()});
 }
-document.getElementById("qdl").addEventListener("click",e=>{
-  const b=e.target.closest("button");if(!b)return;
-  if(b.dataset.at){
-    const [h,m]=b.dataset.at.split(":");const d=new Date();d.setHours(+h,+m,0,0);
-    document.getElementById("f_dl").value=toLocalInput(d.toISOString());
-  }else{
-    const min=+b.dataset.min;
-    document.getElementById("f_dl").value=min?toLocalInput(new Date(Date.now()+min*60000).toISOString()):"";
-  }
-});
 function saveForm(){
   document.getElementById("f_loc").value=joinLoc(document.getElementById("f_bed").value,document.getElementById("f_last3").value);
   ["loc","prob","state","action","trig","owner","team","attg","note","qs","fname","phone"].forEach(k=>F[k]=document.getElementById("f_"+k).value.trim());
@@ -3145,8 +3190,7 @@ function saveForm(){
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
   if(F.type==="CHART")F.E=0;
-  const dv=document.getElementById("f_dl").value;
-  F.deadlineISO=dv?new Date(dv).toISOString():null;
+  F.deadlineISO=null;
   const sv=document.getElementById("f_snooze").value;
   if(sv){
     const sdt=new Date(sv),end=new Date();end.setHours(23,59,59,999);
@@ -4073,7 +4117,7 @@ function tcParse(){
   tcBuild();
 }
 function tcFlagText(){return ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ")}
-function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderIchAid("tc","tc_ich",false)}
+function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderHhAid("tc","tc_hh",false);renderIchAid("tc","tc_ich",false)}
 function tcFormat(){
   const g=i=>(document.getElementById(i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
@@ -4120,7 +4164,7 @@ function ftcParse(){
   ftcBuild();
 }
 function ftcFlagText(){return ["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat(["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"")).join(" ")}
-function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderIchAid("ftc","ftc_ich",false)}
+function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderHhAid("ftc","ftc_hh",false);renderIchAid("ftc","ftc_ich",false)}
 function ftcFormat(){
   const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
