@@ -583,7 +583,9 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <ul><li>Rapidly progressive weakness · new loss of ambulation</li>
 <li>Acute bowel/bladder dysfunction with compatible findings · urinary retention with saddle symptoms or new weakness</li>
 <li>Acute cord or cauda equina compression · epidural hematoma or abscess with neurologic change</li>
-<li>Unstable injury with deficit · high cervical lesion with respiratory compromise</li></ul>
+<li>Unstable injury with deficit · high cervical lesion with respiratory compromise</li>
+<li>Neurogenic shock · absent sacral sparing after spinal shock resolves · acute tetraplegia/paraplegia</li>
+<li>AOD, bilateral facet dislocation, flexion teardrop, Chance/flexion-distraction, fracture-dislocation, or TAL-disrupted Jefferson fracture</li></ul>
 <div class="warnbox">Confirmed cauda equina compression is a spinal emergency. A "48-hour interval" is not permission to wait — decompress as soon as practically possible, especially for incomplete or progressive syndromes.<a class="cite" href="https://gettingitrightfirsttime.co.uk/wp-content/uploads/2026/04/National-Suspected-Cauda-Equina-Pathway-March-2026.pdf" target="_blank" style="color:#ffd93b">[2]</a></div>
 <h4>Vascular E3 triggers</h4>
 <ul><li>Suspected aneurysmal rebleeding · unsecured ruptured aneurysm</li>
@@ -631,6 +633,36 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <div class="warnbox"><b>ACS TBI 2024 (broader best-practice trigger, not identical to BTF lesion-specific thresholds):</b> evacuate a large traumatic hematoma &gt; 25 mL before neurologic deterioration; posterior fossa lesions may warrant a lower threshold.</div>
 <h4>ICP-threshold clarification</h4>
 <p>Older BTF SDH surgical criteria use <b>ICP &gt; 20 mm Hg</b> as one operative trigger (comatose, smaller SDH). More recent general severe-TBI guidance uses <b>22 mm Hg as an initial treatment threshold</b> (reasonable treatment range 20–25 mm Hg sustained &gt; 5 min). Do not silently substitute one for the other — they come from different guideline contexts.<a class="cite" href="https://braintrauma.org/coma/guidelines/surgical" target="_blank">[4]</a></p>
+</div></details>
+
+<details class="ref"><summary>Spine trauma, collar clearance, BCVI</summary><div class="rb">
+<p class="note">Cognitive aid from the local vertebral-injuries report. Use senior/local trauma protocol for final collar clearance and disposition.</p>
+<h4>C-collar clearance</h4>
+<ul>
+<li><b>Can clear clinically without imaging only if all NEXUS elements are met:</b> no midline cervical tenderness, no focal neurologic deficit, normal alertness/GCS 15, no intoxication, and no distracting painful injury.</li>
+<li><b>Needs CT C-spine:</b> any failed NEXUS element, dangerous mechanism, unreliable/obtunded/intoxicated exam, distracting injury, or focal neurologic concern.</li>
+<li><b>Do not clear after normal CT alone when:</b> persistent localized midline pain/tenderness, focal neurologic deficit, or ligament/cord concern. Get MRI spine with STIR sequences.</li>
+<li><b>Flexion/extension films:</b> only awake/cooperative patients with persistent pain after normal CT/MRI when dynamic instability is still a question. Avoid in obtunded/uncooperative patients.</li>
+<li><b>Keep collar/brace:</b> stable cervical fracture being managed nonoperatively, suspected ligamentous injury while awaiting MRI, or any unstable pattern until senior plan.</li>
+</ul>
+<h4>Unstable spine patterns</h4>
+<ul>
+<li>Two/three-column injury, significant kyphosis, &gt;50% vertebral body height loss, translation/subluxation, fracture-dislocation.</li>
+<li>Jefferson/C1 burst with TAL disruption or lateral mass overhang concern, AOD, flexion teardrop, bilateral facet dislocation, Chance/flexion-distraction, unstable Type II dens or displaced hangman's fracture.</li>
+<li>Unstable injury plus deficit = E3: immobilize, document ASIA-style exam/sacral sparing, call senior, prepare MRI/OR/brace pathway.</li>
+</ul>
+<h4>CTA head/neck for BCVI</h4>
+<ul>
+<li>CTA if cervical fracture involves the foramen transversarium, subluxation, transverse process fracture pattern concerning for vertebral artery injury, Le Fort II/III, carotid canal/basilar skull fracture, DAI with GCS &lt;6, hanging/strangulation, or BCVI symptoms.</li>
+<li>BCVI symptoms: Horner syndrome, focal deficit inconsistent with head CT, stroke on CT, active arterial neck/mouth bleeding, expanding neck hematoma, cervical bruit.</li>
+</ul>
+<h4>Acute SCI management reminders</h4>
+<ul>
+<li>High cervical lesion or diaphragmatic breathing = airway/ICU concern.</li>
+<li>Neurogenic shock: hypotension + bradycardia with warm/dry extremities.</li>
+<li>Acute SCI: ICU monitoring; MAP goal 85-90 for 7 days if adopted by senior/local protocol.</li>
+<li>Cauda equina/conus: saddle symptoms, urinary retention, bowel/bladder dysfunction, new leg weakness. Decompress as soon as practical; do not treat 24-48 h as permission to wait.</li>
+</ul>
 </div></details>
 
 <details class="ref"><summary>GCS calculator</summary><div class="rb">
@@ -1193,6 +1225,10 @@ const DOMAINS=[
 ];
 function isTraumaticSAHText(t){return /\b(?:tSAH|traumatic\s+(?:subarachnoid|SAH)|trauma(?:tic)?[^.]{0,35}\bSAH\b|\bSAH\b[^.]{0,35}trauma(?:tic)?)\b/i.test(t||"")}
 function isAneurysmalSAHText(t){return /\b(?:aSAH|aneurysm|aneurysmal|pcomm|acomm|ruptured aneurysm|subarachnoid)\b|\bSAH\b/i.test(t||"")&&!isTraumaticSAHText(t)}
+function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet dislocation|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar)\b/i.test(t||"")}
+function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|translation|subluxation|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
+function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|bulbocavernosus|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|diaphragmatic|respiratory arrest|high cervical)\b/i.test(t||"")}
+function collarClearBlockText(t){return /\b(?:midline tenderness|neck pain|focal neurologic|neuro deficit|altered|obtunded|intoxicated|distracting injur|unreliable exam|persistent pain|collar not cleared|cannot clear|can't clear)\b/i.test(t||"")}
 // ---------- problem playbook (keyword-matched grading suggestions) ----------
 const SUGG=[
  {re:/cauda|\bces\b|saddle|urinary retention/i,n:"Cauda equina syndrome",s:{E:3,O:2,W:2,mods:["NΔ"]},
@@ -1240,9 +1276,9 @@ const SUGG=[
  {re:/seizure|status epilepticus|postictal|convuls/i,n:"Seizure",s:{E:2,W:2,mods:["NΔ"]},
   look:["Uncontrolled seizure / status = E3 override","Postictal state degrades exam reliability (Domain 5) — timestamp the last event","Is the imaging finding actually causative, or incidental to a seizure presentation? (Domain 4)","Check ASM levels and adherence"],
   action:"Timestamp last seizure, check ASM levels, reassess exam post-ictally",trig:"immediately for recurrent seizure or non-clearing exam"},
- {re:/fracture|burst|chance|c-?spine|t-?spine|l-?spine|odontoid|hangman/i,n:"Spine fracture / trauma",s:{E:1,O:1,W:1},
-  look:["Unstable injury WITH deficit = E3 — document the deficit precisely","Score SLICS/TLICS (MDCalc); CT full spine; MRI if ligamentous concern or deficit","Neurologically intact compression fx can often go home with brace + follow-up","Collars: peds negative CT but unexaminable → MRI C-spine WO; primary service clears"],
-  action:"Score SLICS/TLICS; confirm exam and stability; brace question",trig:"immediately for any new deficit"},
+ {re:spineTraumaText,n:"Spine fracture / trauma",s:{E:1,O:1,W:1,mods:["IMG"]},
+  look:["Unstable injury WITH deficit = E3 — document motor/sensory level, sphincters, sacral sparing, and respiratory status precisely","Unstable patterns: two/three-column injury, burst with ligament/TAL concern, Chance/flexion-distraction, fracture-dislocation/translation, flexion teardrop, AOD, bilateral facets, Type II dens","Imaging: CT first; MRI STIR for persistent pain/deficit or ligament/cord concern; CTA head/neck for foramen transversarium fracture, subluxation, Le Fort II/III, carotid canal/basilar skull, DAI GCS <6, hanging/strangulation, or BCVI signs","Collar: clear only if reliable + no midline tenderness + no focal deficit + alert + not intoxicated + no distracting injury, or normal CT with no persistent pain/deficit per senior/local protocol"],
+  action:"Keep immobilized until clearance criteria met; document ASIA-style exam; decide CT/MRI/CTA and brace vs surgery",trig:"immediately for deficit, unstable pattern, neurogenic shock, high-cervical breathing issue, or cauda equina"},
  {re:/tumor|\bmass\b|met(s\b|astas)|glio|meningioma|lesion/i,n:"Tumor / mass",s:{E:1,O:1,W:1},
   look:["Escalate E for herniation risk, obstructive hydrocephalus, or posterior fossa location","Edema → dexamethasone per senior; ask about seizures","MRI wwo + eloquence/vascular planning — rarely same-night surgery","The real questions are usually steroids, imaging timeline, and dispo"],
   action:"Get MRI wwo, discuss dex with senior, clarify admission vs clinic",trig:"immediately for decline or new deficit"},
@@ -1385,6 +1421,11 @@ const FLAGS=[
  {re:/\bivh\b|intraventricular hemorrhage/i,label:"IVH present — watch hydrocephalus, EVD need, and exam trajectory",lv:"warn",apply:{W:2}},
  {re:/ICH Score\s+[3-6]\b/i,label:"ICH Score ≥3 — high-risk score; document exam, IVH/hydrocephalus, volume, AC/reversal, and senior discussion",lv:"e3",apply:{E:2,W:3,mods:["W"]}},
  {re:/ICH Score\s+2\b/i,label:"ICH Score 2 — concerning score; confirm volume, IVH, location, GCS trend, and dispo level",lv:"warn",apply:{W:2}},
+ {re:t=>spineTraumaText(t)&&unstableSpineText(t),label:"Unstable spine pattern — keep immobilized, call senior, CT full spine ± MRI STIR; operative/brace decision cannot wait",lv:"e3",apply:{E:3,O:2,W:3,mods:["NΔ","IMG"]}},
+ {re:t=>spineTraumaText(t)&&sciRedText(t),label:"Severe SCI/autonomic red flag — ICU-level concern; document ASIA/sacral sparing, respiratory status, MAP 85–90 if acute SCI",lv:"e3",apply:{E:3,W:3,mods:["NΔ"]}},
+ {re:/foramen transversarium|transverse foramen|vertebral artery|bcvi|horner|cervical bruit|expanding neck hematoma|le fort (ii|iii)|carotid canal|hanging|strangulation/i,label:"BCVI screen cue — CTA head/neck if cervical fracture/risk factor or neuro deficit inconsistent with head CT",lv:"warn",apply:{mods:["VASC","IMG"]}},
+ {re:t=>spineTraumaText(t)&&collarClearBlockText(t),label:"C-collar clearance blocker — do not clear until reliable exam/normal CT pathway; MRI STIR if persistent pain/deficit or ligament concern",lv:"warn",apply:{mods:["IMG"]}},
+ {re:/nexus|no midline tenderness|no focal neuro|not intoxicated|no distracting injury|alert and oriented|gcs 15/i,label:"C-collar clearance checklist — clear only when all NEXUS elements are satisfied or CT pathway supports clearance",lv:"info",apply:{}},
  {re:/blown pupil|fixed.{0,10}dilat|dilat.{0,10}fixed|anisocoria|nonreactive pupil|unequal pupils|pupil (change|asym)/i,label:"Pupil change — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:/postur|decerebrat|decorticat/i,label:"Posturing — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:/gcs (drop|decline|down|fell)|declining|deteriorat|less responsive|unresponsive|obtund|acutely altered/i,label:"Declining consciousness — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
