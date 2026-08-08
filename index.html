@@ -904,6 +904,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <p class="note">If a patient qualifies: NO empiric hypertonics pre-op unless herniating. Secure-chat the vascular team for screening.</p>
 <h4>ICA stenosis consult</h4><p>TCAR: bifurcation (distance to clavicle, C-level). CEA: stenosis length across C-levels. Degree = widest plaque/widest vessel + laterality · AC/antiplatelet · hx neck surgery/XRT · soft thrombus → heparinize + re-image in 3 d.</p>
 <h4>Baclofen pump</h4><p>1-alarm: 90 d to replacement/refill. 2-alarm: empty/battery/stopped >48 h. To-do: PT/PTT + T&S + CK + NPO · PO baclofen 20–30 q8 (up to 240/d) · cyproheptadine 4–8 q6 · IV diazepam (ICU) · propofol (intubated) · interrogate pump · CT abdomen · LD for IT baclofen.</p>
+<h4>Pituitary / suprasellar consult</h4><p>Diagnosis: suprasellar mass. Add MRI brain/pituitary w/wo pituitary protocol, CT w/wo, ophtho, endocrine, prolactin, stat cortisol, AM cortisol/ACTH, TSH/free T4, LH/FSH, testosterone, IGF-1, GH. If operative/inpatient: hold ASA/DVT ppx as directed, BP 100-140, NPO at midnight if no acute hemorrhage, EKG/CXR/UA/coags, pulse ox + telemetry.</p>
 </div></details>
 
 <details class="ref"><summary>Peds Babies + chart admin (W&I)</summary><div class="rb">
@@ -1256,6 +1257,11 @@ function unrupturedAneurysmText(t){return aneurysmText(t)&&/\b(?:unruptured|inci
 function isAneurysmalSAHText(t){const s=t||"";return !isTraumaticSAHText(s)&&(unsecuredAneurysmText(s)||/\b(?:aSAH|aneurysmal\s+SAH|subarachnoid)\b|\bSAH\b/i.test(s))}
 function carotidText(t){return /\b(?:ICA stenosis|carotid stenosis|carotid artery stenosis|internal carotid|carotid bifurcation|carotid plaque|TCAR|CEA|carotid endarterectomy|carotid stent|carotid revascularization|NASCET)\b/i.test(t||"")}
 function symptomaticCarotidText(t){return carotidText(t)&&/\b(?:symptomatic|TIA|amaurosis|transient monocular|stroke|infarct|weakness|numbness|visual changes|difficulty speaking|aphasia|dysarthria|crescendo)\b/i.test(t||"")}
+function icpCrisisText(t){return /\b(?:ICP crisis|elevated ICP|intracranial pressure|refractory ICP|icp\s*(?:>|>=|over|above)\s*(?:20|22|25)|decompensat|herniat|DECRA|hyperosmolar|mannitol|23\.?4?%|3% saline|HTS)\b/i.test(t||"")}
+function baclofenPumpText(t){const s=t||"";return /\b(?:baclofen pump|intrathecal baclofen|IT baclofen|pump alarm|pump refill|pump failure|pump stopped|battery dead|out of medication|cyproheptadine)\b/i.test(s)||(/\bwithdrawal\b/i.test(s)&&/\b(?:baclofen|pump)\b/i.test(s))}
+function pituitaryText(t){const s=t||"";return /\b(?:pituitary|sellar|suprasellar|transsphenoidal|TSSH|macroadenoma|craniopharyngioma|DI watch)\b/i.test(s)||(/\b(?:apoplexy|bitemporal|visual field)\b/i.test(s)&&/\b(?:pituitary|sellar|suprasellar|macroadenoma)\b/i.test(s))}
+function ichTrialText(t){return /\b(?:NICO|REACH|lobar hemorrhage|basal ganglia hemorrhage|spontaneous ICH|ICH volume|NIHSS|mRS|trial criteria)\b/i.test(t||"")}
+function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
 function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet dislocation|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar)\b/i.test(t||"")}
 function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|translation|subluxation|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
 function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|bulbocavernosus|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|diaphragmatic|respiratory arrest|high cervical)\b/i.test(t||"")}
@@ -1290,8 +1296,11 @@ const SUGG=[
   look:["Ventricles may NOT enlarge in failure — compare with the CT from the last CONFIRMED malfunction, not just the most recent","Identify valve type + current setting; MRI can reprogram a programmable valve","Get prior failure phenotype + baseline from family/facility collateral","Infected shunt: complete removal + EVD + IV abx per IDSA (70% recurrence without removal) [5]"],
   action:"Compare current CT with last confirmed-failure CT; verify valve setting; call family for baseline",trig:"immediately for somnolence, vomiting, or pupil change"},
  {re:/hydroceph|\bhcp\b|ventriculomegaly/i,n:"Hydrocephalus",s:{E:3,O:1,W:3,mods:["W"]},
-  look:["Acute hydrocephalus with deterioration = E3 override","Temporal horns, transependymal flow, 4th-ventricle compression","Posterior fossa cause → lower threshold; EVD may only be the bridge","Define exam frequency + escalation trigger explicitly"],
+ look:["Acute hydrocephalus with deterioration = E3 override","Temporal horns, transependymal flow, 4th-ventricle compression","Posterior fossa cause → lower threshold; EVD may only be the bridge","Define exam frequency + escalation trigger explicitly"],
   action:"Review ventricles vs priors; discuss EVD with senior",trig:"immediately for decline in consciousness"},
+ {re:icpCrisisText,n:"ICP crisis / DECRA steps",s:{E:3,O:1,W:3,mods:["NΔ","W"]},
+  look:["Tier 1: avoid hypertension, HTS/Na strategy, HOB elevated, head/neck midline with nothing pushing, normothermia","Tier 2: hyperosmolar therapy, EVD CSF drainage, analgesia, sedation; propofol lowers CMRO","Paralysis has significant side effects; if used, bootcamp note starts with vecuronium titratable gtt to loss of twitches per ICU/senior","Define exact ICP/exam trigger and who is watching the monitor"],
+  action:"Start Tier 1 positioning/temp/BP/Na checks; call senior/NCCU re hyperosmolar, EVD drainage, sedation/paralysis",trig:"sustained ICP elevation, herniation sign, worsening exam, or uncontrolled agitation/ventilation"},
  {re:/epidural abscess|\bsea\b|spinal epidural/i,n:"Spinal epidural abscess/hematoma",s:{E:2,O:1,W:3,mods:["W","INF"]},
   look:["Subtle weakness = W3; any neurologic change → E3","Whole-spine MRI (skip lesions), blood cultures, inflammatory markers","Cultures before antibiotics unless unstable","Anticoagulation? Recent spinal procedure or injection?"],
   action:"Order whole-spine MRI + cultures; document motor exam with times",trig:"immediately for new weakness or sphincter change"},
@@ -1305,8 +1314,11 @@ const SUGG=[
   look:["Capture: exact drug, indication, last dose, renal function, relevant labs","Reversal: warfarin → 4F-PCC + IV vit K · dabigatran → idarucizumab · Xa inhibitors → andexanet or 4F-PCC · heparin → protamine","Normal PT/PTT does NOT exclude DOAC activity; in an emergent bleed don't wait on labs to reverse","Set the restart deadline and who owns that decision"],
   action:"Confirm last dose + labs; order reversal per pharmacy protocol",trig:"escalate if bleed expands before reversal is complete"},
  {re:/ventriculitis|meningitis|abscess|osteomyelitis|wound|infect|fever|purulen/i,n:"Infection / wound concern",s:{W:2,mods:["INF"]},
-  look:["Sepsis with intracranial hardware or an exposed implant = E3","CSF cells/glucose/protein/Gram/cultures; note timing relative to antibiotics","Infected shunt: removal + EVD + IV abx; reimplant timing is organism-dependent (day 3 → 10 d culture-negative) [5]","Cultures before antibiotics — without delaying an unstable patient"],
+ look:["Sepsis with intracranial hardware or an exposed implant = E3","CSF cells/glucose/protein/Gram/cultures; note timing relative to antibiotics","Infected shunt: removal + EVD + IV abx; reimplant timing is organism-dependent (day 3 → 10 d culture-negative) [5]","Cultures before antibiotics — without delaying an unstable patient"],
   action:"Send cultures before abx (unless unstable); examine wound and hardware",trig:"immediately for sepsis physiology or exam decline"},
+ {re:baclofenPumpText,n:"Baclofen pump issue",s:{E:2,O:1,W:2,mods:["DEV","BASE?"]},
+  look:["1-alarm: 90 days before replacement or refill; 2-alarm: out of medication, battery dead, pump not working, or stopped >48 h","Withdrawal can become ICU-level; check spasticity, fever/autonomic signs, CK/rhabdo concern, and baseline tone","Bootcamp to-do: PT/PTT, T&S, CK, NPO, PO baclofen bridge, cyproheptadine, ICU diazepam/propofol if needed, pump interrogation, CT abdomen","T/L x-rays can miss malfunction; CT abdomen is specifically noted"],
+  action:"Interrogate pump, send PT/PTT/T&S/CK, make NPO, start bridge plan per senior, order CT abdomen",trig:"2-alarm, withdrawal physiology, worsening spasticity/AMS, fever/autonomic instability"},
  {re:/seizure|status epilepticus|postictal|convuls/i,n:"Seizure",s:{E:2,W:2,mods:["NΔ"]},
   look:["Uncontrolled seizure / status = E3 override","Postictal state degrades exam reliability (Domain 5) — timestamp the last event","Is the imaging finding actually causative, or incidental to a seizure presentation? (Domain 4)","Check ASM levels and adherence"],
   action:"Timestamp last seizure, check ASM levels, reassess exam post-ictally",trig:"immediately for recurrent seizure or non-clearing exam"},
@@ -1314,8 +1326,17 @@ const SUGG=[
   look:["Unstable injury WITH deficit = E3 — document motor/sensory level, sphincters, sacral sparing, and respiratory status precisely","Unstable patterns: two/three-column injury, burst with ligament/TAL concern, Chance/flexion-distraction, fracture-dislocation/translation, flexion teardrop, AOD, bilateral facets, Type II dens","Imaging: CT first; MRI STIR for persistent pain/deficit or ligament/cord concern; CTA head/neck for foramen transversarium fracture, subluxation, Le Fort II/III, carotid canal/basilar skull, DAI GCS <6, hanging/strangulation, or BCVI signs","Collar: clear only if reliable + no midline tenderness + no focal deficit + alert + not intoxicated + no distracting injury, or normal CT with no persistent pain/deficit per senior/local protocol"],
   action:"Keep immobilized until clearance criteria met; document ASIA-style exam; decide CT/MRI/CTA and brace vs surgery",trig:"immediately for deficit, unstable pattern, neurogenic shock, high-cervical breathing issue, or cauda equina"},
  {re:/tumor|\bmass\b|met(s\b|astas)|glio|meningioma|lesion/i,n:"Tumor / mass",s:{E:1,O:1,W:1},
-  look:["Escalate E for herniation risk, obstructive hydrocephalus, or posterior fossa location","Edema → dexamethasone per senior; ask about seizures","MRI wwo + eloquence/vascular planning — rarely same-night surgery","The real questions are usually steroids, imaging timeline, and dispo"],
+ look:["Escalate E for herniation risk, obstructive hydrocephalus, or posterior fossa location","Edema → dexamethasone per senior; ask about seizures","MRI wwo + eloquence/vascular planning — rarely same-night surgery","The real questions are usually steroids, imaging timeline, and dispo"],
   action:"Get MRI wwo, discuss dex with senior, clarify admission vs clinic",trig:"immediately for decline or new deficit"},
+ {re:pituitaryText,n:"Pituitary / suprasellar consult",s:{E:1,O:1,W:1,mods:["IMG","OR"]},
+  look:["Bootcamp add: principal diagnosis suprasellar mass; admit to BB7 when inpatient pathway applies","Imaging: MRI brain/pituitary w/wo pituitary protocol; CT w/wo; sedation if claustrophobic","Consults/labs: ophtho, endocrine; prolactin, stat cortisol, AM cortisol/ACTH, TSH/free T4, LH/FSH, testosterone, IGF-1, GH","Periop reminders: hold ASA81/DVT ppx when appropriate, BP 100-140, EKG/CXR/UA/coags, pulse ox + continuous telemetry"],
+  action:"Add pituitary MRI/CT, ophtho/endocrine consults, endocrine labs, and preop hold/checklist if operative",trig:"apoplexy/hemorrhage, acute visual decline, adrenal crisis concern, or DI/SIADH physiology"},
+ {re:vascularMalformationText,n:"Vascular malformation / Moyamoya",s:{E:1,O:1,W:2,mods:["VASC","IMG"]},
+  look:["Bootcamp MRI protocols: MRI Brain WWO Moyamoya + MRA Brain WO; MRI Brain WWO Vascular Malformation + MRA Brain WO","For AVM/dural AVF, capture hemorrhage status, seizure/deficit, venous drainage, eloquence, prior embolization/radiation/surgery, and angio status","If ruptured or hydrocephalus/ICP concern, urgency follows hemorrhage/SAH/ICH rules rather than the label alone"],
+  action:"Order protocol MRI/MRA or angio plan per senior; document rupture status, deficit/seizure, and prior treatment",trig:"rupture, new deficit, hydrocephalus, seizure cluster, or worsening headache"},
+ {re:ichTrialText,n:"ICH NICO / REACH screen",s:{E:2,O:1,W:2,mods:["W"]},
+  look:["NICO screen: lobar/basal ganglia ICH, age 18-80, 30-80 cc, GCS 5-14, NIHSS >5, surgery feasible within 24 h LKW","REACH screen: age 18-70, mRS 0-1, anterior basal ganglia ICH 20-80 mL, GCS 5-14, within 24 h","Key exclusions include underlying aneurysm/AVM/VST/tumor, fixed pupils/posturing, major IVH/thalamic/brainstem involvement, non-reversible AC/coagulopathy, plt <75K or INR >1.4","Bootcamp note: if likely qualifies, do not empirically give hypertonics pre-op unless herniation or suspected ICP need"],
+  action:"Calculate volume/GCS/NIHSS/mRS, check exclusions, and message trial screening team/senior if potentially eligible",trig:"possible qualifying spontaneous ICH within 24 h, especially before hypertonics or operative decision"},
  {re:/stroke|\blvo\b|infarct|ischemi|\bbcvi\b/i,n:"Ischemia / vascular",s:{E:2,O:1,W:2,mods:["VASC"]},
   look:["Time-window-dependent ischemia / LVO = E3 vascular override","Malignant MCA infarct → raise hemicraniectomy discussion early","BCVI with evolving ischemia = E3","Document last-known-well; coordinate with vascular neurology"],
   action:"Confirm last-known-well + imaging; call vascular neurology/senior",trig:"immediately for decline or herniation signs"},
@@ -1453,6 +1474,7 @@ const FLAGS=[
  {re:t=>{const m=parseMeas(t||"");return m.mls!==undefined&&m.mls>5},label:"Midline shift >5 mm — definite action threshold for traumatic extra-axial hemorrhage",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
  {re:t=>{const m=parseMeas(t||"");return m.thick!==undefined&&m.thick>10&&/\bsdh\b|subdural/i.test(t||"")},label:"SDH thickness >10 mm — definite operative-threshold concern",lv:"e3",apply:{E:2,O:2,W:3,mods:["W"]}},
  {re:t=>{const m=parseMeas(t||"");return m.icp!==undefined&&m.icp>=22},label:"ICP ≥22 — definite action threshold; troubleshoot/treat and escalate",lv:"e3",apply:{E:3}},
+ {re:icpCrisisText,label:"ICP crisis cue — DECRA steps: HOB/head midline/temp/BP/Na, hyperosmolar/EVD drainage/sedation plan, senior/NCCU loop",lv:"e3",apply:{E:3,W:3,mods:["NΔ"]}},
  {re:/herniat|uncal|tonsillar|brainstem compression|effaced cistern|cisternal effacement/i,label:"Herniation/brainstem-compression language — definite action trigger",lv:"e3",apply:{E:3,W:3,mods:["NΔ","W"]}},
  {re:/hydrocephalus|ventriculomegaly|temporal horns|transependymal/i,label:"Hydrocephalus/ventricle concern — may need urgent EVD/recheck timing",lv:"warn",apply:{W:2}},
  {re:/\bivh\b|intraventricular hemorrhage/i,label:"IVH present — watch hydrocephalus, EVD need, and exam trajectory",lv:"warn",apply:{W:2}},
@@ -1471,6 +1493,8 @@ const FLAGS=[
  {re:/gcs (drop|decline|down|fell)|declining|deteriorat|less responsive|unresponsive|obtund|acutely altered/i,label:"Declining consciousness — E3 override trigger",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:/herniat/i,label:"Herniation language — E3; don't wait for Cushing triad [1]",lv:"e3",apply:{E:3}},
  {re:/status epilepticus|actively seizing|seizing now/i,label:"Status / active seizure — E3 override",lv:"e3",apply:{E:3}},
+ {re:t=>baclofenPumpText(t)&&/\b(?:2-alarm|out of medication|battery dead|pump not working|stopped|withdrawal)\b/i.test(t||""),label:"Baclofen pump 2-alarm/withdrawal — urgent device + ICU medication bridge concern",lv:"e3",apply:{E:3,W:2,mods:["DEV"]}},
+ {re:t=>pituitaryText(t)&&/\b(?:apoplexy|acute visual|vision loss|bitemporal|hemorrhage|adrenal crisis|cortisol low)\b/i.test(t||""),label:"Pituitary red flag — apoplexy/acute visual or adrenal concern; urgent senior, ophtho/endocrine, cortisol/imaging",lv:"e3",apply:{E:3,W:2,mods:["IMG"]}},
  {re:/hypertens.{0,20}brady|brady.{0,20}hypertens|cushing/i,label:"Cushing physiology — late sign, act NOW [1]",lv:"e3",apply:{E:3}},
  {re:/somnolen|lethargic|drowsy|sleepier/i,label:"Somnolence — trajectory concern: NΔ, consider E↑",lv:"warn",apply:{mods:["NΔ"]}},
  {re:/new weakness|progressive weakness|weaker|can'?t (walk|ambulate)|lost ambulation|foot drop/i,label:"Weakness evolving — NΔ; E3 if rapidly progressive",lv:"warn",apply:{mods:["NΔ"]}},
@@ -1480,6 +1504,7 @@ const FLAGS=[
  {re:/fever|febrile|purulen|drainage|dehis|erythema|wound (open|leak)/i,label:"Infection signal — INF modifier; cultures before abx if stable",lv:"warn",apply:{mods:["INF"]}},
  {re:/gcs ?1[45]\b|neuro(logically)? intact|nonfocal|exam intact/i,label:"Reassuring exam — does the lesion still warrant W3? (silent-risk check)",lv:"info",apply:{W:3}},
  {re:/shunt|\bevd\b|\bdbs\b|\bvns\b|\brns\b|baclofen pump|hardware|implant|lumbar drain/i,label:"Device on board — DEV modifier",lv:"info",apply:{mods:["DEV"]}},
+ {re:vascularMalformationText,label:"Vascular malformation/Moyamoya — VASC + protocol MRI/MRA or angio planning cue",lv:"info",apply:{mods:["VASC","IMG"]}},
  {re:/(mri|cta?|ctv|angio|myelogram).{0,14}(pending|ordered|awaiting|cooking)|awaiting (imaging|scan)|imaging pending/i,label:"Critical imaging pending — IMG modifier + who follows it up?",lv:"info",apply:{mods:["IMG"]}},
  {re:/no consent|consent (needed|pending)|surrogate|no capacity|can'?t consent|interpreter/i,label:"Consent/surrogate unresolved — CONSENT modifier",lv:"info",apply:{mods:["CONSENT"]}},
  {re:/transfer|outside hospital|\bosh\b|accepting/i,label:"Transfer involved — XFER; images pushed + exam before departure",lv:"info",apply:{mods:["XFER"]}},
@@ -1493,7 +1518,7 @@ const FLAGS=[
  {re:symptomaticCarotidText,label:"Symptomatic ICA/carotid stenosis — time-sensitive vascular consult; document last-known-well, symptoms, stroke/TIA imaging, and senior/vascular-neuro plan",lv:"warn",apply:{E:2,W:2,mods:["VASC"]}},
  {re:carotidText,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, plaque/runway, hx neck surgery/XRT",lv:"info",apply:{mods:["VASC","IMG"]}},
  {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"Lab Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
- {re:/tssh|transsphenoidal|pituitary|sellar/i,label:"Lab Pituitary: cortisol, TSH/fT4, prolactin, IGF-1, Na/osm; watch DI (UOP, spec grav)",lv:"info",apply:{}},
+ {re:pituitaryText,label:"Lab Pituitary/suprasellar: prolactin, stat cortisol, AM cortisol/ACTH, TSH/fT4, LH/FSH, testosterone, IGF-1, GH; ophtho/endocrine; MRI pituitary protocol + CT",lv:"info",apply:{mods:["IMG"]}},
  {re:/pre-?op|book(ed|ing)? (the )?or|to the or/i,label:"Lab Pre-op labs: coags, T&S, CBC, MRSA screen, pregnancy test if applicable, EKG",lv:"info",apply:{}},
  {re:/abscess|osteo|discitis|empyema|ventriculitis|meningitis/i,label:"Lab Infection staffing: ESR/CRP, CBC, blood cx ×2 before abx if stable, CSF studies if sampled",lv:"info",apply:{}},
  {re:/\bdi\b|diabetes insipidus|polyuria|uop.{0,10}(high|200)/i,label:"Lab DI watch: Na q6, urine spec grav (<1.005), UOP >200/h ×2h, serum osm",lv:"warn",apply:{}},
@@ -1861,7 +1886,7 @@ function measAlerts(m,txt){
 let curSugg=[],curAlerts=[];
 function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
 function knownPathAbbrev(t){
-  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM)\b/i.test(t||"");
+  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|dAVF|MMD|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM|NICO|REACH)\b/i.test(t||"");
 }
 function upgradeOf(){
   const up={};
@@ -3212,7 +3237,7 @@ const SO_TMPLS={
 };
 function detectTmpl(t){
   if(isAneurysmalSAHText(t)||/\bsah\b|subarachnoid/i.test(t))return "asah";
-  if(carotidText(t)||aneurysmText(t)||/\bcoil\b|pcomm|acomm/i.test(t))return "vascular";
+  if(carotidText(t)||aneurysmText(t)||vascularMalformationText(t)||/\bcoil\b|pcomm|acomm/i.test(t))return "vascular";
   if(/tssh|transsphenoidal|pituitary|sellar/i.test(t))return "tssh";
   if(/\bdhc\b|hemicrani|severe tbi|intubated/i.test(t))return "tbi";
   if(/shunt|\bvps\b/i.test(t))return "shunt";
@@ -3234,11 +3259,15 @@ function roundTags(t){
   if(/\bich\b|\biph\b|intracerebral|intraparenchymal|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage|thalamic hemorrhage|cerebellar hemorrhage|pontine hemorrhage/i.test(s))add("ICH");
   if(/\bevd\b|ventriculostomy|external ventricular/i.test(s))add("EVD");
   if(/shunt|\bvps\b/i.test(s))add("Shunt");
+  if(pituitaryText(s))add("Pituitary");
   if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
   if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
   if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
-  if(/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
+  if(vascularMalformationText(s)||/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
+  if(ichTrialText(s))add("Trial");
+  if(icpCrisisText(s))add("ICP");
+  if(baclofenPumpText(s))add("Pump");
   if(/\bjp\b|blake|drain|hemovac/i.test(s))add("Drain");
   if(/nylon|staple|suture|prolene/i.test(s))add("Sutures");
   if(/dnr|dni|cmo/i.test(s))add("Code");
@@ -3252,6 +3281,10 @@ function normalizeRoundTag(t){
   if(/infection|wound concern|wound/i.test(s))return "Infection";
   if(/carotid|ica stenosis|tcar|cea/i.test(s))return "Carotid";
   if(/aneurysm|pcomm|acomm|uia/i.test(s))return "Aneurysm";
+  if(/pituitary|sellar|suprasellar|tssh|apoplexy/i.test(s))return "Pituitary";
+  if(/baclofen|pump alarm|pump failure/i.test(s))return "Pump";
+  if(/icp|intracranial pressure|herniation/i.test(s))return "ICP";
+  if(/NICO|REACH|trial criteria/i.test(s))return "Trial";
   if(/vascular|bcvi|avm|dural avf|fistula|moyamoya/i.test(s))return "VASC";
   if(/EVD/i.test(s))return "EVD";
   if(/tumou?r|mass|glioma|meningioma|metast/i.test(s))return "Tumor";
@@ -3884,7 +3917,7 @@ function soToRounds(){
 }
 // ---------- text consult formatter ----------
 const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"],[/xarelto|rivaroxaban/i,"Xarelto"],[/pradaxa|dabigatran/i,"Pradaxa"],[/plavix|clopidogrel/i,"Plavix"],[/brilinta|ticagrelor/i,"Brilinta"],[/lovenox|enoxaparin/i,"Lovenox"],[/\bdapt\b/i,"DAPT"],[/heparin gtt|on heparin/i,"heparin"],[/\basa\b|aspirin/i,"ASA"]];
-const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation/i,"known vascular malformation"]];
+const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation|dural avf|moyamoya/i,"known vascular malformation"],[/baclofen pump|intrathecal baclofen/i,"baclofen pump"],[/pituitary|sellar|suprasellar/i,"pituitary/sellar lesion"]];
 const TC_CNS_EXAM=[
  "AOx3",
  "PERRL, EOMI",
@@ -3945,6 +3978,11 @@ function tcRelevantLabs(t){
   const add=x=>{if(x&&!labs.includes(x))labs.push(x)};
   if(/\bsah\b|aneurysm|subarachnoid/i.test(t)){["PT/PTT/INR","platelets","T&S","troponin/EKG","Na baseline"].forEach(add)}
   if(carotidText(t)){["AC/antiplatelet status","P2Y12 if Plavix-loaded","CTA/CUS % stenosis","MRI brain stroke vs TIA","TTE/cardioembolic source"].forEach(add)}
+  if(pituitaryText(t)){["prolactin","stat cortisol","AM cortisol/ACTH","TSH/free T4","LH/FSH","testosterone","IGF-1","GH","Na/osm if DI/SIADH concern","ophtho visual fields"].forEach(add)}
+  if(baclofenPumpText(t)){["PT/PTT/INR","T&S","CK","NPO","pump interrogation","CT abdomen"].forEach(add)}
+  if(icpCrisisText(t)){["Na","serum osm","ABG/ventilation status if intubated","temperature","ICP/EVD output trend"].forEach(add)}
+  if(ichTrialText(t)){["ICH volume","GCS","NIHSS","baseline mRS","platelets","INR","last-known-well"].forEach(add)}
+  if(vascularMalformationText(t)){["MRI Brain WWO vascular malformation + MRA Brain WO","angiogram status","hemorrhage status","seizure/deficit history"].forEach(add)}
   if(/\bsdh\b|\bedh\b|\bich\b|\biph\b|hemorrhage|hematoma|tbi|trauma|fall/i.test(t)){["PT/PTT/INR","platelets","T&S","anti-Xa/DOAC timing if relevant"].forEach(add)}
   if(tcIsSpineText(t)){["PT/PTT/INR","platelets","PVR if cauda/retention"].forEach(add)}
   if(/infect|abscess|osteo|discitis|wound|fever|ventriculitis|meningitis/i.test(t)){["WBC","ESR","CRP","blood cultures before antibiotics"].forEach(add)}
