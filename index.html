@@ -675,6 +675,31 @@ B707 - Miy BLUE (KS) r/o too tired, collapsed 7/31
 <div id="ref_ich"></div>
 </div></details>
 
+<details class="ref"><summary>Carotid / aneurysm consult checks</summary><div class="rb">
+<p class="note">Bootcamp-derived cognitive aid. Use senior/local protocol for final management.</p>
+<h4>ICA / carotid stenosis</h4>
+<ul>
+<li>Capture symptomatic vs asymptomatic: weakness, numbness, visual symptoms/amaurosis, speech symptoms, last-known-well, recurrent/crescendo TIA.</li>
+<li>Degree/laterality: mild 0-49%, moderate 50-69%, severe 70-99%, complete 100%; compare widest plaque to widest distal vessel.</li>
+<li>Imaging: CTA stenosis and ulcerated plaque, carotid ultrasound stenosis, MRI brain stroke vs TIA, consider MRA for intramural thrombus/dissection concern, TTE/cardioembolic source.</li>
+<li>Anatomy: bifurcation level/distance to clavicle, plaque length/runway, angle of mandible, Acomm/Pcomms, high bifurcation, prior neck surgery or radiation.</li>
+<li>Medication: continue ASA unless told otherwise; if Plavix-loaded, check P2Y12 response and discuss Brilinta load for nonresponder per senior.</li>
+<li>Outliers: soft thrombus/target sign may need heparin + repeat CTA in 72 h; complete occlusion usually no revascularization; post-MT apparent ICA stenosis may reflect wire tract through clot.</li>
+</ul>
+<h4>CEA / TCAR / stent considerations</h4>
+<ul>
+<li>CEA favors heavily calcified plaque, DAPT intolerance, older age, and poor collateral situations where shunting may be needed.</li>
+<li>TCAR needs adequate runway and non-circumferential calcification; poor collateral means flow reversal tolerance matters.</li>
+<li>Peripheral stent may fit high/skull-base bifurcation, radiation stenosis, restenosis after CEA, poor GA tolerance, or poor flow-reversal tolerance.</li>
+</ul>
+<h4>Aneurysm / SAH</h4>
+<ul>
+<li>Unsecured SAH: NCCU, q1 neurochecks, BP 100-140, Keppra until secured, nimodipine 21 d, angiogram within 24 h, TCDs 14 d, hydrocephalus/EVD watch.</li>
+<li>Secured SAH: NCCU, q1 neurochecks, BP 100-200 unless otherwise directed, nimodipine 21 d, TCDs 14 d, document clip/coil/stent status and residual/recanalization concern.</li>
+<li>For any aneurysm consult, document secured/unsecured, ruptured/incidental, location, size, morphology/growth, hydrocephalus/IVH, AC/antiplatelet status, and angiogram/follow-up plan.</li>
+</ul>
+</div></details>
+
 <details class="ref"><summary>Anticoagulation reversal quick-reference</summary><div class="rb">
 <p class="note">Use institutional pharmacy and neurocritical-care protocols for final dosing.</p>
 <table>
@@ -1224,7 +1249,13 @@ const DOMAINS=[
  ["11 · Communication, consent, dispo, tasks",["Single team, clear plan, easy dispo","One pending conversation/result/step","Multiple services, unclear ownership, delayed imaging, difficult consent, several timed tasks","Transfer, unavailable surrogate, legal/language barriers, no bed, many interdependent tasks"]]
 ];
 function isTraumaticSAHText(t){return /\b(?:tSAH|traumatic\s+(?:subarachnoid|SAH)|trauma(?:tic)?[^.]{0,35}\bSAH\b|\bSAH\b[^.]{0,35}trauma(?:tic)?)\b/i.test(t||"")}
-function isAneurysmalSAHText(t){return /\b(?:aSAH|aneurysm|aneurysmal|pcomm|acomm|ruptured aneurysm|subarachnoid)\b|\bSAH\b/i.test(t||"")&&!isTraumaticSAHText(t)}
+function aneurysmText(t){return /\b(?:aneurysm|aneurysmal|aSAH|uIA|pcomm|acomm|a1.?a2|mca bifurcation|basilar tip|paraophthalmic|cavernous ica)\b/i.test(t||"")}
+function securedAneurysmText(t){return /\b(?:secured|coiled|clipped|clip\b|coil\b|pipeline|flow divert|stent.?coil|web device|treated aneurysm)\b/i.test(t||"")}
+function unsecuredAneurysmText(t){return /\b(?:unsecured|ruptured|rupture|sentinel headache|worst headache|thunderclap|aSAH|aneurysmal SAH)\b/i.test(t||"")&&aneurysmText(t)}
+function unrupturedAneurysmText(t){return aneurysmText(t)&&/\b(?:unruptured|incidental|known|surveillance|found|outpatient|asymptomatic)\b/i.test(t||"")&&!unsecuredAneurysmText(t)}
+function isAneurysmalSAHText(t){const s=t||"";return !isTraumaticSAHText(s)&&(unsecuredAneurysmText(s)||/\b(?:aSAH|aneurysmal\s+SAH|subarachnoid)\b|\bSAH\b/i.test(s))}
+function carotidText(t){return /\b(?:ICA stenosis|carotid stenosis|carotid artery stenosis|internal carotid|carotid bifurcation|carotid plaque|TCAR|CEA|carotid endarterectomy|carotid stent|carotid revascularization|NASCET)\b/i.test(t||"")}
+function symptomaticCarotidText(t){return carotidText(t)&&/\b(?:symptomatic|TIA|amaurosis|transient monocular|stroke|infarct|weakness|numbness|visual changes|difficulty speaking|aphasia|dysarthria|crescendo)\b/i.test(t||"")}
 function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet dislocation|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar)\b/i.test(t||"")}
 function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|translation|subluxation|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
 function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|bulbocavernosus|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|diaphragmatic|respiratory arrest|high cervical)\b/i.test(t||"")}
@@ -1240,6 +1271,9 @@ const SUGG=[
  {re:isAneurysmalSAHText,n:"SAH / aneurysm",s:{E:3,O:1,W:3,mods:["W","VASC"]},
   look:["Unsecured ruptured aneurysm: rebleed risk — treatment preferably within 24 h [3]","O0/O1 ≠ low acuity — can be E3 without an open operation","BP control, nimodipine, hydrocephalus watch (EVD?)","Isolated traumatic tSAH is a different animal (often home per institutional practice)"],
   action:"Confirm CTA, establish BP goal, call senior re: securing plan",trig:"immediately for decline, headache surge, or pupil change"},
+ {re:t=>aneurysmText(t)&&!isAneurysmalSAHText(t),n:"Aneurysm / vascular lesion",s:{E:1,O:1,W:2,mods:["VASC"]},
+  look:["Separate secured vs unsecured, ruptured vs incidental, and current symptom reason for consult","For unsecured or suspected rupture: treat like aneurysmal SAH until senior says otherwise","For secured SAH: document clip/coil/stent status, residual/recanalization concern, BP goal, nimodipine/TCD plan if in SAH window","Record location, size, morphology/growth, hydrocephalus/IVH, antiplatelet/AC status, and prior vascular treatment"],
+  action:"Clarify secured/unsecured status, CTA/angiogram plan, and whether SAH protocol applies",trig:"headache surge, decline, hydrocephalus, rebleed concern, or unsecured rupture"},
  {re:/posterior fossa|cerebell|\bpf\b/i,n:"Posterior fossa lesion",s:{E:3,O:1,W:3,mods:["W"]},
   look:["Brainstem compression or obstructive hydrocephalus = E3 override","Check 4th ventricle, cisterns, temporal horns","Deterioration is abrupt — W3 even with a good exam; lower evacuation threshold (ACS 2024)","Plan for possible EVD ± suboccipital decompression"],
   action:"Review 4th ventricle and cisterns; call senior now",trig:"immediately for ANY decline — can herniate quickly"},
@@ -1285,6 +1319,9 @@ const SUGG=[
  {re:/stroke|\blvo\b|infarct|ischemi|\bbcvi\b/i,n:"Ischemia / vascular",s:{E:2,O:1,W:2,mods:["VASC"]},
   look:["Time-window-dependent ischemia / LVO = E3 vascular override","Malignant MCA infarct → raise hemicraniectomy discussion early","BCVI with evolving ischemia = E3","Document last-known-well; coordinate with vascular neurology"],
   action:"Confirm last-known-well + imaging; call vascular neurology/senior",trig:"immediately for decline or herniation signs"},
+ {re:carotidText,n:"ICA / carotid stenosis",s:{E:1,O:1,W:1,mods:["VASC","IMG"]},
+  look:["Bootcamp carotid checks: degree stenosis, laterality, widest plaque/widest vessel, symptomatic status, and AC/antiplatelet status","TCAR anatomy: bifurcation distance to clavicle/C-spine level, plaque length/runway, angle of mandible, Acomm/Pcomms","CEA anatomy: stenosis length across C-spine levels; note heavily calcified plaque, high bifurcation, prior neck surgery/radiation, DAPT tolerance, age/collateral concerns","Workup: CTA stenosis/high-risk ulcerated plaque, carotid US, MRI brain stroke vs TIA, TTE/cardioembolic source; soft thrombus/target-sign pathway may need heparin + repeat CTA per senior"],
+  action:"Document symptomatic vs asymptomatic, % stenosis/laterality, CTA/CUS/MRI/TTE status, AC/AP plan, and TCAR/CEA/CAS anatomy",trig:"new stroke/TIA, crescendo symptoms, soft thrombus, complete occlusion uncertainty, or unstable neuro exam"},
  {re:t=>isAneurysmalSAHText(t)||/hunt.?hess|fisher/i.test(t||""),n:"SAH scoring reminder",s:{mods:["VASC"]},
   look:["Use Hunt-Hess / modified Fisher when presenting aneurysmal SAH consults","Document hydrocephalus, IVH, aneurysm secured vs unsecured, BP goal, nimodipine, TCD plan","Score-driven labels help sign-out and staffing but do not replace E/O/W urgency"],
   action:"Add Hunt-Hess + modified Fisher score to the consult presentation",trig:"decline, rebleed concern, hydrocephalus, or pupil change"},
@@ -1419,6 +1456,9 @@ const FLAGS=[
  {re:/herniat|uncal|tonsillar|brainstem compression|effaced cistern|cisternal effacement/i,label:"Herniation/brainstem-compression language — definite action trigger",lv:"e3",apply:{E:3,W:3,mods:["NΔ","W"]}},
  {re:/hydrocephalus|ventriculomegaly|temporal horns|transependymal/i,label:"Hydrocephalus/ventricle concern — may need urgent EVD/recheck timing",lv:"warn",apply:{W:2}},
  {re:/\bivh\b|intraventricular hemorrhage/i,label:"IVH present — watch hydrocephalus, EVD need, and exam trajectory",lv:"warn",apply:{W:2}},
+ {re:unsecuredAneurysmText,label:"Unsecured/ruptured aneurysm — definite action: SAH protocol, BP goal, nimodipine, angiogram/securing plan, hydrocephalus watch",lv:"e3",apply:{E:3,W:3,mods:["VASC","W"]}},
+ {re:t=>securedAneurysmText(t)&&aneurysmText(t),label:"Secured aneurysm — confirm clip/coil/stent status, residual/recanalization, BP goal, TCD/nimodipine plan if SAH-window",lv:"info",apply:{mods:["VASC"]}},
+ {re:unrupturedAneurysmText,label:"Unruptured/incidental aneurysm — document size, location, morphology/growth, symptoms, smoking/HTN/family history, and follow-up vs angiogram plan",lv:"info",apply:{mods:["VASC"]}},
  {re:/ICH Score\s+[3-6]\b/i,label:"ICH Score ≥3 — high-risk score; document exam, IVH/hydrocephalus, volume, AC/reversal, and senior discussion",lv:"e3",apply:{E:2,W:3,mods:["W"]}},
  {re:/ICH Score\s+2\b/i,label:"ICH Score 2 — concerning score; confirm volume, IVH, location, GCS trend, and dispo level",lv:"warn",apply:{W:2}},
  {re:t=>spineTraumaText(t)&&unstableSpineText(t),label:"Unstable spine pattern — keep immobilized, call senior, CT full spine ± MRI STIR; operative/brace decision cannot wait",lv:"e3",apply:{E:3,O:2,W:3,mods:["NΔ","IMG"]}},
@@ -1450,7 +1490,8 @@ const FLAGS=[
  {re:isTraumaticSAHText,label:"Lab tSAH: traumatic hemorrhage workflow — repeat CTH timing, AC/antiplatelet status, plt/coags if relevant, trauma/dispo pathway",lv:"info",apply:{}},
  {re:isAneurysmalSAHText,label:"Lab aSAH staffing: coags, plt, T&S, Na baseline, troponin/EKG; Hunt-Hess / modified Fisher when relevant",lv:"info",apply:{}},
  {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"Lab Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
- {re:/carotid|tcar\b|\bcea\b|ica stenosis/i,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, hx neck surgery/XRT",lv:"info",apply:{}},
+ {re:symptomaticCarotidText,label:"Symptomatic ICA/carotid stenosis — time-sensitive vascular consult; document last-known-well, symptoms, stroke/TIA imaging, and senior/vascular-neuro plan",lv:"warn",apply:{E:2,W:2,mods:["VASC"]}},
+ {re:carotidText,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, plaque/runway, hx neck surgery/XRT",lv:"info",apply:{mods:["VASC","IMG"]}},
  {re:/baclofen|pump (alarm|fail|stop|empty)/i,label:"Lab Baclofen pump: PT/PTT + T&S + CK, NPO; PO baclofen bridge, interrogate pump, CT abdomen (see Reference)",lv:"warn",apply:{}},
  {re:/tssh|transsphenoidal|pituitary|sellar/i,label:"Lab Pituitary: cortisol, TSH/fT4, prolactin, IGF-1, Na/osm; watch DI (UOP, spec grav)",lv:"info",apply:{}},
  {re:/pre-?op|book(ed|ing)? (the )?or|to the or/i,label:"Lab Pre-op labs: coags, T&S, CBC, MRSA screen, pregnancy test if applicable, EKG",lv:"info",apply:{}},
@@ -1820,7 +1861,7 @@ function measAlerts(m,txt){
 let curSugg=[],curAlerts=[];
 function suggMatch(s,t){return typeof s.re==="function"?s.re(t):s.re.test(t)}
 function knownPathAbbrev(t){
-  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|TSSH|PF|MCA|GBM)\b/i.test(t||"");
+  return /\b(?:a?SAH|tSAH|SDH|cSDH|aSDH|EDH|ICH|IPH|IVH|TBI|HCP|VPS|SEA|CES|LVO|BCVI|AVM|TSSH|PF|MCA|ICA|CEA|TCAR|uIA|ACOMM|PCOMM|PICA|AICA|SCA|GBM)\b/i.test(t||"");
 }
 function upgradeOf(){
   const up={};
@@ -3163,13 +3204,15 @@ const SO_TMPLS={
  tbi:{name:"Severe TBI",fields:[["One-liner","injury, surgery, devices"],["Exam","intubated: eyes, pupils, corneal/cough, motor"],["EVD + ICP course","level, max ICP, what fixed it"],["Drains","JP output"],["Imaging","latest CT, stable?"],["Na goal","HTS/florinef, last Na"],["ICP management","mannitol, sedation"],["BP goal","SBP <160"],["Seizure meds / LTM","Keppra, LTM on?"],["Active medical issues","VAP, lines, etc."]]},
  crani:{name:"Post-op crani",fields:[["One-liner","side, pathology, date"],["Exam vs pre-op","new deficits?"],["Drains + output","JP to suction, serosang"],["Post-op imaging","done / pending MRI wwo"],["BP goal","SBP <140 ×48 h"],["Na goal + last","eunatremia, last 142"],["Seizure ppx","Keppra 7 d"],["Dispo planning","RA, PO, voiding, PT/OT rec"],["Active problems","and how addressed"]]},
  spine:{name:"Spine",fields:[["One-liner","levels, procedure, date"],["Motor exam","delt/bi/tri/ff · IP/quad/AT/EHL/gastroc + baseline"],["Drains","JP/blake, output, NSG vs PRS"],["Imaging pending","upright XR, MRI"],["Activity / brace","Aspen at all times?"],["MAP goal if cord","MAP >85, day _ of 7"],["DVT ppx","held/on since"],["Dispo","and barriers"]]},
+ vascular:{name:"Vascular",fields:[["One-liner","carotid/aneurysm, side/location, secured?"],["Symptoms + timing","TIA/stroke/amaurosis/headache, LKW"],["Exam","naming/repetition, visual fields, focal deficit"],["Imaging","CTA/CUS/MRI/TTE/angio status"],["Anatomy","% stenosis, laterality, bifurcation/plaque/runway or aneurysm size/morphology"],["Meds","ASA/DAPT/P2Y12, AC/last dose"],["Plan","medical vs CEA/TCAR/stent/angio/follow-up"],["Escalation trigger","new symptoms, decline, rebleed/hydrocephalus"]]},
  shunt:{name:"Shunt",fields:[["One-liner","shunt type, valve + setting, indication"],["Baseline vs current exam","who knows baseline"],["Prior failure phenotype","how they failed before"],["Imaging comparison","which prior CT is the comparison"],["Valve plan","setting change, recheck after MRI"],["Escalation trigger","somnolence, vomiting, pupil"],["Family / collateral","who to call"]]},
  evd:{name:"EVD / IVH",fields:[["One-liner","pathology, EVD side + date"],["Exam",""],["EVD","level, output/hr, ICP range"],["Clamp trial","status, f@level date"],["CSF labs / cultures","cells, cx pending"],["Imaging","ventricle size vs prior"],["Wean plan","and who decides"],["Escalation trigger","ICP >, exam change"]]},
  csdh:{name:"SDH",fields:[["One-liner","side, thickness, acute-on-chronic?"],["Exam + baseline",""],["Imaging","thickness, MLS, stable × how long"],["AC status","drug, held since, restart date"],["Operative plan","burr holes / SEPS / observe — senior decision"],["Seizure ppx",""],["Escalation trigger","exam or pupil change"]]},
  floor:{name:"General",fields:[["One-liner",""],["Exam + change from baseline",""],["Overnight events",""],["Pending studies","and who follows up"],["Meds of consequence","AC, abx, steroids, ASM"],["Goals","BP / Na / pain"],["Dispo + barriers",""],["Contingency","if X happens, do Y"]]}
 };
 function detectTmpl(t){
-  if(/\bsah\b|aneurysm|subarachnoid|coil|pcomm|acomm/i.test(t))return "asah";
+  if(isAneurysmalSAHText(t)||/\bsah\b|subarachnoid/i.test(t))return "asah";
+  if(carotidText(t)||aneurysmText(t)||/\bcoil\b|pcomm|acomm/i.test(t))return "vascular";
   if(/tssh|transsphenoidal|pituitary|sellar/i.test(t))return "tssh";
   if(/\bdhc\b|hemicrani|severe tbi|intubated/i.test(t))return "tbi";
   if(/shunt|\bvps\b/i.test(t))return "shunt";
@@ -3183,16 +3226,19 @@ function roundTags(t){
   const tags=[];
   const add=x=>{if(x&&!tags.includes(x))tags.push(x)};
   const s=String(t||"");
-  if(isTraumaticSAHText(s))add("tSAH");else if(/\bsah\b|subarachnoid|aneurysm/i.test(s))add("SAH");
+  if(isTraumaticSAHText(s))add("tSAH");else if(isAneurysmalSAHText(s)||/\bsah\b|subarachnoid/i.test(s))add("SAH");
+  if(aneurysmText(s))add("Aneurysm");
+  if(carotidText(s))add("Carotid");
   if(/\bsdh\b|subdural|seps/i.test(s))add("SDH");
   if(/\bedh\b|epidural hematoma|extradural/i.test(s))add("EDH");
   if(/\bich\b|\biph\b|intracerebral|intraparenchymal|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage|thalamic hemorrhage|cerebellar hemorrhage|pontine hemorrhage/i.test(s))add("ICH");
   if(/\bevd\b|ventriculostomy|external ventricular/i.test(s))add("EVD");
   if(/shunt|\bvps\b/i.test(s))add("Shunt");
   if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
-  if(/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
+  if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(s))add("Spine");
   if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
+  if(/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
   if(/\bjp\b|blake|drain|hemovac/i.test(s))add("Drain");
   if(/nylon|staple|suture|prolene/i.test(s))add("Sutures");
   if(/dnr|dni|cmo/i.test(s))add("Code");
@@ -3204,6 +3250,9 @@ function normalizeRoundTag(t){
   if(/\bIPH\b|intraparenchymal|intracerebral|hemorrhage/i.test(s))return "ICH";
   if(/anticoag|antiplatelet|coumadin|warfarin|eliquis|xarelto|plavix|heparin/i.test(s))return "AC";
   if(/infection|wound concern|wound/i.test(s))return "Infection";
+  if(/carotid|ica stenosis|tcar|cea/i.test(s))return "Carotid";
+  if(/aneurysm|pcomm|acomm|uia/i.test(s))return "Aneurysm";
+  if(/vascular|bcvi|avm|dural avf|fistula|moyamoya/i.test(s))return "VASC";
   if(/EVD/i.test(s))return "EVD";
   if(/tumou?r|mass|glioma|meningioma|metast/i.test(s))return "Tumor";
   if(/subdural|SDH/i.test(s))return "SDH";
@@ -3888,13 +3937,14 @@ function stripExamSmartLists(s){
     .replace(/\{[^{}:]+:\d+::((?:"[^"]*"\s*,?\s*)+)\}/g,(_,opts)=>{const m=opts.match(/"([^"]*)"/);return m?m[1]:""})
     .replace(/\{[^{}]*:\d+\}/g,"***");
 }
-function tcIsSpineText(t){return /spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
+function tcIsSpineText(t){return !carotidText(t)&&/spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
 function tcIsBabyText(t){return /\b(?:baby|infant|neonate|newborn|nicu|wi|w&i|pedi|peds|months?\s*old|weeks?\s*old|days?\s*old|fontanelle|head circumference|sutures?)\b/i.test(t||"")}
 function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:TC_CNS_EXAM)}
 function tcRelevantLabs(t){
   const labs=["Na","PT/PTT/INR","platelets"];
   const add=x=>{if(x&&!labs.includes(x))labs.push(x)};
   if(/\bsah\b|aneurysm|subarachnoid/i.test(t)){["PT/PTT/INR","platelets","T&S","troponin/EKG","Na baseline"].forEach(add)}
+  if(carotidText(t)){["AC/antiplatelet status","P2Y12 if Plavix-loaded","CTA/CUS % stenosis","MRI brain stroke vs TIA","TTE/cardioembolic source"].forEach(add)}
   if(/\bsdh\b|\bedh\b|\bich\b|\biph\b|hemorrhage|hematoma|tbi|trauma|fall/i.test(t)){["PT/PTT/INR","platelets","T&S","anti-Xa/DOAC timing if relevant"].forEach(add)}
   if(tcIsSpineText(t)){["PT/PTT/INR","platelets","PVR if cauda/retention"].forEach(add)}
   if(/infect|abscess|osteo|discitis|wound|fever|ventriculitis|meningitis/i.test(t)){["WBC","ESR","CRP","blood cultures before antibiotics"].forEach(add)}
