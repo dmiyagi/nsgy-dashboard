@@ -139,17 +139,30 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .selrow button.selW.on{background:#12304c;border-color:var(--w2);color:#eaf8ff}
 .selrow button.selW.on .d{color:#bcecff}
 .selrow button.selC.on{background:#173a3c;border-color:var(--teal)}
+.stopmini{display:flex;gap:6px;align-items:center;background:var(--card2);border-radius:8px;padding:6px 8px;margin-top:7px;font-size:11.5px;color:var(--mut);border:1px solid var(--line)}
+.stopmini b{color:var(--text);font-size:12px}
+.stopdot{width:9px;height:9px;border-radius:50%;background:#33415c;box-shadow:0 0 0 2px rgba(255,255,255,.04)}
+.stopdot.on{background:var(--acc);box-shadow:0 0 0 2px rgba(90,162,255,.18)}
+.stopmini.e0 .stopdot.on{background:#7e8ca6}.stopmini.e1 .stopdot.on{background:var(--e1)}.stopmini.e2 .stopdot.on{background:var(--e2)}.stopmini.e3 .stopdot.on{background:var(--e3)}
+.stopmini.o0 .stopdot.on{background:#8a7bb7}.stopmini.o1 .stopdot.on{background:var(--purp)}.stopmini.o2 .stopdot.on{background:#c29cff}.stopmini.o3 .stopdot.on{background:#e0c9ff}
+.stopmini.w0 .stopdot.on{background:#4d5f80}.stopmini.w1 .stopdot.on{background:#41b7ff}.stopmini.w2 .stopdot.on{background:#8ccfff}.stopmini.w3 .stopdot.on{background:#d6edff}
+.stopmini.c1 .stopdot.on{background:#66dbc8}.stopmini.c2 .stopdot.on{background:#35b8a9}.stopmini.c3 .stopdot.on{background:#1f8f85}.stopmini.c4 .stopdot.on{background:#176e68}
 .formwarn{font-size:12.5px;color:var(--e3);background:#2a0f18;border:1px solid #5c1f30;border-radius:8px;padding:8px 10px;margin-bottom:10px;display:none}
 .formwarn.show{display:block}
 .selhint{font-size:12px;color:#b9c6da;background:var(--card2);border-left:3px solid var(--acc);border-radius:6px;padding:6px 9px;margin-top:6px;line-height:1.45}
 .sugg{margin-top:7px}
-.sg{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--purp);border-radius:9px;padding:8px 10px;margin-bottom:7px}
-.sg .sgt{font-size:12.5px;font-weight:800;color:var(--purp)}
-.sg .sgs{font-size:11.5px;font-weight:700;color:var(--teal);margin:2px 0 4px}
-.sg ul{margin:2px 0 7px 16px;font-size:11.5px;color:#aebdd3;line-height:1.45}
+.sg{background:var(--card2);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;overflow:hidden}
+.sg>summary{display:flex;align-items:center;gap:8px;list-style:none;padding:9px 10px;cursor:pointer}
+.sg>summary::-webkit-details-marker{display:none}
+.sg>summary:after{content:"more";margin-left:auto;color:var(--acc);font-size:10.5px;font-weight:800}
+.sg[open]>summary:after{content:"less"}
+.sg .sgmain{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.sg .sgt{font-size:12.5px;font-weight:800;color:var(--purp);line-height:1.2}
+.sg .sgs{font-size:11.5px;font-weight:700;color:var(--teal);line-height:1.2}
+.sg ul{margin:0 10px 9px 26px;font-size:11.5px;color:#aebdd3;line-height:1.45}
 .sg li{margin-bottom:2px}
-.sg .sgb{display:flex;gap:5px;flex-wrap:wrap}
-.sg .sgb button{font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--acc);cursor:pointer;font-family:var(--font)}
+.sg .sgb{display:flex;gap:5px;flex-wrap:wrap;flex:0 0 auto}
+.sg .sgb button{font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;border:1px solid var(--acc);background:rgba(90,162,255,.08);color:var(--acc);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .sg .sgb button:active{background:#12283f}
 .sgnote{font-size:10.5px;color:var(--mut);font-style:italic;margin-bottom:4px}
 .mal{display:flex;gap:8px;align-items:center;border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:12.5px;line-height:1.4}
@@ -321,8 +334,13 @@ details.moredet[open]>summary{margin-bottom:8px}
 #fld_tc>summary::before{content:"▯";color:var(--acc);font-weight:900}
 #fld_tc[open]{padding:0 10px 10px}
 #fld_tc[open]>summary{margin:0 -10px 10px}
-.scoreaid{display:none;background:var(--card2);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:9px 10px;margin:8px 0 12px}
+.scoreaid{display:none;background:var(--card2);border:1px solid var(--line);border-radius:12px;margin:8px 0 12px;overflow:hidden}
 .scoreaid.show{display:block}
+.scoreaid>summary{display:flex;align-items:center;gap:8px;list-style:none;padding:10px 11px;cursor:pointer;font-size:13px;font-weight:800;color:var(--text)}
+.scoreaid>summary::-webkit-details-marker{display:none}
+.scoreaid>summary:after{content:"more";margin-left:auto;color:var(--acc);font-size:10.5px}
+.scoreaid[open]>summary:after{content:"less"}
+.scoreaid .scorebody{padding:0 11px 11px}
 .scoreaid h4{font-size:13px;margin-bottom:3px;color:var(--text)}
 .scoreaid .note{font-size:11px;color:var(--mut);margin-bottom:8px}
 .gcsgrid{display:grid;grid-template-columns:1fr;gap:8px}
@@ -369,9 +387,14 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{font-size:12px;font-weight:700;padding:5px 10px;border-radius:16px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .chips button.on{background:#12283f;border-color:var(--acc);color:var(--acc)}
-.smartbox{background:#12283f;border:1px solid #274b73;border-left:4px solid var(--acc);border-radius:9px;padding:8px 10px;margin-top:7px;font-size:12px;color:#b9d6ff}
+.smartbox{background:#12283f;border:1px solid #274b73;border-radius:12px;margin-top:7px;font-size:12px;color:#b9d6ff;overflow:hidden}
+.smartbox>summary{display:flex;align-items:center;gap:8px;list-style:none;padding:8px 10px;cursor:pointer}
+.smartbox>summary::-webkit-details-marker{display:none}
+.smartbox>summary:after{content:"more";margin-left:auto;color:var(--acc);font-size:10.5px;font-weight:800}
+.smartbox[open]>summary:after{content:"less"}
 .smartbox b{color:var(--acc)}
-.smartbox .qbtns{margin-top:6px}
+.smartbox .qbtns{display:inline-flex;margin-top:0;margin-left:4px;vertical-align:middle}
+.smartbody{padding:0 10px 9px;color:#b9d6ff}
 .qbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .qbtns button{font-size:11.5px;font-weight:700;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
 .qbtns button.on{border-color:var(--acc);color:var(--acc)}
@@ -464,6 +487,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
         <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
         <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
         <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
+        <button class="btn sec sm tc-WOUND" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'WOUND')">□ Wound</button>
         <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">⌂ DC prep</button>
       </div>
     </details>
@@ -980,8 +1004,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </div>
     <div class="fld" id="fld_loc"><label>Location</label><input type="hidden" id="f_loc">
       <div class="locgrid">
-        <div><label>Bed / location</label><input type="text" id="f_bed" placeholder="C243"></div>
-        <div><label>Last 3</label><input type="text" id="f_last3" placeholder="Miy"></div>
+        <div><label>Bed / location</label><input type="text" id="f_bed" placeholder="e.g. C243"></div>
+        <div><label>Patient</label><input type="text" id="f_last3" placeholder="first 3 letters"></div>
       </div>
     </div>
     <div class="fld" id="fld_call" style="display:none"><label>Who to call</label>
@@ -1023,7 +1047,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </details>
     <div class="fld" id="fld_E"><div class="axhead"><label>E — urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
-      <div class="selhint" id="hintE"></div>
+      <div id="eMini"></div>
+      <div class="selhint" id="hintE" style="display:none"></div>
       <details class="axisinfo"><summary>ℹ What counts as each E level / E3 triggers</summary><div class="ai">
         <b>E3</b> — active or imminent neurologic/physiologic threat: interrupt, assess immediately, escalate now. · <b>E2</b> — assess within 30 min. · <b>E1</b> — assess within 1 hour. · <b>E0</b> — group with the next consult, or assess within 1.5 hours. <i>Windows are operational approximations, not disease definitions.</i><br>
         <span class="grp">Intracranial E3:</span> acute ↓consciousness · new anisocoria/nonreactive pupil · new posturing · rapidly progressive deficit · acute hydrocephalus with deterioration · EVD obstruction with decline or uncontrolled ICP · severe mass effect / impending herniation · posterior fossa lesion with brainstem compression or obstructive HCP · status epilepticus · sudden postop decline or postop hematoma with deterioration · uncontrolled ICH · severe edema with herniation syndrome.<br>
@@ -1035,7 +1060,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </div>
     <div class="fld" id="fld_O"><div class="axhead"><label>O — operative trajectory</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selO"></div>
-      <div class="selhint" id="hintO"></div>
+      <div id="oMini"></div>
+      <div class="selhint" id="hintO" style="display:none"></div>
       <details class="axisinfo"><summary>ℹ What counts as each O level / when to re-score</summary><div class="ai">
         <b>O3</b> — emergency procedure underway or decision effectively made. · <b>O2</b> — high probability of operation this shift/day; limited decisions remain. · <b>O1</b> — intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. · <b>O0</b> — observation, medical treatment, outpatient, or another service presently favored.<br>
         <span class="grp">Re-score whenever:</span> imaging changes · exam changes · repeat imaging is stable · senior review occurs · contraindications resolve · a procedure is completed · goals of care change.
@@ -1044,7 +1070,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </div>
     <div class="fld" id="fld_W"><div class="axhead"><label>W — hidden-deterioration risk</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selW"></div>
-      <div class="selhint" id="hintW"></div>
+      <div id="wMini"></div>
+      <div class="selhint" id="hintW" style="display:none"></div>
       <details class="axisinfo"><summary>ℹ What counts as each W level / W3 lesions</summary><div class="ai">
         <b>W0</b> — low likelihood of rapid or clinically silent progression. · <b>W1</b> — routine serial exam or imaging required. · <b>W2</b> — known evolving disease: explicit reassessment time + contingency required. · <b>W3</b> — reassuring present exam but substantial lesion-specific risk of abrupt deterioration.<br>
         <span class="grp">Classic W3 lesions:</span> EDH with GCS 15 · large SDH with preserved exam · expanding contusion · posterior fossa hemorrhage · acute hydrocephalus · anticoagulated ICH · shunt malfunction with subtle presentation · unsecured ruptured aneurysm · spinal epidural process with subtle weakness · new postop headache/vomiting/somnolence/wound swelling · incomplete imaging despite a dangerous syndrome.
@@ -1054,7 +1081,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     </div>
     <div class="fld" id="fld_C"><label>C — complexity (quick pick, or score domains)</label>
       <div class="selrow" id="selC"></div>
-      <div class="selhint" id="hintC"></div>
+      <div id="cMini"></div>
+      <div class="selhint" id="hintC" style="display:none"></div>
       <details class="axisinfo"><summary>ℹ What counts as each C level / the 11 domains</summary><div class="ai">
         Total of 11 domains, each 0–3 (max 33): <b>C1</b> low 0–5 · <b>C2</b> moderate 6–11 · <b>C3</b> high 12–23 · <b>C4</b> extreme 24–33. Thresholds are operational and unvalidated — moderate difficulty across nearly every domain appropriately scores high or extreme. Quick pick is a provisional gut estimate; score the domains when you have a minute.<br>
         <span class="grp">Domains:</span> 1 neuro instability/trajectory · 2 lesion & anatomic danger · 3 hidden-deterioration risk (W) · 4 diagnostic uncertainty · 5 baseline & exam interpretability · 6 prior anatomy/devices · 7 procedural complexity · 8 hemostasis & meds · 9 infection/wound/CSF · 10 medical/physiologic · 11 communication/consent/dispo/tasks.
@@ -1335,7 +1363,7 @@ const SUGG=[
  {re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|\bdapt\b|\bdoac\b|anticoag|\bac\b/i,n:"Anticoagulation on board",s:{mods:["AC"]},
   look:["Capture: exact drug, indication, last dose, renal function, relevant labs","Reversal: warfarin → 4F-PCC + IV vit K · dabigatran → idarucizumab · Xa inhibitors → andexanet or 4F-PCC · heparin → protamine","Normal PT/PTT does NOT exclude DOAC activity; in an emergent bleed don't wait on labs to reverse","Set the restart deadline and who owns that decision"],
   action:"Confirm last dose + labs; order reversal per pharmacy protocol",trig:"escalate if bleed expands before reversal is complete"},
- {re:/ventriculitis|meningitis|abscess|osteomyelitis|wound|infect|fever|purulen/i,n:"Infection / wound concern",s:{W:2,mods:["INF"]},
+ {re:/\bSSI\b|surgical site infection|ventriculitis|meningitis|abscess|osteomyelitis|wound|infect|fever|purulen/i,n:"Infection / wound concern",s:{W:2,mods:["INF"]},
  look:["Sepsis with intracranial hardware or an exposed implant = E3","CSF cells/glucose/protein/Gram/cultures; note timing relative to antibiotics","Infected shunt: removal + EVD + IV abx; reimplant timing is organism-dependent (day 3 → 10 d culture-negative) [5]","Cultures before antibiotics — without delaying an unstable patient"],
   action:"Send cultures before abx (unless unstable); examine wound and hardware",trig:"immediately for sepsis physiology or exam decline"},
  {re:baclofenPumpText,n:"Baclofen pump issue",s:{E:2,O:1,W:2,mods:["DEV","BASE?"]},
@@ -1421,6 +1449,9 @@ const TYPES={
  BOOK:{i:"⊞",l:"Booking",probL:"What — patient",probPh:"R crani for tumor · ED12",dlL:"Book by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"OR booking to-do: exact procedure name + laterality, attending, consent, DVT ppx held, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
+ WOUND:{i:"□",l:"Wound check",probL:"What — patient",probPh:"suture/staple/incision check · C243 Miy",dlL:"Next check",
+  presets:[["+1 day",1440],["+2 days",2880],["+3 days",4320],["+1 wk",10080],["Clear",0]],
+  rem:"Dedicated wound/suture/staple/incision check. Can be snoozed to calendar/board date and linked back to a Rounds patient."},
  DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
@@ -1546,7 +1577,7 @@ const FLAGS=[
  {re:/vomit|emesis|worst headache|thunderclap/i,label:"Vomiting / thunderclap — ICP or SAH signal",lv:"warn",apply:{}},
  {re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|\bdapt\b|\bdoac\b|anticoag|\binr\b/i,label:"Anticoagulant/antiplatelet mentioned — AC modifier + reversal plan",lv:"warn",apply:{mods:["AC"]}},
  {re:infectionConcernText,label:"R/o SSI/infection — verify if antibiotics already given; if stable and not started, ask chief/attending before antibiotics if sampling/cultures should happen first",lv:"warn",apply:{E:2,W:2,mods:["INF"]}},
- {re:/fever|febrile|purulen|drainage|dehis|erythema|wound (open|leak)/i,label:"Infection signal — INF modifier; cultures before abx if stable",lv:"warn",apply:{mods:["INF"]}},
+ {re:/\bSSI\b|surgical site infection|fever|febrile|purulen|drainage|dehis|erythema|wound (open|leak)/i,label:"Infection signal — INF modifier; cultures before abx if stable",lv:"warn",apply:{mods:["INF"]}},
  {re:/gcs ?1[45]\b|neuro(logically)? intact|nonfocal|exam intact/i,label:"Reassuring exam — does the lesion still warrant W3? (silent-risk check)",lv:"info",apply:{W:3}},
  {re:/shunt|\bevd\b|\bdbs\b|\bvns\b|\brns\b|baclofen pump|hardware|implant|lumbar drain/i,label:"Device on board — DEV modifier",lv:"info",apply:{mods:["DEV"]}},
  {re:vascularMalformationText,label:"Vascular malformation/Moyamoya — VASC + protocol MRI/MRA or angio planning cue",lv:"info",apply:{mods:["VASC","IMG"]}},
@@ -1687,10 +1718,10 @@ function renderGcsAid(ns,targetId,force){
   const s=GCS_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+GCS_OPTS[k].map(o=>
     '<button type="button" class="'+(s[k]===o[0]?"on":"")+'" onclick="setGcsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="NT"?"":"+"+o[0])+'</button>').join("")+'</div></div>';
-  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>GCS calculator</h4>'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>GCS calculator</summary><div class="scorebody">'+
     '<div class="note">Trauma/SDH aid. Record components; do not sum if any component is NT.</div>'+
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
-    '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div>';
+    '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div></details>';
 }
 function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;syncGcsToIch(ns);if(ns==="form")syncFormScoreFields();renderGcsContext(ns);renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderGcsContext(ns){
@@ -1717,11 +1748,11 @@ function renderHhAid(ns,targetId,force){
   const txt=scoreContextText(ns);
   const show=force||isAneurysmalSAHText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
   const s=HH_STATE[ns]||{};
-  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>Hunt-Hess score</h4>'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>Hunt-Hess score</summary><div class="scorebody">'+
     '<div class="note">Aneurysmal SAH aid. Use with modified Fisher and clinical judgment.</div>'+
     '<div class="gcsopts">'+HH_OPTS.map(o=>'<button type="button" class="'+(s.v===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\''+o[0]+'\')">HH'+o[0]+'</button>').join("")+'</div>'+
     '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]).join("\n")+'</div>'+
-    '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div>';
+    '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
 function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderHhContext(ns){
@@ -1768,7 +1799,7 @@ function renderAoAid(ns,targetId,force){
   const btn=(group,key)=>group.map(o=>'<button type="button" class="'+(s[key]===o[0]?"on":"")+'" title="'+esc(o[1])+'" onclick="setAoPart(\''+ns+'\',\''+key+'\',\''+o[0]+'\')">'+o[0]+'</button>').join("");
   const cx=aoConcern(ns);
   const selected=[s.m,s.f,s.n,s.mx].filter(Boolean).map(c=>{const x=aoLookup(c);return x?c+": "+x[1]:""}).filter(Boolean).join("\n");
-  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>AO Spine classifier</h4>'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>AO Spine classifier</summary><div class="scorebody">'+
     '<div class="note">Subaxial/thoracolumbar morphology aid. Pick dominant morphology first; add facet, bilateral, neuro, and modifier details.</div>'+
     '<div class="aochipgrp"><div class="glabel">Morphology</div><div class="gcsopts">'+btn(AO_MORPH,"m")+'</div></div>'+
     '<div class="aochipgrp"><div class="glabel">Facet</div><div class="gcsopts">'+btn(AO_FACET,"f")+'<button type="button" class="'+(s.bl?"on":"")+'" onclick="toggleAoBL(\''+ns+'\')">BL</button></div></div>'+
@@ -1777,7 +1808,7 @@ function renderAoAid(ns,targetId,force){
     (selected?'<div class="pre" style="margin-top:8px">'+esc(selected)+'</div>':"")+
     '<div class="mal '+cx.cls+'" style="margin-top:8px"><span>'+cx.txt+'</span></div>'+
     '<div class="gcsout"><b>'+aoSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertAoScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div>'+
-    '<div class="aohint"><b>Type A:</b> compression A0-A4. <b>Type B:</b> tension band B1-B3. <b>Type C:</b> translation/displacement. <b>Type F:</b> facet F1-F4. <b>BL:</b> bilateral injury.</div></div>';
+    '<div class="aohint"><b>Type A:</b> compression A0-A4. <b>Type B:</b> tension band B1-B3. <b>Type C:</b> translation/displacement. <b>Type F:</b> facet F1-F4. <b>BL:</b> bilateral injury.</div></div></details>';
 }
 function setAoPart(ns,key,v){AO_STATE[ns][key]=(AO_STATE[ns][key]===v?null:v);if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function toggleAoBL(ns){AO_STATE[ns].bl=!AO_STATE[ns].bl;if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
@@ -1827,10 +1858,10 @@ function renderIchAid(ns,targetId,force){
   const s=ICH_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+ICH_OPTS[k].map(o=>
     '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setIchPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+o[0])+'</button>').join("")+'</div></div>';
-  el.innerHTML='<div class="scoreaid '+(show?"show":"")+'"><h4>ICH score calculator</h4>'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>ICH score calculator</summary><div class="scorebody">'+
     '<div class="note">For spontaneous/nontraumatic ICH. Uses historical cohort mortality estimates; do not use alone for prognosis or goals-of-care.</div>'+
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
-    '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div>';
+    '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
 function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
 function renderIchContext(ns){
@@ -2030,12 +2061,13 @@ function renderSmartHints(){
   if(!F){el.innerHTML="";return}
   const txt=formClinicalText();
   const hints=[];
-  if(F.type==="CONSENT")hints.push('<div class="smartbox"><b>Suggested attending list:</b> '+esc(consentAttendingsFor(txt))+'<div class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add to checklist</button></div></div>');
-  if(F.type==="PCON")hints.push('<div class="smartbox"><b>Quick proc presets:</b> shunt tap · shuntogram · shunt dial · pump interrogation<div class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></div></div>');
-  if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push('<div class="smartbox"><b>Admit plan detected.</b> Add H&P and admission-order reminders.<div class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P checklist</button></div></div>');
-  if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push('<div class="smartbox"><b>OR/pre-op plan detected.</b> Add rH&P, pre-op note, consent, and booking reminders.<div class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></div></div>');
-  if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push('<div class="smartbox"><b>R/o SSI/infection detected.</b> Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.<div class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection checklist</button></div></div>');
-  if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push('<div class="smartbox"><b>Trauma GCS &lt;8 detected.</b> Consider Bolt/Licox task with full procedure checklist.<div class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Linked Bolt/Licox task</button></div></div>');
+  const box=(title,body,btns)=>'<details class="smartbox"><summary><span><b>'+title+'</b></span>'+(btns||"")+'</summary>'+(body?'<div class="smartbody">'+body+'</div>':"")+'</details>';
+  if(F.type==="CONSENT")hints.push(box("Suggested attending list",esc(consentAttendingsFor(txt)),'<span class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add</button></span>'));
+  if(F.type==="PCON")hints.push(box("Quick proc presets","shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
+  if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push(box("Admit plan detected","Add H&P and admission-order reminders.",'<span class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P</button></span>'));
+  if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
+  if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
+  if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push(box("Trauma GCS &lt;8 detected","Consider Bolt/Licox task with full procedure checklist.",'<span class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Bolt/Licox</button></span>'));
   el.innerHTML=hints.join("");
 }
 // ---------- measurement parsing & threshold alerts ----------
@@ -2185,11 +2217,12 @@ let startupCompactBoard=true;
 function migrate(d){
   (d.consults||[]).forEach(c=>{
     if(!c.type)c.type="CONSULT";
+    if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
-  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
   d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   return d;
@@ -2371,7 +2404,7 @@ function setBoardSort(k){boardSortMode=k||"bubble";render()}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","COMM","CHART","PROC","PCON","POC","CONSENT","BOOK","DC"].filter(k=>TYPES[k]);
+  const keys=["CONSULT","COMM","CHART","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
   if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
@@ -3215,7 +3248,7 @@ function openForm(id,reassess,ptype){
   F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
   F._isNew=!id;
   if(!F.type)F.type="CONSULT";
-  if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART")F.E=0;}
+  if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART"||ptype==="WOUND")F.E=0;}
   if(!id&&F.type==="BOOK"){
     F.tasks=[
       {t:"Exact procedure name + laterality confirmed with attending",done:false},
@@ -3254,7 +3287,7 @@ function setTypeUI(){
   const isTask=F.type!=="CONSULT";
   TASK_HIDE.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=isTask?"none":""});
   // chart check is always a background task — no urgency axis
-  const eEl=document.getElementById("fld_E");if(eEl)eEl.style.display=(F.type==="CHART")?"none":"";
+  const eEl=document.getElementById("fld_E");if(eEl)eEl.style.display=(F.type==="CHART"||F.type==="WOUND")?"none":"";
   // the text-consult builder belongs to consults
   const tcEl=document.getElementById("fld_tc");if(tcEl)tcEl.style.display=(F.type==="CONSULT")?"":"none";
   document.getElementById("tasksLabel").textContent=(F.type==="CHART")
@@ -3263,6 +3296,8 @@ function setTypeUI(){
   document.getElementById("probLabel").textContent=t.probL;
   document.getElementById("f_prob").placeholder="Type anything here…";
   document.getElementById("dlLabel").textContent="◷ "+t.dlL+" / reschedule";
+  const sn=document.getElementById("fld_snooze"),act=document.getElementById("fld_action");
+  if(sn&&act&&(sn.compareDocumentPosition(act)&Node.DOCUMENT_POSITION_FOLLOWING))act.parentNode.insertBefore(sn,act);
   const rem=document.getElementById("typereminder");
   rem.style.display=t.rem?"block":"none";rem.textContent=t.rem;
   document.getElementById("fld_call").style.display=(F.type==="COMM")?"":"none";
@@ -3315,15 +3350,30 @@ function buildSelectors(){
     el.innerHTML=defs.map((d,i)=>'<button class="sel'+(cls==="E"?("E"+i):cls)+((key==="cQuick"?F.cQuick===i+1:F[key]===i)?" on":"")+'"><span class="t">'+d[0]+'</span><span class="d">'+d[1]+'</span>'+(d[2]?'<span class="d2">'+d[2]+'</span>':"")+'</button>').join("");
     Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F._manual=true;if(key==="cQuick"){F.cQuick=(F.cQuick===i+1)?null:i+1}else{F[key]=i}buildSelectors();syncWWarn();renderSugg()});
   };
+  const mini=(id,prefix,idx,defs)=>{
+    const el=document.getElementById(id);if(!el)return;
+    const dots=[0,1,2,3].map(i=>'<span class="stopdot'+(idx===i?' on':'')+'"></span>').join("");
+    el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+prefix+idx+'</b><span>'+esc(defs[idx][1])+'</span></div>';
+  };
   mk(document.getElementById("selE"),E_DEFS,"E","E");
   mk(document.getElementById("selO"),O_DEFS,"O","O");
   mk(document.getElementById("selW"),W_DEFS,"W","W");
   mk(document.getElementById("selC"),C_DEFS,"cQuick","C");
-  document.getElementById("hintE").textContent=E_FULL[F.E];
-  document.getElementById("hintO").textContent=O_FULL[F.O];
-  document.getElementById("hintW").textContent=W_FULL[F.W];
+  const hE=document.getElementById("hintE"),hO=document.getElementById("hintO");
+  hE.textContent=E_FULL[F.E];hE.style.display=axisDetail?"block":"none";
+  hO.textContent=O_FULL[F.O];hO.style.display=axisDetail?"block":"none";
+  const hW=document.getElementById("hintW");
+  hW.textContent=W_FULL[F.W];
+  hW.style.display=axisDetail?"block":"none";
+  mini("eMini","E",F.E,E_DEFS);
+  mini("oMini","O",F.O,O_DEFS);
+  mini("wMini","W",F.W,W_DEFS);
   const t=domTotal(F);
-  document.getElementById("hintC").textContent=t!==null?("Scored "+t+"/33 → "+cStr(F)+". "+C_FULL[cLevel(F)-1]):(F.cQuick?C_FULL[F.cQuick-1]:"No estimate yet — quick pick a gut level now, score the 11 domains when you have a minute.");
+  const cIdx=cLevel(F)-1;
+  const hC=document.getElementById("hintC");
+  hC.textContent=t!==null?("Scored "+t+"/33 → "+cStr(F)+". "+C_FULL[cIdx]):(F.cQuick?C_FULL[F.cQuick-1]:"No estimate yet — quick pick a gut level now, score the 11 domains when you have a minute.");
+  hC.style.display=axisDetail?"block":"none";
+  mini("cMini","C",cIdx,C_DEFS);
 }
 function syncWWarn(){document.getElementById("wWarn").classList.toggle("show",F.W===3&&F.E<2)}
 function buildDomains(){
@@ -3781,8 +3831,7 @@ function renderRounds(){
   el.innerHTML=mainHtml+renderWoundRounds(list)+renderFormerWounds();
 }
 function woundRoundCandidate(r){
-  const txt=[r.raw,r.label,(r.tags||[]).join(" ")].join(" ");
-  return !!r.woundListed||/s\/p|post-?op|crani|fusion|lami|tlif|acdf|\bevd\b|shunt|drain|incision|wound|suture|staple|pod\s?\d|burr|prolene|nylon/i.test(txt);
+  return !!r.woundListed;
 }
 function addRoundWoundList(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -3888,9 +3937,9 @@ function woundCheckToBoard(id,former){
   if(!r.woundNextDate){showToast("Pick next check date first");return}
   const iso=r.woundNextDate+"T04:00:00";
   const loc=String(r.label||roundIdentityText(r)||"");
-  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="CHART"&&(c.roundId===r.id||String(c.loc||"")===loc)&&/wound|suture|staple|incision/i.test(c.prob||"")&&c.snoozeISO===iso);
+  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&(c.roundId===r.id||String(c.loc||"")===loc)&&/wound|suture|staple|incision/i.test(c.prob||"")&&c.snoozeISO===iso);
   if(exists){showToast("Already on board for "+r.woundNextDate);return}
-  const t=blankC();t.type="CHART";t.loc=loc;t.prob="Wound / suture / staple / incision check";t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=roundProblemText(r);t.updatedAt=Date.now();
+  const t=blankC();t.type="WOUND";t.loc=loc;t.prob="Wound / suture / staple / incision check";t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=roundProblemText(r);t.updatedAt=Date.now();
   S.consults.push(t);render();renderRounds();save();showToast("Board task scheduled "+r.woundNextDate);
 }
 function removeWoundLog(id,date,former){
@@ -4290,9 +4339,9 @@ function tcFormat(){
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
   const exam=stripExamSmartLists(g("tc_exam")).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"- "+l).join("\n");
-  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam:\n"+exam,"","Imaging: "+tidy(g("tc_img"))]
+  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam:\n"+exam,"","Plan:",plan,"","Imaging: "+tidy(g("tc_img"))]
     .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
-    .concat(["","Plan:",plan]).join("\n");
+    .join("\n");
 }
 function tcBuild(){renderTCFlags();document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
 function tcUseExam(){
@@ -4338,9 +4387,9 @@ function ftcFormat(){
   const exam=mergeScoreLines(stripExamSmartLists(g("exam")), [completedGcsLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"- "+l).join("\n");
   const hpi=mergeScoreLines(g("hpi"),[completedIchLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
-  return [tidy(g("title")),"",hpi,"","Exam:\n"+exam,"","Imaging: "+tidy(g("img"))]
+  return [tidy(g("title")),"",hpi,"","Exam:\n"+exam,"","Plan:",plan,"","Imaging: "+tidy(g("img"))]
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
-    .concat(["","Plan:",plan]).join("\n");
+    .join("\n");
 }
 function ftcReadySection(lines,idx,re){
   if(idx<0)return "";
