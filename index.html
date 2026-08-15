@@ -2939,6 +2939,9 @@ function compactAdd15Button(c){
 function compactClearOverdueButton(c){
   return hasOverdueTimers(c)?'<button class="rdone" onclick="event.stopPropagation();clearOverdueTimers(\''+c.id+'\')">✕ overdue</button>':"";
 }
+function compactEditButton(c){
+  return '<button class="rdone" onclick="event.stopPropagation();openForm(\''+c.id+'\')">Edit</button>';
+}
 function soButtonAttrs(c){
   if(soComplete(c))return ' style="border-color:var(--ok);color:var(--ok)"';
   return soStarted(c)?' style="border-color:var(--e2);color:var(--e2)"':"";
@@ -2973,6 +2976,7 @@ function rowCard(c,dl,isTask){
     (!allDone?compactAdd15Button(c):"")+
     (allDone?compactTimerOffButton(c):"")+
     (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>':"")+
+    compactEditButton(c)+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
   '</div>';
