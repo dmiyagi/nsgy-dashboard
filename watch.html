@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NSGY Watch Next</title>
+<meta name="theme-color" content="#0d131e">
+<style>
+:root{
+  --bg:#0d131e;--panel:#161e2c;--line:#283652;--text:#e9eef7;--mut:#93a3bc;
+  --e0:#5b6b85;--e1:#f2d34b;--e2:#ff9f3c;--e3:#ff4d5e;--ok:#3fd68f;--acc:#5aa2ff;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font)}
+body{display:grid;place-items:center;padding:10px}
+.watch{width:min(100vw - 20px,390px);min-height:min(100vh - 20px,390px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.top{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mut);padding:0 4px}
+.top a{color:var(--acc);text-decoration:none;font-weight:700}
+.circle{
+  --e:var(--e0);
+  width:min(82vw,300px);aspect-ratio:1;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:22px;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.06),rgba(255,255,255,0) 58%),var(--panel);
+  border:8px solid var(--e);box-shadow:0 0 0 2px rgba(255,255,255,.04),0 0 34px color-mix(in srgb,var(--e),transparent 58%);
+}
+.circle.E0{--e:var(--e0)}.circle.E1{--e:var(--e1)}.circle.E2{--e:var(--e2)}.circle.E3{--e:var(--e3)}
+.level{font-size:34px;font-weight:900;line-height:1;color:var(--e);letter-spacing:.5px}
+.timer{font-size:18px;font-weight:800;margin-top:8px}
+.timer.over{color:var(--e3)}.timer.soon{color:var(--e2)}.timer.ok{color:var(--ok)}
+.who{font-size:16px;font-weight:800;margin-top:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task{font-size:14px;color:#c8d3e4;line-height:1.25;margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.meta{font-size:11px;color:var(--mut);margin-top:9px}
+.empty{border-color:var(--line);color:var(--mut)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button,.btn{background:#1c2636;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font:700 12px var(--font);text-decoration:none}
+@media(max-width:230px){
+  body{padding:4px}.watch{width:100%;min-height:100vh}.circle{width:176px;border-width:6px;padding:14px}
+  .level{font-size:26px}.timer{font-size:15px}.who{font-size:13px}.task{font-size:12px}.controls{display:none}
+}
+</style>
+</head>
+<body>
+<main class="watch">
+  <div class="top"><span id="stamp">watch view</span><a href="./">Board</a></div>
+  <section id="circle" class="circle E0 empty">
+    <div class="level" id="level">--</div>
+    <div class="timer" id="timer">No active item</div>
+    <div class="who" id="who">Board clear</div>
+    <div class="task" id="task">Open the main app to add or sync cards.</div>
+    <div class="meta" id="meta"></div>
+  </section>
+  <div class="controls">
+    <button type="button" onclick="render()">Refresh</button>
+    <a class="btn" href="./">Open board</a>
+  </div>
+</main>
+<script>
+"use strict";
+const LS="nsgy_triage_v2";
+const TYPES={CONSULT:"Consult",COMM:"Comm",PROC:"Procedure",PCON:"Quick proc",POC:"Post-op",CONSENT:"Consent",BOOK:"Booking",WOUND:"Wound",DC:"DC"};
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function load(){try{return JSON.parse(localStorage.getItem(LS))||{consults:[]}}catch(e){return {consults:[]}}}
+function isSnoozed(c){return !!(c&&c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
+function boardVisible(c){return !c||c.type!=="CHART"}
+function nextDue(c){
+  const xs=[];
+  if(c.deadlineISO)xs.push(c.deadlineISO);
+  (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO)xs.push(s.dueISO)});
+  (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO)xs.push(t.dueISO)});
+  if(c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO)xs.push(c.reviewDueISO);
+  return xs.sort((a,b)=>Date.parse(a)-Date.parse(b))[0]||null;
+}
+function fmtDL(iso){
+  if(!iso)return {cls:"ok",txt:"no timer"};
+  const ms=Date.parse(iso)-Date.now(),over=ms<=0,mins=Math.ceil(Math.abs(ms)/60000);
+  const h=Math.floor(mins/60),m=mins%60,txt=(h?h+"h ":"")+m+"m";
+  return over?{cls:"over",txt:"over "+txt}:ms<15*60000?{cls:"soon",txt:txt}:{cls:"ok",txt:txt};
+}
+function pendingText(c){
+  if(c.action)return c.action;
+  const s=(c.steps||[]).find(x=>!x.done);if(s)return s.t;
+  const t=(c.tasks||[]).find(x=>!x.done);if(t)return t.t;
+  const wf=c.wf||{};
+  if(c.type==="CONSULT"){
+    const next=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note"]].find(([k])=>!wf[k]);
+    if(next)return next[1];
+  }
+  return c.prob||"Next item";
+}
+function urgencyRank(c){
+  let r=(c.E||0)*100;
+  const due=nextDue(c),dl=due?fmtDL(due):null;
+  if(dl&&dl.cls==="over")r+=1200;
+  else if(dl&&dl.cls==="soon")r+=500;
+  if(c.type==="CONSULT"&&(!c.wf||!c.wf.seen))r+=160;
+  return r;
+}
+function nextItem(){
+  const S=load();
+  return (S.consults||[])
+    .filter(c=>boardVisible(c)&&!c.closed&&!isSnoozed(c))
+    .sort((a,b)=>urgencyRank(b)-urgencyRank(a)||(a.created||0)-(b.created||0))[0]||null;
+}
+function render(){
+  const c=nextItem(),circle=document.getElementById("circle");
+  const stamp=new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  document.getElementById("stamp").textContent="updated "+stamp;
+  if(!c){
+    circle.className="circle E0 empty";
+    document.getElementById("level").textContent="--";
+    document.getElementById("timer").textContent="No active item";
+    document.getElementById("timer").className="timer ok";
+    document.getElementById("who").textContent="Board clear";
+    document.getElementById("task").textContent="Open the main app to add or sync cards.";
+    document.getElementById("meta").textContent="";
+    return;
+  }
+  const e=Math.max(0,Math.min(3,c.E||0)),dl=fmtDL(nextDue(c));
+  circle.className="circle E"+e;
+  document.getElementById("level").textContent="E"+e;
+  document.getElementById("timer").textContent=dl.txt;
+  document.getElementById("timer").className="timer "+dl.cls;
+  document.getElementById("who").textContent=c.loc||TYPES[c.type]||"Next";
+  document.getElementById("task").innerHTML=esc(pendingText(c));
+  document.getElementById("meta").textContent=(TYPES[c.type||"CONSULT"]||"Consult")+" · "+(c.prob||"").slice(0,42);
+}
+render();
+setInterval(render,15000);
+window.addEventListener("storage",render);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
+</script>
+</body>
+</html>
