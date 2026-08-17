@@ -119,13 +119,13 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .fld input[type=text],.fld input[type=tel],.fld input[type=datetime-local],.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:9px 10px}
 .fld textarea{min-height:54px;resize:vertical}
 .locgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(96px,.85fr);gap:8px}
-.selrow{display:grid;grid-template-columns:repeat(4,minmax(64px,1fr));gap:10px;justify-items:center}
-.selrow button{background:transparent;border:2px solid var(--line);border-radius:50%;width:86px;height:86px;padding:6px;color:var(--mut);cursor:pointer;font-family:var(--font);transition:background .12s,border-color .12s,color .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.selrow button .t{font-weight:900;font-size:19px;display:block;letter-spacing:.3px;line-height:1}
-.selrow button .d{font-size:11px;display:block;line-height:1.15;margin-top:7px;opacity:.85}
+.selrow{display:none;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0 4px}
+.selrow.showall{display:grid}
+.selrow button{background:transparent;border:1px solid var(--line);border-radius:8px;min-height:48px;padding:6px 7px;color:var(--mut);cursor:pointer;font-family:var(--font);transition:background .12s,border-color .12s,color .12s;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;min-width:0}
+.selrow button .t{font-weight:900;font-size:13px;display:block;letter-spacing:0;line-height:1}
+.selrow button .d{font-size:10.5px;display:block;line-height:1.15;margin-top:4px;opacity:.85;white-space:normal}
 .selrow button .d2{display:none}
-.selrow.showall button{width:106px;height:106px}
-.selrow.showall button .d2{display:block;font-size:8.5px;opacity:.7;line-height:1.1;margin-top:3px;max-width:92px}
+.selrow.showall button .d2{display:none}
 .selrow button.on{color:var(--text)}
 .axhead{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
 .axhead label{margin:0}
@@ -356,7 +356,7 @@ details.moredet[open]>summary{margin-bottom:8px}
 .aohint{font-size:11.5px;color:var(--mut);line-height:1.4;margin-top:7px}
 .aochipgrp{margin-top:8px}
 .aochipgrp .glabel{font-size:11.5px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-@media(max-width:520px){.selrow{gap:7px;grid-template-columns:repeat(4,minmax(56px,1fr))}.selrow button{width:68px;height:68px}.selrow button .t{font-size:16px}.selrow button .d{font-size:9px;margin-top:5px}.selrow.showall button{width:82px;height:82px}}
+@media(max-width:520px){.selrow{gap:5px;grid-template-columns:repeat(4,minmax(0,1fr))}.selrow button{min-height:44px;padding:5px}.selrow button .t{font-size:12px}.selrow button .d{font-size:9px;margin-top:4px}}
 /* independent (non-sequential) checklist */
 .checks{margin:5px 0 2px;display:flex;flex-direction:column;gap:3px}
 .chk{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--mut);cursor:pointer}
@@ -452,7 +452,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.2 · 2026-08-17 15:44 EDT</div>
+    <div class="buildmeta">v0.0.3 · 2026-08-17 16:12 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
