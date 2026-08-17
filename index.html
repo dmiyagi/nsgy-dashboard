@@ -457,7 +457,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.16 · 2026-08-17 19:05 EDT</div>
+    <div class="buildmeta">v0.0.18 · 2026-08-17 19:09 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3736,6 +3736,7 @@ function parseRounds(){
 }
 // sequential to-dos on a rounds patient
 let openRStepTimer=null;
+let editingExamHist="";
 function rStepTimerBtn(r,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
   return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togRStepTimer(\''+r.id+'\','+i+')">'+clockIcon()+(dl?dl.txt.replace("due in ","").replace("OVERDUE ","−"):'')+'</button>';
@@ -3799,20 +3800,25 @@ function roundExamHistoryHtml(r){
   return '<details class="axisinfo"><summary>Last 3 exams</summary><div class="ai">'+hist.map((h,i)=>{
     const idx=(r.examHist||[]).length-1-i;
     const dt=h.ts?toLocalInput(new Date(h.ts).toISOString()):"";
-    return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" onchange="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button></div></div>';
+    if(editingExamHist===r.id+":"+idx){
+      return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'" onblur="roundExamHistSave(\''+r.id+'\','+idx+')"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" onblur="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button></div></div>';
+    }
+    return '<div class="fld"><label>Exam '+(i+1)+' · '+esc(dt?new Date(h.ts).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"")+'</label><div class="pre">'+esc(h.text||"")+'</div><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" onclick="editRoundExamHist(\''+r.id+'\','+idx+')">Edit</button></div></div>';
   }).join("")+'</div></details>';
 }
+function editRoundExamHist(id,i){editingExamHist=id+":"+i;renderRounds()}
 function roundExamHistSave(id,i){
   const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
   const txt=document.getElementById("rexh_"+id+"_"+i),dt=document.getElementById("rexht_"+id+"_"+i);
   r.examHist[i].text=txt?txt.value.trim():r.examHist[i].text;
   if(dt&&dt.value)r.examHist[i].ts=new Date(dt.value).getTime();
   r.prevExam=roundPrevExamText(r);
-  r.updatedAt=Date.now();save();
+  r.updatedAt=Date.now();editingExamHist="";renderRounds();save();
 }
 function copyRoundExamHist(id,i){
+  const r=S.rounds.find(x=>x.id===id);
   const el=document.getElementById("rexh_"+id+"_"+i);
-  const t=el?el.value.trim():"";
+  const t=(el?el.value.trim():(r&&r.examHist&&r.examHist[i]?String(r.examHist[i].text||"").trim():""));
   if(t){toClip(t);showToast("Exam copied")}
 }
 function copyRoundPrevExam(id){
@@ -3957,6 +3963,7 @@ function renderRounds(){
      roundChartHtml(r)+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
+     '<textarea class="evta" placeholder="Notes… (saves on tap-away)" style="min-height:54px;margin-top:8px" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
@@ -3971,6 +3978,10 @@ function renderRounds(){
      '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
   el.innerHTML=mainHtml+renderWoundRounds(list)+renderFormerWounds();
+}
+function roundNoteSave(id,el){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.note=el.value.trim();r.updatedAt=Date.now();save();
 }
 function woundRoundCandidate(r){
   return !!r.woundListed;
