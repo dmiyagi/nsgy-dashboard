@@ -65,6 +65,7 @@ section.view.active{display:block}
 .banner b{color:var(--e1)}
 .btn{background:var(--acc);color:#0b1220;border:none;border-radius:10px;font-family:var(--font);font-weight:700;font-size:14px;padding:10px 16px;cursor:pointer}
 .btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.sec.on{border-color:var(--e3);color:var(--e3)}
 .btn.danger{background:var(--e3);color:#fff}
 .btn.sm{font-size:12px;padding:6px 10px;border-radius:8px}
 .rowflex{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
@@ -202,6 +203,7 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .step.active{color:var(--text);font-weight:600}
 .step.locked{opacity:.65}
 .step button{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:6px;border:1px solid var(--ok);background:transparent;color:var(--ok);cursor:pointer;font-family:var(--font);white-space:nowrap}
+.step button.xbtn,.roundsugg button.xbtn{border-color:var(--e3);color:var(--e3);padding:2px 7px}
 .step .stxt{flex:1}
 button.tbtn{border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--font);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;cursor:pointer;white-space:nowrap}
 button.tbtn.set{border-color:var(--e2);color:var(--e2)}
@@ -281,6 +283,9 @@ button.rdone.finaldone{background:#123527}
 .roundsugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .roundsugg button{background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:999px;font-size:11.5px;font-weight:800;padding:5px 8px;cursor:pointer;font-family:var(--font)}
 .roundsugg button strong{color:var(--acc)}
+.chartdots{display:inline-flex;gap:4px;align-items:center}
+.chartdot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent;display:inline-block}
+.chartdot.on{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.18)}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 @media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
@@ -302,6 +307,11 @@ button.rdone.finaldone{background:#123527}
 .calrow .csub{display:block;color:var(--acc);font-size:11.5px;font-weight:700;margin-top:3px}
 .calrow .ctime{font-size:11px;color:var(--mut);white-space:nowrap}
 .calrow button{margin-left:4px}
+.nccucard{border-left-color:var(--e3)}
+.nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
+.nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px}
+.nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
+.nccufield span{white-space:pre-wrap;color:#d9e2ef;font-size:13px}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--ok);width:14px;height:14px}
@@ -459,7 +469,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.19 · 2026-08-17 19:26 EDT</div>
+    <div class="buildmeta">v0.0.23 · 2026-08-17 19:47 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -469,6 +479,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <nav>
   <button data-view="board" class="active"><span class="ico">▣</span>Board</button>
   <button data-view="rounds"><span class="ico">▤</span>Rounds</button>
+  <button data-view="nccu"><span class="ico">●</span>NCCU</button>
   <button data-view="day"><span class="ico">◴</span>Day</button>
   <button data-view="cal"><span class="ico">◷</span>Cal</button>
   <button data-view="booking"><span class="ico">⊞</span>Booking</button>
@@ -522,6 +533,16 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   </div>
 </section>
 
+<!-- ============ NCCU ============ -->
+<section class="view" id="view-nccu">
+  <div class="banner">NCCU sign-out view — patients selected from the Sign-out modal. One structured category block is shown per card.</div>
+  <div class="rowflex">
+    <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
+    <button class="btn sec sm" onclick="renderNccu()">Refresh</button>
+  </div>
+  <div id="nccucards"></div>
+</section>
+
 <!-- ============ CALENDAR ============ -->
 <section class="view" id="view-cal">
   <div class="banner">Longitudinal view — every task with a deadline or a ◷ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
@@ -558,12 +579,13 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
-    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export all</button>
+    <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO/CC only</button>
+    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
   <div class="bulkexport">
-    <span style="font-size:12px;color:var(--mut)">Export to</span>
-    <select id="bulkExportType"></select>
+    <span style="font-size:12px;color:var(--mut)">Export all creates one linked chart-check card per patient.</span>
+    <select id="bulkExportType" style="display:none"></select>
     <span class="sortbtns" id="rsort" style="margin-left:auto">
       <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
       <button data-m="initials" onclick="setRoundSort('initials')">Sort: patient</button>
@@ -1198,6 +1220,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
   <div class="sheet">
     <h2 id="soTitle">Sign-out</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Ordered the way it should be spoken. Fill what you know — blanks copy as ___ so nothing gets skipped.</p>
+    <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;color:var(--text);font-weight:700">
+      <input type="checkbox" id="so_nccu" style="width:auto" onchange="toggleSoNccu(this.checked)"> Show in NCCU view
+    </label>
     <div class="chips" id="sochips" style="margin-bottom:10px"></div>
     <div id="sofields"></div>
     <div class="sheetbtns">
@@ -2269,7 +2294,7 @@ function maybePromptPatientLink(c){
   declineLink(c,other.id);declineLink(other,c.id);touch(other);touch(c);return false;
 }
 function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
-function renderAll(){render();renderRounds();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);filterRefs()}
+function renderAll(){render();renderRounds();renderNccu();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
   document.querySelectorAll("#view-ref details.ref,#view-booking details.ref").forEach(d=>{
@@ -3750,8 +3775,8 @@ function rStepTimerRow(r,i){
 function rStepsHtml(r){
   const st=r.steps||[];if(!st.length)return "";
   return '<div class="rsteps">'+st.map((s,i)=>{
-    if(s.done)return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
-    return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
+    if(s.done)return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ <span class="stxt">'+esc(s.t)+'</span><button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>';
+    return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'<button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
 function roundChartHtml(r){
@@ -3768,6 +3793,7 @@ function toggleRoundChart(id,k){
 function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
   const nx=(r.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
 function rStepUndo(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
+function rStepRemove(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;r.steps.splice(i,1);r.updatedAt=Date.now();renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
 function togRStepTimer(id,i){const k=id+":"+i;openRStepTimer=(openRStepTimer===k)?null:k;renderRounds()}
 function setRStepDL(id,i,min){
   const r=S.rounds.find(x=>x.id===id);if(!r||!r.steps||!r.steps[i])return;
@@ -3854,7 +3880,13 @@ function roundExamPreset(id,kind){
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
+let soCcOnly=false;
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
+function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
+function chartDotsHtml(r){
+  const cc=r.chartChecks||{};
+  return '<span class="chartdots" title="AM / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
+}
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
 function collapseRounds(v){S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
@@ -3924,7 +3956,8 @@ function roundRowCard(r){
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"")+
     tags+
-    (r.chartChecks&&Object.values(r.chartChecks).some(Boolean)?'<span class="bg mod">chart</span>':"")+
+    chartDotsHtml(r)+
+    (r.nccuSO?'<span class="bg warn">NCCU</span>':"")+
     '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
     (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();togSeen(\''+r.id+'\')">'+(r.seen?'↩':'✓ seen')+'</button>')+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
@@ -3935,6 +3968,7 @@ function renderRounds(){
   const el=document.getElementById("rcards");if(!el)return;
   const sb=document.getElementById("rsort");
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
+  const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
   const key=r=>r.seen?2:(r.worry?0:1);
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
@@ -3943,7 +3977,7 @@ function renderRounds(){
       :(S.roundSort==="attg")
         ?(a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true})
       :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
-  const list=S.rounds.filter(matchSearch).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
+  const list=S.rounds.filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s");
   const mainHtml=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
@@ -3957,8 +3991,9 @@ function renderRounds(){
     if(r.collapsed)return roundRowCard(r);
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
+    const nccu=r.nccuSO?'<span class="bg warn">NCCU</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
-     '<div class="badges">'+roundIdentityBadges(r)+'<span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+tags+rColBtn(r)+'</div>'+
+     '<div class="badges">'+roundIdentityBadges(r)+'<span class="bg c">'+SO_TMPLS[r.soT].name+'</span>'+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
      rStepsHtml(r)+
@@ -4116,6 +4151,28 @@ function roundEditSave(id){
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
 }
 function findAny(id){return (S.rounds||[]).find(x=>x.id===id)||(S.consults||[]).find(x=>x.id===id)}
+function syncLinkedSo(r){
+  if(!r)return;
+  const now=Date.now();
+  if(r.type==="CHART"&&r.roundId){
+    const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(!rr)return;
+    rr.soT=r.soT||rr.soT||"floor";
+    rr.so=Object.assign({},rr.so||{},r.so||{});
+    rr.soPrev=Object.assign({},rr.soPrev||{},r.soPrev||{});
+    rr.nccuSO=!!(rr.nccuSO||r.nccuSO);
+    rr.updatedAt=now;
+    return;
+  }
+  if((S.rounds||[]).some(x=>x.id===r.id)){
+    (S.consults||[]).filter(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id).forEach(c=>{
+      c.soT=r.soT||c.soT||"floor";
+      c.so=Object.assign({},c.so||{},r.so||{});
+      c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+      c.nccuSO=!!(c.nccuSO||r.nccuSO);
+      c.updatedAt=now;
+    });
+  }
+}
 function togWorry(id){const r=findAny(id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();render();save()}}
 function purgeRounds(){
   if(!confirm("Purge the ENTIRE rounds list? (Propagates to synced devices.)"))return;
@@ -4168,6 +4225,7 @@ function tiedTypeForRoundTodo(t){
 function roundSuggestedCards(r,lines){
   const seen={};
   return (lines||roundOpenTodos(r)).map(line=>{
+    if((r.dismissedSuggestions||[]).some(x=>String(x||"").toLowerCase()===String(line||"").toLowerCase()))return null;
     const type=tiedTypeForRoundTodo(line);if(!type||hasTiedTask(r,type,line))return null;
     const key=type+"|"+line.toLowerCase();if(seen[key])return null;seen[key]=true;
     return {type:type,line:line};
@@ -4175,7 +4233,14 @@ function roundSuggestedCards(r,lines){
 }
 function roundSuggestHtml(r,lines){
   const sug=roundSuggestedCards(r,lines).slice(0,4);
-  return sug.map(s=>'<button type="button" onclick="addRoundTodoCard(\''+r.id+'\',\''+s.type+'\',\''+encodeURIComponent(s.line)+'\')"><strong>'+TYPES[s.type].l+'</strong> · '+esc(s.line.slice(0,42))+'</button>').join("");
+  return sug.map(s=>'<button type="button" onclick="addRoundTodoCard(\''+r.id+'\',\''+s.type+'\',\''+encodeURIComponent(s.line)+'\')"><strong>'+TYPES[s.type].l+'</strong> · '+esc(s.line.slice(0,42))+'</button><button type="button" class="xbtn" onclick="dismissRoundSuggestion(\''+r.id+'\',\''+encodeURIComponent(s.line)+'\')">×</button>').join("");
+}
+function dismissRoundSuggestion(id,line){
+  line=decodeURIComponent(line||"");
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.dismissedSuggestions=r.dismissedSuggestions||[];
+  if(!r.dismissedSuggestions.some(x=>String(x||"").toLowerCase()===line.toLowerCase()))r.dismissedSuggestions.push(line);
+  r.updatedAt=Date.now();renderRounds();save();
 }
 function roundPlanPreview(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -4263,7 +4328,7 @@ function syncRoundTodosToBoard(r,lines){
     todoLines.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
     if(n)touch(c);
   });
-  return n+addTiedRoundTasks(r,todoLines);
+  return n;
 }
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
@@ -4295,15 +4360,17 @@ function soLabel(r){return r.label||r.loc||"patient"}
 function openSO(id){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
   document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
+  const nccu=document.getElementById("so_nccu");if(nccu)nccu.checked=!!r.nccuSO;
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   buildSOChips();buildSOFields();
   document.getElementById("ovSO").classList.add("show");}
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
+function toggleSoNccu(on){const r=findAny(soId);if(!r)return;r.nccuSO=!!on;r.updatedAt=Date.now();syncLinkedSo(r);save();renderRounds();renderNccu()}
 function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
-  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();buildSOChips();buildSOFields();save()});}
+  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();save()});}
 function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
   const one=SO_TMPLS[r.soT].fields[0][0];
@@ -4328,7 +4395,7 @@ function soFocus(el){el.dataset.prev=el.value||""}
 function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
   const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
   if(!quiet&&soIsExamField(k)&&prev&&prev!==val)r.soPrev[k]=prev;
-  r.so[k]=val;r.updatedAt=Date.now();renderSOHints();if(!quiet){save();render()}}}
+  r.so[k]=val;r.updatedAt=Date.now();syncLinkedSo(r);renderSOHints();if(!quiet){save();render()}}}
 function renderSOHints(){
   document.querySelectorAll("#sofields [data-sohint]").forEach(h=>{
     const inp=h.parentElement.querySelector(".soinput");
@@ -4355,6 +4422,51 @@ function soText(r){
   return t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n");
 }
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
+const NCCU_FIELDS=[
+  ["Exam","Exam|Exam @ SBP|Exam incl. visual fields|Exam vs pre-op|Exam + baseline|Exam + change from baseline|Baseline vs current exam|Motor exam"],
+  ["Drains / devices","EVD|EVD + ICP course|Drains|Drains + output|Clamp trial"],
+  ["Imaging","Imaging|New events / imaging|Post-op imaging|Imaging comparison|Imaging pending"],
+  ["Labs / cultures","Na goal + last|Na goal|CSF labs / cultures|Endocrine labs"],
+  ["Meds","Meds of consequence|Seizure meds / LTM|Seizure ppx|Nimodipine|AC status"],
+  ["Goals","BP goal|Goals|ICP management|MAP goal if cord"],
+  ["Resp / CV","Active medical issues|Active problems"],
+  ["ID","CSF labs / cultures|Active medical issues|Active problems"],
+  ["Heme / AC","AC status|Meds|Meds of consequence|DVT ppx"],
+  ["To-do / contingency","Pending studies|Plan|Wean plan|Dispo|Dispo + barriers|Dispo planning|Escalation trigger|Contingency"]
+];
+function soPick(r,pats){
+  const so=(r&&r.so)||{};
+  const keys=String(pats||"").split("|");
+  for(const k of keys){if(so[k])return so[k]}
+  return "";
+}
+function nccuPatients(){
+  const out=[],seen=new Set();
+  (S.rounds||[]).filter(r=>r.nccuSO).forEach(r=>{out.push(r);seen.add(r.id)});
+  (S.consults||[]).filter(c=>c.nccuSO&&!c.closed&&!seen.has(c.roundId||c.id)).forEach(c=>out.push(c));
+  return out;
+}
+function nccuCardHtml(r){
+  const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
+  return '<div class="card nccucard"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span><span class="bg c">'+esc((SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).name)+'</span></div>'+
+    '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
+    '<div class="nccugrid">'+NCCU_FIELDS.map(([label,pats])=>'<div class="nccufield"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+'</div>'+
+    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button><button onclick="toggleNccuCard(\''+r.id+'\')">Remove NCCU</button></div></div>';
+}
+function renderNccu(){
+  const el=document.getElementById("nccucards");if(!el)return;
+  const pts=nccuPatients();
+  el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU sign-out patients selected. Open a card sign-out and check "Show in NCCU view."</div>';
+}
+function toggleNccuCard(id){const r=findAny(id);if(!r)return;r.nccuSO=false;r.updatedAt=Date.now();renderNccu();renderRounds();save()}
+function copyNccuSignout(){
+  const pts=nccuPatients();
+  const txt=pts.map(r=>{
+    const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
+    return head+"\n"+NCCU_FIELDS.map(([l,p])=>l+": "+(soPick(r,p)||"___")).join("\n");
+  }).join("\n\n");
+  toClip(txt||"(no NCCU patients)");showToast("NCCU sign-out copied");
+}
 // recorded values shown on the chart-check card
 function soActiveFields(c){
   if(!c||c.type!=="CHART")return [];
@@ -5179,20 +5291,35 @@ function linkToRounds(c){
   if(r)c.roundId=r.id;
   return c;
 }
-function exportRoundsTo(type){
-  if(!TYPES[type])return;
-  const existing=new Set(S.consults.filter(c=>c.type===type&&c.roundId).map(c=>c.roundId));
-  let n=0;
-  S.rounds.forEach(r=>{
-    if(existing.has(r.id))return;
-    const t=blankC();t.type=type;t.loc=r.label;t.prob=r.raw.slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});if(type==="CHART"){t.E=0;t.tasks=roundOpenTodos(r).map(x=>({t:x,done:false}))}t.updatedAt=Date.now();
-    S.consults.push(t);n++;
-    if(type==="CHART")n+=addTiedRoundTasks(r,t.tasks.map(x=>x.t))*0;
-  });
-  render();save();
-  showToast(n?("Exported "+n+" to "+TYPES[type].l):"Nothing new to export — already exported");
+function roundChartCardFor(r){
+  if(!r)return null;
+  let c=(S.consults||[]).find(x=>!x.closed&&x.type==="CHART"&&x.roundId===r.id);
+  const isNew=!c;
+  if(!c){c=blankC();c.type="CHART";c.roundId=r.id;c.created=Date.now();S.consults.push(c)}
+  c.loc=r.label;
+  c.prob=roundProblemText(r).slice(0,110)||String(r.raw||"").slice(0,110);
+  c.team=roundTeam(r);c.attg=roundAttg(r);c.worry=!!r.worry;c.owner="me";c.E=0;
+  c.soT=r.soT||c.soT||"floor";
+  c.so=Object.assign({},c.so||{},r.so||{});
+  c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+  c.nccuSO=!!(c.nccuSO||r.nccuSO);
+  c.note=roundExamNote(r);
+  c.tasks=roundOpenTodos(r).map(t=>({t:t,done:false}));
+  c.updatedAt=Date.now();
+  r.chartChecks=r.chartChecks||{};
+  r.updatedAt=Date.now();
+  return {card:c,isNew:isNew};
 }
-function exportRoundsToSel(){const sel=document.getElementById("bulkExportType");if(sel)exportRoundsTo(sel.value)}
+function exportRoundsTo(type){
+  let n=0,refreshed=0;
+  S.rounds.forEach(r=>{
+    const res=roundChartCardFor(r);if(!res)return;
+    if(res.isNew)n++;else refreshed++;
+  });
+  render();renderRounds();renderNccu();save();
+  showToast(n?("Created "+n+" chart-check card"+(n===1?"":"s")+(refreshed?" · refreshed "+refreshed:"")):"Chart-check cards already exist — refreshed "+refreshed);
+}
+function exportRoundsToSel(){exportRoundsTo("CHART")}
 // ---------- survival guide: phones + bookings ----------
 const PHONEBOOK=`ED — Express care 66811 / 43000 · A-POD 49291 · B-POD 49292 · HCH 44900 · Med phone 265-6312 · Trauma phone 623-0434 · Public waiting 49227 · Ambulance triage 41641
 ED CC1 48104 42053 · CC2 48133 44244 · CC3 44892 44265 · CC4 44899 47548 · CC5 40126 49266 · CC6 44685 40268 · POD supplies 401-255-5726 / 401-255-4728 / 401-640-0044
