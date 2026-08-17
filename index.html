@@ -86,6 +86,8 @@ section.view.active{display:block}
 .bg.w3{background:#0d3a4a;color:var(--w3);border:1px solid var(--w3)}
 .bg.mod{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:700}
 .bg.warn{background:#3a1220;color:var(--e3);border:1px solid var(--e3)}
+.bg.roomresp,.rwho.roomresp{border:1px solid var(--e3);box-shadow:0 0 0 1px rgba(255,77,94,.28);position:relative}
+.bg.roomresp::before,.rwho.roomresp::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--e3);margin-right:5px;vertical-align:middle}
 .card .who{font-weight:700;font-size:15px}
 .card .prob{color:var(--acc);font-weight:600}
 .card .state{font-size:13px;color:var(--mut);margin:3px 0}
@@ -457,7 +459,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.18 · 2026-08-17 19:09 EDT</div>
+    <div class="buildmeta">v0.0.19 · 2026-08-17 19:26 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3889,7 +3891,7 @@ function roundCareBadges(r){
 }
 function roundIdentityBadges(r){
   const room=roundRoom(r),team=roundTeam(r),pt=roundPatient3(r),attg=roundAttg(r);
-  return (room?'<span class="bg t">'+esc(room)+'</span>':"")+
+  return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+'">'+esc(room)+'</span>':"")+
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
@@ -3917,7 +3919,7 @@ function roundRowCard(r){
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     '<span class="bg t">▤</span>'+
     (r.worry?'<span class="bg warn">!</span>':"")+
-    (roundRoom(r)?'<span class="rwho">'+esc(roundRoom(r))+'</span>':"")+
+    (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundTeam(r)?'<span class="bg '+teamBadgeClass(roundTeam(r))+'">'+esc(roundTeam(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"")+
@@ -3967,6 +3969,7 @@ function renderRounds(){
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
+      '<button onclick="togSoCcResp(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO/CC</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
       '<button onclick="addRoundWoundList(\''+r.id+'\')">'+(r.woundListed?'✓ Wound list':'＋ Wound list')+'</button>'+
       '<button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
@@ -4121,6 +4124,7 @@ function purgeRounds(){
   S.rounds=[];renderRounds();save();doSync(true);
 }
 function togSeen(id){const r=S.rounds.find(x=>x.id===id);if(r){r.seen=!r.seen;r.updatedAt=Date.now();renderRounds();save()}}
+function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){r.soCcResp=!r.soCcResp;r.updatedAt=Date.now();renderRounds();save()}}
 function clearSeen(){S.rounds.forEach(r=>{if(r.seen){r.seen=false;r.updatedAt=Date.now()}});renderRounds();save()}
 function delRound(id){
   const r=S.rounds.find(x=>x.id===id);
