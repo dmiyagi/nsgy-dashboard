@@ -452,7 +452,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.3 · 2026-08-17 16:12 EDT</div>
+    <div class="buildmeta">v0.0.4 · 2026-08-17 17:24 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1005,7 +1005,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_loc"><label>Location</label><input type="hidden" id="f_loc">
       <div class="locgrid">
         <div><label>Bed / location</label><input type="text" id="f_bed" placeholder="e.g. C243"></div>
-        <div><label>Patient</label><input type="text" id="f_last3" placeholder="first 3 letters"></div>
+        <div><label>Patient</label><input type="text" id="f_last3" placeholder="First three letters of Pt last name"></div>
       </div>
     </div>
     <div class="fld" id="fld_call" style="display:none"><label>Who to call</label>
@@ -1018,8 +1018,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_prob"><label id="probLabel">Problem</label><input type="text" id="f_prob" placeholder="Type anything…" autocomplete="off">
       <div id="fld_owner" class="caregrid" style="margin-top:8px">
         <div><label>Owner</label><input type="text" id="f_owner" placeholder="me"></div>
-        <div><label>Team</label><input type="text" id="f_team" placeholder="PINK"></div>
-        <div><label>Attending</label><input type="text" id="f_attg" placeholder="KS"></div>
+        <div><label>Team</label><input type="text" id="f_team"></div>
+        <div><label>Attending</label><input type="text" id="f_attg"></div>
       </div>
       <div class="sugg" id="sugg"></div>
       <div id="prockit"></div>
@@ -1028,6 +1028,18 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div id="f_hh"></div>
       <div id="f_ich"></div>
       <div id="f_ao"></div>
+    </div>
+    <input type="hidden" id="f_dl">
+    <div class="fld" id="fld_snooze"><label id="dlLabel">◷ Timing / reschedule</label>
+      <div class="qbtns">
+        <button type="button" onclick="setTodayDeadline(5)">+5 min</button>
+        <button type="button" onclick="setTodayDeadline(15)">+15 min</button><button type="button" onclick="setTodayDeadline(30)">+30 min</button>
+        <button type="button" onclick="setTodayDeadline(60)">+1 h</button><button type="button" onclick="setTodayDeadline(120)">+2 h</button>
+        <button type="button" onclick="setSnooze(1)">Tomorrow</button><button type="button" onclick="setSnooze(7)">+1 wk</button>
+        <button type="button" onclick="setSnooze(0)">Clear</button>
+      </div>
+      <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
+      <input type="datetime-local" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>Text consult — build the send-ready version</summary>
       <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
@@ -1045,71 +1057,36 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
       <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
     </details>
-    <div class="fld" id="fld_E"><div class="axhead"><label>E — urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_E"><div class="axhead"><label>E</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
       <div id="eMini"></div>
       <div class="selhint" id="hintE" style="display:none"></div>
-      <details class="axisinfo"><summary>ℹ What counts as each E level / E3 triggers</summary><div class="ai">
-        <b>E3</b> — active or imminent neurologic/physiologic threat: interrupt, assess immediately, escalate now. · <b>E2</b> — assess within 30 min. · <b>E1</b> — assess within 1 hour. · <b>E0</b> — group with the next consult, or assess within 1.5 hours. <i>Windows are operational approximations, not disease definitions.</i><br>
-        <span class="grp">Intracranial E3:</span> acute ↓consciousness · new anisocoria/nonreactive pupil · new posturing · rapidly progressive deficit · acute hydrocephalus with deterioration · EVD obstruction with decline or uncontrolled ICP · severe mass effect / impending herniation · posterior fossa lesion with brainstem compression or obstructive HCP · status epilepticus · sudden postop decline or postop hematoma with deterioration · uncontrolled ICH · severe edema with herniation syndrome.<br>
-        <span class="grp">Spinal E3:</span> rapidly progressive weakness · new loss of ambulation · acute bowel/bladder dysfunction with compatible findings · retention + saddle symptoms or new weakness · acute cord/cauda equina compression · epidural hematoma or abscess with neurologic change · unstable injury with deficit · high cervical lesion with respiratory compromise.<br>
-        <span class="grp">Vascular E3:</span> suspected aneurysmal rebleed · unsecured ruptured aneurysm · acute decline with a vascular lesion · time-window ischemia/LVO · expanding pseudoaneurysm or active extravasation · BCVI with evolving ischemia · post-procedure ICH.<br>
-        <span class="grp">Systemic E3:</span> airway failure · severe hypoxemia · shock · active major hemorrhage · ICH needing urgent reversal · severe coagulopathy when intervention may be needed · sepsis with intracranial hardware · exposed infected implant · CSF leak with wound failure + instability · competing emergency operation.
-        <span class="wb">Don't wait for a full Cushing triad — it's uncommon and late. Altered consciousness + ipsilateral blown pupil + contralateral weakness = transtentorial herniation [1]. Confirmed cauda equina = emergency; 48 h is not permission to wait [2]. aSAH: treat the aneurysm preferably within 24 h [3].</span>
-      </div></details>
     </div>
-    <div class="fld" id="fld_O"><div class="axhead"><label>O — operative trajectory</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_O"><div class="axhead"><label>O</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selO"></div>
       <div id="oMini"></div>
       <div class="selhint" id="hintO" style="display:none"></div>
-      <details class="axisinfo"><summary>ℹ What counts as each O level / when to re-score</summary><div class="ai">
-        <b>O3</b> — emergency procedure underway or decision effectively made. · <b>O2</b> — high probability of operation this shift/day; limited decisions remain. · <b>O1</b> — intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. · <b>O0</b> — observation, medical treatment, outpatient, or another service presently favored.<br>
-        <span class="grp">Re-score whenever:</span> imaging changes · exam changes · repeat imaging is stable · senior review occurs · contraindications resolve · a procedure is completed · goals of care change.
-        <span class="wb"><b>O0 ≠ low acuity.</b> Unsecured ruptured aneurysm, acute hydrocephalus, status epilepticus, or severe intracranial hypertension can be E3 while O0.</span>
-      </div></details>
     </div>
-    <div class="fld" id="fld_W"><div class="axhead"><label>W — hidden-deterioration risk</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_W"><div class="axhead"><label>W</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selW"></div>
       <div id="wMini"></div>
       <div class="selhint" id="hintW" style="display:none"></div>
-      <details class="axisinfo"><summary>ℹ What counts as each W level / W3 lesions</summary><div class="ai">
-        <b>W0</b> — low likelihood of rapid or clinically silent progression. · <b>W1</b> — routine serial exam or imaging required. · <b>W2</b> — known evolving disease: explicit reassessment time + contingency required. · <b>W3</b> — reassuring present exam but substantial lesion-specific risk of abrupt deterioration.<br>
-        <span class="grp">Classic W3 lesions:</span> EDH with GCS 15 · large SDH with preserved exam · expanding contusion · posterior fossa hemorrhage · acute hydrocephalus · anticoagulated ICH · shunt malfunction with subtle presentation · unsecured ruptured aneurysm · spinal epidural process with subtle weakness · new postop headache/vomiting/somnolence/wound swelling · incomplete imaging despite a dangerous syndrome.
-        <span class="wb">W3 should generally not remain E0. If W3 stays E1 (not E2), document why immediate evaluation isn't required — and define the reassessment interval, responsible examiner, and escalation trigger.</span>
-      </div></details>
       <div class="formwarn" id="wWarn"><b>W3 with E≤1:</b> W3 should generally not remain E0/E1. Either raise E, or document below why immediate evaluation is not required — and define the reassessment interval, examiner, and escalation trigger.</div>
     </div>
-    <div class="fld" id="fld_C"><label>C — complexity (quick pick, or score domains)</label>
+    <div class="fld" id="fld_C"><div class="axhead"><label>C</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selC"></div>
       <div id="cMini"></div>
       <div class="selhint" id="hintC" style="display:none"></div>
-      <details class="axisinfo"><summary>ℹ What counts as each C level / the 11 domains</summary><div class="ai">
-        Total of 11 domains, each 0–3 (max 33): <b>C1</b> low 0–5 · <b>C2</b> moderate 6–11 · <b>C3</b> high 12–23 · <b>C4</b> extreme 24–33. Thresholds are operational and unvalidated — moderate difficulty across nearly every domain appropriately scores high or extreme. Quick pick is a provisional gut estimate; score the domains when you have a minute.<br>
-        <span class="grp">Domains:</span> 1 neuro instability/trajectory · 2 lesion & anatomic danger · 3 hidden-deterioration risk (W) · 4 diagnostic uncertainty · 5 baseline & exam interpretability · 6 prior anatomy/devices · 7 procedural complexity · 8 hemostasis & meds · 9 infection/wound/CSF · 10 medical/physiologic · 11 communication/consent/dispo/tasks.
-        <span class="wb">Do not let complexity itself determine acuity — a C4 patient may be E1; a C1 patient may be E3.</span>
-      </div></details>
       <details id="domWrap" style="margin-top:8px"><summary style="font-size:13px;color:var(--teal);cursor:pointer;font-weight:600">Score all 11 domains (0–3)</summary>
         <div class="ctotal" id="ctotal"></div>
         <div id="doms"></div>
       </details>
     </div>
-    <div class="fld" id="fld_action"><label>Next action</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
-    <div class="fld" id="fld_tasks"><label id="tasksLabel">Checklist — independent items, any order (one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
-    <input type="hidden" id="f_dl">
+    <div class="fld" id="fld_action"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
+    <div class="fld" id="fld_tasks"><label id="tasksLabel">Checklist (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
-    </div>
-    <div class="fld" id="fld_snooze"><label id="dlLabel">◷ Timing / reschedule</label>
-      <div class="qbtns">
-        <button type="button" onclick="setTodayDeadline(5)">+5 min</button>
-        <button type="button" onclick="setTodayDeadline(15)">+15 min</button><button type="button" onclick="setTodayDeadline(30)">+30 min</button>
-        <button type="button" onclick="setTodayDeadline(60)">+1 h</button><button type="button" onclick="setTodayDeadline(120)">+2 h</button>
-        <button type="button" onclick="setSnooze(1)">Tomorrow</button><button type="button" onclick="setSnooze(7)">+1 wk</button>
-        <button type="button" onclick="setSnooze(0)">Clear</button>
-      </div>
-      <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
-      <input type="datetime-local" id="f_snooze" style="margin-top:6px;width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:14px;padding:8px 10px">
     </div>
     <details class="moredet"><summary>▾ More details</summary>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
@@ -1127,6 +1104,13 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
       <div class="flags" id="flags"></div>
     </div>
+    <details class="axisinfo"><summary>ℹ E/O/W/C scoring reference</summary><div class="ai">
+      <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat. <b>E2</b> assess within 30 min. <b>E1</b> assess within 1 h. <b>E0</b> group with next consult / within 1.5 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
+      <span class="grp">O operative trajectory:</span> <b>O3</b> emergency procedure underway/effectively decided. <b>O2</b> high probability this shift/day. <b>O1</b> intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. <b>O0</b> observation/medical/outpatient/other service presently favored. Re-score with imaging/exam changes, senior review, procedures, contraindication changes, or goals-of-care changes.<br>
+      <span class="grp">W hidden deterioration:</span> <b>W0</b> low likelihood of rapid/silent progression. <b>W1</b> routine serial exam or imaging. <b>W2</b> known evolving disease needing explicit reassessment/contingency. <b>W3</b> reassuring present exam but substantial lesion-specific risk: EDH with GCS 15, large SDH with preserved exam, expanding contusion, posterior fossa hemorrhage, acute hydrocephalus, anticoagulated ICH, subtle shunt malfunction, unsecured ruptured aneurysm, subtle spinal epidural process, concerning postop symptoms/wound swelling, or incomplete imaging despite a dangerous syndrome.<br>
+      <span class="grp">C complexity:</span> 11 domains scored 0-3, max 33. <b>C1</b> 0-5, <b>C2</b> 6-11, <b>C3</b> 12-23, <b>C4</b> 24-33. Domains: neuro instability/trajectory, lesion/anatomic danger, W risk, diagnostic uncertainty, baseline/exam interpretability, prior anatomy/devices, procedural complexity, hemostasis/meds, infection/wound/CSF, medical physiology, communication/consent/dispo/tasks.
+      <span class="wb">Do not let C alone determine acuity. O0 can still be E3. W3 generally should not remain E0/E1 without a clear reassessment interval and trigger.</span>
+    </div></details>
     </details>
     <div class="sheetbtns">
       <button class="btn sec" onclick="closeForm()">Cancel</button>
@@ -1456,6 +1440,13 @@ const TYPES={
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_state","fld_action","fld_trig","fld_qs","cbdet"];
+const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
+function addQuickProcSteps(c){
+  if(!c||c.type!=="PCON")return;
+  c.steps=c.steps||[];
+  QUICK_PROC_STEPS.forEach(t=>{if(!c.steps.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.steps.push({t:t,done:false})});
+  if(!c.action)c.action=QUICK_PROC_STEPS[0];
+}
 // ---------- procedure library (supplies + step chains, 2026 survival guide) ----------
 const PROC_LIB=[
  {re:/\bevd\b(?!.*flush)|ventriculostomy/i,name:"EVD (adult)",dvt:true,
@@ -1464,7 +1455,7 @@ const PROC_LIB=[
  {re:/evd flush/i,name:"EVD flush",
   supplies:["Alcohol pad","Sterile flush","Sterile gloves","Clave if no access port (post-OR EVD)"],
   steps:["Let the nurse know","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Procedure note / significant event note"]},
- {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen)/i,name:"EVD intrathecal meds",
+ {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds",
   supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
   steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Procedure note / significant event note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
@@ -2063,7 +2054,7 @@ function renderSmartHints(){
   const hints=[];
   const box=(title,body,btns)=>'<details class="smartbox"><summary><span><b>'+title+'</b></span>'+(btns||"")+'</summary>'+(body?'<div class="smartbody">'+body+'</div>':"")+'</details>';
   if(F.type==="CONSENT")hints.push(box("Suggested attending list",esc(consentAttendingsFor(txt)),'<span class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add</button></span>'));
-  if(F.type==="PCON")hints.push(box("Quick proc presets","shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
+  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/medication · EVD flush · shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT Cardene\';renderFlags()">IT Cardene</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT medication\';renderFlags()">IT med</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD flush\';renderFlags()">EVD flush</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push(box("Admit plan detected","Add H&P and admission-order reminders.",'<span class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P</button></span>'));
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
@@ -3255,6 +3246,7 @@ function openForm(id,reassess,ptype){
   F._isNew=!id;
   if(!F.type)F.type="CONSULT";
   if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART"||ptype==="WOUND")F.E=0;}
+  if(!id&&F.type==="PCON")addQuickProcSteps(F);
   if(!id&&F.type==="BOOK"){
     F.tasks=[
       {t:"Exact procedure name + laterality confirmed with attending",done:false},
@@ -3285,7 +3277,7 @@ function buildTypeChips(){
   const el=document.getElementById("typechips");
   const keys=Object.keys(TYPES);
   el.innerHTML=keys.map(k=>'<button class="tc-'+k+(F.type===k?" on":"")+'">'+TYPES[k].i+" "+TYPES[k].l+'</button>').join("");
-  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F.type=keys[i];if(F.type==="CHART")F.E=0;buildTypeChips();buildSelectors();renderSugg();renderFlags()});
+  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F.type=keys[i];if(F.type==="CHART")F.E=0;if(F.type==="PCON")addQuickProcSteps(F);buildTypeChips();buildSelectors();document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");document.getElementById("f_action").value=F.action||"";renderSugg();renderFlags()});
   setTypeUI();
 }
 function setTypeUI(){
@@ -3297,13 +3289,11 @@ function setTypeUI(){
   // the text-consult builder belongs to consults
   const tcEl=document.getElementById("fld_tc");if(tcEl)tcEl.style.display=(F.type==="CONSULT")?"":"none";
   document.getElementById("tasksLabel").textContent=(F.type==="CHART")
-    ? "Chart-check to-dos — independent, any order (one per line)"
-    : "Checklist — independent items, any order (one per line)";
+    ? "Chart-check to-dos (one per line)"
+    : "Checklist (optional, one per line)";
   document.getElementById("probLabel").textContent=t.probL;
   document.getElementById("f_prob").placeholder="Type anything here…";
   document.getElementById("dlLabel").textContent="◷ "+t.dlL+" / reschedule";
-  const sn=document.getElementById("fld_snooze"),act=document.getElementById("fld_action");
-  if(sn&&act&&(sn.compareDocumentPosition(act)&Node.DOCUMENT_POSITION_FOLLOWING))act.parentNode.insertBefore(sn,act);
   const rem=document.getElementById("typereminder");
   rem.style.display=t.rem?"block":"none";rem.textContent=t.rem;
   document.getElementById("fld_call").style.display=(F.type==="COMM")?"":"none";
@@ -4017,7 +4007,7 @@ function roundExamNote(r){
 function tiedTypeForRoundTodo(t){
   const s=String(t||"");
   if(/\b(?:call|page|text|contact|notify|reach)\b/i.test(s)||/\b(?:mri|ct|cta|ctv|x-?ray|xr|ultrasound|us)\b/i.test(s))return "COMM";
-  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram)\b/i.test(s))return "PCON";
+  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram|evd flush|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(s))return "PCON";
   if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
   return null;
 }
@@ -4628,6 +4618,11 @@ function capTask(type,text,pre){
     document.getElementById("f_tasks").value=F.tasks.map(s=>s.t).join("\n");
   }
   if(pre.note){F.note=pre.note;document.getElementById("f_note").value=pre.note}
+  if(type==="PCON"){
+    addQuickProcSteps(F);
+    document.getElementById("f_steps").value=F.steps.map(s=>s.t).join("\n");
+    document.getElementById("f_action").value=F.action||"";
+  }
   if(type==="PROC"){
     const kit=procMatch(text);
     if(kit){curProcKit=kit;loadProcKit(kit,"both")}
@@ -4647,6 +4642,7 @@ function renderCapture(){
   const el=document.getElementById("capsugg");
   capActions=[];
   const pathAbbrev=knownPathAbbrev(text);
+  const quickProcText=/\b(?:evd flush|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(text);
   const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|staples?|sutures?|prolenes?)\b/i.test(text);
   if(text.length<4&&!pathAbbrev&&!knownProcCue){el.innerHTML="";return}
   const bed=extractBed(text);
@@ -4663,7 +4659,7 @@ function renderCapture(){
   const chartCue=/chart[- ]?check/i.test(text);
   const pocCue=/\bpoc\b|post-?op check/i.test(text);
   const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
-  const pconCue=/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|tap)|shuntogram)\b/i.test(text);
+  const pconCue=quickProcText||/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|tap)|shuntogram)\b/i.test(text);
   const kit=procMatch(text);
   const verbStart=/^(remove|pull|place|replace|change|flush|tap|drain|suture|stitch|staple|inject|do|perform|take out|d\/?c)\b/i.test(text);
   const procKeywordCue=knownProcCue||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap)\b/i.test(text);
@@ -4700,7 +4696,7 @@ function renderCapture(){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary",SCREW_ICON,"Quick proc — dial / pump check","simple: do → document → update handoff",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary",SCREW_ICON,"Quick proc — IT med / EVD flush / dial","simple: notify → gather supplies → notify → sig event",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart||procKeywordCue)){
     add("primary",HAMMER_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
