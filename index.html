@@ -3249,7 +3249,9 @@ function setLocForm(v){
   document.getElementById("f_last3").value=p.last3;
 }
 function openForm(id,reassess,ptype){
-  F=id?JSON.parse(JSON.stringify(S.consults.find(x=>x.id===id))):blankC();
+  const existing=id?S.consults.find(x=>x.id===id):null;
+  if(id&&!existing){showToast("Card not found — opening a new consult");id=null;reassess=false;ptype=null}
+  F=id?JSON.parse(JSON.stringify(existing)):blankC();
   F._isNew=!id;
   if(!F.type)F.type="CONSULT";
   if(!id&&ptype){F.type=ptype;F.O=0;F.cQuick=1;if(ptype==="CHART"||ptype==="WOUND")F.E=0;}
@@ -3431,6 +3433,10 @@ function saveForm(){
   if(F.type==="CONSULT"&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
+  if(isNew){
+    boardTypeFilter=boardType(saved);
+    boardOwnerFilter="ALL";
+  }
   const boltAuto=F.type==="CONSULT"&&traumaLowGcsCue([F.prob,F.state,F.action,F.note].filter(Boolean).join(" "))?createLinkedBoltTask(saved):null;
   const linkedNow=maybePromptPatientLink(saved);
   closeForm();render();
