@@ -72,9 +72,11 @@ section.view.active{display:block}
 .nudge.show{display:block}
 .nudge a{color:#ffd93b;cursor:pointer;text-decoration:underline}
 /* cards */
-.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--e0);border-radius:var(--rad);padding:10px 12px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--e0);border-radius:var(--rad);padding:10px 12px;margin-bottom:10px;transition:opacity .28s ease,transform .28s ease,border-color .28s ease,box-shadow .28s ease}
 .card.E3{border-left-color:var(--e3)} .card.E2{border-left-color:var(--e2)} .card.E1{border-left-color:var(--e1)} .card.E0{border-left-color:var(--e0)}
 .card.reviewover{box-shadow:0 0 0 1px var(--e3),0 0 18px rgba(255,77,94,.22)}
+.card.reflowfade{animation:workflowFade 10s ease forwards}
+@keyframes workflowFade{0%{opacity:1;transform:translateY(0)}75%{opacity:.82}100%{opacity:.58;transform:translateY(2px)}}
 .badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:5px}
 .bg{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
 .bg.e3{background:var(--e3);color:#fff} .bg.e2{background:var(--e2);color:#231400} .bg.e1{background:var(--e1);color:#231d00} .bg.e0{background:#33415c;color:#cbd6e8}
@@ -454,7 +456,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.12 · 2026-08-17 18:47 EDT</div>
+    <div class="buildmeta">v0.0.13 · 2026-08-17 18:54 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2356,9 +2358,38 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
  return [c.loc,c.prob,"E"+c.E+"/O"+c.O+"/"+cStr(c)+(mods?"-"+mods:""),c.state,c.action,[dl,c.trig].filter(Boolean).join("; "),c.owner].filter(Boolean).join(" | ")}
 // ---------- board render ----------
 let pinnedTopId=null;
+let boardHoldOrder=[];
+let boardHoldUntil=0;
+let boardReflowTimer=null;
+const boardFadeIds=new Set();
 let boardTypeFilter="ALL";
 let boardOwnerFilter="ALL";
 let boardSortMode="bubble";
+function boardHoldActive(){return boardHoldUntil&&Date.now()<boardHoldUntil}
+function currentBoardOrder(){
+  return Array.from(document.querySelectorAll("#cards .card[data-id]")).map(el=>el.dataset.id).filter(Boolean);
+}
+function scheduleBoardReflow(id){
+  const ids=currentBoardOrder();
+  if(ids.length)boardHoldOrder=ids;
+  boardHoldUntil=Date.now()+10000;
+  if(id)boardFadeIds.add(id);
+  clearTimeout(boardReflowTimer);
+  boardReflowTimer=setTimeout(()=>{
+    boardHoldUntil=0;boardHoldOrder=[];boardFadeIds.clear();
+    reflowQueue();render();
+  },10000);
+}
+function sortBoardList(list){
+  const sorted=list.slice().sort(boardSort);
+  if(!boardHoldActive()||!boardHoldOrder.length)return sorted;
+  const pos=new Map(boardHoldOrder.map((id,i)=>[id,i]));
+  return sorted.sort((a,b)=>{
+    const ai=pos.has(a.id)?pos.get(a.id):999999,bi=pos.has(b.id)?pos.get(b.id):999999;
+    return ai!==bi?ai-bi:boardSort(a,b);
+  });
+}
+function reflowFadeClass(c){return boardHoldActive()&&boardFadeIds.has(c.id)?" reflowfade":""}
 function boardType(c){return (c.type&&TYPES[c.type])?c.type:"CONSULT"}
 function ownerKey(c){return (c.owner||"").trim()||"Unassigned"}
 function teamFromText(t){const m=String(t||"").match(/\b(PINK|BLUE|PURPLE|GREEN|ORANGE|RED|YELLOW)\b/i);return m?m[1].toUpperCase():""}
@@ -2878,7 +2909,7 @@ function renderCal(){
 function render(){
   const baseAct=S.consults.filter(c=>boardVisible(c)&&!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
-  const act=baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)).sort(boardSort);
+  const act=sortBoardList(baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)));
   const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
   const counts=[0,0,0,0];act.forEach(c=>counts[c.E]++);
   document.getElementById("hpills").innerHTML=
@@ -2950,7 +2981,7 @@ function rowCard(c,dl,isTask){
   const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
-  return '<div class="card crowwrap hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
+  return '<div class="card crowwrap hastrash E'+c.E+(rOver?' reviewover':'')+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
    '<div class="crow">'+
     (isChart?'<span class="bg t tc-CHART">▤</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
     (rOver?'<span class="bg warn">review</span>':"")+
@@ -3036,7 +3067,7 @@ function card(c){
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
     const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO Sign-out</button>'):"";
-    return '<div class="card hastrash E'+c.E+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
+    return '<div class="card hastrash E'+c.E+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
        patientTag(c)+linkedCardsHtml(c,true)+
@@ -3057,7 +3088,7 @@ function card(c){
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
   const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
-  return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
+  return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg w'+c.W+'">W'+c.W+'</span>':"")+patientTag(c)+linkedCardsHtml(c,true)+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
    (c.state?'<div class="state">'+esc(c.state)+'</div>':"")+
@@ -3205,8 +3236,9 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
   }
   touch(c);
   const missingGate=c.type==="CONSULT"?consultGateMissing(c):[];
+  scheduleBoardReflow(c.id);
   if(missingGate.length&&!(c.wf&&c.wf.seen)){pinnedTopId=c.id;render();return}
-  reflowQueue();render();}
+  render();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
 function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
 function del(id,skipConfirm){
