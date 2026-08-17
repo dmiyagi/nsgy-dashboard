@@ -454,7 +454,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.7 · 2026-08-17 18:27 EDT</div>
+    <div class="buildmeta">v0.0.8 · 2026-08-17 18:31 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4125,11 +4125,17 @@ function addRoundTodoCard(id,type,line){
   line=decodeURIComponent(line||"");
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
   if(hasTiedTask(r,type,line)){showToast("Already on board");return}
+  createRoundEventCard(r,type,line);
+  render();renderRounds();save();
+  showToast(TYPES[type].l+" added for "+r.label);
+}
+function createRoundEventCard(r,type,line){
+  if(!r||!TYPES[type]||hasTiedTask(r,type,line))return null;
   const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
   if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
   if(type==="CHART")t.E=0;
-  t.updatedAt=Date.now();S.consults.push(t);render();renderRounds();save();
-  showToast(TYPES[type].l+" added for "+r.label);
+  t.updatedAt=Date.now();S.consults.push(t);
+  return t;
 }
 function findRoundForConsult(c){
   if(!c)return null;
@@ -4180,9 +4186,7 @@ function addTiedRoundTasks(r,lines){
   let n=0;
   (lines||roundOpenTodos(r)).forEach(line=>{
     const type=tiedTypeForRoundTodo(line);if(!type||hasTiedTask(r,type,line))return;
-    const t=blankC();t.type=type;t.loc=r.label;t.prob=line;t.roundId=r.id;t.owner="me";t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
-    if(type==="COMM")t.fname=(line.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
-    t.updatedAt=Date.now();S.consults.push(t);n++;
+    if(createRoundEventCard(r,type,line))n++;
   });
   return n;
 }
@@ -4730,16 +4734,38 @@ function capRoundsAdd(text,bed){
   renderRounds();save();showToast("Added to rounds");
 }
 function capPatientTask(text,bed,match){
+  const t=text.replace(/\s+/g," ").trim();
+  if(!t)return;
   match=match||findPatientMatch(text,bed);
+  if(match&&match.kind==="round"){
+    const r=S.rounds.find(x=>x.id===match.id);
+    if(r){
+      r.steps=r.steps||[];
+      const added=!r.steps.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase());
+      if(added)r.steps.push({t:t,done:false});
+      const type=tiedTypeForRoundTodo(t);
+      const card=type?createRoundEventCard(r,type,t):null;
+      r.updatedAt=Date.now();
+      document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
+      renderRounds();render();save();
+      showToast((added?"Added to rounds to-do":"Already on rounds to-do")+(card?" + "+TYPES[type].l+" board card":""));
+      return;
+    }
+  }
   if(match&&match.kind==="board"){
     const c=S.consults.find(x=>x.id===match.id);
     if(c){
       c.tasks=c.tasks||[];
-      const t=text.replace(/\s+/g," ").trim();
       if(t&&!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false});
+      const type=tiedTypeForRoundTodo(t);
+      let card=null;
+      if(type==="COMM"){
+        card=blankC();card.type="COMM";card.loc=c.loc;card.prob=t;card.owner="me";card.team=c.team;card.attg=c.attg;card.worry=!!c.worry;card.fname=(t.match(/\b(?:call|page|text|contact|notify)\s+([A-Za-z][A-Za-z0-9 -]{1,24})/i)||[])[1]||"";
+        const gid=c.linkGroupId||("pg"+uid());c.linkGroupId=gid;card.linkGroupId=gid;card.sourceId=c.id;card.updatedAt=Date.now();S.consults.push(card);
+      }
       c.updatedAt=Date.now();
       document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";
-      render();save();showToast("Added task to "+(c.loc||"board patient"));
+      render();renderRounds();save();showToast("Added task to "+(c.loc||"board patient")+(card?" + Comm board card":""));
       return;
     }
   }
@@ -4839,8 +4865,9 @@ function renderCapture(){
     const nm=extractCallName(text);
     const rel=(text.match(/\b(wife|husband|mother|father|mom|dad|daughter|son|sister|brother|family|guardian|rn|nurse)\b/i)||[])[1]||"";
     const ph=(text.match(/(\+?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/)||[])[1]||"";
-    const loc=bed||(pmatch?pmatch.label:(rmatch?rmatch.label:""));
-    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(pmatch?(" · "+pmatch.label):(bed?" · "+bed:"")),"opens Comm prefilled"+(ph?" with number":""),()=>capTask("COMM",text,{loc:loc,fname:nm,phone:ph,linkTo:pmatch}));
+    const callMatch=pmatch||rmatch;
+    const loc=bed||(callMatch?callMatch.label:"");
+    add("primary",PHONE_ICON,"Log call — "+(nm||"?")+(rel?" ("+rel+")":"")+(callMatch?(" · "+callMatch.label):(bed?" · "+bed:"")),(callMatch?"adds rounds to-do + Comm board card":"opens Comm prefilled")+(ph?" with number":""),()=>callMatch?capPatientTask(text,bed,callMatch):capTask("COMM",text,{loc:loc,fname:nm,phone:ph,linkTo:pmatch}));
     phoneSuggestFor(text).forEach(s=>add("",PHONE_ICON,s.split(" — ")[0]+" numbers",s,()=>{toClip(s);showToast("Numbers copied")}));
     if(/\bmri\b/i.test(text))add("rl","▤","Add MRI task to "+(pmatch?pmatch.label:"rounds/boards"),(bed||last3FromText(text)||last3Cue(text))?("uses "+[bed,last3FromText(text)||last3Cue(text)].filter(Boolean).join(" ")):"uses first three last-name letters if present",()=>capPatientTask(text,bed,pmatch));
     if(consentCue)add("","✎","Consent task"+(pmatch?" — "+pmatch.label:""),"exact procedure/laterality; phone consent needs witness",()=>capTask("CONSENT",text,{loc:loc,linkTo:pmatch,tasks:["Confirm exact procedure name + laterality","Phone consent witness if not in person","Suggested attendings: "+consentAttendingsFor(text)]}));
@@ -4867,7 +4894,8 @@ function renderCapture(){
     add("","◉","New consult with this text","",()=>capConsult(text,bed));
   }
   if(pmatch&&!bookCue&&!/\bmri\b/i.test(text)){
-    add("rl","▤","Add/link action to patient — "+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+(pmatch.raw?"…":"")+" from "+(pmatch.kind==="round"?"Rounds":"Board"),()=>capPatientTask(text,bed,pmatch));
+    const typed=tiedTypeForRoundTodo(text);
+    add("rl","▤",(typed==="COMM"?"Add to-do + Comm card — ":"Add/link action to patient — ")+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+(pmatch.raw?"…":"")+" from "+(pmatch.kind==="round"?"Rounds":"Board"),()=>capPatientTask(text,bed,pmatch));
   }
   if(!bookCue&&rmatch)add("rl","▤","Matches your rounding list — "+esc(rmatch.label),esc(rmatch.raw.slice(0,70))+"… (tap to open Rounds)",()=>capRounds());
   el.innerHTML=rows.join("");
