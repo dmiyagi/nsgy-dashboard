@@ -297,6 +297,7 @@ button.rdone.finaldone{background:#123527}
 .calrow{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 10px;margin-bottom:5px;font-size:13px;cursor:pointer}
 .calrow .cwho{font-weight:700;white-space:nowrap}
 .calrow .cprob{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.calrow .csub{display:block;color:var(--acc);font-size:11.5px;font-weight:700;margin-top:3px}
 .calrow .ctime{font-size:11px;color:var(--mut);white-space:nowrap}
 .calrow button{margin-left:4px}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -456,7 +457,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.13 · 2026-08-17 18:54 EDT</div>
+    <div class="buildmeta">v0.0.15 · 2026-08-17 19:03 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2717,7 +2718,9 @@ function consentInterpBadge(c){
 }
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO)||(c.tasks||[]).some(t=>!t.done&&t.dueISO);
+  const hasReview=c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO;
   return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
+   (hasReview?'<button onclick="clearReviewDL(\''+c.id+'\')" title="Clear review timer">✕ review</button>':"")+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
    (hasOverdueTimers(c)?'<button onclick="clearOverdueTimers(\''+c.id+'\')" title="Clear only overdue timers">✕ overdue</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
@@ -3771,9 +3774,7 @@ function setRStepDL(id,i,min){
 function roundExamHtml(r){
   const prev=roundPrevExamText(r);
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
-    '<div class="fld"><label>Previous exam</label><textarea class="evta" id="rprev_'+r.id+'" placeholder="Previous exam..." style="min-height:54px" onchange="roundPrevExamSave(\''+r.id+'\',this)">'+esc(prev)+'</textarea></div>'+
-    '<div class="qbtns"><button type="button" onclick="copyRoundPrevExam(\''+r.id+'\')">Copy previous</button></div>'+
-    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:64px;margin-top:6px" onchange="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||prev)+'</textarea></div>'+
+    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||prev)+'</textarea></div>'+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button></div>'+
     roundExamHistoryHtml(r)+
     '</details>';
@@ -3781,9 +3782,8 @@ function roundExamHtml(r){
 function roundExamToggle(id,on){const r=S.rounds.find(x=>x.id===id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
 function roundPrevExamText(r){
   if(!r)return "";
-  if(r.prevExam)return r.prevExam;
   const h=(r.examHist||[]).slice().reverse().find(x=>x&&x.text);
-  return h?h.text:"";
+  return h?h.text:(r.prevExam||"");
 }
 function roundPrevExamSave(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -3821,7 +3821,23 @@ function copyRoundPrevExam(id){
   const t=(el?el.value:roundPrevExamText(r)).trim();
   if(t){toClip(t);showToast("Previous exam copied")}
 }
-function roundExamSave(id,el){const r=S.rounds.find(x=>x.id===id);if(!r)return;const v=el.value.trim();if(v&&v!==r.exam){if(r.exam){r.prevExam=r.exam;r.examHist=r.examHist||[];r.examHist.push({ts:Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(-3)}r.exam=v}else if(!v){r.exam=""}r.updatedAt=Date.now();renderRounds();save()}
+function roundExamSave(id,el){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const v=el.value.trim();
+  r.examHist=r.examHist||[];
+  if(v){
+    const last=r.examHist[r.examHist.length-1];
+    if(!last||String(last.text||"").trim()!==v){
+      r.examHist.push({ts:Date.now(),text:v});
+      r.examHist=r.examHist.slice(-3);
+    }
+    r.exam=v;
+    r.prevExam=v;
+  }else{
+    r.exam="";
+  }
+  r.updatedAt=Date.now();renderRounds();save();
+}
 function roundExamPreset(id,kind){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id);if(!el)return;
@@ -5180,9 +5196,20 @@ const BOOKING_TMPLS=[
  "Left / right stent insertion extracranial intravascular; CPT 0075T",
  "Left / right placement of Visualase fiber, laser ablation, brain"];
 function copyBooking(i){toClip(BOOKING_TMPLS[i]);showToast("Booking text copied")}
+function bookingCptLine(t){
+  if(/external ventricular drain/i.test(t))return "CPT 61210; possible bolt/ICP monitor 61107";
+  if(/ventriculoperitoneal shunt/i.test(t))return "CPT 62223; possible laparoscopic abdomen assist 49324 or open tunneled catheter 49421";
+  if(/craniectomy versus craniotomy for evacuation of subdural/i.test(t))return "CPT 61312; possible EVD 61210; possible bolt 61107";
+  if(/burr holes.*subdural hematoma/i.test(t))return "CPT 61154; if converted to craniotomy 61312";
+  const m=String(t||"").match(/(?:^|; )CPT\s+(.+)$/i);
+  return m?"CPT "+m[1]:"";
+}
 function renderBookings(){
   const q=globalSearch.trim().toLowerCase();
-  const html=BOOKING_TMPLS.map((t,i)=>[t,i]).filter(([t])=>!q||t.toLowerCase().includes(q)).map(([t,i])=>'<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+'</span><span class="ctime">⧉</span></div>').join("")||'<div class="empty" style="padding:12px">No booking template match.</div>';
+  const html=BOOKING_TMPLS.map((t,i)=>[t,i]).filter(([t])=>!q||t.toLowerCase().includes(q)).map(([t,i])=>{
+    const cpt=bookingCptLine(t);
+    return '<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+(cpt?'<span class="csub"> '+esc(cpt)+'</span>':"")+'</span><span class="ctime">⧉</span></div>';
+  }).join("")||'<div class="empty" style="padding:12px">No booking template match.</div>';
   ["bookinglist","bookinglist2"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html});
 }
 function enableNativeDictation(root){
