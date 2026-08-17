@@ -457,7 +457,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.15 · 2026-08-17 19:03 EDT</div>
+    <div class="buildmeta">v0.0.16 · 2026-08-17 19:05 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2226,7 +2226,7 @@ function migrate(d){
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
 let lastSaved="";
-function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);schedulePush()}}
+function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);markSyncDirty();schedulePush()}}
 function touch(c){if(c)c.updatedAt=Date.now()}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function searchBlob(x){return Object.keys(x||{}).map(k=>{
@@ -4950,11 +4950,33 @@ function renderCapture(){
 }
 // ---------- sync engine (private GitHub Gist) ----------
 const SYNC_FILE="nsgy-triage-sync.json";
-const TK="nsgy_gh_token",GK="nsgy_gh_gist";
-let pushT=null,syncing=false;
+const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at";
+let pushT=null,retryT=null,syncing=false,syncAgain=false;
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
 function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
-function schedulePush(){if(!syncCfg().token)return;clearTimeout(pushT);pushT=setTimeout(()=>doSync(true),2500)}
+function markSyncDirty(){if(syncCfg().token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
+function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
+function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
+function schedulePush(delay){
+  if(!syncCfg().token)return;
+  clearTimeout(pushT);
+  pushT=setTimeout(()=>doSync(true),delay===undefined?2500:delay);
+}
+function scheduleSyncRetry(delay){
+  if(!syncCfg().token)return;
+  const d=delay===undefined?15000:delay;
+  localStorage.setItem(SK_RETRY,String(Date.now()+d));
+  clearTimeout(retryT);
+  retryT=setTimeout(()=>doSync(true),d);
+}
+function resumePendingSync(){
+  if(!syncCfg().token)return;
+  const retryAt=parseInt(localStorage.getItem(SK_RETRY)||"0",10);
+  if(hasSyncDirty()||retryAt){
+    const delay=retryAt?Math.max(0,retryAt-Date.now()):1200;
+    schedulePush(delay);
+  }
+}
 async function gh(path,opts){
   const cfg=syncCfg();
   const r=await fetch("https://api.github.com"+path,Object.assign({},opts,{headers:Object.assign({
@@ -5001,7 +5023,9 @@ function mergeState(local,remote){
 async function doSync(auto){
   const cfg=syncCfg();
   if(!cfg.token||!cfg.gist){setDot("⭘ sync","var(--mut)");if(!auto)openSync();return}
-  if(syncing)return;syncing=true;setDot("⟳ …","var(--e1)");
+  if(syncing){syncAgain=true;return}
+  syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
+  const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
   try{
     const g=await gh("/gists/"+cfg.gist);
     let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
@@ -5021,11 +5045,15 @@ async function doSync(auto){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
+    if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
     renderAll();renderBlocks();
     startupCompactBoard=false;
     setDot("● synced","var(--ok)");
-  }catch(e){setDot("! sync","var(--e3)")}
-  finally{syncing=false;if(auto)startupCompactBoard=false}
+  }catch(e){setDot("! sync","var(--e3)");scheduleSyncRetry(15000)}
+  finally{
+    syncing=false;if(auto)startupCompactBoard=false;
+    if(syncAgain||hasSyncDirty())schedulePush(800);
+  }
 }
 function openSync(){
   const cfg=syncCfg();
@@ -5034,7 +5062,7 @@ function openSync(){
   document.getElementById("ovSync").classList.add("show");
 }
 function hideSync(){document.getElementById("ovSync").classList.remove("show")}
-function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);setDot("⭘ sync","var(--mut)");openSync()}
+function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);clearSyncDirty();setDot("⭘ sync","var(--mut)");openSync()}
 async function connectSync(){
   const tok=document.getElementById("ghtok").value.trim();
   if(!tok){alert("Paste a token first.");return}
@@ -5048,11 +5076,14 @@ async function connectSync(){
     }
     localStorage.setItem(GK,g.id);
     hideSync();
+    markSyncDirty();
     await doSync(true);
   }catch(e){document.getElementById("syncstat").textContent="Could not connect — check the token has the gist scope. ("+e.message+")"}
 }
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){doSync(true);boardClockTick(true)}});
+window.addEventListener("online",()=>schedulePush(500));
+window.addEventListener("pagehide",()=>{if(hasSyncDirty())doSync(true)});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){if(hasSyncDirty())doSync(true)}else{resumePendingSync();doSync(true);boardClockTick(true)}});
 let boardClockMinute=null;
 function boardClockTick(force){
   const m=nowMin();
@@ -5236,6 +5267,7 @@ boardClockTick(true);
 attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");
 setDot(syncCfg().token?"⟳ …":"⭘ sync");
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
+resumePendingSync();
 doSync(true);
 if(!syncAtStartup)startupCompactBoard=false;
 setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;boardClockTick(false)},15000);
