@@ -454,7 +454,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.11 · 2026-08-17 18:45 EDT</div>
+    <div class="buildmeta">v0.0.12 · 2026-08-17 18:47 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5127,20 +5127,20 @@ function renderPhones(){
   el.textContent=lines.join("\n")||"No match.";
 }
 const BOOKING_TMPLS=[
- "Placement of left vs right external ventricular drain, possible placement of bolt intracranial pressure monitor, all indicated procedures",
- "Placement of right possible left ventriculoperitoneal shunt; removal of right versus left external ventricular drain; possible general surgery laparoscopic vs open approach to abdomen, all indicated procedures",
+ "Placement of left vs right external ventricular drain, possible placement of bolt intracranial pressure monitor, all indicated procedures; CPT 61210; possible bolt/ICP monitor 61107",
+ "Placement of right possible left ventriculoperitoneal shunt; removal of right versus left external ventricular drain; possible general surgery laparoscopic vs open approach to abdomen, all indicated procedures; CPT 62223; possible laparoscopic abdomen assist 49324 or open tunneled catheter 49421",
  "Endoscopic transnasal resection of sphenoid or sellar mass, possible abdominal fat graft, possible lumbar drain placement, all indicated procedures",
  "Suboccipital craniotomy vs craniectomy, possible C1 laminectomy, possible placement of external ventricular drain left vs right, all indicated procedures",
  "Right / left decompressive hemicraniectomy, possible microsurgical aneurysm clipping, possible placement of external ventricular drain left vs right, possible intraoperative angiogram",
  "Right / left transcarotid artery revascularization with stent placement, possible carotid endarterectomy, neuromonitoring",
  "Right / left carotid endarterectomy, neuromonitoring, ultrasound, microscope",
- "Right craniectomy versus craniotomy for evacuation of subdural hematoma, possible placement of left versus right external ventricular drain, possible placement of left versus right bolt intracranial pressure monitor, all indicated procedures",
+ "Right craniectomy versus craniotomy for evacuation of subdural hematoma, possible placement of left versus right external ventricular drain, possible placement of left versus right bolt intracranial pressure monitor, all indicated procedures; CPT 61312; possible EVD 61210; possible bolt 61107",
  "Placement of cervical halo system, possible traction, all indicated procedures",
  "Soft tissue reconstruction of back/cranial wound by Plastic Surgery",
  "Revision of lumbar wound and repair of cerebrospinal fluid leak, possible soft tissue reconstruction of back wound by Plastic Surgery, all indicated procedures",
  "Cervical/thoracic wound washout; CPT 22010",
  "Lumbar/sacral wound washout; CPT 22015 or 10080",
- "Left / right burr holes, possible craniotomy for evacuation of subdural hematoma",
+ "Left / right burr holes, possible craniotomy for evacuation of subdural hematoma; CPT 61154; if converted to craniotomy 61312",
  "Cranial wound washout; CPT 10180, 13160",
  "Left / right craniotomy for resection of brain mass, all indicated procedures, Brainlab, ultrasound, sonopet, microscope",
  "Left / right craniotomy for arteriovenous malformation resection, microscope/Kinevo if possible, ultrasound, indocyanine green, Brainlab; CPT 61682/61686/61692 + 69990 + 61781",
