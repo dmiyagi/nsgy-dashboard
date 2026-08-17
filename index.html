@@ -454,7 +454,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.10 · 2026-08-17 18:42 EDT</div>
+    <div class="buildmeta">v0.0.11 · 2026-08-17 18:45 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5153,6 +5153,19 @@ function renderBookings(){
   const html=BOOKING_TMPLS.map((t,i)=>[t,i]).filter(([t])=>!q||t.toLowerCase().includes(q)).map(([t,i])=>'<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+'</span><span class="ctime">⧉</span></div>').join("")||'<div class="empty" style="padding:12px">No booking template match.</div>';
   ["bookinglist","bookinglist2"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html});
 }
+function enableNativeDictation(root){
+  (root||document).querySelectorAll('textarea,input[type="text"],input[type="tel"],input:not([type])').forEach(el=>{
+    if(el.type==="password"||el.type==="date"||el.type==="datetime-local")return;
+    el.setAttribute("autocorrect","on");
+    el.setAttribute("autocapitalize","sentences");
+    el.setAttribute("spellcheck","true");
+    if(!el.getAttribute("inputmode"))el.setAttribute("inputmode",el.type==="tel"?"tel":"text");
+  });
+}
+enableNativeDictation(document);
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{
+  if(n.nodeType===1)enableNativeDictation(n);
+}))).observe(document.body,{childList:true,subtree:true});
 // ---------- init ----------
 let capT=null;
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
