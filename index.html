@@ -452,7 +452,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.4 · 2026-08-17 17:24 EDT</div>
+    <div class="buildmeta">v0.0.5 · 2026-08-17 17:52 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -481,7 +481,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <div class="rowflex qbtns" style="gap:6px;margin-top:8px">
         <button class="btn sec sm tc-CONSULT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm()">◉ Consult</button>
         <button class="btn sec sm tc-COMM" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'COMM')"><span class="phoneico" aria-hidden="true"></span> Comm</button>
-        <button class="btn sec sm tc-CHART" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CHART')">▤ Chart check</button>
         <button class="btn sec sm tc-PROC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PROC')"><span class="hammerico" aria-hidden="true"></span> Floor proc</button>
         <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="screwico" aria-hidden="true"></span> Quick proc</button>
         <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
@@ -1057,23 +1056,23 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
       <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
     </details>
-    <div class="fld" id="fld_E"><div class="axhead"><label>E</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_E"><div class="axhead"><label>Urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
       <div id="eMini"></div>
       <div class="selhint" id="hintE" style="display:none"></div>
     </div>
-    <div class="fld" id="fld_O"><div class="axhead"><label>O</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_O"><div class="axhead"><label>Operative trajectory</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selO"></div>
       <div id="oMini"></div>
       <div class="selhint" id="hintO" style="display:none"></div>
     </div>
-    <div class="fld" id="fld_W"><div class="axhead"><label>W</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_W"><div class="axhead"><label>Hidden-deterioration risk</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selW"></div>
       <div id="wMini"></div>
       <div class="selhint" id="hintW" style="display:none"></div>
       <div class="formwarn" id="wWarn"><b>W3 with E≤1:</b> W3 should generally not remain E0/E1. Either raise E, or document below why immediate evaluation is not required — and define the reassessment interval, examiner, and escalation trigger.</div>
     </div>
-    <div class="fld" id="fld_C"><div class="axhead"><label>C</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
+    <div class="fld" id="fld_C"><div class="axhead"><label>Complexity</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selC"></div>
       <div id="cMini"></div>
       <div class="selhint" id="hintC" style="display:none"></div>
@@ -1097,10 +1096,10 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         Limit the visible line to modifiers that change what you need to remember — don't reproduce every label.
       </div></details>
     </div>
-    <div class="fld" id="fld_state"><label>Current state</label><input type="text" id="f_state" placeholder="Type anything…"></div>
-    <div class="fld" id="fld_steps"><label>To-do chain (one per line, in order)</label><textarea id="f_steps" placeholder="Type anything…"></textarea></div>
-    <div class="fld" id="fld_trig"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
-    <div class="fld" id="fld_qs"><label>Evidence questions (one per line — ⌕ on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
+    <div class="fld" id="fld_state" style="display:none"><label>Current state</label><input type="text" id="f_state" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_steps" style="display:none"><label>To-do chain (one per line, in order)</label><textarea id="f_steps" placeholder="Type anything…"></textarea></div>
+    <div class="fld" id="fld_trig" style="display:none"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
+    <div class="fld" id="fld_qs" style="display:none"><label>Evidence questions (one per line — ⌕ on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
       <div class="flags" id="flags"></div>
     </div>
@@ -1239,7 +1238,7 @@ const LS="nsgy_triage_v2";
 const E_DEFS=[["E0","Routine","group next consult / 1.5 h"],["E1","Time-sensitive","assess within 1 h"],["E2","Urgent","assess within 30 min"],["E3","Emergent","interrupt & escalate NOW"]];
 const O_DEFS=[["O0","Non-op now","observe / medical / other svc"],["O1","Potentially","depends on evolution/senior"],["O2","Likely","this shift/day"],["O3","Operative now","underway / decided"]];
 const W_DEFS=[["W0","Low risk",""],["W1","Serial exams","routine"],["W2","Evolving","explicit recheck time"],["W3","Silent risk","reassuring exam, abrupt-risk lesion"]];
-const C_DEFS=[["C1","Low","0–5"],["C2","Moderate","6–11"],["C3","High","12–23"],["C4","Extreme","24–33"]];
+const C_DEFS=[["C1","Low complexity","0–5"],["C2","Moderately complex","6–11"],["C3","High complexity","12–23"],["C4","Extreme complexity","24–33"]];
 const MODS=["W","NΔ","AC","VASC","OR","DEV","INF","BASE?","ANAT","IMG","CONSENT","DISPO","XFER","MULTI","OWN?"];
 const E_FULL=[
  "E0 Routine — can be grouped with the next consult, or assess within 1.5 hours.",
@@ -1439,7 +1438,7 @@ const TYPES={
  DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
-const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_state","fld_action","fld_trig","fld_qs","cbdet"];
+const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_action","cbdet"];
 const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
 function addQuickProcSteps(c){
   if(!c||c.type!=="PCON")return;
@@ -2392,11 +2391,12 @@ function setBoardType(k){
 }
 function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function setBoardSort(k){boardSortMode=k||"bubble";render()}
+function boardVisible(c){return !c||c.type!=="CHART"}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","COMM","CHART","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
-  if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
+  const keys=["CONSULT","COMM","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
+  if(boardTypeFilter==="CHART"||(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter]))boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
   const owners=Array.from(new Set(list.map(ownerKey))).sort((a,b)=>a.localeCompare(b));
@@ -2872,7 +2872,7 @@ function renderCal(){
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
 function render(){
-  const baseAct=S.consults.filter(c=>!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
+  const baseAct=S.consults.filter(c=>boardVisible(c)&&!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
   const act=baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)).sort(boardSort);
   const closed=S.consults.filter(c=>c.closed&&matchSearch(c));
@@ -3213,7 +3213,7 @@ function del(id,skipConfirm){
 function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
 function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toClip(c.note);showToast("Notes copied — "+(c.loc||""))}}
-function copyAll(){const act=S.consults.filter(c=>!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
+function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
 function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{},()=>fallbackCopy(t))}else fallbackCopy(t)}
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta)}
 function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, the wipe propagates to your other devices too.)")){
@@ -3343,27 +3343,27 @@ function togAxisDetail(){axisDetail=!axisDetail;buildSelectors();
 function buildSelectors(){
   const mk=(el,defs,key,cls)=>{
     el.className="selrow"+(axisDetail?" showall":"");
-    el.innerHTML=defs.map((d,i)=>'<button class="sel'+(cls==="E"?("E"+i):cls)+((key==="cQuick"?F.cQuick===i+1:F[key]===i)?" on":"")+'"><span class="t">'+d[0]+'</span><span class="d">'+d[1]+'</span>'+(d[2]?'<span class="d2">'+d[2]+'</span>':"")+'</button>').join("");
+    el.innerHTML=defs.map((d,i)=>'<button class="sel'+(cls==="E"?("E"+i):cls)+((key==="cQuick"?F.cQuick===i+1:F[key]===i)?" on":"")+'"><span class="t">'+d[1]+'</span>'+(d[2]?'<span class="d">'+d[2]+'</span>':"")+'</button>').join("");
     Array.from(el.children).forEach((b,i)=>b.onclick=()=>{F._manual=true;if(key==="cQuick"){F.cQuick=(F.cQuick===i+1)?null:i+1}else{F[key]=i}buildSelectors();syncWWarn();renderSugg()});
   };
   const mini=(id,prefix,idx,defs)=>{
     const el=document.getElementById(id);if(!el)return;
     if(idx===null||idx===undefined||idx<0||!defs[idx]){
-      el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+'x"><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><b>'+prefix+'?</b><span>Unscored</span></div>';
+      el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+'x"><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><b>Unscored</b></div>';
       return;
     }
     const dots=[0,1,2,3].map(i=>'<span class="stopdot'+(idx===i?' on':'')+'"></span>').join("");
-    el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+prefix+idx+'</b><span>'+esc(defs[idx][1])+'</span></div>';
+    el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+esc(defs[idx][1])+'</b>'+(defs[idx][2]?'<span>'+esc(defs[idx][2])+'</span>':"")+'</div>';
   };
   mk(document.getElementById("selE"),E_DEFS,"E","E");
   mk(document.getElementById("selO"),O_DEFS,"O","O");
   mk(document.getElementById("selW"),W_DEFS,"W","W");
   mk(document.getElementById("selC"),C_DEFS,"cQuick","C");
   const hE=document.getElementById("hintE"),hO=document.getElementById("hintO");
-  hE.textContent=E_FULL[F.E];hE.style.display=axisDetail?"block":"none";
-  hO.textContent=O_FULL[F.O];hO.style.display=axisDetail?"block":"none";
+  hE.textContent=E_FULL[F.E].replace(/^E\d\s*/,"");hE.style.display=axisDetail?"block":"none";
+  hO.textContent=O_FULL[F.O].replace(/^O\d\s*/,"");hO.style.display=axisDetail?"block":"none";
   const hW=document.getElementById("hintW");
-  hW.textContent=W_FULL[F.W];
+  hW.textContent=W_FULL[F.W].replace(/^W\d\s*/,"");
   hW.style.display=axisDetail?"block":"none";
   mini("eMini","E",F.E,E_DEFS);
   mini("oMini","O",F.O,O_DEFS);
@@ -3371,7 +3371,7 @@ function buildSelectors(){
   const t=domTotal(F);
   const cIdx=cLevel(F)-1;
   const hC=document.getElementById("hintC");
-  hC.textContent=t!==null?("Scored "+t+"/33 → "+cStr(F)+". "+C_FULL[cIdx]):(F.cQuick?C_FULL[F.cQuick-1]:"No estimate yet — quick pick a gut level now, score the 11 domains when you have a minute.");
+  hC.textContent=t!==null?("Scored "+t+"/33. "+C_FULL[cIdx].replace(/^C\d\s*/,"")):(F.cQuick?C_FULL[F.cQuick-1].replace(/^C\d\s*/,""):"Unscored — quick pick a gut level now, score the 11 domains when you have a minute.");
   hC.style.display=axisDetail?"block":"none";
   mini("cMini","C",cIdx,C_DEFS);
 }
@@ -3686,6 +3686,17 @@ function rStepsHtml(r){
     return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'</div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
+function roundChartHtml(r){
+  const checks=[["am","AM chart"],["pm1","1p chart"],["pm4","4p chart"]];
+  r.chartChecks=r.chartChecks||{};
+  return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+'</div>';
+}
+function toggleRoundChart(id,k){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.chartChecks=r.chartChecks||{};
+  r.chartChecks[k]=!r.chartChecks[k];
+  r.updatedAt=Date.now();renderRounds();save();
+}
 function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;r.updatedAt=Date.now();renderRounds();save();
   const nx=(r.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
 function rStepUndo(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;r.updatedAt=Date.now();renderRounds();save()}}
@@ -3781,6 +3792,7 @@ function roundRowCard(r){
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"")+
     tags+
+    (r.chartChecks&&Object.values(r.chartChecks).some(Boolean)?'<span class="bg mod">chart</span>':"")+
     '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
     (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span><button class="rdone" onclick="event.stopPropagation();togSeen(\''+r.id+'\')">'+(r.seen?'↩':'✓ seen')+'</button>')+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
@@ -3817,6 +3829,7 @@ function renderRounds(){
      '<div class="state" style="color:#c8d3e4">'+esc(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
      rStepsHtml(r)+
+     roundChartHtml(r)+
      '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
      '<div class="cardbtns">'+
@@ -4056,6 +4069,13 @@ function addTiedRoundTasks(r,lines){
 }
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
+  if(type==="CHART"){
+    r.chartChecks=r.chartChecks||{};
+    r.chartChecks.am=true;
+    r.steps=r.steps||[];
+    roundOpenTodos(r).forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase()))r.steps.push({t:t,done:false})});
+    r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return;
+  }
   document.querySelector('nav button[data-view="board"]').click();
   openForm(null,false,type);
   F.loc=r.label;F.prob=roundProblemText(r).slice(0,110);F.team=roundTeam(r);F.attg=roundAttg(r);F.worry=!!r.worry;F.roundId=r.id;
@@ -4871,6 +4891,7 @@ function attachSwipe(containerId,kind){
 // ---------- bed board export ----------
 function sendRoundTo(id,type){
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
+  if(type==="CHART"){r.chartChecks=r.chartChecks||{};r.chartChecks.am=true;r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return}
   const t=blankC();t.type=type;t.loc=r.label;t.prob=roundProblemText(r).slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});t.note=roundExamNote(r);if(type==="CHART")t.E=0;t.updatedAt=Date.now();
   S.consults.push(t);render();save();showToast(TYPES[type].l+" created for "+r.label);
 }
@@ -4882,6 +4903,7 @@ function roundSend(id){
   const date=dt?dt.value:"";
   if(!date){roundToBoard(id,type);return}
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  if(type==="CHART"){r.chartChecks=r.chartChecks||{};r.chartChecks.am=true;r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return}
   const t=blankC();
   t.type=type;t.loc=r.label;t.prob=roundProblemText(r).slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";
   t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
