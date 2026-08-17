@@ -454,7 +454,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.8 · 2026-08-17 18:31 EDT</div>
+    <div class="buildmeta">v0.0.10 · 2026-08-17 18:42 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1085,8 +1085,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         <div id="doms"></div>
       </details>
     </div>
-    <div class="fld" id="fld_action"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
-    <div class="fld" id="fld_tasks"><label id="tasksLabel">Checklist (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
+    <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
+    <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
@@ -1442,7 +1442,7 @@ const TYPES={
  DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
   rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
-const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","fld_action","cbdet"];
+const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","cbdet"];
 const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
 function addQuickProcSteps(c){
   if(!c||c.type!=="PCON")return;
@@ -3298,7 +3298,7 @@ function setTypeUI(){
   const tcEl=document.getElementById("fld_tc");if(tcEl)tcEl.style.display=(F.type==="CONSULT")?"":"none";
   document.getElementById("tasksLabel").textContent=(F.type==="CHART")
     ? "Chart-check to-dos (one per line)"
-    : "Checklist (optional, one per line)";
+    : "To-Do (optional, one per line)";
   document.getElementById("probLabel").textContent=t.probL;
   document.getElementById("f_prob").placeholder="Type anything here…";
   document.getElementById("dlLabel").textContent="◷ "+t.dlL+" / reschedule";
@@ -4341,7 +4341,7 @@ const TC_CNS_EXAM=[
  "AOx3",
  "PERRL, EOMI",
  "Face symmetric",
- "RUE 5/5 - drift",
+ "RUE 5/5 no drift",
  "LUE 5/5",
  "RLE 5/5",
  "LLE 5/5",
