@@ -3358,6 +3358,10 @@ function buildSelectors(){
   };
   const mini=(id,prefix,idx,defs)=>{
     const el=document.getElementById(id);if(!el)return;
+    if(idx===null||idx===undefined||idx<0||!defs[idx]){
+      el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+'x"><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><b>'+prefix+'?</b><span>Unscored</span></div>';
+      return;
+    }
     const dots=[0,1,2,3].map(i=>'<span class="stopdot'+(idx===i?' on':'')+'"></span>').join("");
     el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+prefix+idx+'</b><span>'+esc(defs[idx][1])+'</span></div>';
   };
