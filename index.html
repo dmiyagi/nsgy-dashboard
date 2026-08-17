@@ -452,7 +452,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.5 · 2026-08-17 17:52 EDT</div>
+    <div class="buildmeta">v0.0.6 · 2026-08-17 17:54 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3707,13 +3707,35 @@ function setRStepDL(id,i,min){
   openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
 }
 function roundExamHtml(r){
+  const prev=roundPrevExamText(r);
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
-    (r.prevExam?'<div class="caremeta"><b>Previous:</b><br>'+esc(r.prevExam)+'</div>':"")+
+    '<div class="fld"><label>Previous exam</label><textarea class="evta" id="rprev_'+r.id+'" placeholder="Previous exam..." style="min-height:54px" onchange="roundPrevExamSave(\''+r.id+'\',this)">'+esc(prev)+'</textarea></div>'+
+    '<div class="qbtns"><button type="button" onclick="copyRoundPrevExam(\''+r.id+'\')">Copy previous</button></div>'+
     '<textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:64px;margin-top:6px" onchange="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||"")+'</textarea>'+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button></div></details>';
 }
 function roundExamToggle(id,on){const r=S.rounds.find(x=>x.id===id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
-function roundExamSave(id,el){const r=S.rounds.find(x=>x.id===id);if(!r)return;const v=el.value.trim();if(v&&v!==r.exam){if(r.exam)r.prevExam=r.exam;r.exam=v}else if(!v){r.exam=""}r.updatedAt=Date.now();renderRounds();save()}
+function roundPrevExamText(r){
+  if(!r)return "";
+  if(r.prevExam)return r.prevExam;
+  const h=(r.examHist||[]).slice().reverse().find(x=>x&&x.text);
+  return h?h.text:"";
+}
+function roundPrevExamSave(id,el){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.prevExam=el.value.trim();
+  r.examHist=r.examHist||[];
+  if(r.prevExam&&!r.examHist.some(x=>x&&x.text===r.prevExam))r.examHist.push({ts:Date.now(),text:r.prevExam});
+  r.examHist=r.examHist.slice(-3);
+  r.updatedAt=Date.now();save();
+}
+function copyRoundPrevExam(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const el=document.getElementById("rprev_"+id);
+  const t=(el?el.value:roundPrevExamText(r)).trim();
+  if(t){toClip(t);showToast("Previous exam copied")}
+}
+function roundExamSave(id,el){const r=S.rounds.find(x=>x.id===id);if(!r)return;const v=el.value.trim();if(v&&v!==r.exam){if(r.exam){r.prevExam=r.exam;r.examHist=r.examHist||[];r.examHist.push({ts:Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(-3)}r.exam=v}else if(!v){r.exam=""}r.updatedAt=Date.now();renderRounds();save()}
 function roundExamPreset(id,kind){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id);if(!el)return;
