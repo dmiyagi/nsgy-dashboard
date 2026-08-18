@@ -470,7 +470,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.28 · 2026-08-17 20:08 EDT</div>
+    <div class="buildmeta">v0.0.29 · 2026-08-17 20:11 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1222,7 +1222,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <h2 id="soTitle">Sign-out</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Ordered the way it should be spoken. Fill what you know — blanks copy as ___ so nothing gets skipped.</p>
     <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;color:var(--text);font-weight:700">
-      <input type="checkbox" id="so_nccu" style="width:auto" onchange="toggleSoNccu(this.checked)"> Show in NCCU view
+      <input type="checkbox" id="so_nccu" style="width:auto" onchange="toggleSoNccu(this.checked)"> Use NCCU sign-out format / show in NCCU view
     </label>
     <div class="chips" id="sochips" style="margin-bottom:10px"></div>
     <div id="sofields"></div>
@@ -3574,6 +3574,7 @@ function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classL
 function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];renderBlocks()}
 // ---------- rounds ----------
 const SO_TMPLS={
+ nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Exam","current neuro exam + meaningful baseline"],["Drains / devices","EVD/LD/JP/bolt/airway/lines, levels, output, ICPs"],["Imaging","last CT/MRI/XR and pending next study"],["Labs / cultures","Na goal/last, WBC, CSF/cultures, coags"],["Meds","AC/AP, abx, ASM, steroids, nimodipine, pressors/sedation"],["Goals","SBP/MAP/Na/ICP/EVD/drain goals"],["Resp / CV","vent/oxygen, pressors, arrhythmia, hemodynamics"],["ID","fever, source, cultures, antibiotics, hardware concern"],["Heme / AC","DVT ppx, therapeutic AC/AP, reversal/restart plan"],["To-do / contingency","pending tasks and what should trigger escalation"]]},
  asah:{name:"aSAH",fields:[["One-liner","age, grade, aneurysm, clip/coil, post-bleed day"],["Exam @ SBP","intact at SBP 130"],["EVD","level, ICPs ok?"],["New events / imaging","today"],["TCDs","negative / velocities"],["Na goal + last","eunatremia, last 140"],["BP goal","SBP 100–200 (secured?)"],["Nimodipine","on/held"],["Active problems","and how addressed"]]},
  tssh:{name:"TSSH",fields:[["One-liner","date of TSSH"],["Exam incl. visual fields","full fields?"],["DI watch","Na, UOP <200/h, spec grav >1.005"],["Endocrine labs","POD1 wnl?"],["Nasal packs","out date, keflex ppx"],["Active problems","and how addressed"]]},
  tbi:{name:"Severe TBI",fields:[["One-liner","injury, surgery, devices"],["Exam","intubated: eyes, pupils, corneal/cough, motor"],["EVD + ICP course","level, max ICP, what fixed it"],["Drains","JP output"],["Imaging","latest CT, stable?"],["Na goal","HTS/florinef, last Na"],["ICP management","mannitol, sedation"],["BP goal","SBP <160"],["Seizure meds / LTM","Keppra, LTM on?"],["Active medical issues","VAP, lines, etc."]]},
@@ -4158,6 +4159,7 @@ function syncLinkedSo(r){
   if(r.type==="CHART"&&r.roundId){
     const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(!rr)return;
     rr.soT=r.soT||rr.soT||"floor";
+    rr.soTBeforeNccu=r.soTBeforeNccu||rr.soTBeforeNccu||"";
     rr.so=Object.assign({},rr.so||{},r.so||{});
     rr.soPrev=Object.assign({},rr.soPrev||{},r.soPrev||{});
     rr.nccuSO=!!(rr.nccuSO||r.nccuSO);
@@ -4167,6 +4169,7 @@ function syncLinkedSo(r){
   if((S.rounds||[]).some(x=>x.id===r.id)){
     (S.consults||[]).filter(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id).forEach(c=>{
       c.soT=r.soT||c.soT||"floor";
+      c.soTBeforeNccu=r.soTBeforeNccu||c.soTBeforeNccu||"";
       c.so=Object.assign({},c.so||{},r.so||{});
       c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
       c.nccuSO=!!(c.nccuSO||r.nccuSO);
@@ -4360,7 +4363,17 @@ function openSO(id){soId=id;const r=findAny(id);if(!r)return;
   buildSOChips();buildSOFields();
   document.getElementById("ovSO").classList.add("show");}
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
-function toggleSoNccu(on){const r=findAny(soId);if(!r)return;r.nccuSO=!!on;r.updatedAt=Date.now();syncLinkedSo(r);save();renderRounds();renderNccu()}
+function toggleSoNccu(on){
+  const r=findAny(soId);if(!r)return;
+  r.nccuSO=!!on;
+  if(on){
+    if(r.soT&&r.soT!=="nccu")r.soTBeforeNccu=r.soT;
+    r.soT="nccu";
+  }else if(r.soT==="nccu"){
+    r.soT=(r.soTBeforeNccu&&SO_TMPLS[r.soTBeforeNccu])?r.soTBeforeNccu:detectTmpl([r.raw,r.prob,r.loc].filter(Boolean).join(" "));
+  }
+  r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();save();renderRounds();renderNccu();
+}
 function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
@@ -4418,15 +4431,15 @@ function soText(r){
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
 const NCCU_FIELDS=[
   ["Exam","Exam|Exam @ SBP|Exam incl. visual fields|Exam vs pre-op|Exam + baseline|Exam + change from baseline|Baseline vs current exam|Motor exam"],
-  ["Drains / devices","EVD|EVD + ICP course|Drains|Drains + output|Clamp trial"],
+  ["Drains / devices","Drains / devices|EVD|EVD + ICP course|Drains|Drains + output|Clamp trial"],
   ["Imaging","Imaging|New events / imaging|Post-op imaging|Imaging comparison|Imaging pending"],
-  ["Labs / cultures","Na goal + last|Na goal|CSF labs / cultures|Endocrine labs"],
-  ["Meds","Meds of consequence|Seizure meds / LTM|Seizure ppx|Nimodipine|AC status"],
-  ["Goals","BP goal|Goals|ICP management|MAP goal if cord"],
-  ["Resp / CV","Active medical issues|Active problems"],
-  ["ID","CSF labs / cultures|Active medical issues|Active problems"],
-  ["Heme / AC","AC status|Meds|Meds of consequence|DVT ppx"],
-  ["To-do / contingency","Pending studies|Plan|Wean plan|Dispo|Dispo + barriers|Dispo planning|Escalation trigger|Contingency"]
+  ["Labs / cultures","Labs / cultures|Na goal + last|Na goal|CSF labs / cultures|Endocrine labs"],
+  ["Meds","Meds|Meds of consequence|Seizure meds / LTM|Seizure ppx|Nimodipine|AC status"],
+  ["Goals","Goals|BP goal|ICP management|MAP goal if cord"],
+  ["Resp / CV","Resp / CV|Active medical issues|Active problems"],
+  ["ID","ID|CSF labs / cultures|Active medical issues|Active problems"],
+  ["Heme / AC","Heme / AC|AC status|Meds|Meds of consequence|DVT ppx"],
+  ["To-do / contingency","To-do / contingency|Pending studies|Plan|Wean plan|Dispo|Dispo + barriers|Dispo planning|Escalation trigger|Contingency"]
 ];
 function soPick(r,pats){
   const so=(r&&r.so)||{};
