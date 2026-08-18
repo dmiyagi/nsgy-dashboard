@@ -469,7 +469,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.23 · 2026-08-17 19:47 EDT</div>
+    <div class="buildmeta">v0.0.26 · 2026-08-17 20:03 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2454,12 +2454,12 @@ function setBoardType(k){
 }
 function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function setBoardSort(k){boardSortMode=k||"bubble";render()}
-function boardVisible(c){return !c||c.type!=="CHART"}
+function boardVisible(c){return !!c}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","COMM","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
-  if(boardTypeFilter==="CHART"||(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter]))boardTypeFilter="ALL";
+  const keys=["CONSULT","CHART","COMM","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
+  if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
   const owners=Array.from(new Set(list.map(ownerKey))).sort((a,b)=>a.localeCompare(b));
@@ -3780,7 +3780,7 @@ function rStepsHtml(r){
   }).join("")+'</div>';
 }
 function roundChartHtml(r){
-  const checks=[["am","AM chart"],["pm1","1p chart"],["pm4","4p chart"]];
+  const checks=[["am","AM seen"],["pm1","1p chart"],["pm4","4p chart"]];
   r.chartChecks=r.chartChecks||{};
   return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+'</div>';
 }
@@ -3885,7 +3885,7 @@ function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
-  return '<span class="chartdots" title="AM / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
+  return '<span class="chartdots" title="AM seen / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
@@ -4333,11 +4333,11 @@ function syncRoundTodosToBoard(r,lines){
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
   if(type==="CHART"){
-    r.chartChecks=r.chartChecks||{};
-    r.chartChecks.am=true;
-    r.steps=r.steps||[];
-    roundOpenTodos(r).forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase()))r.steps.push({t:t,done:false})});
-    r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return;
+    const res=roundChartCardFor(r);
+    document.querySelector('nav button[data-view="board"]').click();
+    render();renderRounds();save();
+    showToast((res&&res.isNew?"Chart check created for ":"Chart check refreshed for ")+r.label);
+    return;
   }
   document.querySelector('nav button[data-view="board"]').click();
   openForm(null,false,type);
@@ -4345,13 +4345,6 @@ function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   F.soT=r.soT||"floor";F.so=Object.assign({},r.so||{});
   F.note=roundExamNote(r);document.getElementById("f_note").value=F.note;
   setLocForm(F.loc);document.getElementById("f_prob").value=F.prob;document.getElementById("f_team").value=F.team||"";document.getElementById("f_attg").value=F.attg||"";
-  if(type==="CHART"){
-    const lines=roundOpenTodos(r);
-    F.tasks=lines.map(t=>({t:t,done:false}));
-    document.getElementById("f_tasks").value=lines.join("\n");
-    const tied=addTiedRoundTasks(r,lines);
-    if(tied)showToast("Suggested "+tied+" tied task card"+(tied>1?"s":"")+" from rounds to-dos");
-  }
   renderFlags();}
 function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.label+(r.plan?" | PLAN: "+r.plan:"")+" | "+r.raw).join("\n")||"(empty)");showToast("Rounds list copied")}
 // sign-out builder (works for rounds cards or chart-check consults)
@@ -5077,20 +5070,26 @@ function renderCapture(){
 }
 // ---------- sync engine (private GitHub Gist) ----------
 const SYNC_FILE="nsgy-triage-sync.json";
-const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at";
+const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at",SK_LAST="nsgy_sync_last_ok";
 let pushT=null,retryT=null,syncing=false,syncAgain=false;
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
 function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
-function markSyncDirty(){if(syncCfg().token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
+function markSyncDirty(){const cfg=syncCfg();if(cfg.token){localStorage.setItem(SK_DIRTY,String(Date.now()));setDot(cfg.gist?"● pending":"⭘ sync",cfg.gist?"var(--e2)":"var(--mut)")}}
 function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
 function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
+function shouldPullSync(){
+  if(hasSyncDirty()||localStorage.getItem(SK_RETRY))return true;
+  const last=parseInt(localStorage.getItem(SK_LAST)||"0",10);
+  return !last||Date.now()-last>30000;
+}
 function schedulePush(delay){
-  if(!syncCfg().token)return;
+  const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
   clearTimeout(pushT);
+  if(hasSyncDirty())setDot("● pending","var(--e2)");
   pushT=setTimeout(()=>doSync(true),delay===undefined?2500:delay);
 }
 function scheduleSyncRetry(delay){
-  if(!syncCfg().token)return;
+  const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
   const d=delay===undefined?15000:delay;
   localStorage.setItem(SK_RETRY,String(Date.now()+d));
   clearTimeout(retryT);
@@ -5150,6 +5149,7 @@ function mergeState(local,remote){
 async function doSync(auto){
   const cfg=syncCfg();
   if(!cfg.token||!cfg.gist){setDot("⭘ sync","var(--mut)");if(!auto)openSync();return}
+  if(auto&&!shouldPullSync())return;
   if(syncing){syncAgain=true;return}
   syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
   const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
@@ -5173,13 +5173,14 @@ async function doSync(auto){
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
     if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
+    localStorage.setItem(SK_LAST,String(Date.now()));
     renderAll();renderBlocks();
     startupCompactBoard=false;
-    setDot("● synced","var(--ok)");
+    setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
   }catch(e){setDot("! sync","var(--e3)");scheduleSyncRetry(15000)}
   finally{
     syncing=false;if(auto)startupCompactBoard=false;
-    if(syncAgain||hasSyncDirty())schedulePush(800);
+    if(hasSyncDirty())schedulePush(800);
   }
 }
 function openSync(){
@@ -5189,7 +5190,7 @@ function openSync(){
   document.getElementById("ovSync").classList.add("show");
 }
 function hideSync(){document.getElementById("ovSync").classList.remove("show")}
-function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);clearSyncDirty();setDot("⭘ sync","var(--mut)");openSync()}
+function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();setDot("⭘ sync","var(--mut)");openSync()}
 async function connectSync(){
   const tok=document.getElementById("ghtok").value.trim();
   if(!tok){alert("Paste a token first.");return}
@@ -5258,7 +5259,7 @@ function attachSwipe(containerId,kind){
 // ---------- bed board export ----------
 function sendRoundTo(id,type){
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
-  if(type==="CHART"){r.chartChecks=r.chartChecks||{};r.chartChecks.am=true;r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return}
+  if(type==="CHART"){const res=roundChartCardFor(r);render();renderRounds();save();showToast((res&&res.isNew?"Chart check created for ":"Chart check refreshed for ")+r.label);return}
   const t=blankC();t.type=type;t.loc=r.label;t.prob=roundProblemText(r).slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});t.note=roundExamNote(r);if(type==="CHART")t.E=0;t.updatedAt=Date.now();
   S.consults.push(t);render();save();showToast(TYPES[type].l+" created for "+r.label);
 }
@@ -5270,7 +5271,13 @@ function roundSend(id){
   const date=dt?dt.value:"";
   if(!date){roundToBoard(id,type);return}
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  if(type==="CHART"){r.chartChecks=r.chartChecks||{};r.chartChecks.am=true;r.updatedAt=Date.now();renderRounds();save();showToast("Chart check stays on Rounds for "+r.label);return}
+  if(type==="CHART"){
+    const res=roundChartCardFor(r);if(res&&res.card)res.card.snoozeISO=date+"T06:00:00";
+    render();renderRounds();save();
+    const d=new Date(date+"T12:00:00");
+    showToast("◷ "+r.label+" → Chart check on "+(d.getMonth()+1)+"/"+d.getDate());
+    return;
+  }
   const t=blankC();
   t.type=type;t.loc=r.label;t.prob=roundProblemText(r).slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";
   t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});
@@ -5279,10 +5286,9 @@ function roundSend(id){
   t.snoozeISO=date+"T06:00:00";
   t.updatedAt=Date.now();
   S.consults.push(t);
-  const tied=type==="CHART"?addTiedRoundTasks(r,t.tasks.map(x=>x.t)):0;
   render();save();
   const d=new Date(date+"T12:00:00");
-  showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate()+(tied?" · "+tied+" tied task"+(tied>1?"s":""):""));
+  showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate());
 }
 // A dated/board task for someone already on rounds attaches to that rounds patient
 function linkToRounds(c){
