@@ -313,6 +313,10 @@ button.rdone.finaldone{background:#123527}
 .nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
 .nccufield span{white-space:pre-wrap;color:#d9e2ef;font-size:13px}
+.nccufield.plan{grid-column:1/-1}
+.nccuplanrow{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:6px;margin-top:6px}
+.nccuplanrow:first-child{border-top:none;padding-top:0;margin-top:0}
+.nccuplanrow em{font-style:normal;color:var(--mut);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.35px}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--ok);width:14px;height:14px}
@@ -394,6 +398,7 @@ details.moredet[open]>summary{margin-bottom:8px}
 .sohint .bp{color:var(--acc);font-weight:800}
 .sohint .drain{color:var(--e3);font-weight:800}
 .soprev{font-size:11.5px;color:var(--mut);border-left:3px solid var(--acc);padding:5px 8px;margin-top:5px;background:rgba(90,162,255,.08);border-radius:6px;white-space:pre-wrap}
+.soprev.trend{margin:0 0 6px;border-left-color:var(--teal);background:rgba(66,219,203,.08)}
 details.axisinfo{margin-top:5px}
 details.axisinfo>summary{font-size:12px;color:var(--acc);cursor:pointer;font-weight:600}
 details.axisinfo .ai{font-size:12px;color:var(--mut);padding:6px 2px 2px;line-height:1.5}
@@ -470,7 +475,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.32 · 2026-08-17 20:46 EDT</div>
+    <div class="buildmeta">v0.0.35 · 2026-08-17 21:09 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -538,6 +543,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <section class="view" id="view-nccu">
   <div class="banner">NCCU sign-out view — patients selected from the Sign-out modal. One structured category block is shown per card.</div>
   <div class="rowflex">
+    <button class="btn sec sm" id="nccuCompactBtn" onclick="toggleNccuCompact()">Compact</button>
     <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
     <button class="btn sec sm" onclick="renderNccu()">Refresh</button>
   </div>
@@ -3574,7 +3580,7 @@ function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classL
 function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];renderBlocks()}
 // ---------- rounds ----------
 const SO_TMPLS={
- nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Last 24 hrs","major events, imaging, procedure, exam change"],["Vitals","Tmax, HR, BP/SBP goal, O2"],["Vent","mode, settings, oxygenation, extubation plan"],["EVD/Output","level, ICPs, output, waveform, clamp/wean plan"],["Last BM","date, bowel regimen"],["Drips/rate","pressors, sedation, cardene, HTS, insulin, other rates"],["Nutrition","diet/tube feeds/NPO, swallow status"],["Lines","EVD/LD, central line, arterial line, Foley, drains"],["Labs","Na, WBC, Hgb, Plt, INR/coags"],["Micro/ID","cultures, CSF, antibiotics, source control"],["Daily meds","AC/AP, ASM, steroids, nimodipine, antibiotics, home meds"],["Images","last imaging, pending imaging, comparison"],["Exam","current neuro exam + meaningful baseline"],["A/P Neuro","neuro plan and escalation triggers"],["Pulm","vent/O2 plan, pulmonary issues"],["Cards","BP/MAP goals, pressors, rhythm, cardiac meds"],["GI","diet, bowel regimen, GI ppx"],["Renal","I/O, fluids, Na/osm, renal function"],["GU","Foley, retention, urology issues"],["ID","fever curve, cultures, antibiotics"],["Heme","Hgb/Plt/coags, DVT ppx, AC plan"],["Endo","glucose, steroids, endocrine issues"],["Prophylaxis","DVT, GI, seizure, antibiotic prophylaxis"]]},
+ nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Events","free-text event block"],["Last 24 hrs","major events, imaging, procedure, exam change"],["Vitals","Tmax, HR, BP/SBP goal, O2"],["Vent","mode, settings, oxygenation, extubation plan"],["EVD/Output","level, ICPs, output, waveform, clamp/wean plan"],["I/Os","24h in/out, UOP, drains, net balance"],["Last BM","date, bowel regimen"],["Drips/rate","pressors, sedation, cardene, HTS, insulin, other rates"],["Nutrition","diet/tube feeds/NPO, swallow status"],["Lines","EVD/LD, central line, arterial line, Foley, drains"],["Labs","Na, WBC, Hgb, Plt, INR/coags"],["Micro/ID","cultures, CSF, antibiotics, source control"],["Daily meds","AC/AP, ASM, steroids, nimodipine, antibiotics, home meds"],["Images","last imaging, pending imaging, comparison"],["Exam","current neuro exam + meaningful baseline"],["A/P Neuro","neuro plan and escalation triggers"],["Pulm","vent/O2 plan, pulmonary issues"],["Cards","BP/MAP goals, pressors, rhythm, cardiac meds"],["GI","diet, bowel regimen, GI ppx"],["Renal","I/O, fluids, Na/osm, renal function"],["GU","Foley, retention, urology issues"],["ID","fever curve, cultures, antibiotics"],["Heme","Hgb/Plt/coags, DVT ppx, AC plan"],["Endo","glucose, steroids, endocrine issues"],["Prophylaxis","DVT, GI, seizure, antibiotic prophylaxis"]]},
  asah:{name:"aSAH",fields:[["One-liner","age, grade, aneurysm, clip/coil, post-bleed day"],["Exam @ SBP","intact at SBP 130"],["EVD","level, ICPs ok?"],["New events / imaging","today"],["TCDs","negative / velocities"],["Na goal + last","eunatremia, last 140"],["BP goal","SBP 100–200 (secured?)"],["Nimodipine","on/held"],["Active problems","and how addressed"]]},
  tssh:{name:"TSSH",fields:[["One-liner","date of TSSH"],["Exam incl. visual fields","full fields?"],["DI watch","Na, UOP <200/h, spec grav >1.005"],["Endocrine labs","POD1 wnl?"],["Nasal packs","out date, keflex ppx"],["Active problems","and how addressed"]]},
  tbi:{name:"Severe TBI",fields:[["One-liner","injury, surgery, devices"],["Exam","intubated: eyes, pupils, corneal/cough, motor"],["EVD + ICP course","level, max ICP, what fixed it"],["Drains","JP output"],["Imaging","latest CT, stable?"],["Na goal","HTS/florinef, last Na"],["ICP management","mannitol, sedation"],["BP goal","SBP <160"],["Seizure meds / LTM","Keppra, LTM on?"],["Active medical issues","VAP, lines, etc."]]},
@@ -4394,14 +4400,16 @@ function soSourceOneLiner(r){
 function soFieldHtml(r,f){
   const k=f[0],v=(r.so&&r.so[k])||"";
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
-  if(k==="One-liner")return '<div class="fld"><label>'+esc(k)+'</label><textarea '+attrs+' style="min-height:72px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div><div class="soprev" data-soprev="'+esc(k)+'"></div></div>';
-  return '<div class="fld"><label>'+esc(k)+'</label><input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div><div class="soprev" data-soprev="'+esc(k)+'"></div></div>';
+  const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
+  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld"><label>'+esc(k)+'</label>'+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
+  return '<div class="fld"><label>'+esc(k)+'</label><input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
 function soIsExamField(k){return /\bexam\b|motor|baseline/i.test(k||"")}
+function soIsTrendField(k){return /^(Labs|I\/Os|EVD\/Output|Renal)$/i.test(k||"")}
 function soFocus(el){el.dataset.prev=el.value||""}
 function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
   const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
-  if(!quiet&&soIsExamField(k)&&prev&&prev!==val)r.soPrev[k]=prev;
+  if(!quiet&&(soIsExamField(k)||soIsTrendField(k))&&prev&&prev!==val)r.soPrev[k]=prev;
   r.so[k]=val;r.updatedAt=Date.now();syncLinkedSo(r);renderSOHints();if(!quiet){save();render()}}}
 function renderSOHints(){
   document.querySelectorAll("#sofields [data-sohint]").forEach(h=>{
@@ -4412,7 +4420,7 @@ function renderSOHints(){
   const r=findAny(soId);
   document.querySelectorAll("#sofields [data-soprev]").forEach(p=>{
     const k=p.dataset.soprev,prev=r&&r.soPrev&&r.soPrev[k];
-    p.innerHTML=prev?("<b>Previous exam:</b> "+soHighlight(prev)):"";
+    p.innerHTML=prev?("<b>"+(soIsTrendField(k)?"Last value":"Previous exam")+":</b> "+soHighlight(prev)):"";
     p.style.display=prev?"":"none";
   });
 }
@@ -4430,10 +4438,12 @@ function soText(r){
 }
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
 const NCCU_FIELDS=[
+  ["Events","Events"],
   ["Last 24 hrs","Last 24 hrs"],
   ["Vitals","Vitals"],
   ["Vent","Vent"],
   ["EVD/Output","EVD/Output"],
+  ["I/Os","I/Os"],
   ["Last BM","Last BM"],
   ["Drips/rate","Drips/rate"],
   ["Nutrition","Nutrition"],
@@ -4454,11 +4464,27 @@ const NCCU_FIELDS=[
   ["Endo","Endo"],
   ["Prophylaxis","Prophylaxis"]
 ];
+let nccuCompact=false;
 function soPick(r,pats){
   const so=(r&&r.so)||{};
   const keys=String(pats||"").split("|");
   for(const k of keys){if(so[k])return so[k]}
   return "";
+}
+function nccuPlanFields(){
+  const start=NCCU_FIELDS.findIndex(([l])=>l==="A/P Neuro");
+  return start>=0?NCCU_FIELDS.slice(start):[];
+}
+function nccuDetailFields(){
+  const start=NCCU_FIELDS.findIndex(([l])=>l==="A/P Neuro");
+  return start>=0?NCCU_FIELDS.slice(0,start):NCCU_FIELDS;
+}
+function nccuPlanHtml(r){
+  const rows=nccuPlanFields().map(([label,pats])=>{
+    const val=soPick(r,pats)||"___";
+    return '<div class="nccuplanrow"><em>'+esc(label)+'</em><span>'+esc(val)+'</span></div>';
+  }).join("");
+  return '<div class="nccufield plan"><b>A/P</b>'+rows+'</div>';
 }
 function nccuPatients(){
   const out=[],seen=new Set();
@@ -4468,22 +4494,27 @@ function nccuPatients(){
 }
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
+  const body=nccuCompact?"":('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+'</div>');
   return '<div class="card nccucard"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span><span class="bg c">'+esc((SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).name)+'</span></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
-    '<div class="nccugrid">'+NCCU_FIELDS.map(([label,pats])=>'<div class="nccufield"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+'</div>'+
+    body+
     '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button><button onclick="toggleNccuCard(\''+r.id+'\')">Remove NCCU</button></div></div>';
 }
 function renderNccu(){
   const el=document.getElementById("nccucards");if(!el)return;
+  const btn=document.getElementById("nccuCompactBtn");if(btn){btn.classList.toggle("on",nccuCompact);btn.textContent=nccuCompact?"Full":"Compact"}
   const pts=nccuPatients();
   el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU sign-out patients selected. Open a card sign-out and check "Show in NCCU view."</div>';
 }
+function toggleNccuCompact(){nccuCompact=!nccuCompact;renderNccu()}
 function toggleNccuCard(id){const r=findAny(id);if(!r)return;r.nccuSO=false;r.updatedAt=Date.now();renderNccu();renderRounds();save()}
 function copyNccuSignout(){
   const pts=nccuPatients();
   const txt=pts.map(r=>{
     const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
-    return head+"\n"+NCCU_FIELDS.map(([l,p])=>l+": "+(soPick(r,p)||"___")).join("\n");
+    const detail=nccuDetailFields().map(([l,p])=>l+": "+(soPick(r,p)||"___")).join("\n");
+    const plan="A/P\n"+nccuPlanFields().map(([l,p])=>"  "+l+": "+(soPick(r,p)||"___")).join("\n");
+    return head+"\n"+detail+"\n"+plan;
   }).join("\n\n");
   toClip(txt||"(no NCCU patients)");showToast("NCCU sign-out copied");
 }
