@@ -286,6 +286,7 @@ button.rdone.finaldone{background:#123527}
 .chartdots{display:inline-flex;gap:4px;align-items:center}
 .chartdot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent;display:inline-block}
 .chartdot.on{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.18)}
+.chartdot.amseen.on{border-color:#1f8f5a;background:#1f8f5a;box-shadow:0 0 0 1px rgba(31,143,90,.18)}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 @media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
@@ -469,7 +470,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.26 · 2026-08-17 20:03 EDT</div>
+    <div class="buildmeta">v0.0.28 · 2026-08-17 20:08 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3885,7 +3886,7 @@ function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
-  return '<span class="chartdots" title="AM seen / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
+  return '<span class="chartdots" title="AM seen / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(k==="am"?"amseen ":"")+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
@@ -5074,7 +5075,7 @@ const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETR
 let pushT=null,retryT=null,syncing=false,syncAgain=false;
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
 function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
-function markSyncDirty(){const cfg=syncCfg();if(cfg.token){localStorage.setItem(SK_DIRTY,String(Date.now()));setDot(cfg.gist?"● pending":"⭘ sync",cfg.gist?"var(--e2)":"var(--mut)")}}
+function markSyncDirty(){const cfg=syncCfg();if(cfg.token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
 function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
 function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
 function shouldPullSync(){
@@ -5085,7 +5086,6 @@ function shouldPullSync(){
 function schedulePush(delay){
   const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
   clearTimeout(pushT);
-  if(hasSyncDirty())setDot("● pending","var(--e2)");
   pushT=setTimeout(()=>doSync(true),delay===undefined?2500:delay);
 }
 function scheduleSyncRetry(delay){
@@ -5153,6 +5153,7 @@ async function doSync(auto){
   if(syncing){syncAgain=true;return}
   syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
   const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
+  let failed=false;
   try{
     const g=await gh("/gists/"+cfg.gist);
     let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
@@ -5177,10 +5178,10 @@ async function doSync(auto){
     renderAll();renderBlocks();
     startupCompactBoard=false;
     setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
-  }catch(e){setDot("! sync","var(--e3)");scheduleSyncRetry(15000)}
+  }catch(e){failed=true;setDot("! sync","var(--e3)");scheduleSyncRetry(15000)}
   finally{
     syncing=false;if(auto)startupCompactBoard=false;
-    if(hasSyncDirty())schedulePush(800);
+    if(!failed&&(syncAgain||hasSyncDirty()))schedulePush(800);
   }
 }
 function openSync(){
