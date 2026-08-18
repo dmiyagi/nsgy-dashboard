@@ -477,7 +477,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.36 · 2026-08-17 21:28 EDT</div>
+    <div class="buildmeta">v0.0.37 · 2026-08-17 21:43 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1251,6 +1251,10 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld"><label>GitHub token (classic, "gist" scope only)</label>
       <input type="password" id="ghtok" placeholder="ghp_…" autocomplete="off">
       <div style="font-size:11.5px;color:var(--mut);margin-top:5px">Create at github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check only <b>gist</b>.</div>
+    </div>
+    <div class="fld"><label>Gist ID / key (optional but more reliable)</label>
+      <input type="text" id="ghgist" placeholder="paste the gist id from the URL">
+      <div style="font-size:11.5px;color:var(--mut);margin-top:5px">Use the long ID after <b>gist.github.com/.../</b>. Leave blank to auto-find or create the sync gist.</div>
     </div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideSync()">Close</button>
@@ -5177,8 +5181,20 @@ async function gh(path,opts){
   const cfg=syncCfg();
   const r=await fetch("https://api.github.com"+path,Object.assign({},opts,{headers:Object.assign({
     "Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json","Content-Type":"application/json"},(opts&&opts.headers)||{})}));
-  if(!r.ok)throw new Error("GitHub "+r.status);
+  if(!r.ok){
+    let msg="GitHub "+r.status;
+    try{const j=await r.json();if(j&&j.message)msg+=" — "+j.message}catch(e){}
+    throw new Error(msg);
+  }
   return r.json();
+}
+async function fetchGistFile(f){
+  if(!f)return "";
+  if(!f.truncated)return f.content||"";
+  const cfg=syncCfg();
+  const r=await fetch(f.raw_url,{headers:{"Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github.raw"}});
+  if(!r.ok)throw new Error("GitHub raw "+r.status);
+  return r.text();
 }
 function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,ts:Date.now()}}
 function mergeState(local,remote){
@@ -5229,8 +5245,7 @@ async function doSync(auto){
     let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
     const f=g.files&&g.files[SYNC_FILE];
     if(f){
-      let content=f.content;
-      if(f.truncated){const r=await fetch(f.raw_url);content=await r.text()}
+      let content=await fetchGistFile(f);
       try{remote=JSON.parse(content)}catch(e){}
     }
     const merged=mergeState(S,remote);
@@ -5248,7 +5263,8 @@ async function doSync(auto){
     renderAll();renderBlocks();
     startupCompactBoard=false;
     setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
-  }catch(e){failed=true;setDot("! sync","var(--e3)");scheduleSyncRetry(15000)}
+    const ss=document.getElementById("syncstat");if(ss)ss.innerHTML="Last sync OK — gist <b>"+cfg.gist.slice(0,8)+"…</b> at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  }catch(e){failed=true;setDot("! sync","var(--e3)");const ss=document.getElementById("syncstat");if(ss)ss.textContent="Sync failed — "+e.message+". Will retry.";scheduleSyncRetry(15000)}
   finally{
     syncing=false;if(auto)startupCompactBoard=false;
     if(!failed&&(syncAgain||hasSyncDirty()))schedulePush(800);
@@ -5257,7 +5273,8 @@ async function doSync(auto){
 function openSync(){
   const cfg=syncCfg();
   document.getElementById("ghtok").value=cfg.token;
-  document.getElementById("syncstat").innerHTML=cfg.token?(cfg.gist?"Connected — private gist <b>"+cfg.gist.slice(0,8)+"…</b> in your account. Paste this same token on your other device; it will find the gist automatically.":"Token saved — connecting…"):"Not connected. Paste a token below.";
+  const ge=document.getElementById("ghgist");if(ge)ge.value=cfg.gist;
+  document.getElementById("syncstat").innerHTML=cfg.token?(cfg.gist?"Connected — private gist <b>"+cfg.gist.slice(0,8)+"…</b>. Use this same token + gist key on each device.":"Token saved — paste a gist key or connect to auto-find/create one."):"Not connected. Paste a token below.";
   document.getElementById("ovSync").classList.add("show");
 }
 function hideSync(){document.getElementById("ovSync").classList.remove("show")}
@@ -5266,14 +5283,24 @@ async function connectSync(){
   const tok=document.getElementById("ghtok").value.trim();
   if(!tok){alert("Paste a token first.");return}
   localStorage.setItem(TK,tok);
+  const manual=(document.getElementById("ghgist")&&document.getElementById("ghgist").value.trim())||"";
   document.getElementById("syncstat").textContent="Connecting…";
   try{
-    let gists=await gh("/gists?per_page=100");
-    let g=gists.find(x=>x.files&&x.files[SYNC_FILE]);
-    if(!g){
+    let g=null;
+    if(manual){
+      localStorage.setItem(GK,manual);
+      g=await gh("/gists/"+manual);
+      if(!(g.files&&g.files[SYNC_FILE])){
+        await gh("/gists/"+manual,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
+      }
+    }else{
+      let gists=await gh("/gists?per_page=100");
+      g=gists.find(x=>x.files&&x.files[SYNC_FILE]);
+      if(!g){
       g=await gh("/gists",{method:"POST",body:JSON.stringify({description:"NSGY triage sync (private)",public:false,files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
+      }
+      localStorage.setItem(GK,g.id);
     }
-    localStorage.setItem(GK,g.id);
     hideSync();
     markSyncDirty();
     await doSync(true);
