@@ -310,11 +310,13 @@ button.rdone.finaldone{background:#123527}
 .calrow button{margin-left:4px}
 .nccucard{border-left-color:var(--e3)}
 .nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
-.nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px}
+.nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px;cursor:pointer}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
 .nccufield span{white-space:pre-wrap;color:#d9e2ef;font-size:13px}
+.nccufield:hover{border-color:var(--acc)}
 .nccufield.plan{grid-column:1/-1}
-.nccuplanrow{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:6px;margin-top:6px}
+.nccuplanrow{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:6px;margin-top:6px;cursor:pointer;border-radius:6px}
+.nccuplanrow:hover{background:rgba(90,162,255,.08)}
 .nccuplanrow:first-child{border-top:none;padding-top:0;margin-top:0}
 .nccuplanrow em{font-style:normal;color:var(--mut);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.35px}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -475,7 +477,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.35 · 2026-08-17 21:09 EDT</div>
+    <div class="buildmeta">v0.0.36 · 2026-08-17 21:28 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4360,14 +4362,16 @@ function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.labe
 // sign-out builder (works for rounds cards or chart-check consults)
 let soId=null;
 function soLabel(r){return r.label||r.loc||"patient"}
-function openSO(id){soId=id;const r=findAny(id);if(!r)return;
+function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
   document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
   const nccu=document.getElementById("so_nccu");if(nccu)nccu.checked=!!r.nccuSO;
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   buildSOChips();buildSOFields();
-  document.getElementById("ovSO").classList.add("show");}
+  document.getElementById("ovSO").classList.add("show");
+  if(focusField)setTimeout(()=>focusSOField(focusField),60);
+}
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
 function toggleSoNccu(on){
   const r=findAny(soId);if(!r)return;
@@ -4390,6 +4394,16 @@ function buildSOFields(){const r=findAny(soId);if(!r)return;
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
   document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("");
   renderSOHints();
+}
+function focusSOField(k){
+  const el=document.querySelector('#sofields [data-so="'+cssEsc(k)+'"]');
+  if(!el)return;
+  el.scrollIntoView({block:"center",behavior:"smooth"});
+  el.focus();
+}
+function cssEsc(s){
+  if(window.CSS&&CSS.escape)return CSS.escape(s);
+  return String(s||"").replace(/["\\]/g,"\\$&");
 }
 function soSourceOneLiner(r){
   if(!r)return "";
@@ -4482,7 +4496,7 @@ function nccuDetailFields(){
 function nccuPlanHtml(r){
   const rows=nccuPlanFields().map(([label,pats])=>{
     const val=soPick(r,pats)||"___";
-    return '<div class="nccuplanrow"><em>'+esc(label)+'</em><span>'+esc(val)+'</span></div>';
+    return '<div class="nccuplanrow" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><em>'+esc(label)+'</em><span>'+esc(val)+'</span></div>';
   }).join("");
   return '<div class="nccufield plan"><b>A/P</b>'+rows+'</div>';
 }
@@ -4494,11 +4508,12 @@ function nccuPatients(){
 }
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
-  const body=nccuCompact?"":('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+'</div>');
+  const compact=nccuCompact||!!r.nccuCompact;
+  const body=compact?"":('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+'</div>');
   return '<div class="card nccucard"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span><span class="bg c">'+esc((SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).name)+'</span></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
-    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button><button onclick="toggleNccuCard(\''+r.id+'\')">Remove NCCU</button></div></div>';
+    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(r.nccuCompact?'Full':'Compact')+'</button><button onclick="toggleNccuCard(\''+r.id+'\')">Remove NCCU</button></div></div>';
 }
 function renderNccu(){
   const el=document.getElementById("nccucards");if(!el)return;
@@ -4507,6 +4522,7 @@ function renderNccu(){
   el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU sign-out patients selected. Open a card sign-out and check "Show in NCCU view."</div>';
 }
 function toggleNccuCompact(){nccuCompact=!nccuCompact;renderNccu()}
+function toggleOneNccuCompact(id){const r=findAny(id);if(!r)return;r.nccuCompact=!r.nccuCompact;r.updatedAt=Date.now();renderNccu();save()}
 function toggleNccuCard(id){const r=findAny(id);if(!r)return;r.nccuSO=false;r.updatedAt=Date.now();renderNccu();renderRounds();save()}
 function copyNccuSignout(){
   const pts=nccuPatients();
