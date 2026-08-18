@@ -470,7 +470,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.29 · 2026-08-17 20:11 EDT</div>
+    <div class="buildmeta">v0.0.32 · 2026-08-17 20:46 EDT</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3574,7 +3574,7 @@ function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classL
 function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];renderBlocks()}
 // ---------- rounds ----------
 const SO_TMPLS={
- nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Exam","current neuro exam + meaningful baseline"],["Drains / devices","EVD/LD/JP/bolt/airway/lines, levels, output, ICPs"],["Imaging","last CT/MRI/XR and pending next study"],["Labs / cultures","Na goal/last, WBC, CSF/cultures, coags"],["Meds","AC/AP, abx, ASM, steroids, nimodipine, pressors/sedation"],["Goals","SBP/MAP/Na/ICP/EVD/drain goals"],["Resp / CV","vent/oxygen, pressors, arrhythmia, hemodynamics"],["ID","fever, source, cultures, antibiotics, hardware concern"],["Heme / AC","DVT ppx, therapeutic AC/AP, reversal/restart plan"],["To-do / contingency","pending tasks and what should trigger escalation"]]},
+ nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Last 24 hrs","major events, imaging, procedure, exam change"],["Vitals","Tmax, HR, BP/SBP goal, O2"],["Vent","mode, settings, oxygenation, extubation plan"],["EVD/Output","level, ICPs, output, waveform, clamp/wean plan"],["Last BM","date, bowel regimen"],["Drips/rate","pressors, sedation, cardene, HTS, insulin, other rates"],["Nutrition","diet/tube feeds/NPO, swallow status"],["Lines","EVD/LD, central line, arterial line, Foley, drains"],["Labs","Na, WBC, Hgb, Plt, INR/coags"],["Micro/ID","cultures, CSF, antibiotics, source control"],["Daily meds","AC/AP, ASM, steroids, nimodipine, antibiotics, home meds"],["Images","last imaging, pending imaging, comparison"],["Exam","current neuro exam + meaningful baseline"],["A/P Neuro","neuro plan and escalation triggers"],["Pulm","vent/O2 plan, pulmonary issues"],["Cards","BP/MAP goals, pressors, rhythm, cardiac meds"],["GI","diet, bowel regimen, GI ppx"],["Renal","I/O, fluids, Na/osm, renal function"],["GU","Foley, retention, urology issues"],["ID","fever curve, cultures, antibiotics"],["Heme","Hgb/Plt/coags, DVT ppx, AC plan"],["Endo","glucose, steroids, endocrine issues"],["Prophylaxis","DVT, GI, seizure, antibiotic prophylaxis"]]},
  asah:{name:"aSAH",fields:[["One-liner","age, grade, aneurysm, clip/coil, post-bleed day"],["Exam @ SBP","intact at SBP 130"],["EVD","level, ICPs ok?"],["New events / imaging","today"],["TCDs","negative / velocities"],["Na goal + last","eunatremia, last 140"],["BP goal","SBP 100–200 (secured?)"],["Nimodipine","on/held"],["Active problems","and how addressed"]]},
  tssh:{name:"TSSH",fields:[["One-liner","date of TSSH"],["Exam incl. visual fields","full fields?"],["DI watch","Na, UOP <200/h, spec grav >1.005"],["Endocrine labs","POD1 wnl?"],["Nasal packs","out date, keflex ppx"],["Active problems","and how addressed"]]},
  tbi:{name:"Severe TBI",fields:[["One-liner","injury, surgery, devices"],["Exam","intubated: eyes, pupils, corneal/cough, motor"],["EVD + ICP course","level, max ICP, what fixed it"],["Drains","JP output"],["Imaging","latest CT, stable?"],["Na goal","HTS/florinef, last Na"],["ICP management","mannitol, sedation"],["BP goal","SBP <160"],["Seizure meds / LTM","Keppra, LTM on?"],["Active medical issues","VAP, lines, etc."]]},
@@ -4430,16 +4430,29 @@ function soText(r){
 }
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
 const NCCU_FIELDS=[
-  ["Exam","Exam|Exam @ SBP|Exam incl. visual fields|Exam vs pre-op|Exam + baseline|Exam + change from baseline|Baseline vs current exam|Motor exam"],
-  ["Drains / devices","Drains / devices|EVD|EVD + ICP course|Drains|Drains + output|Clamp trial"],
-  ["Imaging","Imaging|New events / imaging|Post-op imaging|Imaging comparison|Imaging pending"],
-  ["Labs / cultures","Labs / cultures|Na goal + last|Na goal|CSF labs / cultures|Endocrine labs"],
-  ["Meds","Meds|Meds of consequence|Seizure meds / LTM|Seizure ppx|Nimodipine|AC status"],
-  ["Goals","Goals|BP goal|ICP management|MAP goal if cord"],
-  ["Resp / CV","Resp / CV|Active medical issues|Active problems"],
-  ["ID","ID|CSF labs / cultures|Active medical issues|Active problems"],
-  ["Heme / AC","Heme / AC|AC status|Meds|Meds of consequence|DVT ppx"],
-  ["To-do / contingency","To-do / contingency|Pending studies|Plan|Wean plan|Dispo|Dispo + barriers|Dispo planning|Escalation trigger|Contingency"]
+  ["Last 24 hrs","Last 24 hrs"],
+  ["Vitals","Vitals"],
+  ["Vent","Vent"],
+  ["EVD/Output","EVD/Output"],
+  ["Last BM","Last BM"],
+  ["Drips/rate","Drips/rate"],
+  ["Nutrition","Nutrition"],
+  ["Lines","Lines"],
+  ["Labs","Labs"],
+  ["Micro/ID","Micro/ID"],
+  ["Daily meds","Daily meds"],
+  ["Images","Images"],
+  ["Exam","Exam"],
+  ["A/P Neuro","A/P Neuro"],
+  ["Pulm","Pulm"],
+  ["Cards","Cards"],
+  ["GI","GI"],
+  ["Renal","Renal"],
+  ["GU","GU"],
+  ["ID","ID"],
+  ["Heme","Heme"],
+  ["Endo","Endo"],
+  ["Prophylaxis","Prophylaxis"]
 ];
 function soPick(r,pats){
   const so=(r&&r.so)||{};
@@ -4520,13 +4533,10 @@ function soToRounds(){
 const TC_MEDS=[[/coumadin|warfarin/i,"Coumadin"],[/eliquis|apixaban/i,"Eliquis"],[/xarelto|rivaroxaban/i,"Xarelto"],[/pradaxa|dabigatran/i,"Pradaxa"],[/plavix|clopidogrel/i,"Plavix"],[/brilinta|ticagrelor/i,"Brilinta"],[/lovenox|enoxaparin/i,"Lovenox"],[/\bdapt\b/i,"DAPT"],[/heparin gtt|on heparin/i,"heparin"],[/\basa\b|aspirin/i,"ASA"]];
 const TC_PMH=[[/\bvps\b|known shunt|vp shunt/i,"known VPS"],[/metastat|bony mets|\bmets\b/i,"metastatic ca"],[/\bhiv\b/i,"HIV"],[/\bnf1\b/i,"NF1"],[/pod\s?(\d+)/i,"POD_"],[/nonverbal|dementia|cognitive decline/i,"nonverbal/dementia baseline"],[/\besrd\b/i,"ESRD"],[/cirrhosis/i,"cirrhosis"],[/avm|vascular malformation|dural avf|moyamoya/i,"known vascular malformation"],[/baclofen pump|intrathecal baclofen/i,"baclofen pump"],[/pituitary|sellar|suprasellar/i,"pituitary/sellar lesion"]];
 const TC_CNS_EXAM=[
- "AOx3",
- "PERRL, EOMI",
+ "AOx3, PERRL, EOMI",
  "Face symmetric",
- "RUE 5/5 no drift",
- "LUE 5/5",
- "RLE 5/5",
- "LLE 5/5",
+ "BUE: 5/5, no drift",
+ "BLE: 5/5, no drift",
  "SILT"
 ].join("\n");
 const TC_SPINE_EXAM=[
