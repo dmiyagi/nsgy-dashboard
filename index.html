@@ -319,6 +319,24 @@ button.rdone.finaldone{background:#123527}
 .nccuplanrow:hover{background:rgba(90,162,255,.08)}
 .nccuplanrow:first-child{border-top:none;padding-top:0;margin-top:0}
 .nccuplanrow em{font-style:normal;color:var(--mut);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.35px}
+.nccufield.nbox,.nccufield.tbox{grid-column:1/-1;cursor:default}
+.nccufield.nbox{border-left:2px solid var(--acc)}
+.nccufield.tbox{border-left:2px solid var(--teal)}
+.nccunote{width:100%;min-height:68px;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:7px 9px;resize:vertical}
+.nccunote:focus{outline:none;border-color:var(--acc)}
+.nccutodos{display:flex;flex-direction:column;gap:2px}
+.nccutodo{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--text);padding:2px 0}
+.nccutodo.done{color:var(--mut);opacity:.55}
+.nccutodo.done .ttxt{text-decoration:line-through}
+.nccutodo .ttxt{flex:1;white-space:pre-wrap;min-width:0}
+.nccutodo input[type=checkbox]{accent-color:var(--ok);width:15px;height:15px;flex:0 0 auto;margin-top:2px}
+.nccutodo .xbtn{border:1px solid var(--e3);color:var(--e3);background:transparent;border-radius:6px;font-size:10.5px;font-weight:800;padding:1px 7px;cursor:pointer;font-family:var(--font);flex:0 0 auto}
+.nccutodo .tdl{font-size:10.5px;color:var(--mut);white-space:nowrap;flex:0 0 auto}
+.nccutodoadd{display:flex;gap:6px;margin-top:7px}
+.nccutodoadd input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 9px}
+.nccutodoadd input:focus{outline:none;border-color:var(--teal)}
+.nccutodoadd button{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:7px;font-size:11.5px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.nccuempty{font-size:12px;color:var(--mut);font-style:italic}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--ok);width:14px;height:14px}
@@ -477,7 +495,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.37 · 2026-08-17 21:43 EDT</div>
+    <div class="buildmeta">v0.0.38 · 2026-08-20</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2267,6 +2285,52 @@ function migrate(d){
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
 let lastSaved="";
 function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);markSyncDirty();schedulePush()}}
+// ---------- edit safety: nothing typed is ever lost ----------
+// Every free-text field autosaves ~400 ms after the last keystroke, so tapping
+// away, backgrounding the app, or losing the tab can never drop what was typed.
+function isEditableEl(el){
+  if(!el||el.nodeType!==1)return false;
+  if(el.tagName==="TEXTAREA")return true;
+  if(el.tagName==="INPUT")return !/^(checkbox|radio|button|submit|reset|file|range|color)$/i.test(el.type||"text");
+  return !!el.isContentEditable;
+}
+function activeEdit(){const ae=document.activeElement;return isEditableEl(ae)?ae:null}
+let autosaveT=null;
+function autosave(){clearTimeout(autosaveT);autosaveT=setTimeout(()=>{autosaveT=null;save()},400)}
+function flushAutosave(){if(autosaveT){clearTimeout(autosaveT);autosaveT=null}save()}
+// a re-render replaces innerHTML, which used to blow away the field being typed
+// in; snapshot the caret first and put it back afterwards
+let _fsnap=null;
+function snapFocus(){
+  const el=activeEdit();
+  if(!el||!el.id){_fsnap=null;return}
+  let a=null,b=null;
+  try{a=el.selectionStart;b=el.selectionEnd}catch(e){}
+  _fsnap={id:el.id,a:a,b:b,top:el.scrollTop};
+}
+function restoreFocus(){
+  const f=_fsnap;_fsnap=null;
+  if(!f)return;
+  const el=document.getElementById(f.id);
+  if(!el||el===document.activeElement)return;
+  try{
+    el.focus({preventScroll:true});
+    if(f.a!==null&&f.a!==undefined&&el.setSelectionRange)el.setSelectionRange(f.a,f.b);
+    el.scrollTop=f.top;
+  }catch(e){}
+}
+function keepFocus(fn){return function(){snapFocus();try{return fn.apply(this,arguments)}finally{restoreFocus()}}}
+// background work (sync pulls, clock ticks) waits until the keyboard is down
+let _pendingRender=false;
+function renderAllSafe(){
+  if(activeEdit()){_pendingRender=true;return}
+  _pendingRender=false;renderAll();renderBlocks();
+}
+document.addEventListener("focusout",()=>{
+  flushAutosave();
+  setTimeout(()=>{if(_pendingRender&&!activeEdit())renderAllSafe()},60);
+});
+window.addEventListener("beforeunload",()=>{flushAutosave()});
 function touch(c){if(c)c.updatedAt=Date.now()}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function searchBlob(x){return Object.keys(x||{}).map(k=>{
@@ -3171,7 +3235,7 @@ function evSection(c){
         '<button class="imp dn'+(e.impact==="down"?" on":"")+'" onclick="setImpact(\''+c.id+'\','+i+',\'down\')">↓ lowers priority</button>'+
         (e.impact?'<button onclick="openForm(\''+c.id+'\',true)" style="color:var(--ok)">↻ Reassess E/O now</button>':"")+
       '</div>'+
-      '<textarea class="evta" placeholder="Paste the key OpenEvidence answer + citation here… (saves when you tap away)" onchange="saveFinding(\''+c.id+'\','+i+',this)">'+esc(e.finding)+'</textarea>'+
+      '<textarea class="evta" id="evf_'+c.id+'_'+i+'" placeholder="Paste the key OpenEvidence answer + citation here… (saves as you type)" oninput="saveFindingInput(\''+c.id+'\','+i+',this)" onchange="saveFinding(\''+c.id+'\','+i+',this)">'+esc(e.finding)+'</textarea>'+
       '</div>'
       :(e.finding?'<div class="evfind" onclick="togEvItem(\''+c.id+'\','+i+')">'+esc(e.finding)+'</div>':"");
     return '<div class="evitem"><div class="evq" onclick="togEvItem(\''+c.id+'\','+i+')"><span class="qt">❓ '+esc(e.q)+'</span>'+impBadge+'<span style="color:var(--mut)">'+(e.open?"▾":"▸")+'</span></div>'+body+'</div>';
@@ -3180,6 +3244,7 @@ function evSection(c){
 }
 function togEv(id){const c=S.consults.find(x=>x.id===id);if(c){c.evOpen=!c.evOpen;render()}}
 function togEvItem(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e){e.open=!e.open;render()}}}
+function saveFindingInput(id,i,el){const c=S.consults.find(x=>x.id===id);if(!c)return;const e=evList(c)[i];if(!e)return;const v=el.value.trim();if(e.finding===v)return;e.finding=v;touch(c);autosave()}
 function saveFinding(id,i,el){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e){e.finding=el.value.trim();touch(c);save();render()}}}
 function setImpact(id,i,v){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e){e.impact=(e.impact===v)?null:v;touch(c);render()}}}
 function askOE(q){toClip(q);showToast("Question copied — paste into OpenEvidence");
@@ -3189,13 +3254,13 @@ function oeOpen(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList
 function pmOpen(id,i){const c=S.consults.find(x=>x.id===id);if(c){const e=evList(c)[i];if(e)askPM(e.q)}}
 function askOEBox(){const el=document.getElementById("oeq");const q=el.value.trim();if(q){askOE(q)}}
 let toastT=null,_undoFn=null;
-function showToast(msg,undoFn){
+function showToast(msg,undoFn,label){
   let t=document.getElementById("toast");
   if(!t){t=document.createElement("div");t.id="toast";t.className="toast";document.body.appendChild(t)}
   _undoFn=undoFn||null;
-  t.innerHTML='<span>'+esc(msg)+'</span>'+(undoFn?'<button onclick="runUndo()">Undo</button>':"");
+  t.innerHTML='<span>'+esc(msg)+'</span>'+(undoFn?'<button onclick="runUndo()">'+esc(label||"Undo")+'</button>':"");
   t.classList.add("show");clearTimeout(toastT);
-  toastT=setTimeout(()=>{t.classList.remove("show");_undoFn=null},undoFn?6000:2500);
+  toastT=setTimeout(()=>{t.classList.remove("show");_undoFn=null},undoFn?(label?12000:6000):2500);
 }
 function runUndo(){if(_undoFn){const f=_undoFn;_undoFn=null;f();const t=document.getElementById("toast");if(t)t.classList.remove("show")}}
 function consultWfPrereqMissing(c,k){
@@ -3292,7 +3357,7 @@ function del(id,skipConfirm){
   render();
   showToast("Deleted "+(c.loc||c.prob||"item"),()=>restoreConsult(c));
 }
-function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
+function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
 function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toClip(c.note);showToast("Notes copied — "+(c.loc||""))}}
 function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
@@ -3399,7 +3464,48 @@ let suggT=null;
     el.addEventListener("blur",ftcApplyReadyToFields);
   }
 }
-function closeForm(){document.getElementById("ov").classList.remove("show");F=null}
+const FDK="nsgy_form_draft";
+const FORM_TEXT_IDS=["loc","bed","last3","prob","state","action","trig","owner","team","attg","note","qs","fname","phone","steps","tasks","lang","dl","snooze"];
+let fdT=null;
+function formDraftWrite(){
+  if(!F){localStorage.removeItem(FDK);return}
+  const vals={};
+  FORM_TEXT_IDS.forEach(k=>{const el=document.getElementById("f_"+k);if(el)vals[k]=el.value});
+  const any=Object.keys(vals).some(k=>String(vals[k]||"").trim());
+  if(!any){localStorage.removeItem(FDK);return}
+  try{localStorage.setItem(FDK,JSON.stringify({ts:Date.now(),id:F._isNew?null:F.id,card:F,vals:vals}))}catch(e){}
+}
+function formDraftSave(){clearTimeout(fdT);fdT=setTimeout(formDraftWrite,400)}
+function formDraftClear(){clearTimeout(fdT);fdT=null;localStorage.removeItem(FDK)}
+function formDraftRead(){
+  try{
+    const d=JSON.parse(localStorage.getItem(FDK)||"null");
+    if(!d||!d.card||!d.vals)return null;
+    if(Date.now()-(d.ts||0)>36e5*24)return null;
+    return d;
+  }catch(e){return null}
+}
+function formDraftRestore(){
+  const d=formDraftRead();if(!d)return;
+  F=d.card;
+  if(!F.type)F.type="CONSULT";
+  const tl=TYPES[F.type]?TYPES[F.type].l:"Consult";
+  document.getElementById("formtitle").textContent=(d.id?"Edit ":"New ")+tl.toLowerCase()+" (recovered)";
+  document.getElementById("reassessBanner").style.display="none";
+  ensureCareMeta(F);
+  FORM_TEXT_IDS.forEach(k=>{const el=document.getElementById("f_"+k);if(el&&d.vals[k]!==undefined)el.value=d.vals[k]});
+  syncCustomTime();
+  document.getElementById("f_interp").checked=!!F.needsInterpreter;
+  ftcLoad(F);
+  buildTypeChips();buildSelectors();buildDomains();buildMods();syncWWarn();renderSugg();renderFlags();
+  document.getElementById("ov").classList.add("show");window.scrollTo(0,0);
+}
+function formDraftOffer(){
+  const d=formDraftRead();if(!d)return;
+  const who=[d.vals.bed,d.vals.last3,d.vals.prob].filter(Boolean).join(" ").slice(0,40);
+  showToast("Unsaved card recovered"+(who?" — "+who:""),()=>formDraftRestore(),"Restore");
+}
+function closeForm(){formDraftClear();document.getElementById("ov").classList.remove("show");F=null}
 function toLocalInput(iso){const d=new Date(iso);const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
 function todayDateStr(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
 function syncCustomTime(){
@@ -3524,6 +3630,7 @@ function saveForm(){
   if(F.type==="CONSULT"&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
+  formDraftClear();
   const roundSynced=syncBoardTodoToRounds(saved);
   if(isNew){
     boardTypeFilter=boardType(saved);
@@ -3566,7 +3673,7 @@ function addCloseItemsToTodos(){
 function confirmClose(){const c=S.consults.find(x=>x.id===closingId);if(c){c.closed=true;c.closedAt=Date.now();touch(c)}hideClose();render()}
 // ---------- day schedule ----------
 function todayStr(){return new Date().toDateString()}
-function ensureDay(){if(S.day.date!==todayStr()){S.day={date:todayStr(),checks:{}}}}
+function ensureDay(){if(S.day.date!==todayStr()){S.day={date:todayStr(),checks:{},at:{}}}S.day.at=S.day.at||{}}
 function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function bmin(s){const[a,b]=s.split(":");return +a*60+ +b}
 function renderBlocks(){
@@ -3583,7 +3690,7 @@ function renderBlocks(){
   save();
 }
 function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classList.contains("open");renderBlocks()}
-function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];renderBlocks()}
+function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];S.day.at=S.day.at||{};S.day.at[k]=Date.now();renderBlocks()}
 // ---------- rounds ----------
 const SO_TMPLS={
  nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Events","free-text event block"],["Last 24 hrs","major events, imaging, procedure, exam change"],["Vitals","Tmax, HR, BP/SBP goal, O2"],["Vent","mode, settings, oxygenation, extubation plan"],["EVD/Output","level, ICPs, output, waveform, clamp/wean plan"],["I/Os","24h in/out, UOP, drains, net balance"],["Last BM","date, bowel regimen"],["Drips/rate","pressors, sedation, cardene, HTS, insulin, other rates"],["Nutrition","diet/tube feeds/NPO, swallow status"],["Lines","EVD/LD, central line, arterial line, Foley, drains"],["Labs","Na, WBC, Hgb, Plt, INR/coags"],["Micro/ID","cultures, CSF, antibiotics, source control"],["Daily meds","AC/AP, ASM, steroids, nimodipine, antibiotics, home meds"],["Images","last imaging, pending imaging, comparison"],["Exam","current neuro exam + meaningful baseline"],["A/P Neuro","neuro plan and escalation triggers"],["Pulm","vent/O2 plan, pulmonary issues"],["Cards","BP/MAP goals, pressors, rhythm, cardiac meds"],["GI","diet, bowel regimen, GI ppx"],["Renal","I/O, fluids, Na/osm, renal function"],["GU","Foley, retention, urology issues"],["ID","fever curve, cultures, antibiotics"],["Heme","Hgb/Plt/coags, DVT ppx, AC plan"],["Endo","glucose, steroids, endocrine issues"],["Prophylaxis","DVT, GI, seizure, antibiotic prophylaxis"]]},
@@ -3817,7 +3924,7 @@ function setRStepDL(id,i,min){
 function roundExamHtml(r){
   const prev=roundPrevExamText(r);
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
-    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||prev)+'</textarea></div>'+
+    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||prev)+'</textarea></div>'+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button></div>'+
     roundExamHistoryHtml(r)+
     '</details>';
@@ -3843,7 +3950,7 @@ function roundExamHistoryHtml(r){
     const idx=(r.examHist||[]).length-1-i;
     const dt=h.ts?toLocalInput(new Date(h.ts).toISOString()):"";
     if(editingExamHist===r.id+":"+idx){
-      return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'" onblur="roundExamHistSave(\''+r.id+'\','+idx+')"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" onblur="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button></div></div>';
+      return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'" onblur="roundExamHistSave(\''+r.id+'\','+idx+')"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" oninput="roundExamHistInput(\''+r.id+'\','+idx+')" onblur="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button></div></div>';
     }
     return '<div class="fld"><label>Exam '+(i+1)+' · '+esc(dt?new Date(h.ts).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"")+'</label><div class="pre">'+esc(h.text||"")+'</div><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" onclick="editRoundExamHist(\''+r.id+'\','+idx+')">Edit</button></div></div>';
   }).join("")+'</div></details>';
@@ -3868,6 +3975,31 @@ function copyRoundPrevExam(id){
   const el=document.getElementById("rprev_"+id);
   const t=(el?el.value:roundPrevExamText(r)).trim();
   if(t){toClip(t);showToast("Previous exam copied")}
+}
+function roundExamInput(id,el){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const v=el.value.trim();
+  if(r.exam===v)return;
+  r.exam=v;r.updatedAt=Date.now();autosave();
+}
+function roundExamHistInput(id,i){
+  const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
+  const txt=document.getElementById("rexh_"+id+"_"+i);if(!txt)return;
+  const v=txt.value.trim();
+  if(r.examHist[i].text===v)return;
+  r.examHist[i].text=v;r.updatedAt=Date.now();autosave();
+}
+// the edit card reads from a draft so a re-render mid-typing keeps what is there
+function roundEditVal(r,k){
+  const d=r&&r._edit;
+  if(d&&d[k]!==undefined)return d[k];
+  return k==="tags"?((r.tags||[]).join(", ")):(r[k]||"");
+}
+function roundEditInput(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
+  r._edit={label:lab?lab.value:"",raw:raw?raw.value:"",tags:tg?tg.value:""};
+  autosave();
 }
 function roundExamSave(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -3996,9 +4128,9 @@ function renderRounds(){
   const mainHtml=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
       return '<div class="card" style="border-left-color:var(--e1)">'+
-       '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(r.label)+'"></div>'+
-       '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px">'+esc(r.raw)+'</textarea></div>'+
-       '<div class="fld"><label>Tags (comma-separated)</label><input type="text" id="re_tags_'+r.id+'" value="'+esc((r.tags||[]).join(", "))+'" placeholder="AC, Drain, Sutures"></div>'+
+       '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(roundEditVal(r,"label"))+'" oninput="roundEditInput(\''+r.id+'\')"></div>'+
+       '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px" oninput="roundEditInput(\''+r.id+'\')">'+esc(roundEditVal(r,"raw"))+'</textarea></div>'+
+       '<div class="fld"><label>Tags (comma-separated)</label><input type="text" id="re_tags_'+r.id+'" value="'+esc(roundEditVal(r,"tags"))+'" placeholder="AC, Drain, Sutures" oninput="roundEditInput(\''+r.id+'\')"></div>'+
        '<div class="chips"><button class="'+(r.worry?"on":"")+'" onclick="togWorry(\''+r.id+'\')">! Worried — see 2–3×/day</button></div>'+
        '<div class="cardbtns" style="margin-top:8px"><button onclick="roundEditCancel(\''+r.id+'\')">Cancel</button><button style="border-color:var(--ok);color:var(--ok)" onclick="roundEditSave(\''+r.id+'\')">✓ Save</button></div></div>';
     }
@@ -4012,9 +4144,9 @@ function renderRounds(){
      roundExamHtml(r)+
      rStepsHtml(r)+
      roundChartHtml(r)+
-     '<textarea class="evta rplan" placeholder="Plan / to-dos from rounds… (saves on tap-away)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)"></textarea>'+
+     '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
-     '<textarea class="evta" placeholder="Notes… (saves on tap-away)" style="min-height:54px;margin-top:8px" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
+     '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
@@ -4033,7 +4165,9 @@ function renderRounds(){
 }
 function roundNoteSave(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  r.note=el.value.trim();r.updatedAt=Date.now();save();
+  const v=el.value.trim();
+  if(r.note===v)return;
+  r.note=v;r.updatedAt=Date.now();autosave();
 }
 function woundRoundCandidate(r){
   return !!r.woundListed;
@@ -4155,13 +4289,14 @@ function removeWoundLog(id,date,former){
 }
 function removeFormerWound(id){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);renderRounds();save()}
 function roundEdit(id){REDIT.add(id);renderRounds()}
-function roundEditCancel(id){REDIT.delete(id);renderRounds()}
+function roundEditCancel(id){REDIT.delete(id);const r=S.rounds.find(x=>x.id===id);if(r&&r._edit){delete r._edit;autosave()}renderRounds()}
 function roundEditSave(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
   if(lab)r.label=lab.value.trim()||r.label;
   if(raw){r.raw=raw.value.trim()||r.raw;r.team=teamFromText(r.raw);r.attg=attgFromText(r.raw);r.soT=detectTmpl(r.raw)}
   if(tg)r.tags=normalizeRoundTags(tg.value.split(",").map(t=>t.trim()).filter(Boolean));
+  delete r._edit;
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
 }
 function findAny(id){return (S.rounds||[]).find(x=>x.id===id)||(S.consults||[]).find(x=>x.id===id)}
@@ -4201,14 +4336,16 @@ function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){r.soCcResp=!r
 function clearSeen(){S.rounds.forEach(r=>{if(r.seen){r.seen=false;r.updatedAt=Date.now()}});renderRounds();save()}
 function delRound(id){
   const r=S.rounds.find(x=>x.id===id);
+  const ts=Date.now();
+  S.tomb=S.tomb||{};S.tomb[id]=ts;
   if(r&&woundRoundCandidate(r)){
     S.formerWounds=S.formerWounds||[];
-    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:Date.now()}));
+    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:ts+1}));
   }
-  S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
+  S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
   if(r)showToast("Removed "+r.label+" from rounds",()=>restoreRound(r));
 }
-function restoreRound(r){if(S.tomb)delete S.tomb[r.id];S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==r.id);if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
+function restoreRound(r){if(S.tomb)delete S.tomb[r.id];r.updatedAt=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==r.id);if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
 function todoLinesFromPlan(t){
   return String(t||"").split(/\n|;|·/).map(s=>s.trim().replace(/^[*•\-☐✓]\s*/,"")).filter(Boolean);
 }
@@ -4218,7 +4355,7 @@ function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
   const added=[];
   lines.forEach(t=>{if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});added.push(t)}});
   r.plan=lines.join(" · ");
-  el.value="";
+  r.planDraft="";el.value="";
   const synced=syncRoundTodosToBoard(r,added);
   r.updatedAt=Date.now();renderRounds();save();
   showToast(added.length?("Added "+added.length+" to-do"+(added.length>1?"s":"")+(synced?" · synced "+synced+" board card"+(synced>1?"s":""):"")):"No new to-dos",added.length?()=>{const rr=S.rounds.find(x=>x.id===id);if(rr){rr.steps=(rr.steps||[]).filter(s=>!added.includes(s.t));rr.updatedAt=Date.now();renderRounds();save();}}:null);
@@ -4260,6 +4397,7 @@ function dismissRoundSuggestion(id,line){
 }
 function roundPlanPreview(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  if(r.planDraft!==el.value){r.planDraft=el.value;r.updatedAt=Date.now();autosave()}
   const lines=todoLinesFromPlan(el.value);
   const sug=roundSuggestedCards(r,lines);
   const box=document.getElementById("rsugg_"+id);if(box)box.innerHTML=roundSuggestHtml(r,lines);
@@ -4428,7 +4566,12 @@ function soFocus(el){el.dataset.prev=el.value||""}
 function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
   const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
   if(!quiet&&(soIsExamField(k)||soIsTrendField(k))&&prev&&prev!==val)r.soPrev[k]=prev;
-  r.so[k]=val;r.updatedAt=Date.now();syncLinkedSo(r);renderSOHints();if(!quiet){save();render()}}}
+  const changed=r.so[k]!==val;
+  r.so[k]=val;
+  if(changed)r.updatedAt=Date.now();
+  syncLinkedSo(r);renderSOHints();
+  if(quiet){if(changed)autosave()}
+  else{flushAutosave();render();renderNccu()}}}
 function renderSOHints(){
   document.querySelectorAll("#sofields [data-sohint]").forEach(h=>{
     const inp=h.parentElement.querySelector(".soinput");
@@ -4504,6 +4647,78 @@ function nccuPlanHtml(r){
   }).join("");
   return '<div class="nccufield plan"><b>A/P</b>'+rows+'</div>';
 }
+// an NCCU card is backed either by a rounding entry (to-dos live on .steps) or
+// by a board card (to-dos live on .tasks) — these keep both working the same way
+function nccuIsRound(r){return !!(r&&(S.rounds||[]).some(x=>x.id===r.id))}
+function nccuTodoArr(r){
+  if(!r)return [];
+  if(nccuIsRound(r)){r.steps=r.steps||[];return r.steps}
+  r.tasks=r.tasks||[];return r.tasks;
+}
+function nccuNoteHtml(r){
+  return '<div class="nccufield nbox"><b>Notes</b>'+
+    '<textarea class="nccunote" id="nccunote_'+r.id+'" placeholder="Free-text notes for this patient… (saves as you type)" '+
+    'oninput="nccuNoteSave(\''+r.id+'\',this)" onblur="nccuNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea></div>';
+}
+function nccuTodoHtml(r){
+  const list=nccuTodoArr(r);
+  const open=list.filter(t=>!t.done).length;
+  const rows=list.length?('<div class="nccutodos">'+list.map((t,i)=>{
+    const dl=(!t.done&&t.dueISO)?fmtDL(t.dueISO):null;
+    return '<div class="nccutodo'+(t.done?' done':'')+'">'+
+      '<input type="checkbox" '+(t.done?'checked':'')+' onchange="nccuTodoToggle(\''+r.id+'\','+i+')">'+
+      '<span class="ttxt">'+esc(t.t)+'</span>'+
+      (dl?'<span class="tdl dl '+dl.cls+'">'+esc(dl.txt)+'</span>':"")+
+      '<button type="button" class="xbtn" onclick="nccuTodoRemove(\''+r.id+'\','+i+')">×</button></div>';
+  }).join("")+'</div>'):'<div class="nccuempty">Nothing open.</div>';
+  return '<div class="nccufield tbox"><b>To-Dos'+(open?' ('+open+' open)':'')+'</b>'+rows+
+    '<div class="nccutodoadd"><input type="text" id="nccutodoin_'+r.id+'" placeholder="Add a to-do…" '+
+    'onkeydown="if(event.key===\'Enter\'){event.preventDefault();nccuTodoAdd(\''+r.id+'\')}">'+
+    '<button type="button" onclick="nccuTodoAdd(\''+r.id+'\')">＋ Add</button></div></div>';
+}
+function nccuNoteSave(id,el){
+  const r=findAny(id);if(!r)return;
+  const v=el.value.trim();
+  if(r.note===v)return;
+  r.note=v;r.updatedAt=Date.now();
+  // a rounding entry and its linked board card share one set of notes
+  if(nccuIsRound(r))(S.consults||[]).forEach(c=>{if(c.roundId===r.id&&!c.closed){c.note=v;c.updatedAt=r.updatedAt}});
+  else if(r.roundId){const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(rr){rr.note=v;rr.updatedAt=r.updatedAt}}
+  autosave();
+}
+function nccuTodoToggle(id,i){
+  const r=findAny(id);if(!r)return;
+  const list=nccuTodoArr(r);const t=list[i];if(!t)return;
+  t.done=!t.done;
+  if(t.done)t.dueISO=null;
+  if(nccuIsRound(r))syncRoundDoneToBoard(r,t.t,t.done);
+  else syncBoardDoneToRounds(r,t.t,t.done);
+  r.updatedAt=Date.now();
+  renderNccu();renderRounds();render();flushAutosave();
+}
+function nccuTodoAdd(id){
+  const r=findAny(id);if(!r)return;
+  const el=document.getElementById("nccutodoin_"+id);if(!el)return;
+  const v=el.value.trim();if(!v){el.focus();return}
+  const list=nccuTodoArr(r);
+  if(list.some(x=>String(x.t||"").toLowerCase()===v.toLowerCase())){showToast("Already on the list");el.value="";return}
+  list.push({t:v,done:false});
+  el.value="";
+  r.updatedAt=Date.now();
+  if(nccuIsRound(r))syncRoundTodosToBoard(r,[v]);
+  else syncBoardTodoToRounds(r);
+  renderNccu();renderRounds();render();flushAutosave();
+  const nx=document.getElementById("nccutodoin_"+id);if(nx)nx.focus();
+  showToast("To-do added — "+soLabel(r));
+}
+function nccuTodoRemove(id,i){
+  const r=findAny(id);if(!r)return;
+  const list=nccuTodoArr(r);const t=list[i];if(!t)return;
+  list.splice(i,1);
+  r.updatedAt=Date.now();
+  renderNccu();renderRounds();render();flushAutosave();
+  showToast("Removed "+String(t.t||"").slice(0,44));
+}
 function nccuPatients(){
   const out=[],seen=new Set();
   (S.rounds||[]).filter(r=>r.nccuSO).forEach(r=>{out.push(r);seen.add(r.id)});
@@ -4513,7 +4728,7 @@ function nccuPatients(){
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuCompact||!!r.nccuCompact;
-  const body=compact?"":('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+'</div>');
+  const body=compact?"":('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+esc(soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+nccuNoteHtml(r)+nccuTodoHtml(r)+'</div>');
   return '<div class="card nccucard"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span><span class="bg c">'+esc((SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).name)+'</span></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
@@ -4534,7 +4749,10 @@ function copyNccuSignout(){
     const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
     const detail=nccuDetailFields().map(([l,p])=>l+": "+(soPick(r,p)||"___")).join("\n");
     const plan="A/P\n"+nccuPlanFields().map(([l,p])=>"  "+l+": "+(soPick(r,p)||"___")).join("\n");
-    return head+"\n"+detail+"\n"+plan;
+    const notes="Notes: "+((r.note||"").trim()||"___");
+    const todos=nccuTodoArr(r);
+    const todoTxt="To-Dos:"+(todos.length?"\n"+todos.map(t=>"  "+(t.done?"[x] ":"[ ] ")+t.t).join("\n"):" none");
+    return head+"\n"+detail+"\n"+plan+"\n"+notes+"\n"+todoTxt;
   }).join("\n\n");
   toClip(txt||"(no NCCU patients)");showToast("NCCU sign-out copied");
 }
@@ -5146,7 +5364,7 @@ function renderCapture(){
 // ---------- sync engine (private GitHub Gist) ----------
 const SYNC_FILE="nsgy-triage-sync.json";
 const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at",SK_LAST="nsgy_sync_last_ok";
-let pushT=null,retryT=null,syncing=false,syncAgain=false;
+let pushT=null,retryT=null,syncing=false,syncAgain=false,syncFail=0,syncBlocked="";
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
 function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
 function markSyncDirty(){const cfg=syncCfg();if(cfg.token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
@@ -5157,14 +5375,26 @@ function shouldPullSync(){
   const last=parseInt(localStorage.getItem(SK_LAST)||"0",10);
   return !last||Date.now()-last>30000;
 }
+const MAX_DIRTY_MS=20000;
 function schedulePush(delay){
   const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
+  if(syncBlocked)return;
+  let d=delay===undefined?2500:delay;
+  if(delay===undefined){
+    // cap how long an edit can sit unsynced while someone keeps typing, but
+    // never push more than once a second or GitHub starts rate-limiting
+    const dirtyAt=parseInt(localStorage.getItem(SK_DIRTY)||"0",10);
+    if(dirtyAt){
+      const overdue=dirtyAt+MAX_DIRTY_MS-Date.now();
+      if(overdue<d)d=Math.max(1200,overdue);
+    }
+  }
   clearTimeout(pushT);
-  pushT=setTimeout(()=>doSync(true),delay===undefined?2500:delay);
+  pushT=setTimeout(()=>doSync(true),d);
 }
 function scheduleSyncRetry(delay){
   const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
-  const d=delay===undefined?15000:delay;
+  const d=delay===undefined?Math.min(15000*Math.pow(2,Math.max(0,syncFail-1)),300000):delay;
   localStorage.setItem(SK_RETRY,String(Date.now()+d));
   clearTimeout(retryT);
   retryT=setTimeout(()=>doSync(true),d);
@@ -5184,21 +5414,43 @@ async function gh(path,opts){
   if(!r.ok){
     let msg="GitHub "+r.status;
     try{const j=await r.json();if(j&&j.message)msg+=" — "+j.message}catch(e){}
-    throw new Error(msg);
+    const err=new Error(msg);err.status=r.status;
+    // secondary rate limits ask for a wait rather than a retry storm
+    const ra=r.headers.get("retry-after");
+    if(ra)err.retryAfter=parseInt(ra,10)*1000;
+    else if(r.status===403&&r.headers.get("x-ratelimit-remaining")==="0"){
+      const reset=parseInt(r.headers.get("x-ratelimit-reset")||"0",10);
+      if(reset)err.retryAfter=Math.max(0,reset*1000-Date.now());
+    }
+    throw err;
   }
   return r.json();
+}
+// a bad token, a deleted gist or a revoked scope will never fix itself — stop
+// hammering and tell the user, instead of retrying every 15 s forever
+function isFatalSyncError(e){return e&&(e.status===401||e.status===404||(e.status===403&&!e.retryAfter))}
+function fatalSyncHint(e){
+  if(!e)return "";
+  if(e.status===401)return "Token rejected — it has expired or been revoked. Open sync and paste a fresh token.";
+  if(e.status===404)return "Gist not found — it was deleted, or this token belongs to a different account. Open sync and reconnect.";
+  if(e.status===403)return "Token lacks the gist scope. Create a new classic token with gist checked, then reconnect.";
+  return "";
 }
 async function fetchGistFile(f){
   if(!f)return "";
   if(!f.truncated)return f.content||"";
-  const cfg=syncCfg();
-  const r=await fetch(f.raw_url,{headers:{"Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github.raw"}});
-  if(!r.ok)throw new Error("GitHub raw "+r.status);
+  // gist.githubusercontent.com rejects an Authorization header at CORS
+  // preflight, so the authenticated fetch used to fail on any board past ~1 MB
+  const r=await fetch(f.raw_url,{cache:"no-store"});
+  if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
 function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,ts:Date.now()}}
+const TOMB_KEEP_MS=45*24*3600*1000;
 function mergeState(local,remote){
-  const tomb={};[local.tomb||{},remote.tomb||{}].forEach(t=>Object.keys(t).forEach(id=>{tomb[id]=Math.max(tomb[id]||0,t[id])}));
+  const tomb={},tCut=Date.now()-TOMB_KEEP_MS;
+  // prune ancient tombstones so the gist does not grow without bound
+  [local.tomb||{},remote.tomb||{}].forEach(t=>Object.keys(t).forEach(id=>{if(t[id]>tCut)tomb[id]=Math.max(tomb[id]||0,t[id])}));
   const byId={};
   (remote.consults||[]).concat(local.consults||[]).forEach(c=>{
     const ts=c.updatedAt||c.created||0;
@@ -5228,13 +5480,26 @@ function mergeState(local,remote){
   }).sort((a,b)=>(a.created||0)-(b.created||0));
   let day=local.day||{date:"",checks:{}};
   const rd=remote.day||{date:"",checks:{}};
-  if(rd.date===day.date){const checks=Object.assign({},rd.checks,day.checks);day={date:day.date,checks:checks}}
+  if(rd.date===day.date){
+    // per-check last-write-wins, so unticking a block propagates instead of
+    // being permanently re-ticked by the other device
+    const la=day.at||{},ra=rd.at||{},checks={},at={};
+    Object.keys(Object.assign({},rd.checks||{},day.checks||{},la,ra)).forEach(k=>{
+      const lt=la[k]||0,rt=ra[k]||0;
+      if(lt||rt){const useLocal=lt>=rt;checks[k]=useLocal?(day.checks||{})[k]:(rd.checks||{})[k];at[k]=Math.max(lt,rt)}
+      else checks[k]=(day.checks||{})[k]||(rd.checks||{})[k];
+    });
+    Object.keys(checks).forEach(k=>{if(!checks[k])delete checks[k]});
+    day={date:day.date,checks:checks,at:at};
+  }
   else{const today=new Date().toDateString();if(rd.date===today&&day.date!==today)day=rd}
   return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day};
 }
 async function doSync(auto){
   const cfg=syncCfg();
   if(!cfg.token||!cfg.gist){setDot("⭘ sync","var(--mut)");if(!auto)openSync();return}
+  if(auto&&syncBlocked)return;
+  if(!auto)syncBlocked="";
   if(auto&&!shouldPullSync())return;
   if(syncing){syncAgain=true;return}
   syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
@@ -5259,12 +5524,29 @@ async function doSync(auto){
     }
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
     if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
+    syncFail=0;syncBlocked="";
     localStorage.setItem(SK_LAST,String(Date.now()));
-    renderAll();renderBlocks();
+    renderAllSafe();
     startupCompactBoard=false;
     setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
     const ss=document.getElementById("syncstat");if(ss)ss.innerHTML="Last sync OK — gist <b>"+cfg.gist.slice(0,8)+"…</b> at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-  }catch(e){failed=true;setDot("! sync","var(--e3)");const ss=document.getElementById("syncstat");if(ss)ss.textContent="Sync failed — "+e.message+". Will retry.";scheduleSyncRetry(15000)}
+  }catch(e){
+    failed=true;syncFail++;
+    const ss=document.getElementById("syncstat");
+    if(isFatalSyncError(e)){
+      // nothing to retry against — say so once and stop
+      syncBlocked=fatalSyncHint(e)||e.message;
+      clearTimeout(pushT);clearTimeout(retryT);localStorage.removeItem(SK_RETRY);
+      setDot("⚠ sync","var(--e3)");
+      if(ss)ss.textContent=syncBlocked;
+      if(!auto)alert(syncBlocked);
+      else showToast("Sync stopped — "+syncBlocked.split(" — ")[0],()=>openSync(),"Fix");
+    }else{
+      setDot("! sync","var(--e3)");
+      if(ss)ss.textContent="Sync failed — "+e.message+". Your work is saved on this device; will retry.";
+      scheduleSyncRetry(e.retryAfter);
+    }
+  }
   finally{
     syncing=false;if(auto)startupCompactBoard=false;
     if(!failed&&(syncAgain||hasSyncDirty()))schedulePush(800);
@@ -5278,11 +5560,24 @@ function openSync(){
   document.getElementById("ovSync").classList.add("show");
 }
 function hideSync(){document.getElementById("ovSync").classList.remove("show")}
-function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();setDot("⭘ sync","var(--mut)");openSync()}
+function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();syncBlocked="";syncFail=0;clearTimeout(pushT);clearTimeout(retryT);setDot("⭘ sync","var(--mut)");openSync()}
+// walk every page: stopping at the first 100 gists silently created a second
+// sync gist, which is what leaves two devices on different boards
+async function findSyncGist(){
+  for(let page=1;page<=10;page++){
+    const gists=await gh("/gists?per_page=100&page="+page);
+    if(!gists||!gists.length)return null;
+    const hit=gists.find(x=>x.files&&x.files[SYNC_FILE]);
+    if(hit)return hit;
+    if(gists.length<100)return null;
+  }
+  return null;
+}
 async function connectSync(){
   const tok=document.getElementById("ghtok").value.trim();
   if(!tok){alert("Paste a token first.");return}
   localStorage.setItem(TK,tok);
+  syncBlocked="";syncFail=0;
   const manual=(document.getElementById("ghgist")&&document.getElementById("ghgist").value.trim())||"";
   document.getElementById("syncstat").textContent="Connecting…";
   try{
@@ -5294,8 +5589,7 @@ async function connectSync(){
         await gh("/gists/"+manual,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
       }
     }else{
-      let gists=await gh("/gists?per_page=100");
-      g=gists.find(x=>x.files&&x.files[SYNC_FILE]);
+      g=await findSyncGist();
       if(!g){
       g=await gh("/gists",{method:"POST",body:JSON.stringify({description:"NSGY triage sync (private)",public:false,files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
       }
@@ -5307,9 +5601,19 @@ async function connectSync(){
   }catch(e){document.getElementById("syncstat").textContent="Could not connect — check the token has the gist scope. ("+e.message+")"}
 }
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
-window.addEventListener("online",()=>schedulePush(500));
-window.addEventListener("pagehide",()=>{if(hasSyncDirty())doSync(true)});
-document.addEventListener("visibilitychange",()=>{if(document.hidden){if(hasSyncDirty())doSync(true)}else{resumePendingSync();doSync(true);boardClockTick(true)}});
+const PULL_MS=60000;
+setInterval(()=>{
+  if(document.hidden||!navigator.onLine||syncBlocked)return;
+  if(activeEdit()||syncing)return;
+  const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
+  doSync(true);
+},PULL_MS);
+window.addEventListener("online",()=>{syncFail=0;schedulePush(500)});
+window.addEventListener("pagehide",()=>{flushAutosave();if(hasSyncDirty())doSync(true)});
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){flushAutosave();if(hasSyncDirty())doSync(true)}
+  else{resumePendingSync();doSync(true);if(!activeEdit())boardClockTick(true)}
+});
 let boardClockMinute=null;
 function boardClockTick(force){
   const m=nowMin();
@@ -5503,7 +5807,9 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{
   if(n.nodeType===1)enableNativeDictation(n);
 }))).observe(document.body,{childList:true,subtree:true});
 // ---------- init ----------
+render=keepFocus(render);renderRounds=keepFocus(renderRounds);renderNccu=keepFocus(renderNccu);renderBlocks=keepFocus(renderBlocks);
 let capT=null;
+document.getElementById("ov").addEventListener("input",()=>{if(F)formDraftSave()});
 document.getElementById("cap").addEventListener("input",()=>{clearTimeout(capT);capT=setTimeout(renderCapture,220)});
 document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"&&capActions.length)runCap(0)});
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
@@ -5515,8 +5821,9 @@ setDot(syncCfg().token?"⟳ …":"⭘ sync");
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
 resumePendingSync();
 doSync(true);
+formDraftOffer();
 if(!syncAtStartup)startupCompactBoard=false;
-setInterval(()=>{const ae=document.activeElement;if(ae&&ae.classList&&ae.classList.contains("evta"))return;boardClockTick(false)},15000);
+setInterval(()=>{if(activeEdit())return;boardClockTick(false)},15000);
 </script>
 </body>
 </html>

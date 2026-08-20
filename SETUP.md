@@ -27,11 +27,13 @@ On **each** device (phone + computer):
    First device creates the private Gist; the others find it automatically.
 3. **Phone**: Share button → **Add to Home Screen** → it installs like an app (full screen, works offline).
 
-That's it. Changes push ~2.5 s after you make them and pull whenever the app becomes visible; **⟳ Sync now** forces it. The dot shows ● synced / ⟳ syncing / ⚠ error.
+That's it. Changes push ~2.5 s after you make them, and pull every minute while the app is open plus whenever it becomes visible; **⟳ Sync now** forces it. The dot shows ● synced / ⟳ syncing / ● pending / ⚠ error.
 
 ## Notes
 
+- Everything you type is written to the device within half a second — no need to tap away first. Nothing is lost if the app is backgrounded or killed mid-entry.
 - Merge is per-item by last edit, so phone and computer edits don't overwrite each other; deletions propagate.
+- If the token expires or the gist is deleted, sync stops with a **⚠ sync** dot and an explanation in the sync panel rather than retrying silently. Your work keeps saving locally; reconnect and it pushes.
 - Offline (hospital dead zones): keep working — it syncs when you're back on network.
 - The token lives only in each device's browser storage. **Disconnect** (in the sync panel) removes it.
 - Keep entries de-identified: bed + initials, never names or MRNs.
