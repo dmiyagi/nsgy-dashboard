@@ -31,6 +31,7 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **NCCU view:** **Δ Changes** highlights what moved in each field since you last hit **✓ Mark seen** on that card. To-dos sit above notes and carry board-style timers; **Compact** shows the next to-do with its countdown. Remove a card with the **✕** (desktop) or by swiping it left (phone) — both undoable.
 - Everything you type is written to the device within half a second — no need to tap away first. Nothing is lost if the app is backgrounded or killed mid-entry.
 - Merge is per-item by last edit, so phone and computer edits don't overwrite each other; deletions propagate.
 - If the token expires or the gist is deleted, sync stops with a **⚠ sync** dot and an explanation in the sync panel rather than retrying silently. Your work keeps saving locally; reconnect and it pushes.
