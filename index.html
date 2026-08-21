@@ -1256,9 +1256,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
   <div class="sheet">
     <h2 id="soTitle">Sign-out</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Ordered the way it should be spoken. Fill what you know — blanks copy as ___ so nothing gets skipped.</p>
-    <label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;color:var(--text);font-weight:700">
-      <input type="checkbox" id="so_nccu" style="width:auto" onchange="toggleSoNccu(this.checked)"> Use NCCU sign-out format / show in NCCU view
-    </label>
     <div class="chips" id="sochips" style="margin-bottom:10px"></div>
     <div id="sofields"></div>
     <div class="sheetbtns">
@@ -4034,6 +4031,8 @@ function roundExamPreset(id,kind){
   roundExamSave(id,el);
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
+// rounds can also send a patient to the NCCU view; it is a destination, not a card type
+const ROUND_SEND_OPTS='<option value="NCCU">● NCCU sign-out view</option>'+TYPE_SELECT_OPTS;
 const REDIT=new Set();
 let soCcOnly=false;
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
@@ -4165,7 +4164,7 @@ function renderRounds(){
       '<button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div>'+
-     '<div class="sendto"><select id="st_'+r.id+'">'+TYPE_SELECT_OPTS+'</select>'+
+     '<div class="sendto"><select id="st_'+r.id+'">'+roundSendOpts(r)+'</select>'+
        '<input type="date" id="sd_'+r.id+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">'+
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
@@ -4516,7 +4515,6 @@ function soLabel(r){return r.label||r.loc||"patient"}
 function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
   document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
-  const nccu=document.getElementById("so_nccu");if(nccu)nccu.checked=!!r.nccuSO;
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   buildSOChips();buildSOFields();
@@ -4524,17 +4522,6 @@ function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
   if(focusField)setTimeout(()=>focusSOField(focusField),60);
 }
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
-function toggleSoNccu(on){
-  const r=findAny(soId);if(!r)return;
-  r.nccuSO=!!on;
-  if(on){
-    if(r.soT&&r.soT!=="nccu")r.soTBeforeNccu=r.soT;
-    r.soT="nccu";
-  }else if(r.soT==="nccu"){
-    r.soT=(r.soTBeforeNccu&&SO_TMPLS[r.soTBeforeNccu])?r.soTBeforeNccu:detectTmpl([r.raw,r.prob,r.loc].filter(Boolean).join(" "));
-  }
-  r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();save();renderRounds();renderNccu();
-}
 function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
@@ -4578,7 +4565,11 @@ function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.s
   const changed=r.so[k]!==val;
   // remember what the field held before this edit, so the NCCU view can show
   // what moved since the card was last marked seen
-  if(changed){r.soSnap=r.soSnap||{};if(r.soSnap[k]===undefined)r.soSnap[k]=prev}
+  if(changed){
+    if(r.soSnapDay!==todayStr()){r.soSnap={};r.soSnapDay=todayStr()}
+    r.soSnap=r.soSnap||{};
+    if(r.soSnap[k]===undefined)r.soSnap[k]=prev;
+  }
   r.so[k]=val;
   if(changed)r.updatedAt=Date.now();
   syncLinkedSo(r);renderSOHints();
@@ -4667,34 +4658,25 @@ function nccuChangedTokens(base,cur){
   }
   return chg;
 }
+// the baseline resets itself each day, so "Δ Changes" reads as
+// "what moved since this shift started"
+function nccuBaseline(r){
+  if(!r||!r.soSnap||r.soSnapDay!==todayStr())return {};
+  return r.soSnap;
+}
 function nccuFieldHtml(r,key,val){
   const cur=String(val||"");
   if(!nccuDiff)return esc(cur);
-  const base=(r&&r.soSnap)?r.soSnap[key]:undefined;
+  const base=nccuBaseline(r)[key];
   if(base===undefined||String(base)===cur)return esc(cur);
   const B=nccuTokens(cur),chg=nccuChangedTokens(base,cur);
   return B.map((t,i)=>chg[i]&&t.trim()?'<mark class="chg">'+esc(t)+'</mark>':esc(t)).join("");
 }
-function nccuHasChanges(r){
-  if(!r||!r.soSnap)return false;
-  return Object.keys(r.soSnap).some(k=>String(r.soSnap[k])!==String((r.so||{})[k]||""));
-}
 function nccuChangeCount(r){
-  if(!r||!r.soSnap)return 0;
-  return Object.keys(r.soSnap).filter(k=>String(r.soSnap[k])!==String((r.so||{})[k]||"")).length;
+  const base=nccuBaseline(r);
+  return Object.keys(base).filter(k=>String(base[k])!==String((r.so||{})[k]||"")).length;
 }
 function toggleNccuDiff(){nccuDiff=!nccuDiff;renderNccu()}
-function nccuMarkSeen(id){
-  const r=findAny(id);if(!r)return;
-  const prev=r.soSnap?JSON.parse(JSON.stringify(r.soSnap)):null;
-  const n=nccuChangeCount(r);
-  r.soSnap={};r.updatedAt=Date.now();
-  renderNccu();flushAutosave();
-  showToast(n?("Marked seen — "+n+" change"+(n>1?"s":"")+" cleared"):"Marked seen",()=>{
-    const rr=findAny(id);if(!rr)return;
-    rr.soSnap=prev||{};rr.updatedAt=Date.now();renderNccu();flushAutosave();
-  });
-}
 function soPick(r,pats){
   const so=(r&&r.so)||{};
   const keys=String(pats||"").split("|");
@@ -4834,7 +4816,7 @@ function nccuCompactTodoHtml(r){
 }
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
-  const compact=nccuCompact||!!r.nccuCompact;
+  const compact=nccuIsCompact(r);
   const body=compact
     ? nccuCompactTodoHtml(r)
     : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
@@ -4846,8 +4828,7 @@ function nccuCardHtml(r){
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
     '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
-    '<button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(r.nccuCompact?'Full':'Compact')+'</button>'+
-    (nChg?'<button onclick="nccuMarkSeen(\''+r.id+'\')">✓ Mark seen</button>':"")+
+    '<button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Full':'Compact')+'</button>'+
     '</div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
@@ -4867,8 +4848,29 @@ function renderNccu(){
   const pts=nccuPatients();
   el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU sign-out patients selected. Open a card sign-out and check "Show in NCCU view."</div>';
 }
-function toggleNccuCompact(){nccuCompact=!nccuCompact;renderNccu()}
-function toggleOneNccuCompact(id){const r=findAny(id);if(!r)return;r.nccuCompact=!r.nccuCompact;r.updatedAt=Date.now();renderNccu();save()}
+// r.nccuView is "full" | "compact" | unset (follow the toolbar). The old
+// boolean r.nccuCompact could not express "expanded while the toolbar says
+// compact", so per-card Full did nothing once the toolbar was set.
+function nccuViewOf(r){
+  if(r&&(r.nccuView==="full"||r.nccuView==="compact"))return r.nccuView;
+  if(r&&r.nccuCompact)return "compact";
+  return nccuCompact?"compact":"full";
+}
+function nccuIsCompact(r){return nccuViewOf(r)==="compact"}
+// the toolbar is "set them all", so it clears any per-card overrides
+function toggleNccuCompact(){
+  nccuCompact=!nccuCompact;
+  nccuPatients().forEach(r=>{if(r.nccuView||r.nccuCompact){delete r.nccuView;delete r.nccuCompact;r.updatedAt=Date.now()}});
+  renderNccu();flushAutosave();
+}
+function toggleOneNccuCompact(id){
+  const r=findAny(id);if(!r)return;
+  const next=nccuIsCompact(r)?"full":"compact";
+  delete r.nccuCompact;
+  // falling back in step with the toolbar keeps the override from going stale
+  if((next==="compact")===nccuCompact)delete r.nccuView;else r.nccuView=next;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
 function copyNccuSignout(){
   const pts=nccuPatients();
   const txt=pts.map(r=>{
@@ -5793,8 +5795,29 @@ function sendRoundTo(id,type){
 }
 function sendRoundToSel(id){const sel=document.getElementById("st_"+id);if(sel)sendRoundTo(id,sel.value)}
 // Send button: with a date → silent dated task on the calendar; without → open the form
+// already-sent patients should not offer NCCU again
+function roundSendOpts(r){
+  return (r&&r.nccuSO)?TYPE_SELECT_OPTS:ROUND_SEND_OPTS;
+}
+function sendRoundToNccu(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  if(r.nccuSO){showToast(soLabel(r)+" is already on NCCU");return}
+  const prevT=r.soT||"";
+  r.nccuSO=true;
+  // NCCU is also a sign-out template; switch to it but remember what it was
+  if(r.soT!=="nccu"){r.soTBeforeNccu=r.soT||"";r.soT="nccu"}
+  r.updatedAt=Date.now();syncLinkedSo(r);
+  renderRounds();renderNccu();flushAutosave();
+  showToast("→ NCCU — "+soLabel(r),()=>{
+    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    rr.nccuSO=false;if(prevT)rr.soT=prevT;
+    rr.updatedAt=Date.now();syncLinkedSo(rr);
+    renderRounds();renderNccu();flushAutosave();
+  });
+}
 function roundSend(id){
   const sel=document.getElementById("st_"+id),dt=document.getElementById("sd_"+id);
+  if(sel&&sel.value==="NCCU"){sendRoundToNccu(id);return}
   const type=(sel&&TYPES[sel.value])?sel.value:"CHART";
   const date=dt?dt.value:"";
   if(!date){roundToBoard(id,type);return}
