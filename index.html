@@ -342,6 +342,9 @@ button.rdone.finaldone{background:#123527}
 mark.chg{background:rgba(242,211,75,.20);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:700}
 .nccuplanrow mark.chg{background:rgba(242,211,75,.16)}
 .bg.chgbadge{background:#3a3312;color:var(--e1);border:1px solid var(--e1)}
+button.bg.chgreset{font-family:var(--font);cursor:pointer;line-height:1.45}
+button.bg.chgreset:hover{background:var(--e1);color:#231d00}
+#nccuResetBtn{border-color:var(--e1);color:var(--e1)}
 #nccuDiffBtn.on{border-color:var(--e1);color:var(--e1)}
 .nccunext{display:flex;align-items:center;gap:8px;margin-top:9px;padding:7px 9px;background:var(--card2);border:1px solid var(--line);border-left:2px solid var(--teal);border-radius:8px;flex-wrap:nowrap;overflow:hidden}
 .nccunext .ract{flex:1;min-width:40px;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -575,6 +578,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="rowflex">
     <button class="btn sec sm" id="nccuCompactBtn" onclick="toggleNccuCompact()">Compact</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
+    <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every NCCU card">Δ Reset all</button>
     <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
     <button class="btn sec sm" onclick="renderNccu()">Refresh</button>
   </div>
@@ -4684,6 +4688,35 @@ function nccuChangeCount(r){
   return Object.keys(base).filter(k=>String(base[k])!==String((r.so||{})[k]||"")).length;
 }
 function toggleNccuDiff(){nccuDiff=!nccuDiff;renderNccu()}
+// clearing the baseline makes the current values the new "unchanged" state,
+// so tracking starts again from a clean slate
+function nccuSnapOf(r){return {snap:(r&&r.soSnap)?JSON.parse(JSON.stringify(r.soSnap)):null,day:r?r.soSnapDay:undefined}}
+function nccuApplySnap(r,st){if(!r||!st)return;if(st.snap)r.soSnap=st.snap;else delete r.soSnap;if(st.day===undefined)delete r.soSnapDay;else r.soSnapDay=st.day;r.updatedAt=Date.now()}
+function nccuResetOne(r){if(!r)return;r.soSnap={};r.soSnapDay=todayStr();r.updatedAt=Date.now()}
+function nccuResetCard(id){
+  const r=findAny(id);if(!r)return;
+  const n=nccuChangeCount(r),before=nccuSnapOf(r);
+  nccuResetOne(r);
+  renderNccu();flushAutosave();
+  showToast("Change tracking reset — "+soLabel(r)+(n?" ("+n+" cleared)":""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    nccuApplySnap(rr,before);renderNccu();flushAutosave();
+  },"Undo");
+}
+function nccuResetAll(){
+  const pts=nccuPatients();
+  if(!pts.length){showToast("No NCCU patients");return}
+  const tracked=pts.filter(r=>Object.keys(nccuBaseline(r)).length);
+  if(!tracked.length){showToast("Nothing tracked yet — already a clean slate");return}
+  const n=pts.reduce((a,r)=>a+nccuChangeCount(r),0);
+  const before=pts.map(r=>({id:r.id,st:nccuSnapOf(r)}));
+  pts.forEach(nccuResetOne);
+  renderNccu();flushAutosave();
+  showToast("Change tracking reset on "+tracked.length+" card"+(tracked.length>1?"s":"")+(n?" ("+n+" cleared)":""),()=>{
+    before.forEach(b=>nccuApplySnap(findAny(b.id),b.st));
+    renderNccu();flushAutosave();
+  },"Undo");
+}
 function soPick(r,pats){
   const so=(r&&r.so)||{};
   const keys=String(pats||"").split("|");
@@ -4831,7 +4864,7 @@ function nccuCardHtml(r){
   return '<div class="card nccucard hastrash" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from NCCU" aria-label="Remove from NCCU" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span>'+soTmplBadge(r)+
-    (nChg?'<span class="bg chgbadge">Δ'+nChg+'</span>':"")+'</div>'+
+    (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
     '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
