@@ -508,7 +508,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta">v0.0.38 · 2026-08-20</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.39 · 2026-08-21</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1276,20 +1276,16 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <div class="overlay" id="ovSync">
   <div class="sheet">
     <h2>⇅ Sync between your devices</h2>
-    <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Your board syncs through a <b>private secret Gist</b> in your own GitHub account. The token is stored only on this device. Paste the same token on each device — the app finds or creates the Gist automatically. Keep using bed + first three last-name letters only.</p>
+    <p style="font-size:13px;color:var(--mut);margin-bottom:10px">Your board syncs through a <b>private secret Gist</b> in your own GitHub account. The token is stored only on this device. <b>Paste the same token on every device</b> — each one finds or creates the same Gist by itself, so there is nothing else to copy across. Keep using bed + first three last-name letters only.</p>
     <div class="banner" id="syncstat">Not connected.</div>
     <div class="fld"><label>GitHub token (classic, "gist" scope only)</label>
       <input type="password" id="ghtok" placeholder="ghp_…" autocomplete="off">
       <div style="font-size:11.5px;color:var(--mut);margin-top:5px">Create at github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check only <b>gist</b>.</div>
     </div>
-    <div class="fld"><label>Gist ID / key (optional but more reliable)</label>
-      <input type="text" id="ghgist" placeholder="paste the gist id from the URL">
-      <div style="font-size:11.5px;color:var(--mut);margin-top:5px">Use the long ID after <b>gist.github.com/.../</b>. Leave blank to auto-find or create the sync gist.</div>
-    </div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideSync()">Close</button>
       <button class="btn sec" onclick="disconnectSync()">Disconnect</button>
-      <button class="btn" onclick="connectSync()">Connect</button>
+      <button class="btn" id="syncConnectBtn" onclick="connectSync()">Connect</button>
     </div>
   </div>
 </div>
@@ -5727,52 +5723,116 @@ async function doSync(auto){
 function openSync(){
   const cfg=syncCfg();
   document.getElementById("ghtok").value=cfg.token;
-  const ge=document.getElementById("ghgist");if(ge)ge.value=cfg.gist;
-  document.getElementById("syncstat").innerHTML=cfg.token?(cfg.gist?"Connected — private gist <b>"+cfg.gist.slice(0,8)+"…</b>. Use this same token + gist key on each device.":"Token saved — paste a gist key or connect to auto-find/create one."):"Not connected. Paste a token below.";
+  document.getElementById("syncstat").innerHTML=cfg.token
+    ?(cfg.gist?"Connected — private gist <b>"+esc(cfg.gist)+"</b>.<br>Paste this same token on every device; each one finds this gist by itself."
+             :"Token saved, but no gist yet — tap Connect.")
+    :"Not connected. Paste your token below, then Connect.";
+  const cb=document.getElementById("syncConnectBtn");
+  if(cb)cb.textContent=cfg.token&&cfg.gist?"Re-scan & repair":"Connect";
   document.getElementById("ovSync").classList.add("show");
 }
 function hideSync(){document.getElementById("ovSync").classList.remove("show")}
+// last-resort escape hatch when a device is stuck on an old cached build
+async function forceAppUpdate(){
+  try{
+    if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}
+    if(navigator.serviceWorker){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+  }catch(e){}
+  location.reload();
+}
 function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();syncBlocked="";syncFail=0;clearTimeout(pushT);clearTimeout(retryT);setDot("⭘ sync","var(--mut)");openSync()}
 // walk every page: stopping at the first 100 gists silently created a second
 // sync gist, which is what leaves two devices on different boards
-async function findSyncGist(){
+async function findAllSyncGists(){
+  const out=[];
   for(let page=1;page<=10;page++){
     const gists=await gh("/gists?per_page=100&page="+page);
-    if(!gists||!gists.length)return null;
-    const hit=gists.find(x=>x.files&&x.files[SYNC_FILE]);
-    if(hit)return hit;
-    if(gists.length<100)return null;
+    if(!gists||!gists.length)break;
+    gists.forEach(g=>{if(g.files&&g.files[SYNC_FILE])out.push(g)});
+    if(gists.length<100)break;
   }
-  return null;
+  // oldest first, so every device independently adopts the same gist
+  return out.sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
+}
+function absorbRemote(remote){
+  const m=mergeState(S,remote);
+  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;
+}
+// if an earlier build ever made a second sync gist, pull its contents in rather
+// than stranding whatever was written there
+async function absorbDuplicateGists(list){
+  let n=0;
+  for(const g of list){
+    try{
+      const full=await gh("/gists/"+g.id);
+      const f=full.files&&full.files[SYNC_FILE];
+      if(!f)continue;
+      const txt=await fetchGistFile(f);
+      const doc=JSON.parse(txt);
+      if(doc&&(doc.consults||doc.rounds)){absorbRemote(doc);n++}
+    }catch(e){}
+  }
+  return n;
 }
 async function connectSync(){
   const tok=document.getElementById("ghtok").value.trim();
   if(!tok){alert("Paste a token first.");return}
   localStorage.setItem(TK,tok);
   syncBlocked="";syncFail=0;
-  const manual=(document.getElementById("ghgist")&&document.getElementById("ghgist").value.trim())||"";
-  document.getElementById("syncstat").textContent="Connecting…";
+  const ss=document.getElementById("syncstat");
+  if(ss)ss.textContent="Looking for your sync gist…";
   try{
-    let g=null;
-    if(manual){
-      localStorage.setItem(GK,manual);
-      g=await gh("/gists/"+manual);
-      if(!(g.files&&g.files[SYNC_FILE])){
-        await gh("/gists/"+manual,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
-      }
+    const found=await findAllSyncGists();
+    let g,absorbed=0;
+    if(found.length){
+      g=found[0];
+      // fold in every other sync gist, including whichever one this device was
+      // previously pointed at, so a mismatched device rejoins without data loss
+      const extras=found.slice(1);
+      const prev=localStorage.getItem(GK)||"";
+      if(prev&&prev!==g.id&&!extras.some(x=>x.id===prev))extras.push({id:prev});
+      if(extras.length)absorbed=await absorbDuplicateGists(extras);
     }else{
-      g=await findSyncGist();
-      if(!g){
+      if(ss)ss.textContent="Creating your private sync gist…";
       g=await gh("/gists",{method:"POST",body:JSON.stringify({description:"NSGY triage sync (private)",public:false,files:{[SYNC_FILE]:{content:JSON.stringify(syncDoc())}}})});
-      }
-      localStorage.setItem(GK,g.id);
     }
+    // only commit the id once the round trip actually succeeded
+    localStorage.setItem(GK,g.id);
     hideSync();
     markSyncDirty();
     await doSync(true);
-  }catch(e){document.getElementById("syncstat").textContent="Could not connect — check the token has the gist scope. ("+e.message+")"}
+    if(absorbed)showToast("Merged "+absorbed+" duplicate sync gist"+(absorbed>1?"s":"")+" into this board");
+  }catch(e){
+    if(ss)ss.textContent=(e&&e.status===401)
+      ? "Token rejected — expired, revoked, or mistyped. Generate a new classic token with the gist scope."
+      : (e&&e.status===403)
+        ? "That token has no gist scope. Generate a new classic token and tick gist."
+        : "Could not connect — "+e.message;
+  }
 }
-if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    const poke=()=>{try{reg.update()}catch(e){}};
+    poke();
+    setInterval(poke,10*60000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)poke()});
+    reg.addEventListener("updatefound",()=>{
+      const sw=reg.installing;if(!sw)return;
+      sw.addEventListener("statechange",()=>{
+        // only prompt for a genuine replacement, not the very first install
+        if(sw.state==="installed"&&navigator.serviceWorker.controller)
+          showToast("New version available",()=>location.reload(),"Reload");
+      });
+    });
+  }).catch(()=>{});
+  let swReloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(swReloaded)return;swReloaded=true;
+  });
+}
 const PULL_MS=60000;
 setInterval(()=>{
   if(document.hidden||!navigator.onLine||syncBlocked)return;

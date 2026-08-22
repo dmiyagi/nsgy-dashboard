@@ -1,4 +1,4 @@
-const C = "nsgy-v39";
+const C = "nsgy-v41";
 const SHELL = ["./", "./index.html", "./watch.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -13,6 +13,15 @@ self.addEventListener("fetch", e => {
     e.respondWith(fetch(e.request).then(r => {
       const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); return r;
     }).catch(() => caches.match(url.pathname.endsWith("/watch.html") ? "./watch.html" : "./index.html")));
+    return;
+  }
+  // the app shell must never be served from cache first, or a stale index.html
+  // keeps winning long after a new build is deployed
+  const isShell = /\/(index|watch)\.html$|\/sw\.js$|\/manifest\.webmanifest$|\/$/.test(url.pathname);
+  if (isShell) {
+    e.respondWith(fetch(e.request).then(r => {
+      const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); return r;
+    }).catch(() => caches.match(e.request)));
     return;
   }
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(r => {
