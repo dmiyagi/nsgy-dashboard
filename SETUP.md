@@ -37,6 +37,7 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 - If the token expires or the gist is deleted, sync stops with a **⚠ sync** dot and an explanation in the sync panel rather than retrying silently. Your work keeps saving locally; reconnect and it pushes.
 - If two devices ever drift apart, open the sync panel on the odd one out and tap **Re-scan & repair** — it rejoins the shared Gist and carries its own entries over.
 - Not seeing a change you expect? Tap the small version line under the title to clear the cache and reload.
+- GitHub allows 5000 API calls per hour per account. Idle devices now poll with a conditional request, which GitHub does not charge, so sitting open costs nothing. If the limit is ever hit, the dot turns **◷** and syncing pauses until the hour resets, then resumes on its own — nothing is lost.
 - Offline (hospital dead zones): keep working — it syncs when you're back on network.
 - The token lives only in each device's browser storage. **Disconnect** (in the sync panel) removes it.
 - Keep entries de-identified: bed + initials, never names or MRNs.

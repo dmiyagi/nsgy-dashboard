@@ -508,7 +508,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.39 · 2026-08-21</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.40 · 2026-08-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2292,7 +2292,17 @@ function migrate(d){
 }
 function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
 let lastSaved="";
-function save(){const j=JSON.stringify(S);if(j!==lastSaved){lastSaved=j;localStorage.setItem(LS,j);markSyncDirty();schedulePush()}}
+let syncApplying=false;
+function save(){
+  const j=JSON.stringify(S);
+  if(j===lastSaved)return;
+  lastSaved=j;localStorage.setItem(LS,j);
+  // housekeeping done while applying a sync result (day rollover, review
+  // clocks) is not a user edit — treating it as one re-armed the push and
+  // spun GitHub at thousands of requests an hour
+  if(syncApplying)return;
+  markSyncDirty();schedulePush();
+}
 // ---------- edit safety: nothing typed is ever lost ----------
 // Every free-text field autosaves ~400 ms after the last keystroke, so tapping
 // away, backgrounding the app, or losing the tab can never drop what was typed.
@@ -5533,12 +5543,16 @@ function renderCapture(){
 const SYNC_FILE="nsgy-triage-sync.json";
 const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at",SK_LAST="nsgy_sync_last_ok";
 let pushT=null,retryT=null,syncing=false,syncAgain=false,syncFail=0,syncBlocked="";
+const MIN_SYNC_GAP=4000;      // never hit the API faster than this
+let lastSyncAt=0,rateRemaining=null;
+function syncPausedUntil(){return parseInt(localStorage.getItem(SK_RETRY)||"0",10)}
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
 function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
 function markSyncDirty(){const cfg=syncCfg();if(cfg.token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
 function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
 function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
 function shouldPullSync(){
+  if(syncPausedUntil()>Date.now())return false;   // honour the backoff window
   if(hasSyncDirty()||localStorage.getItem(SK_RETRY))return true;
   const last=parseInt(localStorage.getItem(SK_LAST)||"0",10);
   return !last||Date.now()-last>30000;
@@ -5557,8 +5571,13 @@ function schedulePush(delay){
       if(overdue<d)d=Math.max(1200,overdue);
     }
   }
+  // never schedule inside the minimum gap, and never inside a paused window
+  const earliest=lastSyncAt+MIN_SYNC_GAP-Date.now();
+  if(d<earliest)d=earliest;
+  const paused=syncPausedUntil()-Date.now();
+  if(paused>d)d=paused;
   clearTimeout(pushT);
-  pushT=setTimeout(()=>doSync(true),d);
+  pushT=setTimeout(()=>doSync(true),Math.max(0,d));
 }
 function scheduleSyncRetry(delay){
   const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
@@ -5586,23 +5605,54 @@ async function gh(path,opts){
     // secondary rate limits ask for a wait rather than a retry storm
     const ra=r.headers.get("retry-after");
     if(ra)err.retryAfter=parseInt(ra,10)*1000;
-    else if(r.status===403&&r.headers.get("x-ratelimit-remaining")==="0"){
+    else if((r.status===403||r.status===429)&&r.headers.get("x-ratelimit-remaining")==="0"){
       const reset=parseInt(r.headers.get("x-ratelimit-reset")||"0",10);
-      if(reset)err.retryAfter=Math.max(0,reset*1000-Date.now());
+      err.retryAfter=reset?Math.max(60000,reset*1000-Date.now()):900000;
+      err.rateLimited=true;err.resetAt=reset?reset*1000:Date.now()+900000;
     }
+    else if(r.status===403&&/rate limit/i.test(msg)){
+      err.retryAfter=900000;err.rateLimited=true;err.resetAt=Date.now()+900000;
+    }
+    const rem2=r.headers.get("x-ratelimit-remaining");
+    if(rem2!==null)rateRemaining=parseInt(rem2,10);
     throw err;
   }
   return r.json();
 }
 // a bad token, a deleted gist or a revoked scope will never fix itself — stop
 // hammering and tell the user, instead of retrying every 15 s forever
-function isFatalSyncError(e){return e&&(e.status===401||e.status===404||(e.status===403&&!e.retryAfter))}
+function isFatalSyncError(e){return e&&!e.rateLimited&&(e.status===401||e.status===404||(e.status===403&&!e.retryAfter))}
 function fatalSyncHint(e){
   if(!e)return "";
   if(e.status===401)return "Token rejected — it has expired or been revoked. Open sync and paste a fresh token.";
   if(e.status===404)return "Gist not found — it was deleted, or this token belongs to a different account. Open sync and reconnect.";
   if(e.status===403)return "Token lacks the gist scope. Create a new classic token with gist checked, then reconnect.";
   return "";
+}
+let gistEtag="",gistCache=null;
+async function ghGistGet(id){
+  const cfg=syncCfg();
+  const headers={"Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json"};
+  if(gistEtag&&gistCache)headers["If-None-Match"]=gistEtag;
+  const r=await fetch("https://api.github.com/gists/"+id,{headers:headers,cache:"no-store"});
+  const rem=r.headers.get("x-ratelimit-remaining");
+  if(rem!==null)rateRemaining=parseInt(rem,10);
+  if(r.status===304)return {notModified:true};
+  if(!r.ok){
+    let msg="GitHub "+r.status;
+    try{const j=await r.json();if(j&&j.message)msg+=" — "+j.message}catch(e){}
+    const err=new Error(msg);err.status=r.status;
+    const ra=r.headers.get("retry-after");
+    if(ra)err.retryAfter=parseInt(ra,10)*1000;
+    else if((r.status===403||r.status===429)&&r.headers.get("x-ratelimit-remaining")==="0"){
+      const reset=parseInt(r.headers.get("x-ratelimit-reset")||"0",10);
+      err.retryAfter=reset?Math.max(60000,reset*1000-Date.now()):900000;
+      err.rateLimited=true;err.resetAt=reset?reset*1000:Date.now()+900000;
+    }
+    throw err;
+  }
+  gistEtag=r.headers.get("etag")||"";
+  return {gist:await r.json()};
 }
 async function fetchGistFile(f){
   if(!f)return "";
@@ -5668,18 +5718,29 @@ async function doSync(auto){
   if(!cfg.token||!cfg.gist){setDot("⭘ sync","var(--mut)");if(!auto)openSync();return}
   if(auto&&syncBlocked)return;
   if(!auto)syncBlocked="";
+  if(auto&&syncPausedUntil()>Date.now())return;
   if(auto&&!shouldPullSync())return;
   if(syncing){syncAgain=true;return}
+  // absolute floor on request rate, so no code path can ever run away
+  const gap=lastSyncAt+MIN_SYNC_GAP-Date.now();
+  if(gap>0){if(auto){schedulePush(gap);return}await new Promise(r=>setTimeout(r,gap))}
   syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
+  lastSyncAt=Date.now();
   const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
   let failed=false;
   try{
-    const g=await gh("/gists/"+cfg.gist);
+    const res=await ghGistGet(cfg.gist);
     let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
-    const f=g.files&&g.files[SYNC_FILE];
-    if(f){
-      let content=await fetchGistFile(f);
-      try{remote=JSON.parse(content)}catch(e){}
+    if(res.notModified&&gistCache){
+      remote=gistCache;                       // nothing changed upstream since last GET
+    }else{
+      const g=res.gist;
+      const f=g&&g.files&&g.files[SYNC_FILE];
+      if(f){
+        let content=await fetchGistFile(f);
+        try{remote=JSON.parse(content)}catch(e){}
+      }
+      gistCache=remote;
     }
     const merged=mergeState(S,remote);
     S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;
@@ -5689,13 +5750,18 @@ async function doSync(auto){
     const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day});
     if(remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
+      gistEtag="";                            // our own write invalidates the cached tag
+      gistCache=JSON.parse(mergedStr);
     }
-    lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
-    if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
     syncFail=0;syncBlocked="";
     localStorage.setItem(SK_LAST,String(Date.now()));
-    renderAllSafe();
+    // render first, then baseline — otherwise render-time housekeeping counts
+    // as a fresh edit and immediately re-arms another push
+    syncApplying=true;
+    try{renderAllSafe()}finally{syncApplying=false}
     startupCompactBoard=false;
+    lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
+    if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
     setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
     const ss=document.getElementById("syncstat");if(ss)ss.innerHTML="Last sync OK — gist <b>"+cfg.gist.slice(0,8)+"…</b> at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
   }catch(e){
@@ -5709,6 +5775,11 @@ async function doSync(auto){
       if(ss)ss.textContent=syncBlocked;
       if(!auto)alert(syncBlocked);
       else showToast("Sync stopped — "+syncBlocked.split(" — ")[0],()=>openSync(),"Fix");
+    }else if(e&&e.rateLimited){
+      const at=new Date(e.resetAt||Date.now()+900000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+      setDot("◷ sync","var(--e2)");
+      if(ss)ss.textContent="GitHub hourly API limit reached — syncing pauses until about "+at+", then resumes by itself. Everything you type is still saved on this device.";
+      scheduleSyncRetry(e.retryAfter);
     }else{
       setDot("! sync","var(--e3)");
       if(ss)ss.textContent="Sync failed — "+e.message+". Your work is saved on this device; will retry.";
@@ -5834,10 +5905,16 @@ if("serviceWorker" in navigator&&location.protocol==="https:"){
   });
 }
 const PULL_MS=60000;
+let pullTick=0;
 setInterval(()=>{
   if(document.hidden||!navigator.onLine||syncBlocked)return;
   if(activeEdit()||syncing)return;
+  if(syncPausedUntil()>Date.now())return;
   const cfg=syncCfg();if(!cfg.token||!cfg.gist)return;
+  pullTick++;
+  // budget guard: below 500 calls left this hour, poll every 5 min; below 100, every 20
+  const every=(rateRemaining!==null&&rateRemaining<100)?20:(rateRemaining!==null&&rateRemaining<500)?5:1;
+  if(pullTick%every)return;
   doSync(true);
 },PULL_MS);
 window.addEventListener("online",()=>{syncFail=0;schedulePush(500)});
