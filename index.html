@@ -339,6 +339,10 @@ button.rdone.finaldone{background:#123527}
 .nccutodoadd input:focus{outline:none;border-color:var(--teal)}
 .nccutodoadd button{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:7px;font-size:11.5px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font);white-space:nowrap}
 .nccuempty{font-size:12px;color:var(--mut);font-style:italic}
+.chartprog{font-size:10.5px;font-weight:800;color:var(--mut);align-self:center;margin-left:2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.chartprog.all{color:var(--ok)}
+#round24Btn.on{border-color:var(--teal);color:var(--teal)}
+.qbtns button.xbtn{border-color:var(--e3);color:var(--e3)}
 mark.chg{background:rgba(242,211,75,.20);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:700}
 .nccuplanrow mark.chg{background:rgba(242,211,75,.16)}
 .bg.chgbadge{background:#3a3312;color:var(--e1);border:1px solid var(--e1)}
@@ -621,6 +625,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
+    <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, AM chart, 1p chart, 4p chart, PM seen">◑ 24 hr</button>
     <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO/CC only</button>
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
@@ -3918,10 +3923,22 @@ function rStepsHtml(r){
     return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'<button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
+// day view keeps the original three; 24-hour view adds the AM chart check and
+// the evening walk-round, giving the five things owed across a day/night
+const ROUND_CHECKS_DAY=[["am","AM seen"],["pm1","1p chart"],["pm4","4p chart"]];
+const ROUND_CHECKS_24=[["am","AM seen"],["amchart","AM chart"],["pm1","1p chart"],["pm4","4p chart"],["pmseen","PM seen"]];
+function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
 function roundChartHtml(r){
-  const checks=[["am","AM seen"],["pm1","1p chart"],["pm4","4p chart"]];
   r.chartChecks=r.chartChecks||{};
-  return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+'</div>';
+  const checks=roundChecks();
+  const done=checks.filter(([k])=>r.chartChecks[k]).length;
+  return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+
+    (S.round24?'<span class="chartprog'+(done===checks.length?" all":"")+'">'+done+'/'+checks.length+'</span>':"")+'</div>';
+}
+function toggleRound24(){
+  S.round24=!S.round24;
+  renderRounds();flushAutosave();
+  showToast(S.round24?"24-hour view — AM seen · AM chart · 1p · 4p · PM seen":"Day view — AM seen · 1p · 4p");
 }
 function toggleRoundChart(id,k){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -3941,11 +3958,59 @@ function setRStepDL(id,i,min){
 }
 function roundExamHtml(r){
   const prev=roundPrevExamText(r);
+  // undefined means "never filled in" and gets seeded from the last exam;
+  // an empty string means the user cleared it on purpose, so leave it empty
+  const cur=(r.exam===undefined||r.exam===null)?prev:r.exam;
+  const nHist=(r.examHist||[]).length;
+  const hasAny=!!String(cur||"").trim()||nHist>0;
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
-    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(r.exam||prev)+'</textarea></div>'+
-    '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button></div>'+
+    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(cur)+'</textarea></div>'+
+    '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
+      (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
+      (hasAny?'<button type="button" class="xbtn" onclick="clearRoundExamAll(\''+r.id+'\')">✕ Clear all'+(nHist?" ("+(nHist+1)+")":"")+'</button>':"")+
+    '</div>'+
     roundExamHistoryHtml(r)+
     '</details>';
+}
+// clearing the box only; the saved trend is left alone
+function clearRoundExam(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const before=r.exam;
+  if(!String(before===undefined?roundPrevExamText(r):before||"").trim()){showToast("Current exam is already empty");return}
+  r.exam="";r.updatedAt=Date.now();renderRounds();flushAutosave();
+  showToast("Current exam cleared — "+r.label,()=>{
+    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    if(before===undefined)delete rr.exam;else rr.exam=before;
+    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+  },"Undo");
+}
+// wipes the box and the whole recorded trend for this patient
+function clearRoundExamAll(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const before={exam:r.exam,hist:(r.examHist||[]).slice(),prev:r.prevExam,had:"exam" in r};
+  if(!String(r.exam||"").trim()&&!before.hist.length&&!String(r.prevExam||"").trim()){showToast("No exams to clear");return}
+  r.exam="";r.examHist=[];r.prevExam="";
+  if(editingExamHist&&editingExamHist.indexOf(id+":")===0)editingExamHist="";
+  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  showToast("Cleared all exams — "+r.label,()=>{
+    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    if(before.had)rr.exam=before.exam;else delete rr.exam;
+    rr.examHist=before.hist;rr.prevExam=before.prev;
+    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+  },"Undo");
+}
+function delRoundExamHist(id,i){
+  const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
+  const removed=r.examHist[i];
+  r.examHist.splice(i,1);
+  r.prevExam=roundPrevExamText(r);
+  if(editingExamHist===id+":"+i)editingExamHist="";
+  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  showToast("Exam deleted — "+String(removed.text||"").slice(0,34),()=>{
+    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    rr.examHist=rr.examHist||[];rr.examHist.splice(i,0,removed);
+    rr.prevExam=roundPrevExamText(rr);rr.updatedAt=Date.now();renderRounds();flushAutosave();
+  },"Undo");
 }
 function roundExamToggle(id,on){const r=S.rounds.find(x=>x.id===id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
 function roundPrevExamText(r){
@@ -3968,9 +4033,9 @@ function roundExamHistoryHtml(r){
     const idx=(r.examHist||[]).length-1-i;
     const dt=h.ts?toLocalInput(new Date(h.ts).toISOString()):"";
     if(editingExamHist===r.id+":"+idx){
-      return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'" onblur="roundExamHistSave(\''+r.id+'\','+idx+')"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" oninput="roundExamHistInput(\''+r.id+'\','+idx+')" onblur="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button></div></div>';
+      return '<div class="fld"><label>Exam '+(i+1)+'</label><input type="datetime-local" id="rexht_'+r.id+'_'+idx+'" value="'+esc(dt)+'" onblur="roundExamHistSave(\''+r.id+'\','+idx+')"><textarea class="evta" id="rexh_'+r.id+'_'+idx+'" style="min-height:54px" oninput="roundExamHistInput(\''+r.id+'\','+idx+')" onblur="roundExamHistSave(\''+r.id+'\','+idx+')">'+esc(h.text||"")+'</textarea><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" class="xbtn" onclick="delRoundExamHist(\''+r.id+'\','+idx+')">✕ Delete</button></div></div>';
     }
-    return '<div class="fld"><label>Exam '+(i+1)+' · '+esc(dt?new Date(h.ts).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"")+'</label><div class="pre">'+esc(h.text||"")+'</div><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" onclick="editRoundExamHist(\''+r.id+'\','+idx+')">Edit</button></div></div>';
+    return '<div class="fld"><label>Exam '+(i+1)+' · '+esc(dt?new Date(h.ts).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"")+'</label><div class="pre">'+esc(h.text||"")+'</div><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" onclick="editRoundExamHist(\''+r.id+'\','+idx+')">Edit</button><button type="button" class="xbtn" onclick="delRoundExamHist(\''+r.id+'\','+idx+')">✕ Delete</button></div></div>';
   }).join("")+'</div></details>';
 }
 function editRoundExamHist(id,i){editingExamHist=id+":"+i;renderRounds()}
@@ -4051,7 +4116,8 @@ function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
-  return '<span class="chartdots" title="AM seen / 1p / 4p chart">'+["am","pm1","pm4"].map(k=>'<span class="chartdot '+(k==="am"?"amseen ":"")+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
+  const checks=roundChecks();
+  return '<span class="chartdots" title="'+checks.map(c=>c[1]).join(" / ")+'">'+checks.map(([k])=>'<span class="chartdot '+(k==="am"||k==="pmseen"?"amseen ":"")+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
@@ -4135,6 +4201,7 @@ function renderRounds(){
   const sb=document.getElementById("rsort");
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
+  const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
   const key=r=>r.seen?2:(r.worry?0:1);
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
@@ -4353,7 +4420,20 @@ function purgeRounds(){
 }
 function togSeen(id){const r=S.rounds.find(x=>x.id===id);if(r){r.seen=!r.seen;r.updatedAt=Date.now();renderRounds();save()}}
 function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){r.soCcResp=!r.soCcResp;r.updatedAt=Date.now();renderRounds();save()}}
-function clearSeen(){S.rounds.forEach(r=>{if(r.seen){r.seen=false;r.updatedAt=Date.now()}});renderRounds();save()}
+function clearSeen(){
+  const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{})}));
+  let n=0;
+  S.rounds.forEach(r=>{
+    const hadChecks=Object.keys(r.chartChecks||{}).some(k=>r.chartChecks[k]);
+    if(r.seen||hadChecks){r.seen=false;r.chartChecks={};r.updatedAt=Date.now();n++}
+  });
+  renderRounds();flushAutosave();
+  if(!n){showToast("Nothing to reset");return}
+  showToast("Reset seen + checks on "+n+" patient"+(n>1?"s":""),()=>{
+    before.forEach(b=>{const r=S.rounds.find(x=>x.id===b.id);if(r){r.seen=b.seen;r.chartChecks=b.checks;r.updatedAt=Date.now()}});
+    renderRounds();flushAutosave();
+  },"Undo");
+}
 function delRound(id){
   const r=S.rounds.find(x=>x.id===id);
   const ts=Date.now();
