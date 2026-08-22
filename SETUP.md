@@ -31,6 +31,9 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Rounds — exams:** each recorded exam has **✕ Delete**; the current exam box has **✕ Clear**, and **✕ Clear all** wipes the box plus the whole trend. All three are undoable.
+- **Rounds — 24 hr view:** the **◑ 24 hr** toggle switches from the 3 day checks (AM seen · 1p · 4p) to the full 5 across a day/night — **AM seen · AM chart · 1p chart · 4p chart · PM seen** — with an n/5 counter per patient. **Reset seen ✓** clears seen and all checks together (undoable).
+
 - **NCCU view:** send a patient here from the **Send** bar on their Rounds card (pick *● NCCU sign-out view*). **Δ Changes** highlights what moved in each field since the start of the day; tap a card's **Δn ✕** badge to restart that card's tracking from a clean slate, or **Δ Reset all** for the whole list (both undoable). To-dos sit above notes and carry board-style timers; **Compact** shows the next to-do with its countdown, and each card can be flipped Full/Compact on its own. Remove a card with the **✕** (desktop) or by swiping it left (phone) — both undoable.
 - Everything you type is written to the device within half a second — no need to tap away first. Nothing is lost if the app is backgrounded or killed mid-entry.
 - Merge is per-item by last edit, so phone and computer edits don't overwrite each other; deletions propagate.
