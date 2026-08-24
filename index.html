@@ -6229,7 +6229,7 @@ async function findAllSyncGists(){
 }
 function absorbRemote(remote){
   const m=mergeState(S,remote);
-  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;
+  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;
 }
 // if an earlier build ever made a second sync gist, pull its contents in rather
 // than stranding whatever was written there
