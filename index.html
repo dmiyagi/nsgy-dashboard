@@ -1195,6 +1195,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
     </div>
+    <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
+      <div class="flags" id="flags"></div>
+    </div>
     <details class="moredet"><summary>▾ More details</summary>
     <div class="axisref" id="axisDetailsRef"></div>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
@@ -1209,9 +1212,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_steps" style="display:none"><label>To-do chain (one per line, in order)</label><textarea id="f_steps" placeholder="Type anything…"></textarea></div>
     <div class="fld" id="fld_trig" style="display:none"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
     <div class="fld" id="fld_qs" style="display:none"><label>Evidence questions (one per line — ⌕ on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
-    <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
-      <div class="flags" id="flags"></div>
-    </div>
     <details class="axisinfo"><summary>ℹ︎ E/O/W/C scoring reference</summary><div class="ai">
       <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat; interrupt and escalate now / 10-minute timer. <b>E2</b> assess within 1 h. <b>E1</b> assess within 2 h; can group with another ED trip. <b>E0</b> group with the next trip / within 4 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
       <span class="grp">O operative trajectory:</span> <b>O3</b> emergency procedure underway/effectively decided. <b>O2</b> high probability this shift/day. <b>O1</b> intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. <b>O0</b> observation/medical/outpatient/other service presently favored. Re-score with imaging/exam changes, senior review, procedures, contraindication changes, or goals-of-care changes.<br>
