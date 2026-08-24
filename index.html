@@ -339,6 +339,16 @@ button.rdone.finaldone{background:#123527}
 .nccutodoadd input:focus{outline:none;border-color:var(--teal)}
 .nccutodoadd button{border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:7px;font-size:11.5px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font);white-space:nowrap}
 .nccuempty{font-size:12px;color:var(--mut);font-style:italic}
+.nccufield.xbox{grid-column:1/-1;cursor:default;border-left:2px solid var(--purp)}
+.nccuexcur{white-space:pre-wrap;color:#d9e2ef;font-size:13px;cursor:pointer;border-radius:6px}
+.nccuexcur:hover{background:rgba(90,162,255,.08)}
+.nccuexprev{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:5px;margin-top:5px;font-size:12px}
+.nccuexprev em{font-style:normal;color:var(--mut);font-weight:800;font-size:10.5px;letter-spacing:.3px}
+.nccuexprev span{color:var(--mut);white-space:pre-wrap}
+.nccuexprev.none{display:block;color:var(--mut);font-style:italic;font-size:11.5px}
+.nccunote-c{display:flex;gap:8px;align-items:flex-start;margin-top:6px;padding:6px 9px;background:var(--card2);border:1px solid var(--line);border-left:2px solid var(--acc);border-radius:8px;cursor:pointer}
+.nccunote-c b{font-size:10.5px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);flex:0 0 auto;margin-top:1px}
+.nccunote-c span{flex:1;min-width:0;font-size:12.5px;color:#d9e2ef;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .chartprog{font-size:10.5px;font-weight:800;color:var(--mut);align-self:center;margin-left:2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .chartprog.all{color:var(--ok)}
 #round24Btn.on{border-color:var(--teal);color:var(--teal)}
@@ -349,6 +359,9 @@ button.rdone.rdemote{border-color:var(--e0);color:var(--mut)}
 .wf button.rdone.rdemote{margin-left:4px;align-self:center}
 .qbtns button.xbtn{border-color:var(--e3);color:var(--e3)}
 mark.chg{background:rgba(242,211,75,.20);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:700}
+del.chgdel{background:rgba(255,77,94,.13);color:#ff9aa6;text-decoration:line-through;border-radius:3px;padding:0 2px;opacity:.85}
+.neg{color:var(--ok);font-weight:700}
+mark.chg .neg{color:#7ef0b6}
 .nccuplanrow mark.chg{background:rgba(242,211,75,.16)}
 .bg.chgbadge{background:#3a3312;color:var(--e1);border:1px solid var(--e1)}
 button.bg.chgreset{font-family:var(--font);cursor:pointer;line-height:1.45}
@@ -517,7 +530,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.43 · 2026-08-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.45 · 2026-08-23</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1123,21 +1136,26 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       </div>
       <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
     </div>
-    <details class="moredet" id="fld_tc" ontoggle="ftcAutoHpi()"><summary>Text consult — build the send-ready version</summary>
-      <p style="font-size:11.5px;color:var(--mut);margin-bottom:8px">Pulls from Problem / Current state / Notes above. Edit anything, then Build → Copy.</p>
-      <div class="fld"><label>Title</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
-      <div class="fld"><label>HPI line</label><textarea id="ftc_hpi" style="min-height:44px" placeholder="Type anything here…"></textarea></div>
-      <div id="ftc_flags"></div>
-      <div id="ftc_gcs"></div>
-      <div id="ftc_hh"></div>
-      <div id="ftc_ich"></div>
-      <div id="ftc_ao"></div>
-      <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
-      <div class="fld"><label>Imaging</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
-      <div class="fld"><label>Labs / vitals</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
-      <div class="fld"><label>Plan (one per line)</label><textarea id="ftc_plan" style="min-height:64px" placeholder="Type anything here…"></textarea></div>
-      <div class="rowflex"><button type="button" class="btn sec sm" onclick="ftcParse()">⇣ Parse from form</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Build</button><button type="button" class="btn sec sm" onclick="ftcCopy()">⧉ Copy</button></div>
-      <div class="fld"><label>Ready to send</label><textarea id="ftc_out" style="min-height:120px;font-size:13px" placeholder="Hit Parse, then Build."></textarea></div>
+    <details class="moredet" id="fld_tc"><summary>Text consult — build the send-ready version</summary>
+      <p style="font-size:12px;color:var(--mut);margin-bottom:8px"><b>1</b> Dump free text → <b>2</b> Parse into pieces → <b>3</b> Build the clean, ready-to-send version. Facts only — blanks stay as [brackets]. No names/MRNs.</p>
+      <div class="fld"><label>1 · Free text in</label><textarea id="ftc_src" style="min-height:90px" placeholder="Type anything here…"></textarea>
+        <div class="qbtns"><button type="button" onclick="ftcPullFromCard()">⇣ Pull from this card</button></div></div>
+      <div class="rowflex"><button type="button" class="btn" onclick="ftcParse()">⇣ Parse</button><button type="button" class="btn sec sm" onclick="ftcBuild()">⇡ Rebuild clean version</button></div>
+      <details class="moredet" id="ftcdet" open><summary>▾ 2 · Parsed pieces — fix anything wrong</summary>
+        <div class="fld"><label>Title (one-line problem)</label><input type="text" id="ftc_title" placeholder="Type anything here…"></div>
+        <div class="fld"><label>HPI line (Age/Sex w/ PMH p/w problem + timeline)</label><textarea id="ftc_hpi" style="min-height:48px" placeholder="Type anything here…"></textarea></div>
+        <div id="ftc_flags"></div>
+        <div id="ftc_gcs"></div>
+        <div id="ftc_hh"></div>
+        <div id="ftc_ich"></div>
+        <div id="ftc_ao"></div>
+        <div class="fld"><label>Exam</label><textarea id="ftc_exam" style="min-height:96px" placeholder="Type anything here…"></textarea><div class="qbtns"><button type="button" onclick="ftcUseExam()">Use suggested exam</button></div></div>
+        <div class="fld"><label>Imaging (what · where · how bad · vs what)</label><input type="text" id="ftc_img" placeholder="Type anything here…"></div>
+        <div class="fld"><label>Labs/Vitals (only if relevant)</label><input type="text" id="ftc_labs" placeholder="Type anything here…"><div class="qbtns"><button type="button" onclick="ftcUseLabs()">Add relevant labs</button></div></div>
+        <div class="fld"><label>Plan (one action per line — "-" added automatically)</label><textarea id="ftc_plan" style="min-height:80px" placeholder="Type anything here…"></textarea></div>
+      </details>
+      <div class="fld"><label>3 · Ready to send</label><textarea id="ftc_out" style="min-height:150px;font-size:13.5px" placeholder="Stays empty until you ask for it — tap Suggest from card."></textarea>
+        <div class="qbtns"><button type="button" onclick="ftcSuggest()">✦ Suggest from card</button><button type="button" onclick="ftcCopy()">⧉ Copy ready-to-send text</button><button type="button" class="xbtn" onclick="ftcClear()">✕ Clear</button></div></div>
     </details>
     <div class="fld" id="fld_E"><div class="axhead"><label>Urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
@@ -1770,7 +1788,13 @@ function completedAoLine(ns){
   return /^AO Spine /.test(line)?line:"";
 }
 function mergeScoreLines(text,lines){
-  let out=String(text||"").split("\n").filter(l=>!/^\s*GCS\b/i.test(l)&&!/^\s*ICH Score\b/i.test(l)&&!/^\s*Hunt-Hess\b/i.test(l)&&!/^\s*AO Spine\b/i.test(l));
+  // strip only the lines this app generates — "GCS 14, 9mm L SDH, MLS 4mm" is
+  // something the user typed and must survive
+  const isGenerated=l=>/^\s*GCS\s+E\S+\s+V\S+\s+M\S+/i.test(l)
+    ||/^\s*ICH Score\s+\d/i.test(l)
+    ||/^\s*Hunt-Hess\s+\d/i.test(l)
+    ||/^\s*AO Spine\s+\S/i.test(l);
+  let out=String(text||"").split("\n").filter(l=>!isGenerated(l));
   lines.filter(Boolean).forEach(l=>{if(!out.some(x=>x.trim().toLowerCase()===l.toLowerCase()))out.unshift(l)});
   return out.filter(Boolean).join("\n");
 }
@@ -1796,7 +1820,7 @@ function renderGcsAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
     '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div></details>';
 }
-function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;syncGcsToIch(ns);if(ns==="form")syncFormScoreFields();renderGcsContext(ns);renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;syncGcsToIch(ns);if(ns==="form")syncFormScoreFields();renderGcsContext(ns);renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderGcsContext(ns){
   if(ns==="form")renderGcsAid("form","f_gcs",false);
   else if(ns==="tc")renderGcsAid("tc","tc_gcs",false);
@@ -1827,7 +1851,7 @@ function renderHhAid(ns,targetId,force){
     '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]).join("\n")+'</div>'+
     '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
-function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderHhContext(ns){
   if(ns==="form")renderHhAid("form","f_hh",false);
   else if(ns==="tc")renderHhAid("tc","tc_hh",false);
@@ -1883,8 +1907,8 @@ function renderAoAid(ns,targetId,force){
     '<div class="gcsout"><b>'+aoSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertAoScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div>'+
     '<div class="aohint"><b>Type A:</b> compression A0-A4. <b>Type B:</b> tension band B1-B3. <b>Type C:</b> translation/displacement. <b>Type F:</b> facet F1-F4. <b>BL:</b> bilateral injury.</div></div></details>';
 }
-function setAoPart(ns,key,v){AO_STATE[ns][key]=(AO_STATE[ns][key]===v?null:v);if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
-function toggleAoBL(ns){AO_STATE[ns].bl=!AO_STATE[ns].bl;if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function setAoPart(ns,key,v){AO_STATE[ns][key]=(AO_STATE[ns][key]===v?null:v);if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")renderFTCFlags()}
+function toggleAoBL(ns){AO_STATE[ns].bl=!AO_STATE[ns].bl;if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderAoContext(ns){
   if(ns==="form")renderAoAid("form","f_ao",false);
   else if(ns==="tc")renderAoAid("tc","tc_ao",false);
@@ -1936,7 +1960,7 @@ function renderIchAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
     '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
-function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")ftcAutoBuild()}
+function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderIchContext(ns){
   if(ns==="form")renderIchAid("form","f_ich",false);
   else if(ns==="tc")renderIchAid("tc","tc_ich",false);
@@ -1961,7 +1985,6 @@ function syncFormScoreFields(){
   AO_STATE.ftc=Object.assign({},AO_STATE.ftc||{},AO_STATE.form||{});
   renderFlags();
   renderFTCFlags();
-  ftcAutoBuild();
 }
 function flagApplied(f){
   if(f.apply.E!==undefined&&F.E<f.apply.E)return false;
@@ -2012,6 +2035,7 @@ function renderFlags(){
   renderProcKit();
   renderSmartHints();
   const el=document.getElementById("flags");
+  if(!F){if(el)el.innerHTML="";curFlags=[];return}
   if(F&&!["CONSULT","POC","PROC"].includes(F.type)){el.innerHTML="";curFlags=[];return}
   const txt=formClinicalText();
   if(txt.trim().length<3){el.innerHTML="";curFlags=[];return}
@@ -2239,6 +2263,7 @@ function applyAlert(i){const a=curAlerts[i];if(!a)return;F._manual=true;
 }
 function renderSugg(){
   const el=document.getElementById("sugg");
+  if(!F){if(el)el.innerHTML="";curSugg=[];curAlerts=[];return}
   if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich","f_ao"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
   renderGcsAid("form","f_gcs",false);
   renderHhAid("form","f_hh",false);
@@ -2319,10 +2344,21 @@ function save(){
 function isEditableEl(el){
   if(!el||el.nodeType!==1)return false;
   if(el.tagName==="TEXTAREA")return true;
+  // an open <select> is destroyed by a re-render mid-choice, so it counts too
+  if(el.tagName==="SELECT")return true;
   if(el.tagName==="INPUT")return !/^(checkbox|radio|button|submit|reset|file|range|color)$/i.test(el.type||"text");
   return !!el.isContentEditable;
 }
 function activeEdit(){const ae=document.activeElement;return isEditableEl(ae)?ae:null}
+// a tap is a two-part gesture; a background render landing between pointerdown
+// and click eats the tap, so hold background work off for a moment either way
+let uiLockUntil=0;
+function lockUI(ms){uiLockUntil=Math.max(uiLockUntil,Date.now()+(ms||1500))}
+function uiBusy(){return !!activeEdit()||Date.now()<uiLockUntil}
+document.addEventListener("pointerdown",e=>{
+  const t=e.target;
+  if(t&&t.closest&&t.closest("select,option,button,input,textarea,label,summary,a"))lockUI();
+},true);
 let autosaveT=null;
 function autosave(){clearTimeout(autosaveT);autosaveT=setTimeout(()=>{autosaveT=null;save()},400)}
 function flushAutosave(){if(autosaveT){clearTimeout(autosaveT);autosaveT=null}save()}
@@ -2351,12 +2387,12 @@ function keepFocus(fn){return function(){snapFocus();try{return fn.apply(this,ar
 // background work (sync pulls, clock ticks) waits until the keyboard is down
 let _pendingRender=false;
 function renderAllSafe(){
-  if(activeEdit()){_pendingRender=true;return}
+  if(uiBusy()){_pendingRender=true;return}
   _pendingRender=false;renderAll();renderBlocks();
 }
 document.addEventListener("focusout",()=>{
   flushAutosave();
-  setTimeout(()=>{if(_pendingRender&&!activeEdit())renderAllSafe()},60);
+  setTimeout(()=>{if(_pendingRender&&!uiBusy())renderAllSafe()},60);
 });
 window.addEventListener("beforeunload",()=>{flushAutosave()});
 function touch(c){if(c)c.updatedAt=Date.now()}
@@ -2793,6 +2829,9 @@ function allCardWorkDone(c){
   if((c.tasks||[]).some(t=>!t.done))return false;
   const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
   if(set.length&&!set.every(([k])=>c.wf&&c.wf[k]))return false;
+  // a plain task card with no checklist of its own is still finishable — a
+  // consent with nothing but a name on it had no way to be marked done
+  if(c.type&&c.type!=="CONSULT")return true;
   return !!(set.length||(c.steps||[]).length||(c.tasks||[]).length||c.lastDone);
 }
 function chartNextDueMin(c){
@@ -3478,18 +3517,14 @@ function setTypeUI(){
 let suggT=null;
 ["f_prob","f_state","f_action","f_note"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)}));
 ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener("input",renderTCFlags)});
-["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].forEach(id=>{
+["ftc_src","ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].forEach(id=>{
   const el=document.getElementById(id);if(!el)return;
-  el.addEventListener("input",()=>{renderFTCFlags();clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)});
-  el.addEventListener("change",ftcAutoBuild);
-  el.addEventListener("blur",ftcAutoBuild);
+  el.addEventListener("input",()=>{renderFTCFlags();ftcTouch();clearTimeout(suggT);suggT=setTimeout(()=>{renderSugg();renderFlags()},250)});
 });
 {
   const el=document.getElementById("ftc_out");
   if(el){
-    el.addEventListener("input",()=>{ftcOutDirty=true});
-    el.addEventListener("change",ftcApplyReadyToFields);
-    el.addEventListener("blur",ftcApplyReadyToFields);
+    el.addEventListener("input",()=>{ftcOutDirty=true;ftcTouch()});
   }
 }
 const FDK="nsgy_form_draft";
@@ -4180,8 +4215,6 @@ function roundExamPreset(id,kind){
   roundExamSave(id,el);
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
-// rounds can also send a patient to the NCCU view; it is a destination, not a card type
-const ROUND_SEND_OPTS='<option value="NCCU">● NCCU sign-out view</option>'+TYPE_SELECT_OPTS;
 const REDIT=new Set();
 let soCcOnly=false;
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
@@ -4313,12 +4346,12 @@ function renderRounds(){
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="togSoCcResp(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO/CC</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
-      '<button onclick="addRoundWoundList(\''+r.id+'\')">'+(r.woundListed?'✓ Wound list':'＋ Wound list')+'</button>'+
+      '<button onclick="'+(r.woundListed?'removeWoundCheck':'addRoundWoundList')+'(\''+r.id+'\')">'+(r.woundListed?'✓ Wound list':'＋ Wound list')+'</button>'+
       '<button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div>'+
-     '<div class="sendto"><select id="st_'+r.id+'">'+roundSendOpts(r)+'</select>'+
-       '<input type="date" id="sd_'+r.id+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">'+
+     '<div class="sendto"><select id="st_'+r.id+'" onchange="roundSendPick(\''+r.id+'\',this.value)">'+roundSendOpts(r)+'</select>'+
+       '<input type="date" id="sd_'+r.id+'" value="'+esc((roundSendSel[r.id]||{}).date||"")+'" onchange="roundSendDate(\''+r.id+'\',this.value)" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">'+
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
@@ -4361,7 +4394,9 @@ function woundRow(r,former){
     (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
     (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former)+(former?'<button class="rdone" onclick="removeFormerWound(\''+r.id+'\')">Remove</button>':"")+woundLogHtml(r,former)+'</div>':"");
+    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former)+(former
+        ?'<button class="rdone wrm" onclick="event.stopPropagation();removeFormerWound(\''+r.id+'\')">✕ Remove</button>'
+        :'<button class="rdone wrm" onclick="event.stopPropagation();removeWoundCheck(\''+r.id+'\')">✕ Remove from wound list</button>')+woundLogHtml(r,former)+'</div>':"");
 }
 function toggleWoundOpen(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -4448,7 +4483,29 @@ function removeWoundLog(id,date,former){
   if(!(r.woundLog||[]).length&&r.woundChecks)r.woundChecks.seen=false;
   r.updatedAt=Date.now();renderRounds();save();showToast("Removed logged check "+date);
 }
-function removeFormerWound(id){S.tomb=S.tomb||{};S.tomb[id]=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);renderRounds();save()}
+function removeFormerWound(id){
+  const r=(S.formerWounds||[]).find(x=>x.id===id);
+  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);
+  renderRounds();flushAutosave();
+  showToast("Removed from former wound checks"+(r?" — "+(r.label||""):""),()=>{
+    if(S.tomb)delete S.tomb[id];
+    if(r){r.updatedAt=Date.now();S.formerWounds=(S.formerWounds||[]).concat([r])}
+    renderRounds();flushAutosave();
+  },"Undo");
+}
+// takes the patient off the active wound list without touching the rounding card
+function removeWoundCheck(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const before={listed:r.woundListed,open:r.woundOpen,next:r.woundNextDate};
+  r.woundListed=false;r.woundOpen=false;
+  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  showToast("Removed from wound checks — "+(r.label||""),()=>{
+    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    rr.woundListed=before.listed;rr.woundOpen=before.open;rr.woundNextDate=before.next;
+    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+  },"Undo");
+}
 function roundEdit(id){REDIT.add(id);renderRounds()}
 function roundEditCancel(id){REDIT.delete(id);const r=S.rounds.find(x=>x.id===id);if(r&&r._edit){delete r._edit;autosave()}renderRounds()}
 function roundEditSave(id){
@@ -4761,6 +4818,7 @@ function renderSOHints(){
 }
 function soHighlight(s){
   let x=esc(s||"");
+  x=x.replace(NEG_RE,m=>'<span class="neg">'+m+'</span>');
   x=x.replace(/\b(EVD|JP|blake|hemovac|drain(?:s)?|LD|lumbar drain|SEPS|bolt)\b/gi,'<span class="drain">$1</span>');
   x=x.replace(/\b(Na|WBC|Hgb|Hct|Plt|INR|PTT|PT|ESR|CRP|Cr|K|Mg|CSF|culture(?:s)?)\b(?:\s*[=:]?\s*[\w./+-]+)?/gi,'<span class="lab">$&</span>');
   x=x.replace(/\b(SBP|BP|MAP|ICP)\b(?:\s*[<>=-]?\s*\d{1,3}(?:-\d{1,3})?)?/gi,'<span class="bp">$&</span>');
@@ -4807,28 +4865,36 @@ let openNccuTodoTimer=null; // "<id>:<i>"
 function nccuTokens(s){return String(s||"").split(/(\s+)/).filter(t=>t!=="")}
 // compare on a normalised key so trailing commas and casing are not "changes"
 function nccuKey(t){return String(t||"").toLowerCase().replace(/^[^\w%<>+-]+|[^\w%<>+-]+$/g,"")||String(t||"")}
-function nccuChangedTokens(base,cur){
-  const A=nccuTokens(base).map(nccuKey),B0=nccuTokens(cur),B=B0.map(nccuKey);
-  const chg=new Array(B.length).fill(true);
-  if(!A.length)return chg;
+// A word that disappears matters as much as one that appears — losing the "no"
+// from "no seizures" used to render as no change at all.
+function nccuDiffParts(base,cur){
+  const A=nccuTokens(base),B=nccuTokens(cur);
+  const KA=A.map(nccuKey),KB=B.map(nccuKey);
+  const n=KA.length,m=KB.length,out=[];
+  if(!n)return B.map(t=>({t:t,s:"add"}));
+  if(!m)return A.map(t=>({t:t,s:"del"}));
   // long free-text blocks fall back to a multiset check to stay responsive
-  if(A.length>300||B.length>300){
-    const bag={};A.forEach(t=>{bag[t]=(bag[t]||0)+1});
-    B.forEach((t,i)=>{if(bag[t]){bag[t]--;chg[i]=false}});
-    return chg;
+  if(n>300||m>300){
+    const bag={};KA.forEach(k=>{bag[k]=(bag[k]||0)+1});
+    return B.map((t,i)=>{if(bag[KB[i]]){bag[KB[i]]--;return {t:t,s:"same"}}return {t:t,s:"add"}});
   }
-  const n=A.length,m=B.length,dp=[];
+  const dp=[];
   for(let i=0;i<=n;i++)dp.push(new Uint16Array(m+1));
   for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)
-    dp[i][j]=(A[i]===B[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+    dp[i][j]=(KA[i]===KB[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
   let i=0,j=0;
   while(i<n&&j<m){
-    if(A[i]===B[j]){chg[j]=false;i++;j++}
-    else if(dp[i+1][j]>=dp[i][j+1])i++;
-    else j++;
+    if(KA[i]===KB[j]){out.push({t:B[j],s:"same"});i++;j++}
+    else if(dp[i+1][j]>=dp[i][j+1]){out.push({t:A[i],s:"del"});i++}
+    else{out.push({t:B[j],s:"add"});j++}
   }
-  return chg;
+  while(i<n){out.push({t:A[i],s:"del"});i++}
+  while(j<m){out.push({t:B[j],s:"add"});j++}
+  return out;
 }
+// absence/negation reads differently from presence, in or out of diff mode
+const NEG_RE=/\b(?:no|not|non|none|neg|negative|denies|denied|without|w\/o|absent|afebrile|asymptomatic|nil|nkda|unremarkable|wnl|intact|nad|resolved)\b/gi;
+function negHtml(t){return esc(t).replace(NEG_RE,m=>'<span class="neg">'+m+'</span>')}
 // the baseline resets itself each day, so "Δ Changes" reads as
 // "what moved since this shift started"
 function nccuBaseline(r){
@@ -4837,11 +4903,15 @@ function nccuBaseline(r){
 }
 function nccuFieldHtml(r,key,val){
   const cur=String(val||"");
-  if(!nccuDiff)return esc(cur);
+  if(!nccuDiff)return negHtml(cur);
   const base=nccuBaseline(r)[key];
-  if(base===undefined||String(base)===cur)return esc(cur);
-  const B=nccuTokens(cur),chg=nccuChangedTokens(base,cur);
-  return B.map((t,i)=>chg[i]&&t.trim()?'<mark class="chg">'+esc(t)+'</mark>':esc(t)).join("");
+  if(base===undefined||String(base)===cur)return negHtml(cur);
+  return nccuDiffParts(base,cur).map(p=>{
+    if(!p.t.trim())return esc(p.t);
+    if(p.s==="same")return negHtml(p.t);
+    if(p.s==="add")return '<mark class="chg">'+negHtml(p.t)+'</mark>';
+    return '<del class="chgdel" title="removed since the baseline">'+esc(p.t)+'</del>';
+  }).join("");
 }
 function nccuChangeCount(r){
   const base=nccuBaseline(r);
@@ -4889,7 +4959,8 @@ function nccuPlanFields(){
 }
 function nccuDetailFields(){
   const start=NCCU_FIELDS.findIndex(([l])=>l==="A/P Neuro");
-  return start>=0?NCCU_FIELDS.slice(0,start):NCCU_FIELDS;
+  const base=start>=0?NCCU_FIELDS.slice(0,start):NCCU_FIELDS;
+  return base.filter(([l])=>l!=="Exam");
 }
 function nccuPlanHtml(r){
   const rows=nccuPlanFields().map(([label,pats])=>{
@@ -4931,6 +5002,26 @@ function nccuNextTodo(r){
   const list=nccuTodoArr(r);
   const i=list.findIndex(t=>!t.done);
   return i>=0?{i:i,t:list[i]}:null;
+}
+// prior exams come from the rounding record when there is one, otherwise from
+// the sign-out field's own previous value
+function nccuExamTrail(r){
+  const out=[];
+  (r&&r.examHist||[]).slice(0,-1).slice(-2).reverse().forEach(h=>{if(h&&String(h.text||"").trim())out.push({ts:h.ts,text:h.text})});
+  if(!out.length){
+    const p=(r&&r.soPrev)?r.soPrev["Exam"]:"";
+    if(p&&String(p).trim())out.push({ts:0,text:p});
+  }
+  return out;
+}
+function nccuExamHtml(r){
+  const cur=soPick(r,"Exam")||"";
+  const prior=nccuExamTrail(r);
+  const when=ts=>ts?new Date(ts).toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"previous";
+  return '<div class="nccufield xbox"><b>Exam</b>'+
+    '<div class="nccuexcur" onclick="openSO(\''+r.id+'\',\'Exam\')">'+nccuFieldHtml(r,"Exam",cur||"___")+'</div>'+
+    (prior.length?prior.map(h=>'<div class="nccuexprev"><em>'+esc(when(h.ts))+'</em><span>'+esc(h.text)+'</span></div>').join(""):'<div class="nccuexprev none">No earlier exam recorded</div>')+
+    '</div>';
 }
 function nccuNoteHtml(r){
   return '<div class="nccufield nbox"><b>Notes</b>'+
@@ -5014,12 +5105,17 @@ function nccuCompactTodoHtml(r){
     nccuTodoTimerBtn(r,nx.i,nx.t)+
     '</div>'+nccuTodoTimerRow(r,nx.i);
 }
+function nccuCompactNoteHtml(r){
+  const n=String((r&&r.note)||"").trim();
+  if(!n)return "";
+  return '<div class="nccunote-c" onclick="toggleOneNccuCompact(\''+r.id+'\')" title="Open the card to edit"><b>Notes</b><span>'+esc(n)+'</span></div>';
+}
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuIsCompact(r);
   const body=compact
-    ? nccuCompactTodoHtml(r)
-    : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
+    ? (nccuCompactTodoHtml(r)+nccuCompactNoteHtml(r))
+    : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuExamHtml(r)+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from NCCU" aria-label="Remove from NCCU" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
@@ -5272,77 +5368,77 @@ function openTC(id){
   document.getElementById("ovTC").classList.add("show");
 }
 function hideTC(){document.getElementById("ovTC").classList.remove("show")}
-function tcParse(){
-  const t=document.getElementById("tc_src").value.trim();if(!t)return;
-  const o=tcExtract(t);
-  document.getElementById("tc_title").value=o.title||"";
-  document.getElementById("tc_hpi").value=o.hpi||"";
-  document.getElementById("tc_exam").value=o.exam||tcSuggestedExam(t);
-  document.getElementById("tc_img").value=o.img||"[modality w/ finding vs prior]";
-  document.getElementById("tc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(t));
-  document.getElementById("tc_plan").value=o.plan||"Review imaging + priors";
-  renderTCFlags();
-  tcBuild();
+// ---- one text-consult engine, shared by the board modal ("tc") and the
+// builder inside the consult form ("ftc"), so the same card yields the same
+// text in both places ----
+function tcEl(p,k){return document.getElementById(p+"_"+k)}
+function tcGet(p,k){const el=tcEl(p,k);return el?el.value:""}
+function tcSet(p,k,v){const el=tcEl(p,k);if(el)el.value=v}
+// the card behind each builder, expressed the same way on both sides
+function tcCardText(p){
+  if(p==="ftc")return ["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").map(v=>v.trim()).filter(Boolean).join(". ");
+  const c=tcFromId?(S.consults||[]).find(x=>x.id===tcFromId):null;
+  return c?[c.prob,c.state,c.note].filter(Boolean).join(". "):"";
 }
-function tcFlagText(){return ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ")}
-function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderHhAid("tc","tc_hh",false);renderIchAid("tc","tc_ich",false);renderAoAid("tc","tc_ao",false)}
-function tcFormat(){
-  const g=i=>(document.getElementById(i).value||"").trim();
+function tcSrcText(p){return (tcGet(p,"src")||"").trim()||tcCardText(p)}
+function tcParseInto(p){
+  const src=tcSrcText(p);
+  if(!src.trim())return false;
+  const o=tcExtract(src);
+  tcSet(p,"title",o.title||"");
+  tcSet(p,"hpi",o.hpi||"");
+  tcSet(p,"exam",o.exam||tcSuggestedExam(src));
+  tcSet(p,"img",o.img||"[modality w/ finding vs prior]");
+  tcSet(p,"labs",tcMergeCsv(o.labs,tcRelevantLabs(src)));
+  tcSet(p,"plan",o.plan||"Review imaging + priors");
+  return true;
+}
+// score lines come from this builder's own aids, not another panel's
+function tcFormatFor(p){
+  const g=k=>(tcGet(p,k)||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
-  const exam=stripExamSmartLists(g("tc_exam")).split("\n").map(tidy).filter(Boolean).join("\n");
-  const plan=g("tc_plan").split("\n").map(l=>tidy(l)).filter(Boolean).map(l=>"- "+l).join("\n");
-  return [tidy(g("tc_title")),"",tidy(g("tc_hpi")),"","Exam:\n"+exam,"","Plan:",plan,"","Imaging: "+tidy(g("tc_img"))]
-    .concat(g("tc_labs")?["","Labs/Vitals: "+tidy(g("tc_labs"))]:[])
-    .join("\n");
-}
-function tcBuild(){renderTCFlags();document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
-function tcUseExam(){
-  const src=document.getElementById("tc_src").value||[document.getElementById("tc_title").value,document.getElementById("tc_hpi").value].join(" ");
-  document.getElementById("tc_exam").value=tcSuggestedExam(src);
-  tcBuild();
-}
-function tcUseLabs(){
-  const src=[document.getElementById("tc_src").value,document.getElementById("tc_title").value,document.getElementById("tc_hpi").value,document.getElementById("tc_img").value].join(" ");
-  const el=document.getElementById("tc_labs");
-  el.value=tcMergeCsv(el.value,tcRelevantLabs(src));
-  tcBuild();
-}
-// ---- text consult embedded in the consult form ----
-const FTC=["title","hpi","exam","img","labs","plan"];
-let ftcOutDirty=false;
-function ftcAutoHpi(){
-  const h=document.getElementById("ftc_hpi"),p=document.getElementById("f_prob");
-  if(h&&p&&!h.value.trim()&&p.value.trim())h.value=p.value.trim();
-  renderFTCFlags();
-}
-function ftcParse(){
-  const prob=document.getElementById("f_prob").value.trim();
-  const src=["f_prob","f_state","f_note"].map(i=>document.getElementById(i).value||"").filter(Boolean).join(". ");
-  const o=src.trim()?tcExtract(src):{};
-  document.getElementById("ftc_title").value=o.title||prob||"";
-  document.getElementById("ftc_hpi").value=prob||o.hpi||"";
-  document.getElementById("ftc_exam").value=mergeScoreLines(o.exam||document.getElementById("f_state").value||tcSuggestedExam(src),[completedGcsLine("form")]);
-  document.getElementById("ftc_img").value=o.img||"[modality w/ finding vs prior]";
-  document.getElementById("ftc_labs").value=tcMergeCsv(o.labs,tcRelevantLabs(src));
-  const plan=[document.getElementById("f_action").value].filter(Boolean)
-    .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
-    .concat(o.plan?o.plan.split("\n"):[]);
-  document.getElementById("ftc_plan").value=[...new Set(plan.map(s=>String(s).trim()).filter(Boolean))].join("\n")||"Review imaging + priors";
-  renderFTCFlags();
-  ftcBuild();
-}
-function ftcFlagText(){return ["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat(["ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"")).join(" ")}
-function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderHhAid("ftc","ftc_hh",false);renderIchAid("ftc","ftc_ich",false);renderAoAid("ftc","ftc_ao",false)}
-function ftcFormat(){
-  const g=i=>(document.getElementById("ftc_"+i).value||"").trim();
-  const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
-  const exam=mergeScoreLines(stripExamSmartLists(g("exam")), [completedGcsLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
+  const exam=mergeScoreLines(stripExamSmartLists(g("exam")),[completedGcsLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
+  const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"- "+l).join("\n");
-  const hpi=mergeScoreLines(g("hpi"),[completedIchLine("form")]).split("\n").map(tidy).filter(Boolean).join("\n");
   return [tidy(g("title")),"",hpi,"","Exam:\n"+exam,"","Plan:",plan,"","Imaging: "+tidy(g("img"))]
     .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
     .join("\n");
 }
+function tcHasParts(p){return TC_PARTS.some(k=>String(tcGet(p,k)||"").trim())}
+function tcUseExamFor(p){
+  const src=[tcSrcText(p),tcGet(p,"title"),tcGet(p,"hpi")].filter(Boolean).join(" ");
+  tcSet(p,"exam",tcSuggestedExam(src));
+}
+function tcUseLabsFor(p){
+  const src=[tcSrcText(p),tcGet(p,"title"),tcGet(p,"hpi"),tcGet(p,"img")].filter(Boolean).join(" ");
+  tcSet(p,"labs",tcMergeCsv(tcGet(p,"labs"),tcRelevantLabs(src)));
+}
+// ---- board modal wrappers ----
+function tcParse(){if(!tcParseInto("tc")){showToast("Add some free text first");return}renderTCFlags();tcBuild()}
+function tcFlagText(){return ["tc_src","tc_title","tc_hpi","tc_exam","tc_img","tc_labs","tc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ")}
+function renderTCFlags(){renderTextConsultFlags("tc_flags",tcFlagText());renderGcsAid("tc","tc_gcs",false);renderHhAid("tc","tc_hh",false);renderIchAid("tc","tc_ich",false);renderAoAid("tc","tc_ao",false)}
+function tcFormat(){return tcFormatFor("tc")}
+function tcBuild(){renderTCFlags();document.getElementById("tc_out").value=tcFormat();showToast("Clean version rebuilt")}
+function tcUseExam(){tcUseExamFor("tc");tcBuild()}
+function tcUseLabs(){tcUseLabsFor("tc");tcBuild()}
+// ---- text consult embedded in the consult form ----
+const TC_PARTS=["title","hpi","exam","img","labs","plan"];
+const FTC=["src","title","hpi","exam","img","labs","plan"];
+let ftcOutDirty=false;
+function ftcTouch(){if(F)F.tc=ftcSnapshot();}
+function ftcPullFromCard(){
+  const t=tcCardText("ftc");
+  if(!t.trim()){showToast("Nothing on the card yet — fill in Problem / Current state / Notes");return}
+  tcSet("ftc","src",t);renderFTCFlags();ftcTouch();autosave();
+  showToast("Pulled from this card");
+}
+function ftcParse(){
+  if(!tcParseInto("ftc")){showToast("Add some free text first, or tap Pull from this card");return}
+  renderFTCFlags();ftcBuild();
+}
+function ftcFlagText(){return ["f_prob","f_state","f_action","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat(["ftc_src","ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"")).join(" ")}
+function renderFTCFlags(){renderTextConsultFlags("ftc_flags",ftcFlagText());renderGcsAid("ftc","ftc_gcs",false);renderHhAid("ftc","ftc_hh",false);renderIchAid("ftc","ftc_ich",false);renderAoAid("ftc","ftc_ao",false)}
+function ftcFormat(){return tcFormatFor("ftc")}
 function ftcReadySection(lines,idx,re){
   if(idx<0)return "";
   const heads=lines.map((l,i)=>({i:i,h:/^(Exam|Imaging|Labs\/Vitals|Labs|Vitals|Plan):/i.test(l.trim())})).filter(x=>x.h&&x.i>idx).map(x=>x.i);
@@ -5365,31 +5461,52 @@ function ftcApplyReadyToFields(){
   set("img",ftcReadySection(lines,imgI,/^Imaging:\s*/i).replace(/\n+/g," "));
   set("labs",ftcReadySection(lines,labsI,/^(Labs\/Vitals|Labs|Vitals):\s*/i).replace(/\n+/g,", "));
   set("plan",ftcReadySection(lines,planI,/^Plan:\s*/i).split("\n").map(s=>s.replace(/^\s*[-–—•]\s*/,"").trim()).filter(Boolean).join("\n"));
-  ftcOutDirty=false;renderFTCFlags();if(F)F.tc=ftcSnapshot();renderSugg();renderFlags();
+  ftcOutDirty=false;renderFTCFlags();ftcTouch();renderSugg();renderFlags();
   return true;
 }
-function ftcAutoBuild(){
+function ftcBuild(){
+  ftcApplyReadyToFields();
   const out=document.getElementById("ftc_out");if(!out)return;
-  renderFTCFlags();out.value=ftcFormat();ftcOutDirty=false;if(F)F.tc=ftcSnapshot();renderSugg();renderFlags();
+  renderFTCFlags();out.value=ftcFormat();ftcOutDirty=false;ftcTouch();autosave();renderSugg();renderFlags();
+  showToast("Text consult built");
 }
-function ftcBuild(){ftcApplyReadyToFields();ftcAutoBuild();showToast("Text consult built")}
-function ftcUseExam(){
-  const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value]).join(" ");
-  document.getElementById("ftc_exam").value=tcSuggestedExam(src);
-  ftcBuild();
+// the one action that fills everything in, only when asked for
+function ftcSuggest(){
+  if(!tcSrcText("ftc").trim()){showToast("Nothing to suggest from — fill in Problem / Current state / Notes first");return}
+  if(!tcGet("ftc","src").trim())tcSet("ftc","src",tcCardText("ftc"));
+  tcParseInto("ftc");
+  const plan=[(document.getElementById("f_action")||{}).value]
+    .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
+    .concat((tcGet("ftc","plan")||"").split("\n"));
+  tcSet("ftc","plan",[...new Set(plan.map(s=>String(s||"").trim()).filter(Boolean))].join("\n"));
+  renderFTCFlags();
+  const out=document.getElementById("ftc_out");if(out){out.value=ftcFormat();ftcOutDirty=false}
+  ftcTouch();autosave();renderSugg();renderFlags();
+  showToast("Suggested text filled in — edit anything");
 }
-function ftcUseLabs(){
-  const src=["f_prob","f_state","f_note"].map(i=>(document.getElementById(i)||{}).value||"").concat([document.getElementById("ftc_title").value,document.getElementById("ftc_hpi").value,document.getElementById("ftc_img").value]).join(" ");
-  const el=document.getElementById("ftc_labs");
-  el.value=tcMergeCsv(el.value,tcRelevantLabs(src));
-  ftcBuild();
+function ftcClear(){
+  const before=ftcSnapshot();
+  FTC.forEach(k=>tcSet("ftc",k,""));
+  const out=document.getElementById("ftc_out");if(out)out.value="";
+  ftcOutDirty=false;renderFTCFlags();ftcTouch();autosave();
+  showToast("Text consult cleared",()=>{ftcLoad({tc:before});renderFTCFlags();ftcTouch();autosave()},"Undo");
 }
-function ftcCopy(){const el=document.getElementById("ftc_out");if(!el.value.trim())el.value=ftcFormat();toClip(el.value.trim());showToast("Text consult copied")}
-function ftcSnapshot(){const o={};FTC.forEach(k=>o[k]=document.getElementById("ftc_"+k).value);o.out=document.getElementById("ftc_out").value;return o}
+function ftcUseExam(){tcUseExamFor("ftc");renderFTCFlags();ftcTouch();autosave()}
+function ftcUseLabs(){tcUseLabsFor("ftc");renderFTCFlags();ftcTouch();autosave()}
+function ftcCopy(){
+  const el=document.getElementById("ftc_out");
+  if(!el.value.trim()){
+    if(!tcHasParts("ftc")){showToast("Nothing to copy yet — tap Suggest from card");return}
+    el.value=ftcFormat();
+  }
+  toClip(el.value.trim());showToast("Text consult copied");
+}
+function ftcSnapshot(){const o={};FTC.forEach(k=>o[k]=tcGet("ftc",k));o.out=(document.getElementById("ftc_out")||{}).value||"";return o}
 function ftcLoad(c){
   const tc=(c&&c.tc)||{};
-  FTC.forEach(k=>document.getElementById("ftc_"+k).value=tc[k]||"");
-  document.getElementById("ftc_out").value=tc.out||"";ftcOutDirty=false;
+  FTC.forEach(k=>tcSet("ftc",k,tc[k]||""));
+  const out=document.getElementById("ftc_out");if(out)out.value=tc.out||"";
+  ftcOutDirty=false;
 }
 function tcCopy(){
   const el=document.getElementById("tc_out");
@@ -6130,9 +6247,24 @@ function sendRoundTo(id,type){
 }
 function sendRoundToSel(id){const sel=document.getElementById("st_"+id);if(sel)sendRoundTo(id,sel.value)}
 // Send button: with a date → silent dated task on the calendar; without → open the form
+// transient per-card UI state; deliberately not persisted or synced
+const roundSendSel={};
+function roundSendPick(id,v){roundSendSel[id]=Object.assign({},roundSendSel[id],{type:v})}
+function roundSendDate(id,v){roundSendSel[id]=Object.assign({},roundSendSel[id],{date:v})}
+function roundSendClear(id){delete roundSendSel[id]}
+function plainIcon(i){return String(i||"").replace(/<[^>]*>/g,"").trim()}
+function typeOptionsHtml(sel,withNccu){
+  const opts=withNccu?[["NCCU","● NCCU sign-out view"]]:[];
+  Object.keys(TYPES).forEach(k=>{
+    const ic=plainIcon(TYPES[k].i);
+    opts.push([k,(ic?ic+" ":"")+TYPES[k].l]);
+  });
+  const chosen=opts.some(o=>o[0]===sel)?sel:"CHART";
+  return opts.map(([v,l])=>'<option value="'+v+'"'+(v===chosen?" selected":"")+'>'+esc(l)+'</option>').join("");
+}
 // already-sent patients should not offer NCCU again
 function roundSendOpts(r){
-  return (r&&r.nccuSO)?TYPE_SELECT_OPTS:ROUND_SEND_OPTS;
+  return typeOptionsHtml((roundSendSel[r.id]||{}).type,!(r&&r.nccuSO));
 }
 function sendRoundToNccu(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -6152,9 +6284,12 @@ function sendRoundToNccu(id){
 }
 function roundSend(id){
   const sel=document.getElementById("st_"+id),dt=document.getElementById("sd_"+id);
-  if(sel&&sel.value==="NCCU"){sendRoundToNccu(id);return}
-  const type=(sel&&TYPES[sel.value])?sel.value:"CHART";
-  const date=dt?dt.value:"";
+  const mem=roundSendSel[id]||{};
+  const picked=(sel&&sel.value)||mem.type||"CHART";
+  if(picked==="NCCU"){roundSendClear(id);sendRoundToNccu(id);return}
+  const type=TYPES[picked]?picked:"CHART";
+  const date=(dt?dt.value:"")||mem.date||"";
+  roundSendClear(id);
   if(!date){roundToBoard(id,type);return}
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   if(type==="CHART"){
@@ -6307,7 +6442,11 @@ resumePendingSync();
 doSync(true);
 formDraftOffer();
 if(!syncAtStartup)startupCompactBoard=false;
-setInterval(()=>{if(activeEdit())return;boardClockTick(false)},15000);
+setInterval(()=>{
+  if(uiBusy()){_pendingRender=true;return}
+  if(_pendingRender){_pendingRender=false;boardClockTick(true);return}
+  boardClockTick(false);
+},15000);
 </script>
 </body>
 </html>
