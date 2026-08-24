@@ -544,7 +544,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.50 · 2026-08-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.51 · 2026-08-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5548,12 +5548,12 @@ function hideTC(){document.getElementById("ovTC").classList.remove("show")}
 // builder inside the consult form ("ftc"), so the same card yields the same
 // text in both places ----
 const TC_SECTIONS=[
-  {k:"title",label:"Title (one-line problem)",tag:"input"},
-  {k:"hpi",  label:"HPI line (Age/Sex w/ PMH p/w problem + timeline)",tag:"textarea",h:48},
+  {k:"title",label:"Title",tag:"input"},
+  {k:"hpi",  label:"HPI",tag:"textarea",h:48},
+  {k:"img",  label:"Imaging",tag:"input"},
+  {k:"labs", label:"Vitals/Labs",tag:"input"},
   {k:"exam", label:"Exam",tag:"textarea",h:96},
-  {k:"img",  label:"Imaging (what · where · how bad · vs what)",tag:"input"},
-  {k:"labs", label:"Labs/Vitals (only if relevant)",tag:"input"},
-  {k:"plan", label:"Plan (one action per line — \"-\" added automatically)",tag:"textarea",h:80}
+  {k:"plan", label:"Plan",tag:"textarea",h:80}
 ];
 // nothing is pre-filled; each section offers its own suggestion on request
 function tcSuggestFor(p,k){
@@ -5568,9 +5568,11 @@ function tcSuggestFor(p,k){
 function tcFillSection(p,k){
   const v=tcSuggestFor(p,k);
   if(!String(v||"").trim()){showToast("Nothing to suggest yet — add some free text first");return}
+  const before=tcGet(p,k);
   tcSet(p,k,v);
   tcAfterEdit(p);
-  showToast("Filled "+(TC_SECTIONS.find(x=>x.k===k)||{}).label.split(" (")[0]);
+  const label=(TC_SECTIONS.find(x=>x.k===k)||{}).label||k;
+  showToast("Filled "+label,()=>{tcSet(p,k,before);tcAfterEdit(p)},"Undo");
 }
 function tcBodyHtml(p){
   const fld=sec=>{
@@ -5579,12 +5581,12 @@ function tcBodyHtml(p){
       ? '<input type="text" id="'+id+'" placeholder="Type anything here…">'
       : '<textarea id="'+id+'" style="min-height:'+(sec.h||60)+'px" placeholder="Type anything here…"></textarea>';
     return '<div class="fld"><label>'+esc(sec.label)+'</label>'+field+
-      '<div class="qbtns"><button type="button" class="tcfill" onclick="tcFillSection(\''+p+'\',\''+sec.k+'\')">✦ Suggest '+esc(sec.k==="hpi"?"HPI":sec.k)+'</button></div></div>';
+      '<div class="qbtns"><button type="button" class="tcfill" onclick="tcFillSection(\''+p+'\',\''+sec.k+'\')">✦ Suggest</button>'+
+      '<button type="button" class="tcclear" onclick="tcClearSection(\''+p+'\',\''+sec.k+'\')">✕ Clear</button></div></div>';
   };
   const head=TC_SECTIONS.slice(0,2).map(fld).join("");
   const rest=TC_SECTIONS.slice(2).map(fld).join("");
-  return '<div class="fld"><label>1 · Free text in</label><textarea id="'+p+'_src" style="min-height:90px" placeholder="Type anything here…"></textarea>'+
-      '<div class="qbtns"><button type="button" onclick="tcPull(\''+p+'\')">⇣ Pull from this card</button></div></div>'+
+  return '<div class="fld"><label>1 · Free text in</label><textarea id="'+p+'_src" style="min-height:90px" placeholder="Type anything here…"></textarea></div>'+
     '<div class="rowflex"><button type="button" class="btn" onclick="tcParseAll(\''+p+'\')">⇣ Parse into pieces</button></div>'+
     '<details class="moredet" id="'+p+'det" open><summary>▾ 2 · Pieces — fill or fix anything</summary>'+
       head+
@@ -5679,8 +5681,20 @@ function tcPull(p){
   tcSet(p,"src",t);tcAfterEdit(p);showToast("Pulled from this card");
 }
 function tcParseAll(p){
-  if(!tcParseInto(p)){showToast("Add some free text first, or tap Pull from this card");return}
+  // no free text yet? fall back to the card so one button covers both
+  if(!tcGet(p,"src").trim()){
+    const t=tcCardText(p);
+    if(t.trim())tcSet(p,"src",t);
+  }
+  if(!tcParseInto(p)){showToast("Nothing to parse — type some free text, or fill in Problem / Current state / Notes");return}
   tcAfterEdit(p);showToast("Parsed into pieces");
+}
+function tcClearSection(p,k){
+  const before=tcGet(p,k);
+  if(!String(before||"").trim()){showToast("Already empty");return}
+  tcSet(p,k,"");tcAfterEdit(p);
+  const label=(TC_SECTIONS.find(x=>x.k===k)||{}).label||k;
+  showToast(label+" cleared",()=>{tcSet(p,k,before);tcAfterEdit(p)},"Undo");
 }
 function tcRebuild(p){
   tcRenderFlags(p);
