@@ -462,6 +462,10 @@ details.axisinfo .ai{font-size:12px;color:var(--mut);padding:6px 2px 2px;line-he
 details.axisinfo .ai b{color:var(--text)}
 details.axisinfo .ai .grp{color:var(--acc);font-weight:700}
 details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b1c;border-radius:6px;padding:5px 8px;color:#ffca7a;margin-top:5px}
+.axisref{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:10px}
+.axisref div{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;color:var(--mut);line-height:1.35}
+.axisref b{display:block;color:var(--text);font-size:12.5px;margin-bottom:2px}
+@media(max-width:620px){.axisref{grid-template-columns:1fr}}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{font-size:12px;font-weight:700;padding:5px 10px;border-radius:16px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .chips button.on{background:#12283f;border-color:var(--acc);color:var(--acc)}
@@ -1118,13 +1122,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         <div><label>Team</label><input type="text" id="f_team"></div>
         <div><label>Attending</label><input type="text" id="f_attg"></div>
       </div>
-      <div class="sugg" id="sugg"></div>
-      <div id="prockit"></div>
-      <div id="smarthints"></div>
-      <div id="f_gcs"></div>
-      <div id="f_hh"></div>
-      <div id="f_ich"></div>
-      <div id="f_ao"></div>
     </div>
     <input type="hidden" id="f_dl">
     <div class="fld" id="fld_snooze"><label id="dlLabel">◷ Timing / reschedule</label>
@@ -1160,6 +1157,13 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="fld"><label>3 · Ready to send</label><textarea id="ftc_out" style="min-height:150px;font-size:13.5px" placeholder="Stays empty until you ask for it — tap Suggest from card."></textarea>
         <div class="qbtns"><button type="button" onclick="ftcSuggest()">✦ Suggest from card</button><button type="button" onclick="ftcCopy()">⧉ Copy ready-to-send text</button><button type="button" class="xbtn" onclick="ftcClear()">✕ Clear</button></div></div>
     </details>
+    <div class="sugg" id="sugg"></div>
+    <div id="prockit"></div>
+    <div id="smarthints"></div>
+    <div id="f_gcs"></div>
+    <div id="f_hh"></div>
+    <div id="f_ich"></div>
+    <div id="f_ao"></div>
     <div class="fld" id="fld_E"><div class="axhead"><label>Urgency</label><button type="button" class="axtog" onclick="togAxisDetail()">more</button></div>
       <div class="selrow" id="selE"></div>
       <div id="eMini"></div>
@@ -1192,6 +1196,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <input type="text" id="f_lang" placeholder="Language">
     </div>
     <details class="moredet"><summary>▾ More details</summary>
+    <div class="axisref" id="axisDetailsRef"></div>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
       <div class="chips" id="modchips"></div>
       <details class="axisinfo"><summary>ℹ︎ Modifier meanings</summary><div class="ai">
@@ -1208,7 +1213,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <div class="flags" id="flags"></div>
     </div>
     <details class="axisinfo"><summary>ℹ︎ E/O/W/C scoring reference</summary><div class="ai">
-      <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat. <b>E2</b> assess within 30 min. <b>E1</b> assess within 1 h. <b>E0</b> group with next consult / within 1.5 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
+      <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat; interrupt and escalate now / 10-minute timer. <b>E2</b> assess within 1 h. <b>E1</b> assess within 2 h; can group with another ED trip. <b>E0</b> group with the next trip / within 4 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
       <span class="grp">O operative trajectory:</span> <b>O3</b> emergency procedure underway/effectively decided. <b>O2</b> high probability this shift/day. <b>O1</b> intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. <b>O0</b> observation/medical/outpatient/other service presently favored. Re-score with imaging/exam changes, senior review, procedures, contraindication changes, or goals-of-care changes.<br>
       <span class="grp">W hidden deterioration:</span> <b>W0</b> low likelihood of rapid/silent progression. <b>W1</b> routine serial exam or imaging. <b>W2</b> known evolving disease needing explicit reassessment/contingency. <b>W3</b> reassuring present exam but substantial lesion-specific risk: EDH with GCS 15, large SDH with preserved exam, expanding contusion, posterior fossa hemorrhage, acute hydrocephalus, anticoagulated ICH, subtle shunt malfunction, unsecured ruptured aneurysm, subtle spinal epidural process, concerning postop symptoms/wound swelling, or incomplete imaging despite a dangerous syndrome.<br>
       <span class="grp">C complexity:</span> 11 domains scored 0-3, max 33. <b>C1</b> 0-5, <b>C2</b> 6-11, <b>C3</b> 12-23, <b>C4</b> 24-33. Domains: neuro instability/trajectory, lesion/anatomic danger, W risk, diagnostic uncertainty, baseline/exam interpretability, prior anatomy/devices, procedural complexity, hemostasis/meds, infection/wound/CSF, medical physiology, communication/consent/dispo/tasks.
@@ -2291,9 +2296,10 @@ function renderSugg(){
   el.innerHTML=head+(curSugg.length?('<div class="sgnote">Suggestions are starting points from the rubric — override freely. Bracketed numbers = citations in Reference.</div>'+curSugg.map((s,i)=>{
     const parts=[];if(s.s.E!==undefined)parts.push("E"+s.s.E);if(s.s.O!==undefined)parts.push("O"+s.s.O);if(s.s.W!==undefined)parts.push("W"+s.s.W);
     const sug=(parts.length?parts.join("/"):"")+((s.s.mods&&s.s.mods.length)?(parts.length?" + ":"")+s.s.mods.join(", "):"");
-    return '<div class="sg"><div class="sgt">'+s.n+'</div>'+(sug?'<div class="sgs">Suggest: '+sug+'</div>':"")+
+    return '<details class="sg"><summary><span class="sgmain"><span class="sgt">'+s.n+'</span>'+(sug?'<span class="sgs">Suggest: '+sug+'</span>':"")+'</span>'+
+     '<span class="sgb"><button onclick="event.preventDefault();event.stopPropagation();applySugg('+i+')">Apply '+(parts.length?parts.join("/"):"mods")+'</button></span></summary>'+
      '<ul>'+s.look.map(l=>'<li>'+l+'</li>').join("")+'</ul>'+
-     '<div class="sgb"><button onclick="applySugg('+i+')">Apply '+(parts.length?parts.join("/"):"mods")+'</button></div></div>';
+     '</details>';
   }).join("")):"");
 }
 function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
@@ -3685,6 +3691,16 @@ function unsnooze(id){const c=S.consults.find(x=>x.id===id);if(c){c.snoozeISO=nu
 let axisDetail=false;
 function togAxisDetail(){axisDetail=!axisDetail;buildSelectors();
   document.querySelectorAll(".axtog").forEach(b=>b.textContent=axisDetail?"less":"more");}
+function renderAxisDetailsRef(cIdx,cText){
+  const el=document.getElementById("axisDetailsRef");if(!el||!F)return;
+  const rows=[
+    ["Urgency",E_FULL[F.E]||""],
+    ["Operative",O_FULL[F.O]||""],
+    ["Hidden risk",W_FULL[F.W]||""],
+    ["Complexity",cText||""]
+  ];
+  el.innerHTML=rows.map(([k,v])=>'<div><b>'+esc(k)+'</b>'+esc(v||"Unscored")+'</div>').join("");
+}
 function buildSelectors(){
   const mk=(el,defs,key,cls)=>{
     el.className="selrow"+(axisDetail?" showall":"");
@@ -3716,9 +3732,11 @@ function buildSelectors(){
   const t=domTotal(F);
   const cIdx=cLevel(F)-1;
   const hC=document.getElementById("hintC");
-  hC.textContent=t!==null?("Scored "+t+"/33. "+C_FULL[cIdx].replace(/^C\d\s*/,"")):(F.cQuick?C_FULL[F.cQuick-1].replace(/^C\d\s*/,""):"Unscored — quick pick a gut level now, score the 11 domains when you have a minute.");
+  const cText=t!==null?("Scored "+t+"/33. "+C_FULL[cIdx]):(F.cQuick?C_FULL[F.cQuick-1]:"Unscored — quick pick a gut level now, score the 11 domains when you have a minute.");
+  hC.textContent=cText.replace(/^C\d\s*/,"");
   hC.style.display=axisDetail?"block":"none";
   mini("cMini","C",cIdx,C_DEFS);
+  renderAxisDetailsRef(cIdx,cText);
 }
 function syncWWarn(){document.getElementById("wWarn").classList.toggle("show",F.W===3&&F.E<2)}
 function buildDomains(){
