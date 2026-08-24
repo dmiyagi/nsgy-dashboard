@@ -116,9 +116,9 @@ details.closedsec{margin-top:16px}
 details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .card.closedc{opacity:.6}
 /* modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(5,9,16,.75);z-index:100;overflow-y:auto;padding:12px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(5,9,16,.75);z-index:100;overflow-y:auto;padding:12px;padding-top:calc(24px + env(safe-area-inset-top));-webkit-overflow-scrolling:touch}
 .overlay.show{display:block}
-.sheet{max-width:720px;margin:0 auto 40px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.sheet{max-width:720px;margin:0 auto calc(40px + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
 .sheet h2{font-size:17px;margin-bottom:10px}
 .fld{margin-bottom:12px}
 .fld label{display:block;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
@@ -425,6 +425,8 @@ details.moredet[open]>summary{margin-bottom:8px}
 .scoreaid .scorebody{padding:0 11px 11px}
 .scoreaid h4{font-size:13px;margin-bottom:3px;color:var(--text)}
 .scoreaid .note{font-size:11px;color:var(--mut);margin-bottom:8px}
+.gcsout button.scoreclr{border:1px solid var(--line);color:var(--mut);background:transparent}
+.gcsout button.scoreclr:hover{border-color:var(--mut);color:var(--text)}
 .gcsgrid{display:grid;grid-template-columns:1fr;gap:8px}
 .gcsrow{border-top:1px solid var(--line);padding-top:7px}
 .gcsrow:first-of-type{border-top:0;padding-top:0}
@@ -542,7 +544,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.49 · 2026-08-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.50 · 2026-08-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1536,7 +1538,7 @@ const PROC_LIB=[
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
  {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds",
   supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
-  steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Procedure note / significant event note"]},
+  steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Write sig note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
   supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Chucks","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
   steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Procedure note + update handoff + log"]},
@@ -1577,7 +1579,8 @@ const PROC_LIB=[
 function procMatch(t){if(!t)return null;return PROC_LIB.find(p=>p.re.test(t))||null}
 // procedures that need DVT ppx held (6 h after / before the stick)
 function needsDVTHold(c){
-  if(!c||!["PROC","PCON","CONSULT"].includes(c.type))return false;
+  // quick procs (flush EVD, draw CSF, IT meds, dial) never hold DVT ppx
+  if(!c||!["PROC","CONSULT"].includes(c.type))return false;
   const txt=[c.prob,c.action,c.note].filter(Boolean).join(" ");
   const p=procMatch(txt);
   if(p&&p.dvt)return true;
@@ -1787,6 +1790,37 @@ function copyScoreState(kind,src,dst){
   const store=kind==="gcs"?GCS_STATE:ICH_STATE;
   store[dst]=Object.assign({},store[dst]||{},store[src]||{});
 }
+const scoreOpen={};
+function scoreKey(ns,kind){return ns+":"+kind}
+function scoreToggle(ns,kind,on){scoreOpen[scoreKey(ns,kind)]=!!on}
+function scoreOpenAttr(ns,kind,show){
+  const k=scoreKey(ns,kind);
+  const open=(scoreOpen[k]!==undefined)?scoreOpen[k]:!!show;
+  return (open?" open":"")+' ontoggle="scoreToggle(\''+ns+'\',\''+kind+'\',this.open)"';
+}
+// summary line + reset, per calculator
+const SCORE_CLEAR={
+  gcs:ns=>{GCS_STATE[ns]={};syncGcsToIch(ns);renderGcsContext(ns);renderIchContext(ns)},
+  hh: ns=>{HH_STATE[ns]={};renderHhContext(ns)},
+  ich:ns=>{ICH_STATE[ns]={};renderIchContext(ns)},
+  ao: ns=>{AO_STATE[ns]={};renderAoContext(ns)}
+};
+const SCORE_SUMMARY={gcs:gcsSummary,hh:hhSummary,ich:ichSummary,ao:aoSummary};
+function scoreClear(ns,kind){
+  (SCORE_CLEAR[kind]||function(){})(ns);
+  if(ns==="form")syncFormScoreFields();
+  if(ns==="ftc")renderFTCFlags();
+  showToast(kind.toUpperCase()+" cleared");
+}
+function scoreCopy(ns,kind){
+  const t=String((SCORE_SUMMARY[kind]||function(){return ""})(ns)||"").trim();
+  if(!t||/^(GCS|HH|ICH|AO)\b[^0-9A-Za-z]*$/.test(t)){showToast("Nothing selected yet");return}
+  toClip(t);showToast("Copied — "+t.slice(0,40));
+}
+function scoreBtns(ns,kind){
+  return '<button type="button" class="scoreclr" onclick="scoreCopy(\''+ns+'\',\''+kind+'\')">⧉ Copy</button>'+
+         '<button type="button" class="scoreclr" onclick="scoreClear(\''+ns+'\',\''+kind+'\')">✕ Clear</button>';
+}
 function renderGcsAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=ns==="tc"?tcFlagTextFor("tc"):(ns==="ftc"?tcFlagTextFor("ftc"):(ns==="form"?formClinicalText():"trauma SDH TBI"));
@@ -1794,10 +1828,10 @@ function renderGcsAid(ns,targetId,force){
   const s=GCS_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+GCS_OPTS[k].map(o=>
     '<button type="button" class="'+(s[k]===o[0]?"on":"")+'" onclick="setGcsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="NT"?"":"+"+o[0])+'</button>').join("")+'</div></div>';
-  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>GCS calculator</summary><div class="scorebody">'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"gcs",show)+'><summary>GCS calculator</summary><div class="scorebody">'+
     '<div class="note">Trauma/SDH aid. Record components; do not sum if any component is NT.</div>'+
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
-    '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div></details>';
+    '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+scoreBtns(ns,"gcs")+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div></details>';
 }
 function setGcsPart(ns,k,v){GCS_STATE[ns][k]=v;syncGcsToIch(ns);if(ns==="form")syncFormScoreFields();renderGcsContext(ns);renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderGcsContext(ns){
@@ -1824,11 +1858,11 @@ function renderHhAid(ns,targetId,force){
   const txt=scoreContextText(ns);
   const show=force||isAneurysmalSAHText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
   const s=HH_STATE[ns]||{};
-  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>Hunt-Hess score</summary><div class="scorebody">'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"hh",show)+'><summary>Hunt-Hess score</summary><div class="scorebody">'+
     '<div class="note">Aneurysmal SAH aid. Use with modified Fisher and clinical judgment.</div>'+
     '<div class="gcsopts">'+HH_OPTS.map(o=>'<button type="button" class="'+(s.v===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\''+o[0]+'\')">HH'+o[0]+'</button>').join("")+'</div>'+
     '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]).join("\n")+'</div>'+
-    '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
+    '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+scoreBtns(ns,"hh")+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
 function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderHhContext(ns){
@@ -1875,7 +1909,7 @@ function renderAoAid(ns,targetId,force){
   const btn=(group,key)=>group.map(o=>'<button type="button" class="'+(s[key]===o[0]?"on":"")+'" title="'+esc(o[1])+'" onclick="setAoPart(\''+ns+'\',\''+key+'\',\''+o[0]+'\')">'+o[0]+'</button>').join("");
   const cx=aoConcern(ns);
   const selected=[s.m,s.f,s.n,s.mx].filter(Boolean).map(c=>{const x=aoLookup(c);return x?c+": "+x[1]:""}).filter(Boolean).join("\n");
-  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>AO Spine classifier</summary><div class="scorebody">'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"ao",show)+'><summary>AO Spine classifier</summary><div class="scorebody">'+
     '<div class="note">Subaxial/thoracolumbar morphology aid. Pick dominant morphology first; add facet, bilateral, neuro, and modifier details.</div>'+
     '<div class="aochipgrp"><div class="glabel">Morphology</div><div class="gcsopts">'+btn(AO_MORPH,"m")+'</div></div>'+
     '<div class="aochipgrp"><div class="glabel">Facet</div><div class="gcsopts">'+btn(AO_FACET,"f")+'<button type="button" class="'+(s.bl?"on":"")+'" onclick="toggleAoBL(\''+ns+'\')">BL</button></div></div>'+
@@ -1883,7 +1917,7 @@ function renderAoAid(ns,targetId,force){
     '<div class="aochipgrp"><div class="glabel">Modifiers</div><div class="gcsopts">'+btn(AO_MODS,"mx")+'</div></div>'+
     (selected?'<div class="pre" style="margin-top:8px">'+esc(selected)+'</div>':"")+
     '<div class="mal '+cx.cls+'" style="margin-top:8px"><span>'+cx.txt+'</span></div>'+
-    '<div class="gcsout"><b>'+aoSummary(ns)+'</b>'+(ns==="ref"?"":'<button type="button" onclick="insertAoScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div>'+
+    '<div class="gcsout"><b>'+aoSummary(ns)+'</b>'+scoreBtns(ns,"ao")+(ns==="ref"?"":'<button type="button" onclick="insertAoScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div>'+
     '<div class="aohint"><b>Type A:</b> compression A0-A4. <b>Type B:</b> tension band B1-B3. <b>Type C:</b> translation/displacement. <b>Type F:</b> facet F1-F4. <b>BL:</b> bilateral injury.</div></div></details>';
 }
 function setAoPart(ns,key,v){AO_STATE[ns][key]=(AO_STATE[ns][key]===v?null:v);if(ns==="form")syncFormScoreFields();renderAoContext(ns);if(ns==="ftc")renderFTCFlags()}
@@ -1934,10 +1968,10 @@ function renderIchAid(ns,targetId,force){
   const s=ICH_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+ICH_OPTS[k].map(o=>
     '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setIchPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+o[0])+'</button>').join("")+'</div></div>';
-  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"><summary>ICH score calculator</summary><div class="scorebody">'+
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"ich",show)+'><summary>ICH score calculator</summary><div class="scorebody">'+
     '<div class="note">For spontaneous/nontraumatic ICH. Uses historical cohort mortality estimates; do not use alone for prognosis or goals-of-care.</div>'+
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
-    '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
+    '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+scoreBtns(ns,"ich")+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
 function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderIchContext(ns){
@@ -2786,7 +2820,7 @@ const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"]
 const TYPE_WF={
  CONSULT:WF_ITEMS,
  PROC:[["staff","Tell nursing/team"],["dvt","Hold DVT ppx"],["consent","Consent"],["supplies","Gather supplies"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
- PCON:[["done","Done"],["doc","Procedure note"],["handoff","Update handoff"]],
+ PCON:[["done","Done"],["doc","Sig note"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  BOOK:[["name","Name/laterality"],["consent","Consent"],["labs","Hold DVT + labs/NPO"],["docs","H&P/rH&P + pre-op"],["or","OR notified"],["__close","Done"]],
@@ -5389,6 +5423,7 @@ const TC_SPINE_EXAM=[
  "Delt/bi/tri/we/ff/fa",
  "R 5/5/5/5/5/5",
  "L 5/5/5/5/5/5",
+ "no hoffmans",
  "***",
  "IP - Iliopsoas: hip flexion against resistance (L2-L4)",
  "Quad - Quadriceps: Quadriceps:knee extension against resistance (L2-L4)",
@@ -5399,7 +5434,7 @@ const TC_SPINE_EXAM=[
  "Ip/quad/at/ehl/gastroc",
  "R 5/5/5/5/5",
  "L 5/5/5/5/5",
- "- hoffmans, - clonus"
+ "no clonus"
 ].join("\n");
 const TC_BABY_EXAM=[
  "Skin: ***",
@@ -5493,7 +5528,7 @@ function tcExtract(text){
   if(/shunt|\bvps\b/i.test(text))plan.push("Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
   if(/seizure|postictal/i.test(text))plan.push("Keppra; ASM levels");
   if(/fall/i.test(text))plan.push("Fall/medical workup per primary");
-  plan.push("Dispo per NSGY review");
+  plan.push("Dispo per our review");
   out.plan=plan.join("\n");
   return out;
 }
@@ -5548,11 +5583,9 @@ function tcBodyHtml(p){
   };
   const head=TC_SECTIONS.slice(0,2).map(fld).join("");
   const rest=TC_SECTIONS.slice(2).map(fld).join("");
-  return '<p class="tcintro"><b>1</b> Dump free text → <b>2</b> Fill the pieces you want → <b>3</b> Build the send-ready version. Facts only — blanks stay as [brackets]. No names/MRNs.</p>'+
-    '<div class="fld"><label>1 · Free text in</label><textarea id="'+p+'_src" style="min-height:90px" placeholder="Type anything here…"></textarea>'+
+  return '<div class="fld"><label>1 · Free text in</label><textarea id="'+p+'_src" style="min-height:90px" placeholder="Type anything here…"></textarea>'+
       '<div class="qbtns"><button type="button" onclick="tcPull(\''+p+'\')">⇣ Pull from this card</button></div></div>'+
-    '<div class="rowflex"><button type="button" class="btn" onclick="tcParseAll(\''+p+'\')">⇣ Parse into pieces</button>'+
-      '<button type="button" class="btn sec sm" onclick="tcRebuild(\''+p+'\')">⇡ Rebuild clean version</button></div>'+
+    '<div class="rowflex"><button type="button" class="btn" onclick="tcParseAll(\''+p+'\')">⇣ Parse into pieces</button></div>'+
     '<details class="moredet" id="'+p+'det" open><summary>▾ 2 · Pieces — fill or fix anything</summary>'+
       head+
       '<div id="'+p+'_flags"></div><div id="'+p+'_gcs"></div><div id="'+p+'_hh"></div><div id="'+p+'_ich"></div><div id="'+p+'_ao"></div>'+
