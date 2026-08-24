@@ -20,7 +20,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;padding-bottom:72px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;padding-bottom:72px;font-variant-emoji:text}
+.bg,.ico,.ci,.tbtn,.rdl,.rdone,.colbtn,.webtrash,.car,.cardbtns button,.qbtns button,nav button,.btn{font-variant-emoji:text}
 header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);border-top:3px solid var(--acc);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .appicon{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);flex:0 0 auto}
 .apptitle{flex:1 1 0;min-width:0}
@@ -349,11 +350,12 @@ button.rdone.finaldone{background:#123527}
 .nccunote-c{display:flex;gap:8px;align-items:flex-start;margin-top:6px;padding:6px 9px;background:var(--card2);border:1px solid var(--line);border-left:2px solid var(--acc);border-radius:8px;cursor:pointer}
 .nccunote-c b{font-size:10.5px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);flex:0 0 auto;margin-top:1px}
 .nccunote-c span{flex:1;min-width:0;font-size:12.5px;color:#d9e2ef;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.trashsec>summary{color:var(--e3)}
+.trashsec .calrow{cursor:default}
+.trashsec .calrow .cprob{white-space:normal}
 .chartprog{font-size:10.5px;font-weight:800;color:var(--mut);align-self:center;margin-left:2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .chartprog.all{color:var(--ok)}
 #round24Btn.on{border-color:var(--teal);color:var(--teal)}
-.card.demoted{opacity:.5}
-.card.demoted .rprob{color:var(--mut)}
 button.rdone.rstage{border-color:var(--acc);color:var(--acc)}
 button.rdone.rdemote{border-color:var(--e0);color:var(--mut)}
 .wf button.rdone.rdemote{margin-left:4px;align-self:center}
@@ -530,7 +532,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.45 · 2026-08-23</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.48 · 2026-08-23</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -586,6 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <input type="text" placeholder="Search scheduled tasks… (e.g. prolenes)" oninput="snoozeFilter=this.value;renderSnoozed()">
     <div id="snoozecards"></div>
   </details>
+  <div id="boardtrash"></div>
   <details class="closedsec"><summary id="closedsum">Closed consults</summary><div id="closedcards"></div></details>
   <div class="footerbar">
     <button class="btn sec sm" onclick="openSync()">⇅ Sync setup</button>
@@ -640,7 +643,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <span class="hpill" id="roundcount">0 patients</span>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
-    <button class="btn sec sm" onclick="clearSeen()">Reset seen ✓</button>
+    <button class="btn sec sm" onclick="clearSeen()" title="Start a new day: clears every check and empties the archive">Reset seen ✓ (AM)</button>
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
     <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
@@ -690,10 +693,10 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 
 <details class="ref"><summary>E-axis & E3 override triggers</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
-<tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now.</td></tr>
-<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 30 min.</td></tr>
-<tr><td><b>E1</b> Time-sensitive</td><td>Assess within 1 hour.</td></tr>
-<tr><td><b>E0</b> Routine</td><td>Can be grouped with the next consult, or assess within 1.5 hours.</td></tr></table>
+<tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now — 10-minute timer.</td></tr>
+<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 1 hour.</td></tr>
+<tr><td><b>E1</b> Time-sensitive</td><td>Assess within 2 hours; can be grouped with another trip to the ED.</td></tr>
+<tr><td><b>E0</b> Routine</td><td>Can be grouped with the next trip, or assess within 4 hours.</td></tr></table>
 <h4>Intracranial E3 triggers</h4>
 <ul><li>Acute decline in consciousness · new anisocoria or nonreactive pupil · new posturing</li>
 <li>Rapidly progressive focal deficit · acute hydrocephalus with deterioration</li>
@@ -1062,7 +1065,7 @@ Mantenga la pierna recta.
 Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de los pies.</div></div></details>
 
 <details class="ref"><summary>Procedure kits (supplies + steps)</summary><div class="rb">
-<p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · EVD flush · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
+<p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · Flush EVD · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
 <h4>Baby EVD deltas</h4><p>Max lido 1–2 cc · sterile paper towels to square head · white drape as major drape · flat baby changes angle (aim canthus, hand lower toward tragus plane) · pass only 4.5 cm · 1–2 tack-ups TIGHT · big bites if macerated tissue.</p>
 </div></details>
 
@@ -1191,7 +1194,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <details class="moredet"><summary>▾ More details</summary>
     <div class="fld" id="fld_mods"><label>Modifiers</label>
       <div class="chips" id="modchips"></div>
-      <details class="axisinfo"><summary>ℹ Modifier meanings</summary><div class="ai">
+      <details class="axisinfo"><summary>ℹ︎ Modifier meanings</summary><div class="ai">
         <span class="grp">Always-record (alter immediate behavior):</span> <b>W</b> hidden deterioration risk · <b>NΔ</b> changing neurologic exam · <b>AC</b> anticoagulation/antiplatelet issue · <b>VASC</b> vascular lesion or treatment window · <b>OR</b> active operative preparation.<br>
         <span class="grp">Optional:</span> <b>DEV</b> shunt/drain/implant/hardware · <b>INF</b> infection or wound concern · <b>BASE?</b> baseline uncertain · <b>ANAT</b> altered/difficult anatomy · <b>IMG</b> critical imaging pending · <b>CONSENT</b> consent/surrogate unresolved · <b>DISPO</b> disposition is the bottleneck · <b>XFER</b> transfer required · <b>MULTI</b> multiple services/procedures · <b>OWN?</b> ownership unclear.<br>
         Limit the visible line to modifiers that change what you need to remember — don't reproduce every label.
@@ -1204,7 +1207,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea>
       <div class="flags" id="flags"></div>
     </div>
-    <details class="axisinfo"><summary>ℹ E/O/W/C scoring reference</summary><div class="ai">
+    <details class="axisinfo"><summary>ℹ︎ E/O/W/C scoring reference</summary><div class="ai">
       <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat. <b>E2</b> assess within 30 min. <b>E1</b> assess within 1 h. <b>E0</b> group with next consult / within 1.5 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
       <span class="grp">O operative trajectory:</span> <b>O3</b> emergency procedure underway/effectively decided. <b>O2</b> high probability this shift/day. <b>O1</b> intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. <b>O0</b> observation/medical/outpatient/other service presently favored. Re-score with imaging/exam changes, senior review, procedures, contraindication changes, or goals-of-care changes.<br>
       <span class="grp">W hidden deterioration:</span> <b>W0</b> low likelihood of rapid/silent progression. <b>W1</b> routine serial exam or imaging. <b>W2</b> known evolving disease needing explicit reassessment/contingency. <b>W3</b> reassuring present exam but substantial lesion-specific risk: EDH with GCS 15, large SDH with preserved exam, expanding contusion, posterior fossa hemorrhage, acute hydrocephalus, anticoagulated ICH, subtle shunt malfunction, unsecured ruptured aneurysm, subtle spinal epidural process, concerning postop symptoms/wound swelling, or incomplete imaging despite a dangerous syndrome.<br>
@@ -1336,16 +1339,16 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 "use strict";
 // ---------- data ----------
 const LS="nsgy_triage_v2";
-const E_DEFS=[["E0","Routine","group next consult / 1.5 h"],["E1","Time-sensitive","assess within 1 h"],["E2","Urgent","assess within 30 min"],["E3","Emergent","interrupt & escalate NOW"]];
+const E_DEFS=[["E0","Routine","group with next trip / 4 h"],["E1","Time-sensitive","within 2 h · can group with next ED trip"],["E2","Urgent","assess within 1 h"],["E3","Emergent","interrupt & escalate NOW / 10 min"]];
 const O_DEFS=[["O0","Non-op now","observe / medical / other svc"],["O1","Potentially","depends on evolution/senior"],["O2","Likely","this shift/day"],["O3","Operative now","underway / decided"]];
 const W_DEFS=[["W0","Low risk",""],["W1","Serial exams","routine"],["W2","Evolving","explicit recheck time"],["W3","Silent risk","reassuring exam, abrupt-risk lesion"]];
 const C_DEFS=[["C1","Low complexity","0–5"],["C2","Moderately complex","6–11"],["C3","High complexity","12–23"],["C4","Extreme complexity","24–33"]];
 const MODS=["W","NΔ","AC","VASC","OR","DEV","INF","BASE?","ANAT","IMG","CONSENT","DISPO","XFER","MULTI","OWN?"];
 const E_FULL=[
- "E0 Routine — can be grouped with the next consult, or assess within 1.5 hours.",
- "E1 Time-sensitive — assess within 1 hour.",
- "E2 Urgent — assess within 30 minutes.",
- "E3 Emergent — assess immediately, escalate now."];
+ "E0 Routine — can be grouped with the next trip, or assess within 4 hours.",
+ "E1 Time-sensitive — assess within 2 hours; can be grouped with another trip to the ED.",
+ "E2 Urgent — assess within 1 hour.",
+ "E3 Emergent — assess immediately, escalate now (10-minute timer)."];
 const O_FULL=[
  "O0 Nonoperative for now (≠ low acuity).",
  "O1 Possibly operative — depends on workup.",
@@ -1549,12 +1552,12 @@ function addQuickProcSteps(c){
 }
 // ---------- procedure library (supplies + step chains, 2026 survival guide) ----------
 const PROC_LIB=[
- {re:/\bevd\b(?!.*flush)|ventriculostomy/i,name:"EVD (adult)",dvt:true,
+ {re:/evd\s*flush|flush(?:ing)?\s+(?:the\s+)?evd/i,name:"Flush EVD",
+  supplies:["2 sterile flushes","Sterile gloves","Alcohol wipes","Clave if no access port (post-OR EVD)"],
+  steps:["Gather supplies — 2 flushes, gloves, alcohol wipes","Tell nursing / floor","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Write sig event note","Write sig note"]},
+ {re:/\bevd\b|ventriculostomy/i,name:"EVD (adult)",dvt:true,
   supplies:["Cranial access kit","EVD tower","Sterile flushes","Razor + blade","Chucks","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
- {re:/evd flush/i,name:"EVD flush",
-  supplies:["Alcohol pad","Sterile flush","Sterile gloves","Clave if no access port (post-OR EVD)"],
-  steps:["Let the nurse know","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Procedure note / significant event note"]},
  {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds",
   supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
   steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Procedure note / significant event note"]},
@@ -2160,7 +2163,7 @@ function renderSmartHints(){
   const hints=[];
   const box=(title,body,btns)=>'<details class="smartbox"><summary><span><b>'+title+'</b></span>'+(btns||"")+'</summary>'+(body?'<div class="smartbody">'+body+'</div>':"")+'</details>';
   if(F.type==="CONSENT")hints.push(box("Suggested attending list",esc(consentAttendingsFor(txt)),'<span class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add</button></span>'));
-  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/medication · EVD flush · shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT Cardene\';renderFlags()">IT Cardene</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT medication\';renderFlags()">IT med</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD flush\';renderFlags()">EVD flush</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
+  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/medication · Flush EVD · shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT Cardene\';renderFlags()">IT Cardene</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT medication\';renderFlags()">IT med</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'Flush EVD\';renderFlags()">Flush EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push(box("Admit plan detected","Add H&P and admission-order reminders.",'<span class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P</button></span>'));
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
@@ -2318,14 +2321,14 @@ function migrate(d){
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
-    if((!c.type||c.type==="CONSULT")&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
+    if((!c.type||c.type==="CONSULT")&&!c.reviewOff&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
   d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},day:{date:"",checks:{}},blocksOpen:{}}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{}}}
 let lastSaved="";
 let syncApplying=false;
 function save(){
@@ -2434,7 +2437,11 @@ function maybePromptPatientLink(c){
   }
   declineLink(c,other.id);declineLink(other,c.id);touch(other);touch(c);return false;
 }
-function compactBoardForStartup(){if(startupCompactBoard)(S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true})}
+function compactBoardForStartup(){
+  if(!startupCompactBoard)return;
+  (S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true});
+  (S.rounds||[]).forEach(r=>{r.collapsed=true});
+}
 function renderAll(){render();renderRounds();renderNccu();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
@@ -2465,12 +2472,16 @@ function fmtDL(iso){
   const h=Math.floor(mins/60),m=mins%60,str=(h?h+"h ":"")+m+"m";
   return over?{cls:"over",txt:"OVERDUE "+str}:ms<15*60000?{cls:"soon",txt:"due in "+str}:{cls:"ok",txt:"due in "+str};
 }
+const E_WINDOW_MIN={3:10,2:60,1:120,0:240};
 function reviewWindowMin(c){
   if(!c||c.type!=="CONSULT")return null;
-  return c.E>=3?0:c.E===2?30:c.E===1?60:90;
+  const e=Math.max(0,Math.min(3,c.E||0));
+  return E_WINDOW_MIN[e];
 }
-function resetReviewClock(c,at){
+function resetReviewClock(c,at,force){
   const m=reviewWindowMin(c);if(m===null)return;
+  // never re-arm something the user deliberately switched off or set by hand
+  if(!force&&(c.reviewOff||c.reviewManual))return;
   const t=at||Date.now();
   delete c.reviewOff;
   c.reviewAt=t;
@@ -2527,6 +2538,10 @@ function masterLine(c){const mods=(c.mods||[]).join("/");const dl=c.deadlineISO?
  return [c.loc,c.prob,"E"+c.E+"/O"+c.O+"/"+cStr(c)+(mods?"-"+mods:""),c.state,c.action,[dl,c.trig].filter(Boolean).join("; "),c.owner].filter(Boolean).join(" | ")}
 // ---------- board render ----------
 let pinnedTopId=null;
+// Auto-bubble is disabled: setPin() is the single choke point, so the feature
+// can be switched back on by flipping AUTO_BUBBLE if it is ever wanted.
+const AUTO_BUBBLE=false;
+function setPin(id){if(AUTO_BUBBLE)pinnedTopId=id||null}
 let boardHoldOrder=[];
 let boardHoldUntil=0;
 let boardReflowTimer=null;
@@ -2629,7 +2644,7 @@ function consultGateMissing(c){
 function requireConsultGate(c){
   const miss=consultGateMissing(c);
   if(!miss.length)return true;
-  pinnedTopId=c.id;
+  setPin(c.id);
   showToast("Before advancing: complete "+miss.join(" + "));
   render();
   return false;
@@ -2786,7 +2801,7 @@ function reflowQueue(){
              act.find(consultStaffReady)||
              act.find(c=>!isStarted(c))||
              act[0];
-  if(next)pinnedTopId=next.id;
+  if(next)setPin(next.id);
   return next||null;
 }
 const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note"]];
@@ -2915,17 +2930,24 @@ function clearOverdueTimers(id){
   (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
   (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
   if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;n++}
+  if(n&&pinnedTopId===id)pinnedTopId=null;
   touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
 }
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
   const cleared=clearOverdueStepDL(c);
   c.deadlineISO=new Date(Date.now()+min*60000).toISOString();
-  if(c.type==="CONSULT"){c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
+  if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=true;c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
   touch(c);render();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
 function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();showToast("Review timer cleared")}
-function clearDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.deadlineISO=null;if(c.type==="CONSULT")resetReviewClock(c);touch(c);render();}
+function clearDL(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  c.deadlineISO=null;
+  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
+  if(pinnedTopId===id)pinnedTopId=null;
+  touch(c);render();showToast("Timer off — back to priority order");
+}
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
 function clockIcon(){return '<span class="clockico" aria-hidden="true"></span>'}
@@ -3051,7 +3073,7 @@ function renderSnoozed(){
      '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+'</span>'+
      '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||"")+'</span>'+
      '<span class="ctime">'+(d.getMonth()+1)+"/"+d.getDate()+'</span>'+
-     '<button class="rdone" onclick="event.stopPropagation();unsnooze(\''+c.id+'\')">↩ now</button></div>';
+     '<button class="rdone" onclick="event.stopPropagation();unsnooze(\''+c.id+'\')">↩︎ now</button></div>';
   }).join("")||'<div class="empty" style="padding:12px">Nothing scheduled'+(q?' matching "'+esc(snoozeFilter)+'"':"")+'.</div>';
 }
 function renderCal(){
@@ -3093,6 +3115,7 @@ function render(){
   cont.innerHTML=act.length?act.map(card).join(""):'<div class="empty">No active consults.<br>Tap ＋ New consult when the pager goes off.</div>';
   renderSnoozed();renderCal();
   document.getElementById("closedsum").textContent="Closed consults ("+closed.length+")";
+  const tb=document.getElementById("boardtrash");if(tb)tb.innerHTML=trashHtml("consult");
   document.getElementById("closedcards").innerHTML=closed.map(c=>
     '<div class="card closedc"><div class="badges"><span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span></div>'+
     '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
@@ -3120,7 +3143,7 @@ function compactDoneText(c){
 function closeDoneButton(c,compact){
   if(!canCloseTask(c))return "";
   const cls=compact?"rdone":"";
-  const label="✓ ☺ Done";
+  const label="✓ ☺︎ Done";
   const stop=compact?"event.stopPropagation();":"";
   return '<button class="'+cls.trim()+'" onclick="'+stop+'startClose(\''+c.id+'\')">'+label+'</button>';
 }
@@ -3146,18 +3169,23 @@ function soButtonAttrs(c){
   if(soComplete(c))return ' style="border-color:var(--ok);color:var(--ok)"';
   return soStarted(c)?' style="border-color:var(--e2);color:var(--e2)"':"";
 }
+function typeBadgeHtml(c,compact){
+  if(!c||!c.type||c.type==="CONSULT"||!TYPES[c.type])return "";
+  const t=TYPES[c.type];
+  return '<span class="bg t tc-'+c.type+'" title="'+esc(t.l)+'">'+t.i+(compact?"":" "+esc(t.l))+'</span>';
+}
 function rowCard(c,dl,isTask){
   const pending=compactPending(c),act=pending?pending.t:"";
   const todosDone=!act&&!!compactDoneText(c);
   const allDone=canCloseTask(c);
-  const tIcon=isTask?TYPES[c.type].i+" ":"";
   const isChart=isTask&&c.type==="CHART";
   const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
   const openChk=(c.tasks||[]).filter(t=>!t.done).length;
   return '<div class="card crowwrap hastrash E'+c.E+(rOver?' reviewover':'')+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
    '<div class="crow">'+
-    (isChart?'<span class="bg t tc-CHART">▤</span>':'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
+    typeBadgeHtml(c,true)+
+    (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
     (rOver?'<span class="bg warn">review</span>':"")+
     (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
@@ -3165,7 +3193,7 @@ function rowCard(c,dl,isTask){
     linkedCardsHtml(c,true)+
     consentInterpBadge(c)+
     worryTag+
-    '<span class="rwho">'+tIcon+esc(c.loc)+'</span>'+
+    '<span class="rwho">'+esc(c.loc)+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
         :(allDone?closeDoneButton(c,true)+'<span class="ract"></span>'
@@ -3197,7 +3225,7 @@ function doneAction(id){
   }
   const nxt=(c.steps||[]).find(s=>!s.done);
   c.action=nxt?nxt.t:"";
-  if(c.action)pinnedTopId=c.id;
+  if(c.action)setPin(c.id);
   touch(c);render();
   if(c.action){showToast("Next → "+c.action.slice(0,44)+(nxt&&nxt.dueISO?" (◷ set)":""))}
   else{reflowQueue()}
@@ -3261,7 +3289,7 @@ function card(c){
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
   const mods=(c.mods||[]).filter(m=>m!=="W").map(m=>'<span class="bg mod">'+esc(m)+'</span>').join("");
   const wf=wfChips(c,false);
-  const tbadge=(c.type&&c.type!=="CONSULT"&&TYPES[c.type])?'<span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>':"";
+  const tbadge=typeBadgeHtml(c);
   return '<div class="card hastrash E'+c.E+(rOver?' reviewover':'')+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')">'+trashBtn(c.id,"consult")+
    '<div class="badges">'+tbadge+'<span class="bg e'+c.E+'">E'+c.E+'</span>'+(rOver?'<span class="bg warn">review overdue</span>':"")+'<span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span>'+(c.W?'<span class="bg w'+c.W+'">W'+c.W+'</span>':"")+patientTag(c)+linkedCardsHtml(c,true)+(needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+mods+w3warn+evi+colBtn(c)+'</div>'+
    '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
@@ -3400,7 +3428,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
     const next=!c.wf[k];
     if(next){
       const miss=consultWfPrereqMissing(c,k);
-      if(miss.length){pinnedTopId=c.id;showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
+      if(miss.length){setPin(c.id);showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
     if(c.type==="CONSULT"&&next){
@@ -3412,19 +3440,70 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
   touch(c);
   const missingGate=c.type==="CONSULT"?consultGateMissing(c):[];
   scheduleBoardReflow(c.id);
-  if(missingGate.length&&!(c.wf&&c.wf.seen)){pinnedTopId=c.id;render();return}
+  if(missingGate.length&&!(c.wf&&c.wf.seen)){setPin(c.id);render();return}
   render();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
 function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
 function del(id,skipConfirm){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(!skipConfirm&&!confirm("Delete permanently?"))return;
+  trashPush("consult",c);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.consults=S.consults.filter(x=>x.id!==id);
   render();
   showToast("Deleted "+(c.loc||c.prob||"item"),()=>restoreConsult(c));
 }
-function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
+// device-local so it never bloats the gist; the undo toast covers the moment,
+// this covers "I swiped something an hour ago and only just noticed"
+const TRASH_KEEP=25,TRASH_MS=7*24*3600*1000;
+function trashList(){S.trash=(S.trash||[]).filter(x=>x&&x.item&&Date.now()-(x.ts||0)<TRASH_MS);return S.trash}
+function trashPush(kind,item){
+  if(!item)return;
+  const t=trashList();
+  const copy=JSON.parse(JSON.stringify(item));
+  S.trash=[{kind:kind,ts:Date.now(),item:copy}].concat(t.filter(x=>x.item.id!==item.id)).slice(0,TRASH_KEEP);
+}
+function trashLabel(x){
+  const i=x.item||{};
+  return (i.label||i.loc||"")+(i.prob?" — "+i.prob:(i.raw?" — "+i.raw:""));
+}
+function trashRestore(id){
+  const t=trashList(),ix=t.findIndex(x=>x.item.id===id);
+  if(ix<0)return;
+  const entry=t[ix];
+  S.trash=t.filter((_,i)=>i!==ix);
+  if(entry.kind==="round")restoreRound(entry.item);
+  else restoreConsult(entry.item);
+  renderAll();flushAutosave();
+  showToast("Restored "+trashLabel(entry).slice(0,44));
+}
+function trashDrop(id){
+  const t=trashList(),ix=t.findIndex(x=>x.item.id===id);
+  if(ix<0)return;
+  const entry=t[ix];
+  S.trash=t.filter((_,i)=>i!==ix);
+  renderAll();flushAutosave();
+  showToast("Removed from trash",()=>{S.trash=[entry].concat(trashList()).slice(0,TRASH_KEEP);renderAll();flushAutosave()},"Undo");
+}
+function trashEmpty(){
+  const before=trashList().slice();
+  if(!before.length){showToast("Trash is already empty");return}
+  S.trash=[];renderAll();flushAutosave();
+  showToast("Trash emptied ("+before.length+")",()=>{S.trash=before;renderAll();flushAutosave()},"Undo");
+}
+function trashHtml(kind){
+  const items=trashList().filter(x=>x.kind===kind);
+  if(!items.length)return "";
+  return '<details class="closedsec trashsec"><summary>⌫ Trash — recently deleted ('+items.length+')</summary>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="trashEmpty()">Empty trash</button></div>'+
+    items.map(x=>'<div class="calrow">'+
+      '<span class="bg mod">'+esc(new Date(x.ts).toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}))+'</span>'+
+      '<span class="cprob">'+esc(trashLabel(x).slice(0,110)||"(untitled)")+'</span>'+
+      '<button class="rdone" onclick="event.stopPropagation();trashRestore(\''+x.item.id+'\')">↩︎ Restore</button>'+
+      '<button class="rdone wrm" onclick="event.stopPropagation();trashDrop(\''+x.item.id+'\')">✕</button>'+
+      '</div>').join("")+'</details>';
+}
+function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];S.trash=(S.trash||[]).filter(x=>!x.item||x.item.id!==c.id);c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
 function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toClip(c.note);showToast("Notes copied — "+(c.loc||""))}}
 function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
@@ -3690,7 +3769,8 @@ function saveForm(){
   F.updatedAt=Date.now();
   const ix=S.consults.findIndex(x=>x.id===F.id);
   const prev=ix>=0?S.consults[ix]:null;
-  if(F.type==="CONSULT"&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
+  if(F.deadlineISO)F.reviewManual=true;
+  if(F.type==="CONSULT"&&!F.reviewOff&&!F.reviewManual&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
   formDraftClear();
@@ -3965,8 +4045,10 @@ function rStepsHtml(r){
 }
 // day view keeps the original three; 24-hour view adds the AM chart check and
 // the evening walk-round, giving the five things owed across a day/night
-const ROUND_CHECKS_DAY=[["am","AM seen"],["pm1","1p chart"],["pm4","4p chart"]];
-const ROUND_CHECKS_24=[["am","AM seen"],["pm1","1p chart"],["pm4","4p chart"],["pmseen","PM seen"],["amchart","AM chart"]];
+// null = triggered by the morning reset rather than a clock time.
+// 29*60 puts the 5 am chart on the day after the cycle started.
+const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60]];
+const ROUND_CHECKS_24=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60],["pmseen","PM seen",18*60],["pm9","9p chart",21*60],["amchart","5a chart",29*60]];
 function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
 function roundChartHtml(r){
   r.chartChecks=r.chartChecks||{};
@@ -3974,83 +4056,110 @@ function roundChartHtml(r){
   const done=checks.filter(([k])=>r.chartChecks[k]).length;
   return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+
     '<span class="chartprog'+(done===checks.length?" all":"")+'">'+done+'/'+checks.length+'</span>'+
-    (roundDemoted(r)?'<button class="rdone rdemote" title="Tap to bring this patient back to the active list now" onclick="roundUndemote(\''+r.id+'\')">'+clockIcon()+shortLeft(roundDemoteLeft(r))+'</button>':"")+'</div>';
+    (roundArchived(r)?'<button class="rdone rdemote" title="Archived — tap to bring this patient back now" onclick="roundWakeNow(\''+r.id+'\')">'+clockIcon()+fmtClock(r.archiveUntil)+'</button>':"")+'</div>';
 }
-const DEMOTE_MS=3*3600*1000;
-function roundDemoted(r){return !!(r&&r.demoteUntil&&Date.now()<r.demoteUntil)}
-function roundDemoteLeft(r){return Math.max(0,(r&&r.demoteUntil||0)-Date.now())}
-function shortLeft(ms){
-  const m=Math.max(0,Math.round(ms/60000)),h=Math.floor(m/60),mm=m%60;
-  return h?(h+"h"+(mm?" "+mm+"m":"")):(mm+"m");
+// ---- round schedule ----------------------------------------------------
+// Each check names the clock time it comes due. Ticking a check archives the
+// patient until the *next* check is due, so nothing reappears early. Minutes
+// run from the cycle anchor (midnight of the day the morning reset ran), so
+// the 5 am chart lands on the following calendar day.
+const UNTIL_RESET=4102444800000; // sentinel: sleeps until the morning reset
+function roundCycleAnchor(){
+  const d=new Date(S.roundCycleAt||Date.now());
+  d.setHours(0,0,0,0);
+  return d.getTime();
 }
+function stageDueAt(mins){return mins==null?0:roundCycleAnchor()+mins*60000}
+function fmtClock(ts){
+  if(ts>=UNTIL_RESET)return "the morning reset";
+  return new Date(ts).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+}
+function roundArchived(r){return !!(r&&r.archiveUntil&&Date.now()<r.archiveUntil)}
 function roundNextCheck(r){
   const checks=roundChecks(),cc=(r&&r.chartChecks)||{};
   const i=checks.findIndex(([k])=>!cc[k]);
-  return i>=0?{i:i,k:checks[i][0],label:checks[i][1]}:null;
+  return i>=0?{i:i,k:checks[i][0],label:checks[i][1],due:checks[i][2]}:null;
 }
 function roundLastDoneCheck(r){
   const checks=roundChecks(),cc=(r&&r.chartChecks)||{};
-  for(let i=checks.length-1;i>=0;i--)if(cc[checks[i][0]])return {i:i,k:checks[i][0],label:checks[i][1]};
+  for(let i=checks.length-1;i>=0;i--)if(cc[checks[i][0]])return {i:i,k:checks[i][0],label:checks[i][1],due:checks[i][2]};
   return null;
 }
-// the collapsed row's far-right control
+// when a patient comes back after the check just ticked
+function roundWakeAfter(r){
+  const nx=roundNextCheck(r);
+  if(!nx)return UNTIL_RESET;
+  const due=stageDueAt(nx.due);
+  return due>Date.now()?due:0;
+}
+// the row's far-right control
 function roundStageBtn(r){
   const nx=roundNextCheck(r);
-  if(roundDemoted(r))
-    return '<button class="rdone rdemote" title="Done for this round — back in '+shortLeft(roundDemoteLeft(r))+'. Tap to bring it back now." onclick="event.stopPropagation();roundUndemote(\''+r.id+'\')">'+clockIcon()+shortLeft(roundDemoteLeft(r))+'</button>';
   if(!nx){
     const n=roundChecks().length;
     return '<button class="rdone finaldone" title="All '+n+' checks done — tap to undo the last one" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓ '+n+'/'+n+'</button>';
   }
-  return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done and rest this patient for 3 h" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
+  return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done and archive this patient until the next round" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
 }
 function roundCheckAdvance(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const nx=roundNextCheck(r);if(!nx)return;
-  const before={checks:Object.assign({},r.chartChecks||{}),until:r.demoteUntil};
+  const before={checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil};
   r.chartChecks=r.chartChecks||{};r.chartChecks[nx.k]=true;
-  r.demoteUntil=Date.now()+DEMOTE_MS;
+  r.archiveUntil=roundWakeAfter(r);
   r.updatedAt=Date.now();renderRounds();flushAutosave();
   const after=roundNextCheck(r);
-  showToast("✓ "+nx.label+" — "+r.label+(after?(" · "+after.label+" in 3h"):(" · all "+roundChecks().length+" done")),()=>{
+  const back=r.archiveUntil?(" · back at "+fmtClock(r.archiveUntil)+(after?" for "+after.label:"")):(after?" · "+after.label+" due now":"");
+  showToast("✓ "+nx.label+" — "+r.label+back,()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
-    rr.chartChecks=before.checks;rr.demoteUntil=before.until;
+    rr.chartChecks=before.checks;rr.archiveUntil=before.until;
     rr.updatedAt=Date.now();renderRounds();flushAutosave();
   },"Undo");
 }
 function roundCheckUndo(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const last=roundLastDoneCheck(r);if(!last)return;
-  const before={checks:Object.assign({},r.chartChecks||{}),until:r.demoteUntil};
-  delete r.chartChecks[last.k];r.demoteUntil=0;
+  const before={checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil};
+  delete r.chartChecks[last.k];r.archiveUntil=0;
   r.updatedAt=Date.now();renderRounds();flushAutosave();
   showToast("Reopened "+last.label+" — "+r.label,()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
-    rr.chartChecks=before.checks;rr.demoteUntil=before.until;
+    rr.chartChecks=before.checks;rr.archiveUntil=before.until;
     rr.updatedAt=Date.now();renderRounds();flushAutosave();
   },"Undo");
 }
-function roundUndemote(id){
+function roundWakeNow(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  const before=r.demoteUntil;
-  r.demoteUntil=0;r.updatedAt=Date.now();renderRounds();flushAutosave();
-  showToast("Back on the active list — "+r.label,()=>{
+  const before=r.archiveUntil;
+  r.archiveUntil=0;r.updatedAt=Date.now();renderRounds();flushAutosave();
+  showToast("Back on the list — "+r.label,()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
-    rr.demoteUntil=before;rr.updatedAt=Date.now();renderRounds();flushAutosave();
+    rr.archiveUntil=before;rr.updatedAt=Date.now();renderRounds();flushAutosave();
+  },"Undo");
+}
+function wakeAllRounds(){
+  const before=S.rounds.map(r=>({id:r.id,until:r.archiveUntil}));
+  const n=S.rounds.filter(roundArchived).length;
+  if(!n){showToast("Nothing archived");return}
+  S.rounds.forEach(r=>{if(roundArchived(r)){r.archiveUntil=0;r.updatedAt=Date.now()}});
+  renderRounds();flushAutosave();
+  showToast("Brought back "+n+" patient"+(n>1?"s":""),()=>{
+    before.forEach(b=>{const r=S.rounds.find(x=>x.id===b.id);if(r){r.archiveUntil=b.until;r.updatedAt=Date.now()}});
+    renderRounds();flushAutosave();
   },"Undo");
 }
 function toggleRound24(){
   S.round24=!S.round24;
   renderRounds();flushAutosave();
-  showToast(S.round24?"24-hour view — AM seen · 1p · 4p · PM seen · AM chart (before sign-out)":"Day view — AM seen · 1p · 4p");
+  showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p chart · 5a chart":"Day view — AM seen · 1p · 4p");
 }
 function toggleRoundChart(id,k){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.chartChecks=r.chartChecks||{};
   r.chartChecks[k]=!r.chartChecks[k];
   // finishing a check parks the patient until the next round is due
-  if(r.chartChecks[k])r.demoteUntil=Date.now()+DEMOTE_MS;
-  else{delete r.chartChecks[k];r.demoteUntil=0}
+  if(r.chartChecks[k])r.archiveUntil=roundWakeAfter(r);
+  else{delete r.chartChecks[k];r.archiveUntil=0}
   r.updatedAt=Date.now();renderRounds();flushAutosave();
 }
 function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
@@ -4284,8 +4393,7 @@ function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
   const tags=(r.tags||[]).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
-  const dem=roundDemoted(r);
-  return '<div class="card crowwrap hastrash'+(r.seen?' closedc':'')+(dem?' demoted':'')+'" data-id="'+r.id+'" style="border-left-color:'+(dem?'var(--e0)':(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)')))+'">'+trashBtn(r.id,"round")+
+  return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     '<span class="bg t">▤</span>'+
     (r.worry?'<span class="bg warn">!</span>':"")+
@@ -4309,7 +4417,7 @@ function renderRounds(){
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
-  const key=r=>roundDemoted(r)?3:(r.seen?2:(r.worry?0:1));
+  const key=r=>r.worry?0:1;
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
     :(S.roundSort==="team")
@@ -4317,8 +4425,10 @@ function renderRounds(){
       :(S.roundSort==="attg")
         ?(a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true})
       :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
-  const list=S.rounds.filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
-  const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s");
+  const visible=S.rounds.filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp);
+  const archived=visible.filter(roundArchived).slice().sort((a,b)=>(a.archiveUntil||0)-(b.archiveUntil||0));
+  const list=visible.filter(r=>!roundArchived(r)).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
+  const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
   const mainHtml=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
       return '<div class="card" style="border-left-color:var(--e1)">'+
@@ -4342,7 +4452,6 @@ function renderRounds(){
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
      '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
      '<div class="cardbtns">'+
-      '<button onclick="togSeen(\''+r.id+'\')">'+(r.seen?'↩ Unsee':'✓ Seen')+'</button>'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="togSoCcResp(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO/CC</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
@@ -4355,7 +4464,21 @@ function renderRounds(){
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
-  el.innerHTML=mainHtml+renderWoundRounds(list)+renderFormerWounds();
+  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderWoundRounds(list)+renderFormerWounds()+trashHtml("round");
+}
+function renderRoundArchive(items){
+  if(!items||!items.length)return "";
+  return '<details class="closedsec" id="rarchive"><summary>Archived until the next round ('+items.length+')</summary>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="wakeAllRounds()">↩︎ Bring all back</button></div>'+
+    items.map(r=>{
+      const nx=roundNextCheck(r);
+      return '<div class="calrow" onclick="roundWakeNow(\''+r.id+'\')">'+
+        '<span class="bg mod">'+esc(fmtClock(r.archiveUntil))+'</span>'+
+        '<span class="cwho">'+esc(roundIdentityText(r)||r.label||"")+'</span>'+
+        '<span class="cprob">'+esc(roundProblemText(r).slice(0,90))+'</span>'+
+        (nx?'<span class="ctime">next: '+esc(nx.label)+'</span>':'<span class="ctime">all done</span>')+
+        '<span class="car">↩︎</span></div>';
+    }).join("")+'</details>';
 }
 function roundNoteSave(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -4549,25 +4672,28 @@ function purgeRounds(){
   S.rounds.forEach(r=>S.tomb[r.id]=now);
   S.rounds=[];renderRounds();save();doSync(true);
 }
-function togSeen(id){const r=S.rounds.find(x=>x.id===id);if(r){r.seen=!r.seen;r.updatedAt=Date.now();renderRounds();save()}}
 function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){r.soCcResp=!r.soCcResp;r.updatedAt=Date.now();renderRounds();save()}}
 function clearSeen(){
-  const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{}),until:r.demoteUntil}));
+  const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil}));
+  const beforeCycle=S.roundCycleAt;
+  S.roundCycleAt=Date.now();
   let n=0;
   S.rounds.forEach(r=>{
     const hadChecks=Object.keys(r.chartChecks||{}).some(k=>r.chartChecks[k]);
-    if(r.seen||hadChecks||r.demoteUntil){r.seen=false;r.chartChecks={};r.demoteUntil=0;r.updatedAt=Date.now();n++}
+    if(r.seen||hadChecks||r.archiveUntil){r.seen=false;r.chartChecks={};r.archiveUntil=0;r.updatedAt=Date.now();n++}
   });
   renderRounds();flushAutosave();
   if(!n){showToast("Nothing to reset");return}
   showToast("Reset seen + checks on "+n+" patient"+(n>1?"s":""),()=>{
-    before.forEach(b=>{const r=S.rounds.find(x=>x.id===b.id);if(r){r.seen=b.seen;r.chartChecks=b.checks;r.demoteUntil=b.until;r.updatedAt=Date.now()}});
+    S.roundCycleAt=beforeCycle;
+    before.forEach(b=>{const r=S.rounds.find(x=>x.id===b.id);if(r){r.seen=b.seen;r.chartChecks=b.checks;r.archiveUntil=b.until;r.updatedAt=Date.now()}});
     renderRounds();flushAutosave();
   },"Undo");
 }
 function delRound(id){
   const r=S.rounds.find(x=>x.id===id);
   const ts=Date.now();
+  if(r)trashPush("round",r);
   S.tomb=S.tomb||{};S.tomb[id]=ts;
   if(r&&woundRoundCandidate(r)){
     S.formerWounds=S.formerWounds||[];
@@ -4576,7 +4702,7 @@ function delRound(id){
   S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
   if(r)showToast("Removed "+r.label+" from rounds",()=>restoreRound(r));
 }
-function restoreRound(r){if(S.tomb)delete S.tomb[r.id];r.updatedAt=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==r.id);if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
+function restoreRound(r){if(S.tomb)delete S.tomb[r.id];S.trash=(S.trash||[]).filter(x=>!x.item||x.item.id!==r.id);r.updatedAt=Date.now();S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==r.id);if(!S.rounds.some(x=>x.id===r.id))S.rounds.push(r);renderRounds();save()}
 function todoLinesFromPlan(t){
   return String(t||"").split(/\n|;|·/).map(s=>s.trim().replace(/^[*•\-☐✓]\s*/,"")).filter(Boolean);
 }
@@ -4602,7 +4728,7 @@ function roundExamNote(r){
 function tiedTypeForRoundTodo(t){
   const s=String(t||"");
   if(/\b(?:call|page|text|contact|notify|reach)\b/i.test(s)||/\b(?:mri|ct|cta|ctv|x-?ray|xr|ultrasound|us)\b/i.test(s))return "COMM";
-  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram|evd flush|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(s))return "PCON";
+  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(s))return "PCON";
   if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
   return null;
 }
@@ -5731,7 +5857,7 @@ function renderCapture(){
   const el=document.getElementById("capsugg");
   capActions=[];
   const pathAbbrev=knownPathAbbrev(text);
-  const quickProcText=/\b(?:evd flush|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(text);
+  const quickProcText=/\b(?:evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(text);
   const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|staples?|sutures?|prolenes?)\b/i.test(text);
   if(text.length<4&&!pathAbbrev&&!knownProcCue){el.innerHTML="";return}
   const bed=extractBed(text);
@@ -5786,7 +5912,7 @@ function renderCapture(){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary",SCREW_ICON,"Quick proc — IT med / EVD flush / dial","simple: notify → gather supplies → notify → sig event",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary",SCREW_ICON,"Quick proc — IT med / Flush EVD / dial","simple: notify → gather supplies → notify → sig event",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart||procKeywordCue)){
     add("primary",HAMMER_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
@@ -5934,7 +6060,7 @@ async function fetchGistFile(f){
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
-function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,ts:Date.now()}}
+function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
 function mergeState(local,remote){
   const tomb={},tCut=Date.now()-TOMB_KEEP_MS;
@@ -5982,7 +6108,9 @@ function mergeState(local,remote){
     day={date:day.date,checks:checks,at:at};
   }
   else{const today=new Date().toDateString();if(rd.date===today&&day.date!==today)day=rd}
-  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day};
+  // the most recent morning reset wins, whichever device ran it
+  const roundCycleAt=Math.max(local.roundCycleAt||0,remote.roundCycleAt||0);
+  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt};
 }
 async function doSync(auto){
   const cfg=syncCfg();
@@ -6014,11 +6142,11 @@ async function doSync(auto){
       gistCache=remote;
     }
     const merged=mergeState(S,remote);
-    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;
+    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
-    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day});
-    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day});
+    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0});
+    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt});
     if(remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
       gistEtag="";                            // our own write invalidates the cached tag
@@ -6042,7 +6170,7 @@ async function doSync(auto){
       // nothing to retry against — say so once and stop
       syncBlocked=fatalSyncHint(e)||e.message;
       clearTimeout(pushT);clearTimeout(retryT);localStorage.removeItem(SK_RETRY);
-      setDot("⚠ sync","var(--e3)");
+      setDot("⚠︎ sync","var(--e3)");
       if(ss)ss.textContent=syncBlocked;
       if(!auto)alert(syncBlocked);
       else showToast("Sync stopped — "+syncBlocked.split(" — ")[0],()=>openSync(),"Fix");
