@@ -55,6 +55,13 @@ section.view.active{display:block}
   .gsearch{order:3;flex:1 0 100%;max-width:none}
   .hpills{order:4;margin-left:0}
   #syncdot{order:5;margin-left:auto}
+  /* status is the colour alone: green synced, red unsynced, grey never paired */
+  #syncdot{width:30px;height:30px;padding:0;border:none;background:transparent;border-radius:50%;position:relative;flex:0 0 auto;cursor:pointer;font-size:0;line-height:0;-webkit-tap-highlight-color:transparent}
+  #syncdot::after{content:"";position:absolute;inset:9px;border-radius:50%;background:#4a5872;box-shadow:0 0 0 1px rgba(255,255,255,.10)}
+  #syncdot.ok::after{background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.35)}
+  #syncdot.bad::after{background:var(--e3);box-shadow:0 0 0 1px rgba(255,77,94,.35)}
+  #syncdot.none::after{background:#3d485e;opacity:.7}
+  #syncdot:hover::after{inset:8px}
 }
 @media(max-width:760px){
   input[type=text],input[type=tel],input[type=password],input[type=date],input[type=datetime-local],textarea,select{
@@ -544,11 +551,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.51 · 2026-08-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.52 · 2026-08-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
-  <button class="hpill" id="syncdot" onclick="openSync()" style="cursor:pointer;background:var(--card2);border:1px solid var(--line);color:var(--mut);font-family:var(--font)">⭘ sync</button>
+  <button id="syncdot" class="none" onclick="openSync()" aria-label="Sync status"></button>
 </header>
 
 <nav>
@@ -613,7 +620,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <section class="view" id="view-nccu">
   <div class="banner">NCCU sign-out view — send patients here from the Send bar on a Rounds card. One structured category block is shown per card.</div>
   <div class="rowflex">
-    <button class="btn sec sm" id="nccuCompactBtn" onclick="toggleNccuCompact()">Compact</button>
+    <button class="btn sec sm" id="nccuCompactBtn" onclick="setNccuCompact(true)">⊟ Compact</button>
+    <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
     <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every NCCU card">Δ Reset all</button>
     <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
@@ -5298,7 +5306,7 @@ function nccuCardHtml(r){
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
     '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
-    '<button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Full':'Compact')+'</button>'+
+    '<button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button>'+
     '</div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
@@ -5317,14 +5325,13 @@ function nccuRemove(id){
 }
 function renderNccu(){
   const el=document.getElementById("nccucards");if(!el)return;
-  const btn=document.getElementById("nccuCompactBtn");if(btn){btn.classList.toggle("on",nccuCompact);btn.textContent=nccuCompact?"Full":"Compact"}
   const db=document.getElementById("nccuDiffBtn");if(db)db.classList.toggle("on",nccuDiff);
   const pts=nccuPatients();
   el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU patients yet.<br>On a Rounds card, pick <b>● NCCU sign-out view</b> in the Send bar and tap <b>→ Send</b>.</div>';
 }
 // r.nccuView is "full" | "compact" | unset (follow the toolbar). The old
 // boolean r.nccuCompact could not express "expanded while the toolbar says
-// compact", so per-card Full did nothing once the toolbar was set.
+// compact", so per-card Expand did nothing once the toolbar was set.
 function nccuViewOf(r){
   if(r&&(r.nccuView==="full"||r.nccuView==="compact"))return r.nccuView;
   if(r&&r.nccuCompact)return "compact";
@@ -5332,8 +5339,8 @@ function nccuViewOf(r){
 }
 function nccuIsCompact(r){return nccuViewOf(r)==="compact"}
 // the toolbar is "set them all", so it clears any per-card overrides
-function toggleNccuCompact(){
-  nccuCompact=!nccuCompact;
+function setNccuCompact(compact){
+  nccuCompact=!!compact;
   nccuPatients().forEach(r=>{if(r.nccuView||r.nccuCompact){delete r.nccuView;delete r.nccuCompact;r.updatedAt=Date.now()}});
   renderNccu();flushAutosave();
 }
@@ -6107,7 +6114,26 @@ const MIN_SYNC_GAP=4000;      // never hit the API faster than this
 let lastSyncAt=0,rateRemaining=null;
 function syncPausedUntil(){return parseInt(localStorage.getItem(SK_RETRY)||"0",10)}
 function syncCfg(){return {token:localStorage.getItem(TK)||"",gist:localStorage.getItem(GK)||""}}
-function setDot(txt,color){const d=document.getElementById("syncdot");if(d){d.textContent=txt;d.style.color=color||"var(--mut)"}}
+// green = everything is on the gist, red = this device still holds changes
+// (or the last sync failed), grey = never paired
+function syncDotState(){
+  const cfg=syncCfg();
+  if(!cfg.token||!cfg.gist)return "none";
+  if(syncBlocked||syncFail||hasSyncDirty())return "bad";
+  return "ok";
+}
+const SYNC_DOT_TITLE={
+  ok:"Synced",
+  bad:"Not synced — changes are still only on this device",
+  none:"Not paired — tap to connect"
+};
+function setDot(){
+  const d=document.getElementById("syncdot");if(!d)return;
+  const st=syncDotState();
+  d.className=st;
+  const t=syncBlocked||SYNC_DOT_TITLE[st];
+  d.title=t;d.setAttribute("aria-label","Sync status: "+t);
+}
 function markSyncDirty(){const cfg=syncCfg();if(cfg.token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
 function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
 function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
@@ -6277,7 +6303,7 @@ function mergeState(local,remote){
 }
 async function doSync(auto){
   const cfg=syncCfg();
-  if(!cfg.token||!cfg.gist){setDot("⭘ sync","var(--mut)");if(!auto)openSync();return}
+  if(!cfg.token||!cfg.gist){setDot();if(!auto)openSync();return}
   if(auto&&syncBlocked)return;
   if(!auto)syncBlocked="";
   if(auto&&syncPausedUntil()>Date.now())return;
@@ -6286,7 +6312,7 @@ async function doSync(auto){
   // absolute floor on request rate, so no code path can ever run away
   const gap=lastSyncAt+MIN_SYNC_GAP-Date.now();
   if(gap>0){if(auto){schedulePush(gap);return}await new Promise(r=>setTimeout(r,gap))}
-  syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot("⟳ …","var(--e1)");
+  syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot();
   lastSyncAt=Date.now();
   const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
   let failed=false;
@@ -6324,7 +6350,7 @@ async function doSync(auto){
     startupCompactBoard=false;
     lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
     if((localStorage.getItem(SK_DIRTY)||"")===dirtyAtStart)clearSyncDirty();
-    setDot(hasSyncDirty()?"● pending":"● synced",hasSyncDirty()?"var(--e2)":"var(--ok)");
+    setDot();
     const ss=document.getElementById("syncstat");if(ss)ss.innerHTML="Last sync OK — gist <b>"+cfg.gist.slice(0,8)+"…</b> at "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
   }catch(e){
     failed=true;syncFail++;
@@ -6333,17 +6359,17 @@ async function doSync(auto){
       // nothing to retry against — say so once and stop
       syncBlocked=fatalSyncHint(e)||e.message;
       clearTimeout(pushT);clearTimeout(retryT);localStorage.removeItem(SK_RETRY);
-      setDot("⚠︎ sync","var(--e3)");
+      setDot();
       if(ss)ss.textContent=syncBlocked;
       if(!auto)alert(syncBlocked);
       else showToast("Sync stopped — "+syncBlocked.split(" — ")[0],()=>openSync(),"Fix");
     }else if(e&&e.rateLimited){
       const at=new Date(e.resetAt||Date.now()+900000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-      setDot("◷ sync","var(--e2)");
+      setDot();
       if(ss)ss.textContent="GitHub hourly API limit reached — syncing pauses until about "+at+", then resumes by itself. Everything you type is still saved on this device.";
       scheduleSyncRetry(e.retryAfter);
     }else{
-      setDot("! sync","var(--e3)");
+      setDot();
       if(ss)ss.textContent="Sync failed — "+e.message+". Your work is saved on this device; will retry.";
       scheduleSyncRetry(e.retryAfter);
     }
@@ -6376,7 +6402,7 @@ async function forceAppUpdate(){
   }catch(e){}
   location.reload();
 }
-function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();syncBlocked="";syncFail=0;clearTimeout(pushT);clearTimeout(retryT);setDot("⭘ sync","var(--mut)");openSync()}
+function disconnectSync(){localStorage.removeItem(TK);localStorage.removeItem(GK);localStorage.removeItem(SK_LAST);clearSyncDirty();syncBlocked="";syncFail=0;clearTimeout(pushT);clearTimeout(retryT);setDot();openSync()}
 // walk every page: stopping at the first 100 gists silently created a second
 // sync gist, which is what leaves two devices on different boards
 async function findAllSyncGists(){
@@ -6730,7 +6756,7 @@ compactBoardForStartup();
 renderAll();renderBlocks();
 boardClockTick(true);
 attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");attachSwipe("nccucards","nccu");
-setDot(syncCfg().token?"⟳ …":"⭘ sync");
+setDot();
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
 resumePendingSync();
 doSync(true);

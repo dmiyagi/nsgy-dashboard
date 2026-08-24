@@ -27,7 +27,7 @@ On **each** device (phone + computer):
    The token is the *only* thing to copy between devices — the first device creates the private Gist and every other device finds that same Gist on its own.
 3. **Phone**: Share button → **Add to Home Screen** → it installs like an app (full screen, works offline).
 
-That's it. Changes push ~2.5 s after you make them, and pull every minute while the app is open plus whenever it becomes visible; **⟳ Sync now** forces it. The dot shows ● synced / ⟳ syncing / ● pending / ⚠ error.
+That's it. Changes push ~2.5 s after you make them, and pull every minute while the app is open plus whenever it becomes visible; **⟳ Sync now** forces it. The dot is the status: **green** synced, **red** changes still only on this device (or the last sync failed), **grey** never paired. Tap it to open the sync panel.
 
 ## Notes
 
