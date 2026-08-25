@@ -372,7 +372,6 @@ button.rdone.rdemote{border-color:var(--e0);color:var(--mut)}
 .qbtns button.xbtn:hover,.qbtns button.tcclear:hover{border-color:var(--mut);color:var(--text)}
 .nccutodo .xbtn:hover{border-color:var(--e3);color:var(--e3)}
 mark.chg{background:rgba(242,211,75,.20);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:700}
-del.chgdel{background:rgba(255,77,94,.13);color:#ff9aa6;text-decoration:line-through;border-radius:3px;padding:0 2px;opacity:.85}
 .neg{color:var(--ok);font-weight:700}
 mark.chg .neg{color:#7ef0b6}
 .nccuplanrow mark.chg{background:rgba(242,211,75,.16)}
@@ -587,7 +586,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
         <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
         <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
         <button class="btn sec sm tc-WOUND" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'WOUND')">□ Wound</button>
-        <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">⌂ DC prep</button>
+        <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">DC prep</button>
       </div>
     </details>
     <div class="typefilters" id="typefilters"></div>
@@ -1525,11 +1524,18 @@ const TYPES={
  WOUND:{i:"□",l:"Wound check",probL:"What — patient",probPh:"suture/staple/incision check · C243 Miy",dlL:"Next check",
   presets:[["+1 day",1440],["+2 days",2880],["+3 days",4320],["+1 wk",10080],["Clear",0]],
   rem:"Dedicated wound/suture/staple/incision check. Can be snoozed to calendar/board date and linked back to a Rounds patient."},
- DC:{i:"⌂",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
+ DC:{i:"DC",l:"DC prep",probL:"What remains / barrier to DC (optional)",probPh:"awaiting rehab bed · family pickup 4pm",dlL:"Out by",
   presets:[["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
-  rem:"Med rec signed & e-prescribed → follow-up providers (CoC, every consulted service) → .nsdischarge instructions → .ewdcsummary (refresh if meds change) → sign AVS → dc order."}};
+  rem:"Med rec signed & e-prescribed → follow-up providers / CoC → discharge summary → dc order."}};
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","cbdet"];
 const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
+function normalizeDcPrep(c){
+  if(!c||c.type!=="DC")return c;
+  c.steps=[];
+  if(c.action&&/let .*know|gather supplies|sig(?:nificant)? event|procedure note/i.test(c.action))c.action="";
+  if(c.lastDone&&/let .*know|gather supplies|sig(?:nificant)? event|procedure note/i.test(c.lastDone))c.lastDone="";
+  return c;
+}
 function addQuickProcSteps(c){
   if(!c||c.type!=="PCON")return;
   c.steps=c.steps||[];
@@ -2339,6 +2345,7 @@ function migrate(d){
     if(!c.type)c.type="CONSULT";
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
+    if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.reviewOff&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
   });
@@ -2824,7 +2831,7 @@ function reflowQueue(){
   return next||null;
 }
 const WF_ITEMS=[["list","List"],["handoff","Handoff"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"],["note","Note"]];
-const DC_WF=[["medrec","Med rec ✍"],["coc","CoC/f-u"],["instr",".nsdischarge"],["summ","DC summary"],["avs","AVS"],["order","DC order"]];
+const DC_WF=[["medrec","Med rec"],["coc","CoC/f-u"],["summ","DC summary"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
  PROC:[["staff","Tell nursing/team"],["dvt","Hold DVT ppx"],["consent","Consent"],["supplies","Gather supplies"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
@@ -2859,7 +2866,7 @@ function allCardWorkDone(c){
   if(!c)return false;
   if(compactPending(c))return false;
   if(c.action&&!stepTextOpen(c,c.action))return false;
-  if((c.steps||[]).some(s=>!s.done))return false;
+  if(c.type!=="DC"&&(c.steps||[]).some(s=>!s.done))return false;
   if((c.tasks||[]).some(t=>!t.done))return false;
   const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
   if(set.length&&!set.every(([k])=>c.wf&&c.wf[k]))return false;
@@ -3147,8 +3154,10 @@ function trashBtn(id,kind){
 }
 function compactPending(c){
   if(c.action&&!stepTextOpen(c,c.action))return {kind:"action",t:c.action};
-  const si=(c.steps||[]).findIndex(s=>!s.done);
-  if(si>=0)return {kind:"step",i:si,t:c.steps[si].t};
+  if(c.type!=="DC"){
+    const si=(c.steps||[]).findIndex(s=>!s.done);
+    if(si>=0)return {kind:"step",i:si,t:c.steps[si].t};
+  }
   const ti=(c.tasks||[]).findIndex(t=>!t.done);
   if(ti>=0)return {kind:"task",i:ti,t:c.tasks[ti].t};
   return null;
@@ -3191,6 +3200,7 @@ function soButtonAttrs(c){
 function typeBadgeHtml(c,compact){
   if(!c||!c.type||c.type==="CONSULT"||!TYPES[c.type])return "";
   const t=TYPES[c.type];
+  if(c.type==="DC")return '<span class="bg t tc-DC" title="'+esc(t.l)+'">'+(compact?"DC":"DC prep")+'</span>';
   return '<span class="bg t tc-'+c.type+'" title="'+esc(t.l)+'">'+t.i+(compact?"":" "+esc(t.l))+'</span>';
 }
 function rowCard(c,dl,isTask){
@@ -3284,12 +3294,13 @@ function card(c){
   const isTask=!!(c.type&&c.type!=="CONSULT"&&TYPES[c.type]);
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
+    if(c.type==="DC")normalizeDcPrep(c);
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
     const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO Sign-out</button>'):"";
     return '<div class="card hastrash E'+c.E+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
-     '<div class="badges"><span class="bg t tc-'+c.type+'">'+TYPES[c.type].i+" "+TYPES[c.type].l+'</span>'+
+     '<div class="badges">'+typeBadgeHtml(c)+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
        patientTag(c)+linkedCardsHtml(c,true)+
        (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
@@ -3298,7 +3309,7 @@ function card(c){
      careMetaHtml(c)+
      linkedCardsHtml(c,false)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
-     stepsHtml(c)+
+     (c.type==="DC"?"":stepsHtml(c))+
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
@@ -3552,6 +3563,7 @@ function applyTypeDefaults(c,type,opts){
   if(opts.fresh){c.O=0;c.cQuick=1}
   if(type==="CHART"||type==="WOUND")c.E=0;
   if(type==="PCON")addQuickProcSteps(c);
+  if(type==="DC")normalizeDcPrep(c);
   if(type==="BOOK"){
     c.tasks=c.tasks||[];
     BOOK_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
@@ -3602,7 +3614,7 @@ function openForm(id,reassess,ptype){
 function buildTypeChips(){
   const el=document.getElementById("typechips");
   const keys=Object.keys(TYPES);
-  el.innerHTML=keys.map(k=>'<button class="tc-'+k+(F.type===k?" on":"")+'">'+TYPES[k].i+" "+TYPES[k].l+'</button>').join("");
+  el.innerHTML=keys.map(k=>'<button class="tc-'+k+(F.type===k?" on":"")+'">'+(k==="DC"?"DC prep":TYPES[k].i+" "+TYPES[k].l)+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{applyTypeDefaults(F,keys[i],{fresh:false});buildTypeChips();buildSelectors();document.getElementById("f_steps").value=(F.steps||[]).map(s=>s.t).join("\n");document.getElementById("f_action").value=F.action||"";renderSugg();renderFlags()});
   setTypeUI();
 }
@@ -3793,6 +3805,7 @@ function saveForm(){
   F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
+  if(F.type==="DC")normalizeDcPrep(F);
   ensureInfectionChecklistOnCard(F,[F.prob,F.state,F.action,F.note].filter(Boolean).join(" "));
   if(F.type==="CHART")F.E=0;
   F.deadlineISO=null;
@@ -5047,8 +5060,8 @@ let openNccuTodoTimer=null; // "<id>:<i>"
 function nccuTokens(s){return String(s||"").split(/(\s+)/).filter(t=>t!=="")}
 // compare on a normalised key so trailing commas and casing are not "changes"
 function nccuKey(t){return String(t||"").toLowerCase().replace(/^[^\w%<>+-]+|[^\w%<>+-]+$/g,"")||String(t||"")}
-// A word that disappears matters as much as one that appears — losing the "no"
-// from "no seizures" used to render as no change at all.
+// The NCCU view calls attention to new/current changed words only. Deletions
+// are used for alignment, then omitted from the rendered view.
 function nccuDiffParts(base,cur){
   const A=nccuTokens(base),B=nccuTokens(cur);
   const KA=A.map(nccuKey),KB=B.map(nccuKey);
@@ -5092,7 +5105,7 @@ function nccuFieldHtml(r,key,val){
     if(!p.t.trim())return esc(p.t);
     if(p.s==="same")return negHtml(p.t);
     if(p.s==="add")return '<mark class="chg">'+negHtml(p.t)+'</mark>';
-    return '<del class="chgdel" title="removed since the baseline">'+esc(p.t)+'</del>';
+    return "";
   }).join("");
 }
 function nccuChangeCount(r){
@@ -6093,7 +6106,7 @@ function renderCapture(){
   }else if(chartCue){add("primary","▤","Chart check","",()=>capTask("CHART",text,{loc:bed||""}))}
   else if(pocCue){add("primary","＋","Post-op check","anticipated exam time presets",()=>capTask("POC",text,{loc:bed||""}))}
   else if(procCue){add("primary",HAMMER_ICON,"Floor procedure","time-out with a nurse · consent · DVT ppx 6 h",()=>capTask("PROC",text,{loc:bed||""}))}
-  else if(dcCue){add("primary","⌂","DC prep","med rec → CoC → .nsdischarge → summary → AVS → order",()=>capTask("DC",text,{loc:bed||""}))}
+  else if(dcCue){add("primary","DC","DC prep","med rec → CoC/f-u → DC summary → DC order",()=>capTask("DC",text,{loc:bed||""}))}
   else if(consentCue){add("primary","✎","Consent task","",()=>capTask("CONSENT",text,{loc:bed||""}))}
   else{
     add("oe primary","⌕","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
