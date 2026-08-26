@@ -388,8 +388,14 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .nccunext .ract{flex:1;min-width:40px;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nccunext.none .ract{color:var(--mut);font-style:italic}
 .nccunext+.steptimer{margin:5px 0 0}
-.nccuhighlight{min-width:190px;max-width:320px;flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font:600 12px var(--font);padding:7px 10px}
+.nccuhbar{display:flex;align-items:center;gap:5px;flex:1 1 280px;min-width:220px;max-width:520px;flex-wrap:wrap}
+.nccuhighlight{min-width:150px;flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font:600 12px var(--font);padding:7px 10px}
 .nccuhighlight:focus{outline:none;border-color:var(--e1)}
+.nccuhadd{border:1px solid var(--e1);background:transparent;color:var(--e1);border-radius:8px;font:800 11.5px var(--font);padding:6px 10px;cursor:pointer}
+.nccuhchips{display:flex;gap:5px;flex-wrap:wrap;flex:1 0 100%}
+.nccuhchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--e1);background:#3a3312;color:#ffe987;border-radius:999px;font:800 11px var(--font);padding:3px 8px;max-width:180px}
+.nccuhchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nccuhchip button{border:0;background:transparent;color:inherit;font:900 12px var(--font);padding:0;cursor:pointer}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--line);width:14px;height:14px}
@@ -629,7 +635,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
     <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every NCCU card">Δ Reset all</button>
-    <input class="nccuhighlight" id="nccuHighlight" placeholder="Highlight words in NCCU…" oninput="setNccuHighlight(this.value)">
+    <div class="nccuhbar">
+      <input class="nccuhighlight" id="nccuHighlightInput" placeholder="Highlight word or phrase…" onkeydown="nccuHighlightKey(event)">
+      <button class="nccuhadd" type="button" onclick="addNccuHighlight()">Add</button>
+      <div class="nccuhchips" id="nccuHighlightChips"></div>
+    </div>
     <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
     <button class="btn sec sm" onclick="renderNccu()">Refresh</button>
   </div>
@@ -5059,7 +5069,7 @@ const NCCU_FIELDS=[
   ["Endo","Endo"],
   ["Prophylaxis","Prophylaxis"]
 ];
-let nccuCompact=false,nccuDiff=false,nccuHighlight="";
+let nccuCompact=false,nccuDiff=false,nccuHighlights=[];
 let openNccuTodoTimer=null; // "<id>:<i>"
 // ---- change highlighting: what moved since this card was last marked seen ----
 // soSnap holds the baseline value per field; it is seeded the first time a
@@ -5096,23 +5106,39 @@ function nccuDiffParts(base,cur){
 }
 const NEG_RE=/\b(?:no|not|non|none|neg|negative|denies|denied|without|w\/o|absent|afebrile|asymptomatic|nil|nkda|unremarkable|wnl|intact|nad|resolved)\b/gi;
 function rxEsc(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
-function nccuHighlightTerms(){return String(nccuHighlight||"").split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>1)}
-function nccuTokenHtml(t,forceMark){
-  if(!String(t||"").trim())return esc(t);
-  const isNeg=new RegExp(NEG_RE.source,"i").test(t);
+function nccuHighlightTerms(){return nccuHighlights.slice().sort((a,b)=>b.length-a.length)}
+function nccuHighlightKey(e){
+  if(e.key==="Enter"||e.key===","){e.preventDefault();addNccuHighlight()}
+}
+function addNccuHighlight(){
+  const el=document.getElementById("nccuHighlightInput");if(!el)return;
+  const vals=String(el.value||"").split(",").map(s=>s.trim()).filter(Boolean);
+  vals.forEach(v=>{if(v.length>1&&!nccuHighlights.some(x=>x.toLowerCase()===v.toLowerCase()))nccuHighlights.push(v)});
+  el.value="";renderNccuHighlightChips();renderNccu();
+}
+function removeNccuHighlight(i){nccuHighlights.splice(i,1);renderNccuHighlightChips();renderNccu()}
+function clearNccuHighlights(){nccuHighlights=[];renderNccuHighlightChips();renderNccu()}
+function renderNccuHighlightChips(){
+  const el=document.getElementById("nccuHighlightChips");if(!el)return;
+  el.innerHTML=nccuHighlights.map((h,i)=>'<span class="nccuhchip"><span>'+esc(h)+'</span><button type="button" title="Remove highlight" onclick="removeNccuHighlight('+i+')">×</button></span>').join("")+
+    (nccuHighlights.length?'<button class="nccuclear" type="button" onclick="clearNccuHighlights()">clear all</button>':"");
+}
+function nccuNegOnlyHtml(t){return esc(t).replace(NEG_RE,m=>'<span class="neg">'+m+'</span>')}
+function nccuTextHtml(t){
   let x=esc(t);
   const terms=nccuHighlightTerms();
-  if(forceMark||terms.some(q=>new RegExp(rxEsc(q),"i").test(t))){
-    if(terms.length&&!forceMark){
-      const re=new RegExp("("+terms.map(rxEsc).join("|")+")","gi");
-      x=x.replace(re,'<mark class="chg">$1</mark>');
-    }else x='<mark class="chg">'+x+'</mark>';
+  if(terms.length){
+    const re=new RegExp("("+terms.map(q=>rxEsc(esc(q))).join("|")+")","gi");
+    x=x.replace(re,'<mark class="chg">$1</mark>');
   }
-  return isNeg?'<span class="neg">'+x+'</span>':x;
+  return x.replace(NEG_RE,m=>'<span class="neg">'+m+'</span>');
+}
+function nccuTokenHtml(t,forceMark){
+  if(!String(t||"").trim())return esc(t);
+  return forceMark?'<mark class="chg">'+nccuNegOnlyHtml(t)+'</mark>':nccuTextHtml(t);
 }
 // absence/negation reads differently from presence, in or out of diff mode
-function negHtml(t){return nccuTokens(t).map(tok=>nccuTokenHtml(tok,false)).join("")}
-function setNccuHighlight(v){nccuHighlight=v||"";renderNccu()}
+function negHtml(t){return nccuTextHtml(t)}
 // the baseline resets itself each day, so "Δ Changes" reads as
 // "what moved since this shift started"
 function nccuBaseline(r){
@@ -5376,6 +5402,7 @@ function nccuRemove(id){
 }
 function renderNccu(){
   const el=document.getElementById("nccucards");if(!el)return;
+  renderNccuHighlightChips();
   const db=document.getElementById("nccuDiffBtn");if(db)db.classList.toggle("on",nccuDiff);
   const pts=nccuPatients();
   el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No NCCU patients yet.<br>On a Rounds card, pick <b>● NCCU sign-out view</b> in the Send bar and tap <b>→ Send</b>.</div>';
