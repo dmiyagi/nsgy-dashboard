@@ -323,10 +323,14 @@ button.rdone.finaldone{background:#123527}
 .nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
 .nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px;cursor:pointer}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
+.nccuhead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.nccuhead b{margin-bottom:0;flex:1;min-width:0}
+.nccuclear{border:1px solid var(--e1);background:transparent;color:var(--e1);border-radius:6px;font:800 10.5px var(--font);padding:2px 7px;cursor:pointer;white-space:nowrap}
+.nccuclear:hover{background:#3a3312}
 .nccufield span{white-space:pre-wrap;color:#d9e2ef;font-size:13px}
 .nccufield:hover{border-color:var(--acc)}
 .nccufield.plan{grid-column:1/-1}
-.nccuplanrow{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:6px;margin-top:6px;cursor:pointer;border-radius:6px}
+.nccuplanrow{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:8px;border-top:1px solid rgba(139,167,214,.18);padding-top:6px;margin-top:6px;cursor:pointer;border-radius:6px}
 .nccuplanrow:hover{background:rgba(90,162,255,.08)}
 .nccuplanrow:first-child{border-top:none;padding-top:0;margin-top:0}
 .nccuplanrow em{font-style:normal;color:var(--mut);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.35px}
@@ -384,6 +388,8 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .nccunext .ract{flex:1;min-width:40px;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nccunext.none .ract{color:var(--mut);font-style:italic}
 .nccunext+.steptimer{margin:5px 0 0}
+.nccuhighlight{min-width:190px;max-width:320px;flex:1;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font:600 12px var(--font);padding:7px 10px}
+.nccuhighlight:focus{outline:none;border-color:var(--e1)}
 .woundchecks{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .woundchecks label{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--mut);white-space:nowrap}
 .woundchecks input{accent-color:var(--line);width:14px;height:14px}
@@ -623,6 +629,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
     <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every NCCU card">Δ Reset all</button>
+    <input class="nccuhighlight" id="nccuHighlight" placeholder="Highlight words in NCCU…" oninput="setNccuHighlight(this.value)">
     <button class="btn sec sm" onclick="copyNccuSignout()">Copy NCCU sign-out</button>
     <button class="btn sec sm" onclick="renderNccu()">Refresh</button>
   </div>
@@ -5052,7 +5059,7 @@ const NCCU_FIELDS=[
   ["Endo","Endo"],
   ["Prophylaxis","Prophylaxis"]
 ];
-let nccuCompact=false,nccuDiff=false;
+let nccuCompact=false,nccuDiff=false,nccuHighlight="";
 let openNccuTodoTimer=null; // "<id>:<i>"
 // ---- change highlighting: what moved since this card was last marked seen ----
 // soSnap holds the baseline value per field; it is seeded the first time a
@@ -5087,9 +5094,25 @@ function nccuDiffParts(base,cur){
   while(j<m){out.push({t:B[j],s:"add"});j++}
   return out;
 }
-// absence/negation reads differently from presence, in or out of diff mode
 const NEG_RE=/\b(?:no|not|non|none|neg|negative|denies|denied|without|w\/o|absent|afebrile|asymptomatic|nil|nkda|unremarkable|wnl|intact|nad|resolved)\b/gi;
-function negHtml(t){return esc(t).replace(NEG_RE,m=>'<span class="neg">'+m+'</span>')}
+function rxEsc(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
+function nccuHighlightTerms(){return String(nccuHighlight||"").split(/[\s,]+/).map(s=>s.trim()).filter(s=>s.length>1)}
+function nccuTokenHtml(t,forceMark){
+  if(!String(t||"").trim())return esc(t);
+  const isNeg=new RegExp(NEG_RE.source,"i").test(t);
+  let x=esc(t);
+  const terms=nccuHighlightTerms();
+  if(forceMark||terms.some(q=>new RegExp(rxEsc(q),"i").test(t))){
+    if(terms.length&&!forceMark){
+      const re=new RegExp("("+terms.map(rxEsc).join("|")+")","gi");
+      x=x.replace(re,'<mark class="chg">$1</mark>');
+    }else x='<mark class="chg">'+x+'</mark>';
+  }
+  return isNeg?'<span class="neg">'+x+'</span>':x;
+}
+// absence/negation reads differently from presence, in or out of diff mode
+function negHtml(t){return nccuTokens(t).map(tok=>nccuTokenHtml(tok,false)).join("")}
+function setNccuHighlight(v){nccuHighlight=v||"";renderNccu()}
 // the baseline resets itself each day, so "Δ Changes" reads as
 // "what moved since this shift started"
 function nccuBaseline(r){
@@ -5103,10 +5126,14 @@ function nccuFieldHtml(r,key,val){
   if(base===undefined||String(base)===cur)return negHtml(cur);
   return nccuDiffParts(base,cur).map(p=>{
     if(!p.t.trim())return esc(p.t);
-    if(p.s==="same")return negHtml(p.t);
-    if(p.s==="add")return '<mark class="chg">'+negHtml(p.t)+'</mark>';
+    if(p.s==="same")return nccuTokenHtml(p.t,false);
+    if(p.s==="add")return nccuTokenHtml(p.t,true);
     return "";
   }).join("");
+}
+function nccuFieldChanged(r,key){const base=nccuBaseline(r);return base[key]!==undefined&&String(base[key])!==String((r.so||{})[key]||"")}
+function nccuFieldHead(r,label,title){
+  return '<div class="nccuhead"><b>'+esc(title||label)+'</b>'+(nccuDiff&&nccuFieldChanged(r,label)?'<button class="nccuclear" title="Clear change highlight for this box" onclick="event.stopPropagation();nccuResetField(\''+r.id+'\',\''+esc(label)+'\')">clear Δ</button>':"")+'</div>';
 }
 function nccuChangeCount(r){
   const base=nccuBaseline(r);
@@ -5124,6 +5151,17 @@ function nccuResetCard(id){
   nccuResetOne(r);
   renderNccu();flushAutosave();
   showToast("Change tracking reset — "+soLabel(r)+(n?" ("+n+" cleared)":""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    nccuApplySnap(rr,before);renderNccu();flushAutosave();
+  },"Undo");
+}
+function nccuResetField(id,key){
+  const r=findAny(id);if(!r)return;
+  const before=nccuSnapOf(r);
+  r.soSnap=r.soSnap||{};r.soSnapDay=todayStr();
+  r.soSnap[key]=(r.so||{})[key]||"";
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Change highlight cleared — "+key,()=>{
     const rr=findAny(id);if(!rr)return;
     nccuApplySnap(rr,before);renderNccu();flushAutosave();
   },"Undo");
@@ -5160,9 +5198,10 @@ function nccuDetailFields(){
 function nccuPlanHtml(r){
   const rows=nccuPlanFields().map(([label,pats])=>{
     const val=soPick(r,pats)||"___";
-    return '<div class="nccuplanrow" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><em>'+esc(label)+'</em><span>'+nccuFieldHtml(r,label,val)+'</span></div>';
+    return '<div class="nccuplanrow" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><em>'+esc(label)+'</em><span>'+nccuFieldHtml(r,label,val)+'</span>'+
+      (nccuDiff&&nccuFieldChanged(r,label)?'<button class="nccuclear" title="Clear change highlight for this box" onclick="event.stopPropagation();nccuResetField(\''+r.id+'\',\''+esc(label)+'\')">clear Δ</button>':"")+'</div>';
   }).join("");
-  return '<div class="nccufield plan"><b>A/P</b>'+rows+'</div>';
+  return '<div class="nccufield plan">'+nccuFieldHead(r,"","A/P")+rows+'</div>';
 }
 // an NCCU card is backed either by a rounding entry (to-dos live on .steps) or
 // by a board card (to-dos live on .tasks) — these keep both working the same way
@@ -5213,13 +5252,13 @@ function nccuExamHtml(r){
   const cur=soPick(r,"Exam")||"";
   const prior=nccuExamTrail(r);
   const when=ts=>ts?new Date(ts).toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}):"previous";
-  return '<div class="nccufield xbox"><b>Exam</b>'+
+  return '<div class="nccufield xbox">'+nccuFieldHead(r,"Exam","Exam")+
     '<div class="nccuexcur" onclick="openSO(\''+r.id+'\',\'Exam\')">'+nccuFieldHtml(r,"Exam",cur||"___")+'</div>'+
     (prior.length?prior.map(h=>'<div class="nccuexprev"><em>'+esc(when(h.ts))+'</em><span>'+esc(h.text)+'</span></div>').join(""):'<div class="nccuexprev none">No earlier exam recorded</div>')+
     '</div>';
 }
 function nccuNoteHtml(r){
-  return '<div class="nccufield nbox"><b>Notes</b>'+
+  return '<div class="nccufield nbox"><div class="nccuhead"><b>Notes</b></div>'+
     '<textarea class="nccunote" id="nccunote_'+r.id+'" placeholder="Free-text notes for this patient… (saves as you type)" '+
     'oninput="nccuNoteSave(\''+r.id+'\',this)" onblur="nccuNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea></div>';
 }
@@ -5229,12 +5268,12 @@ function nccuTodoHtml(r){
   const rows=list.length?('<div class="nccutodos">'+list.map((t,i)=>{
     return '<div class="nccutodo'+(t.done?' done':'')+'">'+
       '<input type="checkbox" '+(t.done?'checked':'')+' onchange="nccuTodoToggle(\''+r.id+'\','+i+')">'+
-      '<span class="ttxt">'+esc(t.t)+'</span>'+
+      '<span class="ttxt">'+negHtml(t.t)+'</span>'+
       (t.done?"":nccuTodoTimerBtn(r,i,t))+
       '<button type="button" class="xbtn" onclick="nccuTodoRemove(\''+r.id+'\','+i+')">×</button></div>'+
       (t.done?"":nccuTodoTimerRow(r,i));
   }).join("")+'</div>'):'<div class="nccuempty">Nothing open.</div>';
-  return '<div class="nccufield tbox"><b>To-Dos'+(open?' ('+open+' open)':'')+'</b>'+rows+
+  return '<div class="nccufield tbox"><div class="nccuhead"><b>To-Dos'+(open?' ('+open+' open)':'')+'</b></div>'+rows+
     '<div class="nccutodoadd"><input type="text" id="nccutodoin_'+r.id+'" placeholder="Add a to-do…" '+
     'onkeydown="if(event.key===\'Enter\'){event.preventDefault();nccuTodoAdd(\''+r.id+'\')}">'+
     '<button type="button" onclick="nccuTodoAdd(\''+r.id+'\')">＋ Add</button></div></div>';
@@ -5295,7 +5334,7 @@ function nccuCompactTodoHtml(r){
   if(!nx)return '<div class="nccunext none"><span class="ract">'+(list.length?"All to-dos done":"No to-dos")+'</span></div>';
   return '<div class="nccunext">'+
     '<button class="rdone" onclick="event.stopPropagation();nccuTodoToggle(\''+r.id+'\','+nx.i+')">✓ done</button>'+
-    '<span class="ract">'+esc(nx.t.t)+'</span>'+
+    '<span class="ract">'+negHtml(nx.t.t)+'</span>'+
     (open>1?'<span class="bg mod">☐'+open+'</span>':"")+
     nccuTodoTimerBtn(r,nx.i,nx.t)+
     '</div>'+nccuTodoTimerRow(r,nx.i);
@@ -5303,24 +5342,23 @@ function nccuCompactTodoHtml(r){
 function nccuCompactNoteHtml(r){
   const n=String((r&&r.note)||"").trim();
   if(!n)return "";
-  return '<div class="nccunote-c" onclick="toggleOneNccuCompact(\''+r.id+'\')" title="Open the card to edit"><b>Notes</b><span>'+esc(n)+'</span></div>';
+  return '<div class="nccunote-c" onclick="toggleOneNccuCompact(\''+r.id+'\')" title="Open the card to edit"><b>Notes</b><span>'+negHtml(n)+'</span></div>';
 }
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuIsCompact(r);
   const body=compact
     ? (nccuCompactTodoHtml(r)+nccuCompactNoteHtml(r))
-    : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')"><b>'+esc(label)+'</b><span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuExamHtml(r)+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
+    : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+nccuFieldHead(r,label,label)+'<span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuExamHtml(r)+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from NCCU" aria-label="Remove from NCCU" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span>'+soTmplBadge(r)+
     (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
+    '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
-    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
-    '<button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button>'+
-    '</div></div>';
+    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">SO Sign-out</button></div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
 function nccuRemove(id){
