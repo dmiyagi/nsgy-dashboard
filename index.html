@@ -1296,6 +1296,11 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <h2 id="soTitle">Sign-out</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Ordered the way it should be spoken. Fill what you know — blanks copy as ___ so nothing gets skipped.</p>
     <div class="chips" id="sochips" style="margin-bottom:10px"></div>
+    <div class="nccuhbar" style="margin-bottom:10px;max-width:none">
+      <input class="nccuhighlight" id="soHighlightInput" placeholder="Highlight word or phrase…" onkeydown="nccuHighlightKey(event,'soHighlightInput')">
+      <button class="nccuhadd" type="button" onclick="addNccuHighlight('soHighlightInput')">Add</button>
+      <div class="nccuhchips" id="soHighlightChips"></div>
+    </div>
     <div id="sofields"></div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideSO()">Close</button>
@@ -4993,8 +4998,9 @@ function soFieldHtml(r,f){
   const k=f[0],v=(r.so&&r.so[k])||"";
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
   const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
-  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld"><label>'+esc(k)+'</label>'+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
-  return '<div class="fld"><label>'+esc(k)+'</label><input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
+  const head='<div class="nccuhead"><b>'+esc(k)+'</b>'+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
+  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld">'+head+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
+  return '<div class="fld">'+head+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
 function soIsExamField(k){return /\bexam\b|motor|baseline/i.test(k||"")}
 function soIsTrendField(k){return /^(Labs|I\/Os|EVD\/Output|Renal)$/i.test(k||"")}
@@ -5015,10 +5021,23 @@ function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.s
   syncLinkedSo(r);renderSOHints();
   if(quiet){if(changed)autosave()}
   else{flushAutosave();render();renderNccu()}}}
+function soChangePreview(r,k,val){
+  const cur=String(val||"");
+  if(!r||!nccuFieldChanged(r,k))return soHighlight(cur);
+  const base=nccuBaseline(r)[k];
+  return nccuDiffParts(base,cur).map(p=>{
+    if(!p.t.trim())return esc(p.t);
+    if(p.s==="same")return soHighlight(p.t);
+    if(p.s==="add")return nccuTokenHtml(p.t,true);
+    return "";
+  }).join("");
+}
 function renderSOHints(){
+  renderNccuHighlightChips();
   document.querySelectorAll("#sofields [data-sohint]").forEach(h=>{
     const inp=h.parentElement.querySelector(".soinput");
-    h.innerHTML=soHighlight(inp?inp.value:"");
+    const r=findAny(soId),k=inp&&inp.dataset?inp.dataset.so:"";
+    h.innerHTML=soChangePreview(r,k,inp?inp.value:"");
     h.style.display=h.textContent.trim()?"":"none";
   });
   const r=findAny(soId);
@@ -5029,8 +5048,7 @@ function renderSOHints(){
   });
 }
 function soHighlight(s){
-  let x=esc(s||"");
-  x=x.replace(NEG_RE,m=>'<span class="neg">'+m+'</span>');
+  let x=nccuTextHtml(s||"");
   x=x.replace(/\b(EVD|JP|blake|hemovac|drain(?:s)?|LD|lumbar drain|SEPS|bolt)\b/gi,'<span class="drain">$1</span>');
   x=x.replace(/\b(Na|WBC|Hgb|Hct|Plt|INR|PTT|PT|ESR|CRP|Cr|K|Mg|CSF|culture(?:s)?)\b(?:\s*[=:]?\s*[\w./+-]+)?/gi,'<span class="lab">$&</span>');
   x=x.replace(/\b(SBP|BP|MAP|ICP)\b(?:\s*[<>=-]?\s*\d{1,3}(?:-\d{1,3})?)?/gi,'<span class="bp">$&</span>');
@@ -5107,21 +5125,23 @@ function nccuDiffParts(base,cur){
 const NEG_RE=/\b(?:no|not|non|none|neg|negative|denies|denied|without|w\/o|absent|afebrile|asymptomatic|nil|nkda|unremarkable|wnl|intact|nad|resolved)\b/gi;
 function rxEsc(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
 function nccuHighlightTerms(){return nccuHighlights.slice().sort((a,b)=>b.length-a.length)}
-function nccuHighlightKey(e){
-  if(e.key==="Enter"||e.key===","){e.preventDefault();addNccuHighlight()}
+function nccuHighlightKey(e,inputId){
+  if(e.key==="Enter"||e.key===","){e.preventDefault();addNccuHighlight(inputId)}
 }
-function addNccuHighlight(){
-  const el=document.getElementById("nccuHighlightInput");if(!el)return;
+function addNccuHighlight(inputId){
+  const el=document.getElementById(inputId||"nccuHighlightInput");if(!el)return;
   const vals=String(el.value||"").split(",").map(s=>s.trim()).filter(Boolean);
   vals.forEach(v=>{if(v.length>1&&!nccuHighlights.some(x=>x.toLowerCase()===v.toLowerCase()))nccuHighlights.push(v)});
-  el.value="";renderNccuHighlightChips();renderNccu();
+  el.value="";renderNccuHighlightChips();renderNccu();renderSOHints();
 }
-function removeNccuHighlight(i){nccuHighlights.splice(i,1);renderNccuHighlightChips();renderNccu()}
-function clearNccuHighlights(){nccuHighlights=[];renderNccuHighlightChips();renderNccu()}
+function removeNccuHighlight(i){nccuHighlights.splice(i,1);renderNccuHighlightChips();renderNccu();renderSOHints()}
+function clearNccuHighlights(){nccuHighlights=[];renderNccuHighlightChips();renderNccu();renderSOHints()}
 function renderNccuHighlightChips(){
-  const el=document.getElementById("nccuHighlightChips");if(!el)return;
-  el.innerHTML=nccuHighlights.map((h,i)=>'<span class="nccuhchip"><span>'+esc(h)+'</span><button type="button" title="Remove highlight" onclick="removeNccuHighlight('+i+')">×</button></span>').join("")+
-    (nccuHighlights.length?'<button class="nccuclear" type="button" onclick="clearNccuHighlights()">clear all</button>':"");
+  ["nccuHighlightChips","soHighlightChips"].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=nccuHighlights.map((h,i)=>'<span class="nccuhchip"><span>'+esc(h)+'</span><button type="button" title="Remove highlight" onclick="removeNccuHighlight('+i+')">×</button></span>').join("")+
+      (nccuHighlights.length?'<button class="nccuclear" type="button" onclick="clearNccuHighlights()">clear all</button>':"");
+  });
 }
 function nccuNegOnlyHtml(t){return esc(t).replace(NEG_RE,m=>'<span class="neg">'+m+'</span>')}
 function nccuTextHtml(t){
@@ -5186,10 +5206,10 @@ function nccuResetField(id,key){
   const before=nccuSnapOf(r);
   r.soSnap=r.soSnap||{};r.soSnapDay=todayStr();
   r.soSnap[key]=(r.so||{})[key]||"";
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();else renderSOHints();flushAutosave();
   showToast("Change highlight cleared — "+key,()=>{
     const rr=findAny(id);if(!rr)return;
-    nccuApplySnap(rr,before);renderNccu();flushAutosave();
+    nccuApplySnap(rr,before);renderNccu();if(soId===id)buildSOFields();else renderSOHints();flushAutosave();
   },"Undo");
 }
 function nccuResetAll(){
