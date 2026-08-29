@@ -562,7 +562,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.52 · 2026-08-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.55 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1154,10 +1154,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         <div><label>Team</label><input type="text" id="f_team"></div>
         <div><label>Attending</label><input type="text" id="f_attg"></div>
       </div>
-      <div class="flags" id="flags"></div>
     </div>
-    <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
-    <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea></div>
     <input type="hidden" id="f_dl">
     <div class="fld" id="fld_snooze"><label id="dlLabel">◷ Timing / reschedule</label>
       <div class="qbtns">
@@ -1171,9 +1168,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       </div>
       <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
     </div>
-    <details class="moredet" id="fld_tc"><summary>Text consult — build the send-ready version</summary>
-      <div id="ftcbody"></div>
-    </details>
+    <div class="flags" id="flags"></div>
     <div class="sugg" id="sugg"></div>
     <div id="prockit"></div>
     <div id="smarthints"></div>
@@ -1181,6 +1176,12 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div id="f_hh"></div>
     <div id="f_ich"></div>
     <div id="f_ao"></div>
+    <details class="moredet" id="fld_tc"><summary>Text consult — build the send-ready version</summary>
+      <div id="ftcbody"></div>
+    </details>
+    <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
+    <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
+    <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea></div>
     <div class="fld" id="fld_E"><div class="axhead"><label>Urgency</label><button type="button" class="axtog" data-ax="E" onclick="togAxisDetail('E')">more</button></div>
       <div class="selrow" id="selE"></div>
       <div id="eMini"></div>
@@ -1206,7 +1207,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
         <div id="doms"></div>
       </details>
     </div>
-    <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
