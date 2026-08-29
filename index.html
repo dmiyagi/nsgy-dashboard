@@ -140,9 +140,9 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .selrow button .d2{display:none}
 .selrow.showall button .d2{display:none}
 .selrow button.on{color:var(--text)}
-.axhead{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-bottom:2px}
+.axhead{display:none}
 .axhead label{margin:0}
-.axtog{margin-left:auto;background:none;border:none;color:var(--acc);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0}
+.axtog{margin-left:auto;background:none;border:none;color:var(--acc);font-size:11px;font-weight:800;cursor:pointer;font-family:var(--font);padding:0 4px}
 .selrow button.selE3{border-color:var(--e3)} .selrow button.selE3.on{background:var(--e3);color:#fff} .selrow button.selE3.on .d{color:#ffd7db}
 .selrow button.selE2.on{background:var(--e2);color:#231400;border-color:var(--e2)} .selrow button.selE2.on .d{color:#5c3a10}
 .selrow button.selE1.on{background:var(--e1);color:#231d00;border-color:var(--e1)} .selrow button.selE1.on .d{color:#5c5210}
@@ -573,7 +573,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.58 · 2026-08-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.59 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2181,9 +2181,9 @@ function ichVolumeHtml(ns){
   const val=k=>esc(s[k]||"");
   return '<div class="gcsrow"><div class="glabel">ICH volume calculator, cm: (A x B x C) / 2</div>'+
     '<div class="volcalc">'+
-      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_a" value="'+val("va")+'" placeholder="A" oninput="setIchDim(\''+ns+'\',\'va\',this.value)">'+
-      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_b" value="'+val("vb")+'" placeholder="B" oninput="setIchDim(\''+ns+'\',\'vb\',this.value)">'+
-      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_c" value="'+val("vc")+'" placeholder="C" oninput="setIchDim(\''+ns+'\',\'vc\',this.value)">'+
+      '<input type="text" inputmode="decimal" id="ich_'+ns+'_a" value="'+val("va")+'" placeholder="A" oninput="setIchDim(\''+ns+'\',\'va\',this.value)">'+
+      '<input type="text" inputmode="decimal" id="ich_'+ns+'_b" value="'+val("vb")+'" placeholder="B" oninput="setIchDim(\''+ns+'\',\'vb\',this.value)">'+
+      '<input type="text" inputmode="decimal" id="ich_'+ns+'_c" value="'+val("vc")+'" placeholder="C" oninput="setIchDim(\''+ns+'\',\'vc\',this.value)">'+
     '</div><div class="volout" id="ich_'+ns+'_vol">'+(vol===null?"Enter all three dimensions.":('<b>'+vol.toFixed(1)+' mL</b> estimated volume; ICH volume score '+(vol>=30?"+1":"0")+'.'))+'</div></div>';
 }
 function renderIchAid(ns,targetId,force){
@@ -3965,8 +3965,7 @@ function togAxisDetail(k){
   }else axisOpen[k]=!axisOpen[k];
   buildSelectors();
   AXIS_KEYS.forEach(x=>{
-    const b=document.querySelector('.axtog[data-ax="'+x+'"]');
-    if(b)b.textContent=axisOpen[x]?"less":"more";
+    document.querySelectorAll('.axtog[data-ax="'+x+'"]').forEach(b=>b.textContent=axisOpen[x]?"less":"more");
   });
 }
 function renderAxisDetailsRef(cIdx,cText){
@@ -3987,12 +3986,14 @@ function buildSelectors(){
   };
   const mini=(id,prefix,idx,defs)=>{
     const el=document.getElementById(id);if(!el)return;
+    const ax=prefix==="C"?"C":prefix;
+    const tog='<button type="button" class="axtog" data-ax="'+ax+'" onclick="event.stopPropagation();togAxisDetail(\''+ax+'\')">'+(axisIsOpen(ax)?"less":"more")+'</button>';
     if(idx===null||idx===undefined||idx<0||!defs[idx]){
-      el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+'x"><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><b>Unscored</b></div>';
+      el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+'x"><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><span class="stopdot"></span><b>Unscored</b>'+tog+'</div>';
       return;
     }
     const dots=[0,1,2,3].map(i=>'<span class="stopdot'+(idx===i?' on':'')+'"></span>').join("");
-    el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+esc(defs[idx][1])+'</b>'+(defs[idx][2]?'<span>'+esc(defs[idx][2])+'</span>':"")+'</div>';
+    el.innerHTML='<div class="stopmini '+prefix.toLowerCase()+idx+'">'+dots+'<b>'+esc(defs[idx][1])+'</b>'+(defs[idx][2]?'<span>'+esc(defs[idx][2])+'</span>':"")+tog+'</div>';
   };
   mk(document.getElementById("selE"),E_DEFS,"E","E","E");
   mk(document.getElementById("selO"),O_DEFS,"O","O","O");
@@ -5842,7 +5843,7 @@ function tcExtract(text){
   const pmhPart=pmh.length?" w/ "+pmh.join(", "):(meds.length?"":" w/ [relevant PMH]");
   out.hpi=(out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".";
   // plan
-  const plan=["Review imaging + priors"];
+  const plan=[];
   if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("Repeat CTH in 6h or sooner for exam change");plan.push("SBP <140, Na eunatremia")}
   if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
   if(/fusion|lami|stenosis|radiculopath|spine|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
@@ -5850,7 +5851,6 @@ function tcExtract(text){
   if(/shunt|\bvps\b/i.test(text))plan.push("Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
   if(/seizure|postictal/i.test(text))plan.push("Keppra; ASM levels");
   if(/fall/i.test(text))plan.push("Fall/medical workup per primary");
-  plan.push("Dispo per our review");
   out.plan=plan.join("\n");
   return out;
 }
@@ -5889,7 +5889,7 @@ function tcSuggestFor(p,k){
     const proto=hits.map(h=>h.short);
     const base=o.plan?o.plan.split("\n").filter(Boolean):[];
     const merged=proto.concat(base.filter(b=>!proto.some(x=>x.toLowerCase().indexOf(b.toLowerCase())>=0)));
-    return merged.length?merged.join("\n"):"Review imaging + priors";
+    return merged.join("\n");
   }
   return o[k]||"";
 }
@@ -5945,7 +5945,7 @@ function tcParseInto(p){
   tcSet(p,"exam",o.exam||tcSuggestedExam(src));
   tcSet(p,"img",o.img||"[modality w/ finding vs prior]");
   tcSet(p,"labs",tcMergeCsv(o.labs,tcRelevantLabs(src)));
-  tcSet(p,"plan",o.plan||"Review imaging + priors");
+  tcSet(p,"plan",o.plan||"");
   return true;
 }
 // score lines come from this builder's own aids, not another panel's
