@@ -442,6 +442,13 @@ details.moredet[open]>summary{margin-bottom:8px}
 .scoreaid[open]>summary:after{content:"less"}
 .scoreaid .scorebody{padding:0 11px 11px}
 .scoreaid h4{font-size:13px;margin-bottom:3px;color:var(--text)}
+details.planbox{background:#12233a;border:1px solid #2c4a72;border-radius:10px;padding:8px 10px;margin:0 0 8px}
+details.planbox>summary{cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;list-style:none}
+details.planbox>summary::-webkit-details-marker{display:none}
+details.planbox .sgt{font-weight:800;font-size:13px;color:var(--teal)}
+details.planbox .sgs{font-size:11px;color:var(--mut)}
+.planshort{font-size:12.5px;color:#d9e2ef;margin:6px 0 2px;line-height:1.5}
+.planfull{margin-top:8px;max-height:280px;overflow:auto}
 .scoreaid .note{font-size:11px;color:var(--mut);margin-bottom:8px}
 .gcsout button.scoreclr{border:1px solid var(--line);color:var(--mut);background:transparent}
 .gcsout button.scoreclr:hover{border-color:var(--mut);color:var(--text)}
@@ -566,7 +573,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.57 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.58 · 2026-08-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1670,6 +1677,151 @@ function staffDVTThenConsent(lines){
   return out;
 }
 // ---------- live note flags ----------
+// ---------- admission / plan protocols (nsgy_bootcamp.txt) ----------
+// Each entry carries a one-line text-message form and the full order set.
+// `short` is what gets sent over text; `full` is what gets pasted into a note.
+const PLAN_LIB=[
+ {id:"sah-unsec",n:"Unsecured SAH",
+  re:t=>isAneurysmalSAHText(t)&&!securedAneurysmText(t),
+  short:"Unsecured SAH: NCCU, NVIR angio <24h, radial a-line, q1h checks, Keppra 500 BID until secured, EuNa 135-145, HOB>30, SBP 100-140 (nicardipine prn), EVD at 10, no ASA/AC x2wk, TCDs x14d, nimodipine x21d",
+  full:["Please admit to NCCU",
+    "Please consult NVIR for angiogram within 24 hours",
+    "Please place left-sided radial arterial line; if unable, right-sided radial arterial line",
+    "Neuro Checks: Q1h",
+    "AEDs: Keppra 500 BID until secured",
+    "Sodium Goal: Eunatremia (Na 135-145) ***",
+    "Analgesia: ATC tylenol, prn oxycodone",
+    "Activity: As tolerated; HOB>30",
+    "Drains: R EVD at 10 until aneurysm is secured ***",
+    "Anticoagulation/antiplatelet: No ASA/NSAIDs or anticoagulation for 2 weeks ***",
+    "BP Goal: 100-140; Nicardipine drip prn ***",
+    "Imaging: angiogram within 24h; TCDs x14 days",
+    "Protocol: Unsecured; nimodipine x21 days",
+    "Other: OK to start DVT ppx 24h from stable repeat scan unless otherwise contraindicated"]},
+ {id:"sah-sec",n:"Secured SAH",
+  re:t=>isAneurysmalSAHText(t)&&securedAneurysmText(t),
+  short:"Secured SAH: NCCU, q1h checks, EuNa 135-145, HOB>30, SBP 100-200, EVD at 5, no ASA/AC x2wk, TCDs x14d, nimodipine x21d, DVT ppx 24h from stable scan",
+  full:["Please admit to NCCU",
+    "Neuro Checks: Q1h",
+    "Sodium Goal: Eunatremia (Na 135-145) ***",
+    "Analgesia: ATC tylenol, prn oxycodone",
+    "Activity: As tolerated; HOB>30",
+    "Drains: R EVD at 5 ***",
+    "Anticoagulation/antiplatelet: No ASA/NSAIDs or anticoagulation for 2 weeks ***",
+    "BP Goal: 100-200",
+    "Imaging: TCDs x14 days",
+    "Protocol: Secured; nimodipine x21 days",
+    "Other: OK to start DVT ppx 24h from stable repeat scan unless otherwise contraindicated"]},
+ {id:"sdh",n:"SDH / traumatic ICH",
+  re:t=>/\bsdh\b|subdural|\bedh\b|epidural haematoma|epidural hematoma|contusion/i.test(t||""),
+  short:"SDH: repeat CTH 6h, Keppra 500 BID x7d, EuNa 135-145, SBP 100-160, HOB>30, hold AC/AP (restart 14d from stable scan), no dextrose IVF, DVT ppx 24h from stable CT",
+  full:["Imaging: Please obtain repeat CTH 6 hours from previous",
+    "AEDs: Keppra 500 BID x7d ***",
+    "Sodium Goal: Eunatremia (Na 135-145) ***",
+    "BP Goal: 100-160; prn labetalol; resume home BP meds as tolerated",
+    "Analgesia: ATC tylenol, prn oxycodone, breakthrough morphine; avoid NSAIDs for 14 days from final-read stable 6h repeat CT Brain WO",
+    "Activity: As tolerated; HOB>30",
+    "Antiplatelet/anticoagulation: Hold all antiplatelet/anticoagulation. Restart *** 14d from stable scan",
+    "Other: No dextrose in IVF, use saline only; OK to start DVT ppx 24h after final-read stable CT Brain unless otherwise contraindicated",
+    "Dispo: Pending repeat CTH"]},
+ {id:"pituitary",n:"Suprasellar / pituitary mass",
+  re:t=>pituitaryText(t),
+  short:"Suprasellar mass: admit BB7, MRI pit protocol w/wo + CT w/wo, ophtho + endocrine consults, full pit panel (prolactin, stat + AM cortisol/ACTH, TSH/fT4, LH/FSH, testosterone, IGF-1, GH), expedited TTE, hold ASA81 + DVT ppx, SBP 100-140, NPO at midnight if no hemorrhage",
+  full:["#Neuro",
+    "Admit to BB7",
+    "MRI brain/pituitary w/wo contrast, pituitary protocol; sedation if claustrophobia",
+    "CT w/wo",
+    "Ophtho consult",
+    "#Cardiac",
+    "Expedited TTE given hx",
+    "Hold ASA81",
+    "Normotension 100-140",
+    "#Endocrine",
+    "Endocrine consult",
+    "Prolactin, stat cortisol, AM cortisol/ACTH, TSH/free T4, LH/FSH, testosterone, IGF-1, GH",
+    "#Other",
+    "Hold DVT ppx",
+    "If MRI and CT w/o acute hemorrhage, NPO at midnight",
+    "Pre-op: EKG, CXR, UA, coags",
+    "Pulse ox + continuous telemetry"]},
+ {id:"carotid",n:"Carotid stenosis",
+  re:t=>carotidText(t),
+  short:"Carotid: CTA + carotid US (grade 0-49 mild / 50-69 mod / 70-99 severe), MRI brain (stroke vs TIA), TTE for cardioembolic source; continue ASA, load Plavix + P2Y12 at 24h (Brilinta if nonresponder)",
+  full:["Imaging: CTA — stenosis? high-risk features include ulcerated plaque",
+    "Imaging: Carotid ultrasound — stenosis?",
+    "Imaging: MRI brain — stroke vs TIA; MRA if concern for intramural thrombus or dissection",
+    "Imaging: TTE — cardioembolic source",
+    "Grading: mild 0-49, moderate 50-69, severe 70-99, complete 100% (compare to distal ICA)",
+    "Anticoagulation: Continue aspirin; load with Plavix and check P2Y12 at 24h; Brilinta load if nonresponder",
+    "Anatomy to document: bifurcation level, plaque extent (>5cm from clavicle = TCAR runway), angle of mandible, Acomm/Pcomm present",
+    "Other: OR *** ; Neurosurgery pre-op orders"]},
+ {id:"postop-cranial",n:"Post-op cranial",
+  re:t=>/post-?op|craniotomy|crani\b|resection|s\/p (?:crani|resect)/i.test(t||"")&&!spineTraumaText(t||""),
+  short:"Post-op crani: q1h checks, Keppra 500 BID x7d, dex taper (PPI + ISS if >10mg/d), EuNa 135-145, HOB per attending, SBP<140, MRI post-op, periop abx, DVT ppx POD1",
+  full:["Neuro Checks: q1 hour ***",
+    "AEDs: Keppra 500 BID for 7 days ***",
+    "Steroids: dex taper to *** over *** days; PPI and ISS while on >10mg/day dex ***",
+    "Sodium Goal: goal eunatremia (Na 135-145) ***",
+    "Analgesia: ATC tylenol, prn oxycodone, breakthrough morphine ***",
+    "Activity: HOB *** ",
+    "Drains: *** — no indication for drain prophylaxis ***",
+    "BP Goal: SBP<140 for *** hours; prn labetalol; resume home *** as tolerated",
+    "Imaging: MRI ***",
+    "Incision Care: absorbable sutures / *** sutures out on *** ; dressing *** ; bacitracin BID x*** days ***",
+    "DVT Prophylaxis: start lovenox prophylaxis on POD1 ***",
+    "Anticoagulation/Antiplatelets: ***",
+    "Abx: periop ancef ***",
+    "Other: ***"]},
+ {id:"postop-spine",n:"Post-op spine",
+  re:t=>/post-?op|fusion|lami|discectomy|acdf|tlif|plif|corpectomy/i.test(t||"")&&spineTraumaText(t||""),
+  short:"Post-op spine: q4h checks, ATC tylenol + celebrex x5d + robaxin, prn oxycodone, no steroids, blake to suction, activity as tolerated, brace ***, periop abx, normotension",
+  full:["Neuro Checks: q4 hours ***",
+    "Analgesia: ATC tylenol, celebrex x5d, ATC robaxin, prn oxycodone, breakthrough morphine, lidocaine patches ATC ***",
+    "Steroids: None indicated ***",
+    "Drains: blake drain to suction ***",
+    "Activity: as tolerated ***",
+    "Bracing: ***",
+    "Imaging: ***",
+    "Therapy Orders: ***",
+    "Incision Care: ***",
+    "Abx: periop abx ***",
+    "MAP goal: normotension ***",
+    "Other: ***"]}
+];
+function planMatches(txt){
+  const t=String(txt||"");
+  if(t.trim().length<3)return [];
+  return PLAN_LIB.filter(pl=>{try{return pl.re(t)}catch(e){return false}});
+}
+function planById(id){return PLAN_LIB.find(p=>p.id===id)||null}
+function planShortText(id){const p=planById(id);return p?p.short:""}
+function planFullText(id){
+  const p=planById(id);if(!p)return "";
+  return "#"+p.n+" Protocol\n"+p.full.map(l=>/^#/.test(l)?l:"- "+l).join("\n");
+}
+function copyPlanShort(id){const t=planShortText(id);if(t){toClip(t);showToast("Short plan copied — ready to text")}}
+function copyPlanFull(id){const t=planFullText(id);if(t){toClip(t);showToast("Full protocol copied")}}
+function addPlanToNote(id){
+  const p=planById(id);if(!p||!F)return;
+  const el=document.getElementById("f_note");if(!el)return;
+  const block=planFullText(id);
+  const cur=el.value.trim();
+  if(cur.indexOf("#"+p.n+" Protocol")>=0){showToast("Already in notes");return}
+  el.value=(cur?cur+"\n\n":"")+block;
+  F.note=el.value;
+  showToast("Added "+p.n+" protocol to notes");
+}
+function addPlanToTasks(id){
+  const p=planById(id);if(!p||!F)return;
+  const lines=p.full.filter(l=>!/^#/.test(l));
+  addUniqueLines("f_tasks",lines);
+  showToast("Added "+lines.length+" orders to to-do");
+}
+function usePlanAsAction(id){
+  const p=planById(id);if(!p)return;
+  const el=document.getElementById("f_action");
+  if(el){el.value=p.short;showToast("Short plan set as the to-do line")}
+}
 const FLAGS=[
  {re:t=>traumaLowGcsCue(t),label:"Trauma GCS <8 — definite action: airway/ICU-level concern, senior review, consider Bolt/Licox task",lv:"e3",apply:{E:3,mods:["NΔ"]}},
  {re:t=>isTraumaConsultText(t)&&(()=>{const m=parseMeas(t||"");return m.gcs!==undefined&&m.gcs>=8&&m.gcs<=10})(),label:"Trauma GCS 8–10 — borderline action range; define repeat exam/CT timing and escalation trigger",lv:"warn",apply:{W:2,mods:["NΔ"]}},
@@ -2359,6 +2511,21 @@ function applyAlert(i){const a=curAlerts[i];if(!a)return;F._manual=true;
   (a.up.mods||[]).forEach(mo=>{if(!F.mods.includes(mo))F.mods.push(mo)});
   buildSelectors();buildMods();syncWWarn();renderSugg();
 }
+function planBoxHtml(txt){
+  const hits=planMatches(txt);
+  if(!hits.length)return "";
+  return hits.map(p=>'<details class="planbox"><summary><span class="sgt">'+esc(p.n)+' protocol</span>'+
+    '<span class="sgs">tap for the full order set</span></summary>'+
+    '<div class="planshort">'+esc(p.short)+'</div>'+
+    '<div class="qbtns">'+
+      '<button type="button" onclick="copyPlanShort(\''+p.id+'\')">⧉ Copy short (text)</button>'+
+      '<button type="button" onclick="copyPlanFull(\''+p.id+'\')">⧉ Copy full</button>'+
+      '<button type="button" onclick="usePlanAsAction(\''+p.id+'\')">→ Use as to-do line</button>'+
+      '<button type="button" onclick="addPlanToNote(\''+p.id+'\')">＋ Notes</button>'+
+      '<button type="button" onclick="addPlanToTasks(\''+p.id+'\')">＋ To-Do</button>'+
+    '</div>'+
+    '<div class="pre planfull">'+esc(planFullText(p.id))+'</div></details>').join("");
+}
 function renderSugg(){
   const el=document.getElementById("sugg");
   if(!F){if(el)el.innerHTML="";curSugg=[];curAlerts=[];return}
@@ -2383,6 +2550,7 @@ function renderSugg(){
     const up=upgradeOf();
     head+='<div class="autochip"><span>✓ Auto-graded from your text: <b>E'+F.E+"/O"+F.O+"/W"+F.W+(F.mods.length?" + "+F.mods.join(", "):"")+'</b> — tap any selector to take over</span></div>';
   }
+  head+=planBoxHtml(txt);
   el.innerHTML=head+(curSugg.length?('<div class="sgnote">Suggestions are starting points from the rubric — override freely. Bracketed numbers = citations in Reference.</div>'+curSugg.map((s,i)=>{
     const parts=[];if(s.s.E!==undefined)parts.push("E"+s.s.E);if(s.s.O!==undefined)parts.push("O"+s.s.O);if(s.s.W!==undefined)parts.push("W"+s.s.W);
     const sug=(parts.length?parts.join("/"):"")+((s.s.mods&&s.s.mods.length)?(parts.length?" + ":"")+s.s.mods.join(", "):"");
@@ -5716,7 +5884,13 @@ function tcSuggestFor(p,k){
   if(k==="labs")return tcMergeCsv(tcGet(p,"labs"),tcRelevantLabs(src));
   const o=tcExtract(tcSrcText(p)||src);
   if(k==="img")return o.img||"[modality w/ finding vs prior]";
-  if(k==="plan")return o.plan||"Review imaging + priors";
+  if(k==="plan"){
+    const hits=planMatches(src);
+    const proto=hits.map(h=>h.short);
+    const base=o.plan?o.plan.split("\n").filter(Boolean):[];
+    const merged=proto.concat(base.filter(b=>!proto.some(x=>x.toLowerCase().indexOf(b.toLowerCase())>=0)));
+    return merged.length?merged.join("\n"):"Review imaging + priors";
+  }
   return o[k]||"";
 }
 function tcFillSection(p,k){
