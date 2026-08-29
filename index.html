@@ -573,7 +573,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.59 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.60 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1969,7 +1969,7 @@ function completedGcsLine(ns){
 }
 function completedIchLine(ns){
   const line=ichSummary(ns);
-  return /^ICH Score \d/.test(line)?line:"";
+  return /^ICH score \d/i.test(line)?line:"";
 }
 function completedHhLine(ns){
   const line=hhSummary(ns);
@@ -1983,7 +1983,7 @@ function mergeScoreLines(text,lines){
   // strip only the lines this app generates — "GCS 14, 9mm L SDH, MLS 4mm" is
   // something the user typed and must survive
   const isGenerated=l=>/^\s*GCS\s+E\S+\s+V\S+\s+M\S+/i.test(l)
-    ||/^\s*ICH Score\s+\d/i.test(l)
+    ||/^\s*ICH score\s+\d/i.test(l)
     ||/^\s*Hunt-Hess\s+\d/i.test(l)
     ||/^\s*AO Spine\s+\S/i.test(l);
   let out=String(text||"").split("\n").filter(l=>!isGenerated(l));
@@ -2158,7 +2158,7 @@ function ichTotal(ns){
 function ichSummary(ns){
   const t=ichTotal(ns);
   if(t===null)return "Select all ICH score fields";
-  return "ICH Score "+t+" (historical 30-day mortality "+ICH_MORT[t]+")";
+  return "ICH score "+t;
 }
 function inferIchState(ns,txt){
   const s=ICH_STATE[ns]||{};
@@ -2175,6 +2175,11 @@ function ichVolume(ns){
   const vals=["va","vb","vc"].map(k=>parseFloat(s[k]));
   if(vals.some(v=>!isFinite(v)||v<=0))return null;
   return vals[0]*vals[1]*vals[2]/2;
+}
+function mlText(v){return Number.isInteger(v)?String(v):v.toFixed(1)}
+function ichEstimatedVolLine(ns){
+  const vol=ichVolume(ns);
+  return vol===null?"":"estimated vol "+mlText(vol)+"mL";
 }
 function ichVolumeHtml(ns){
   const s=ICH_STATE[ns]||{},vol=ichVolume(ns);
@@ -2199,7 +2204,13 @@ function renderIchAid(ns,targetId,force){
     '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+ichVolumeHtml(ns)+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
     '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+scoreBtns(ns,"ich")+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
-function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
+function setIchPart(ns,k,v){
+  ICH_STATE[ns][k]=v;
+  if(ns==="form")syncFormScoreFields();
+  renderIchContext(ns);
+  if(ns==="ftc")renderFTCFlags();
+  if(ns==="tc"||ns==="ftc")tcAutoReady(ns);
+}
 function setIchDim(ns,k,v){
   ICH_STATE[ns]=ICH_STATE[ns]||{};
   ICH_STATE[ns][k]=v;
@@ -2209,6 +2220,7 @@ function setIchDim(ns,k,v){
   if(ns==="form")syncFormScoreFields();
   renderIchContext(ns);
   if(ns==="ftc")renderFTCFlags();
+  if(ns==="tc"||ns==="ftc")tcAutoReady(ns);
   restoreFocus();
 }
 function renderIchContext(ns){
@@ -2219,10 +2231,10 @@ function renderIchContext(ns){
 }
 function insertIchScore(ns){
   const line=ichSummary(ns);
-  if(!/^ICH Score \d/.test(line)){showToast("Select all ICH fields first");return}
+  if(!/^ICH score \d/i.test(line)){showToast("Select all ICH fields first");return}
   const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
   const el=document.getElementById(id);if(!el)return;
-  const cur=el.value.replace(/\s*ICH Score \d+.*/i,"").trim();
+  const cur=el.value.replace(/\s*ICH score \d+.*/i,"").trim();
   el.value=(cur?cur+" ":"")+line+".";
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
@@ -5844,7 +5856,7 @@ function tcExtract(text){
   out.hpi=(out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".";
   // plan
   const plan=[];
-  if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("Repeat CTH in 6h or sooner for exam change");plan.push("SBP <140, Na eunatremia")}
+  if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("CTH 4-6 hrs or exam decline");plan.push("SBP <140, EuNa")}
   if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
   if(/fusion|lami|stenosis|radiculopath|spine|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
   if(/fever|infect|abscess|osteo|wound/i.test(text))plan.push("ESR/CRP, blood cx; MRI w/ contrast if deep infection concern");
@@ -5955,7 +5967,9 @@ function tcFormatFor(p){
   const exam=mergeScoreLines(stripExamSmartLists(g("exam")),[completedGcsLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).join("\n");
-  return [hpi,tidy(g("img")),tidy(g("labs")),exam,plan].filter(Boolean).join("\n\n");
+  const estVol=ichEstimatedVolLine(p);
+  const img=[tidy(g("img"))].concat(estVol&&!/estimated\s+vol/i.test(g("img"))?[estVol]:[]).filter(Boolean).join("; ");
+  return [hpi,img,tidy(g("labs")),exam,plan].filter(Boolean).join("\n\n");
 }
 function tcHasParts(p){return TC_PARTS.some(k=>String(tcGet(p,k)||"").trim())}
 function tcUseExamFor(p){
