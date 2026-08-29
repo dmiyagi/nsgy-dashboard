@@ -573,7 +573,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.60 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.61 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3014,7 +3014,7 @@ function procWorkflowBoost(c){
 }
 function urgencyRank(c){
   const due=nextDue(c),dl=due?fmtDL(due):null;
-  let r=(c.E||0)*100+(c.W||0)*12+(c.O||0)*8;
+  let r=(c.E||0)*100+(c.O||0)*12+(c.W||0)*8+(cLevel(c)||0)*2;
   if(dl&&dl.cls==="over")r+=1200;
   if(isChartDeferred(c))r-=120;
   if(c.type==="CHART")r+=chartCheckBoost(c)+chartAcuityBoost(c);
@@ -3030,14 +3030,13 @@ function urgencyRank(c){
   return r;
 }
 function timerQueueSort(c){
-  const due=nextDue(c),t=due?Date.parse(due):null;
-  if(!t)return {bucket:1,time:0};
-  const ms=t-Date.now();
-  if(ms<=0)return {bucket:0,time:t};
-  if(ms<15*60000)return {bucket:0,time:t};
-  return {bucket:2,time:t};
+  const due=boardDue(c),t=due?Date.parse(due):null;
+  return t?{bucket:0,time:t}:{bucket:1,time:0};
 }
 function sortCs(a,b){
+  const aq=timerQueueSort(a),bq=timerQueueSort(b);
+  if(aq.bucket!==bq.bucket)return aq.bucket-bq.bucket;
+  if(aq.time!==bq.time)return aq.time-bq.time;
   const ar=urgencyRank(a),br=urgencyRank(b);
   if(pinnedTopId&&a.id!==b.id){
     if(a.id===pinnedTopId&&br<ar+75)return -1;
@@ -3045,15 +3044,14 @@ function sortCs(a,b){
   }
   if(br!==ar)return br-ar;
   if(b.E!==a.E)return b.E-a.E;
-  const aq=timerQueueSort(a),bq=timerQueueSort(b);
-  if(aq.bucket!==bq.bucket)return aq.bucket-bq.bucket;
-  if(aq.time!==bq.time)return aq.time-bq.time;
+  if((b.O||0)!==(a.O||0))return(b.O||0)-(a.O||0);
+  if((b.W||0)!==(a.W||0))return(b.W||0)-(a.W||0);
+  if((cLevel(b)||0)!==(cLevel(a)||0))return(cLevel(b)||0)-(cLevel(a)||0);
   // equal urgency + equal timing: whatever hasn't been touched yet rises
   const as=isStarted(a)?1:0,bs=isStarted(b)?1:0;
   if(as!==bs)return as-bs;
   if(as===0){const ac=a.created||0,bc=b.created||0;if(ac!==bc)return ac-bc} // oldest untouched first
-  if((b.W||0)!==(a.W||0))return(b.W||0)-(a.W||0);
-  return b.O-a.O;
+  return 0;
 }
 function boardSearchText(c){return [c.loc,c.prob,c.state,c.action,c.note].filter(Boolean).join(" ")}
 function boardRoomKey(c){return roundBedFromText(boardSearchText(c))||String(c.loc||"").toUpperCase()}
@@ -3289,6 +3287,15 @@ function nextDue(c){
   (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO)cands.push(t.dueISO)});
   if(!cands.length)return null;
   return cands.sort((a,b)=>Date.parse(a)-Date.parse(b))[0];
+}
+function boardDue(c){
+  const explicit=nextDue(c);
+  if(explicit)return explicit;
+  if(c&&c.type==="CONSULT"&&!c.reviewOff){
+    ensureReviewClock(c);
+    return c.reviewDueISO||null;
+  }
+  return null;
 }
 function checksHtml(c){
   const ts=c.tasks||[];if(!ts.length)return "";
