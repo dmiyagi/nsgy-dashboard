@@ -140,7 +140,7 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .selrow button .d2{display:none}
 .selrow.showall button .d2{display:none}
 .selrow button.on{color:var(--text)}
-.axhead{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
+.axhead{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;margin-bottom:2px}
 .axhead label{margin:0}
 .axtog{margin-left:auto;background:none;border:none;color:var(--acc);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0}
 .selrow button.selE3{border-color:var(--e3)} .selrow button.selE3.on{background:var(--e3);color:#fff} .selrow button.selE3.on .d{color:#ffd7db}
@@ -566,7 +566,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.56 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.57 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -733,10 +733,10 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 
 <details class="ref"><summary>E-axis & E3 override triggers</summary><div class="rb">
 <table><tr><th>Level</th><th>Meaning</th></tr>
-<tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now — 10-minute timer.</td></tr>
-<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 1 hour.</td></tr>
-<tr><td><b>E1</b> Time-sensitive</td><td>Assess within 2 hours; can be grouped with another trip to the ED.</td></tr>
-<tr><td><b>E0</b> Routine</td><td>Can be grouped with the next trip, or assess within 4 hours.</td></tr></table>
+<tr><td><b>E3</b> Emergent</td><td>Active or imminent threat. Interrupt routine work, assess immediately, escalate now.</td></tr>
+<tr><td><b>E2</b> Urgent</td><td>Meaningful deterioration/window risk. Assess within 30 minutes.</td></tr>
+<tr><td><b>E1</b> Time-sensitive</td><td>Assess within 1 hour.</td></tr>
+<tr><td><b>E0</b> Routine</td><td>Assess within 2 hours.</td></tr></table>
 <h4>Intracranial E3 triggers</h4>
 <ul><li>Acute decline in consciousness · new anisocoria or nonreactive pupil · new posturing</li>
 <li>Rapidly progressive focal deficit · acute hydrocephalus with deterioration</li>
@@ -1172,6 +1172,31 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       </div>
       <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
     </div>
+    <div class="fld" id="fld_E"><div class="axhead"><button type="button" class="axtog" data-ax="E" onclick="togAxisDetail('E')">more</button></div>
+      <div class="selrow" id="selE"></div>
+      <div id="eMini"></div>
+      <div class="selhint" id="hintE" style="display:none"></div>
+    </div>
+    <div class="fld" id="fld_O"><div class="axhead"><button type="button" class="axtog" data-ax="O" onclick="togAxisDetail('O')">more</button></div>
+      <div class="selrow" id="selO"></div>
+      <div id="oMini"></div>
+      <div class="selhint" id="hintO" style="display:none"></div>
+    </div>
+    <div class="fld" id="fld_W"><div class="axhead"><button type="button" class="axtog" data-ax="W" onclick="togAxisDetail('W')">more</button></div>
+      <div class="selrow" id="selW"></div>
+      <div id="wMini"></div>
+      <div class="selhint" id="hintW" style="display:none"></div>
+      <div class="formwarn" id="wWarn"><b>W3 with E≤1:</b> W3 should generally not remain E0/E1. Either raise E, or document below why immediate evaluation is not required — and define the reassessment interval, examiner, and escalation trigger.</div>
+    </div>
+    <div class="fld" id="fld_C"><div class="axhead"><button type="button" class="axtog" data-ax="C" onclick="togAxisDetail('C')">more</button></div>
+      <div class="selrow" id="selC"></div>
+      <div id="cMini"></div>
+      <div class="selhint" id="hintC" style="display:none"></div>
+      <details id="domWrap" style="margin-top:8px"><summary style="font-size:13px;color:var(--teal);cursor:pointer;font-weight:600">Score all 11 domains (0–3)</summary>
+        <div class="ctotal" id="ctotal"></div>
+        <div id="doms"></div>
+      </details>
+    </div>
     <div class="flags" id="flags"></div>
     <div class="sugg" id="sugg"></div>
     <div id="prockit"></div>
@@ -1186,31 +1211,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
     <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea></div>
-    <div class="fld" id="fld_E"><div class="axhead"><label>Urgency</label><button type="button" class="axtog" data-ax="E" onclick="togAxisDetail('E')">more</button></div>
-      <div class="selrow" id="selE"></div>
-      <div id="eMini"></div>
-      <div class="selhint" id="hintE" style="display:none"></div>
-    </div>
-    <div class="fld" id="fld_O"><div class="axhead"><label>Operative trajectory</label><button type="button" class="axtog" data-ax="O" onclick="togAxisDetail('O')">more</button></div>
-      <div class="selrow" id="selO"></div>
-      <div id="oMini"></div>
-      <div class="selhint" id="hintO" style="display:none"></div>
-    </div>
-    <div class="fld" id="fld_W"><div class="axhead"><label>Hidden-deterioration risk</label><button type="button" class="axtog" data-ax="W" onclick="togAxisDetail('W')">more</button></div>
-      <div class="selrow" id="selW"></div>
-      <div id="wMini"></div>
-      <div class="selhint" id="hintW" style="display:none"></div>
-      <div class="formwarn" id="wWarn"><b>W3 with E≤1:</b> W3 should generally not remain E0/E1. Either raise E, or document below why immediate evaluation is not required — and define the reassessment interval, examiner, and escalation trigger.</div>
-    </div>
-    <div class="fld" id="fld_C"><div class="axhead"><label>Complexity</label><button type="button" class="axtog" data-ax="C" onclick="togAxisDetail('C')">more</button></div>
-      <div class="selrow" id="selC"></div>
-      <div id="cMini"></div>
-      <div class="selhint" id="hintC" style="display:none"></div>
-      <details id="domWrap" style="margin-top:8px"><summary style="font-size:13px;color:var(--teal);cursor:pointer;font-weight:600">Score all 11 domains (0–3)</summary>
-        <div class="ctotal" id="ctotal"></div>
-        <div id="doms"></div>
-      </details>
-    </div>
     <div class="fld" id="fld_interp">
       <label><input type="checkbox" id="f_interp" style="width:auto;margin-right:6px">Need interpreter?</label>
       <input type="text" id="f_lang" placeholder="Language">
@@ -1230,7 +1230,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="fld" id="fld_trig" style="display:none"><label>Escalation trigger</label><input type="text" id="f_trig" placeholder="Type anything…"></div>
     <div class="fld" id="fld_qs" style="display:none"><label>Evidence questions (one per line — ⌕ on card opens OpenEvidence)</label><textarea id="f_qs" placeholder="Type anything…"></textarea></div>
     <details class="axisinfo"><summary>ℹ︎ E/O/W/C scoring reference</summary><div class="ai">
-      <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat; interrupt and escalate now / 10-minute timer. <b>E2</b> assess within 1 h. <b>E1</b> assess within 2 h; can group with another ED trip. <b>E0</b> group with the next trip / within 4 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
+      <span class="grp">E urgency:</span> <b>E3</b> active/imminent neurologic or physiologic threat; interrupt and escalate now. <b>E2</b> assess within 30 min. <b>E1</b> assess within 1 h. <b>E0</b> assess within 2 h. E3 triggers include acute decline in consciousness, new pupil abnormality, rapidly progressive deficit, acute hydrocephalus with deterioration, EVD obstruction with decline/uncontrolled ICP, severe mass effect/herniation syndrome, status epilepticus, spinal cord/cauda equina compression with neurologic change, unsecured aneurysm/rebleed concern, shock, airway failure, severe hypoxemia, major hemorrhage, or urgent reversal/coagulopathy when intervention may be needed.<br>
       <span class="grp">O operative trajectory:</span> <b>O3</b> emergency procedure underway/effectively decided. <b>O2</b> high probability this shift/day. <b>O1</b> intervention plausible but depends on evolution, imaging, optimization, exam, or senior review. <b>O0</b> observation/medical/outpatient/other service presently favored. Re-score with imaging/exam changes, senior review, procedures, contraindication changes, or goals-of-care changes.<br>
       <span class="grp">W hidden deterioration:</span> <b>W0</b> low likelihood of rapid/silent progression. <b>W1</b> routine serial exam or imaging. <b>W2</b> known evolving disease needing explicit reassessment/contingency. <b>W3</b> reassuring present exam but substantial lesion-specific risk: EDH with GCS 15, large SDH with preserved exam, expanding contusion, posterior fossa hemorrhage, acute hydrocephalus, anticoagulated ICH, subtle shunt malfunction, unsecured ruptured aneurysm, subtle spinal epidural process, concerning postop symptoms/wound swelling, or incomplete imaging despite a dangerous syndrome.<br>
       <span class="grp">C complexity:</span> 11 domains scored 0-3, max 33. <b>C1</b> 0-5, <b>C2</b> 6-11, <b>C3</b> 12-23, <b>C4</b> 24-33. Domains: neuro instability/trajectory, lesion/anatomic danger, W risk, diagnostic uncertainty, baseline/exam interpretability, prior anatomy/devices, procedural complexity, hemostasis/meds, infection/wound/CSF, medical physiology, communication/consent/dispo/tasks.
@@ -1350,16 +1350,16 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 "use strict";
 // ---------- data ----------
 const LS="nsgy_triage_v2";
-const E_DEFS=[["E0","Routine","group with next trip / 4 h"],["E1","Time-sensitive","within 2 h · can group with next ED trip"],["E2","Urgent","assess within 1 h"],["E3","Emergent","interrupt & escalate NOW / 10 min"]];
-const O_DEFS=[["O0","Non-op now","observe / medical / other svc"],["O1","Potentially","depends on evolution/senior"],["O2","Likely","this shift/day"],["O3","Operative now","underway / decided"]];
+const E_DEFS=[["E0","Routine","assess within 2 h"],["E1","Time-sensitive","assess within 1 h"],["E2","Urgent","assess within 30 min"],["E3","Emergent","now"]];
+const O_DEFS=[["O0","Non-operative","observe / medical / other svc"],["O1","Potentially operative","depends on evolution/senior"],["O2","Likely operative","this shift/day"],["O3","Operative now","underway / decided"]];
 const W_DEFS=[["W0","Low risk",""],["W1","Serial exams","routine"],["W2","Evolving","explicit recheck time"],["W3","Silent risk","reassuring exam, abrupt-risk lesion"]];
 const C_DEFS=[["C1","Low complexity","0–5"],["C2","Moderately complex","6–11"],["C3","High complexity","12–23"],["C4","Extreme complexity","24–33"]];
 const MODS=["W","NΔ","AC","VASC","OR","DEV","INF","BASE?","ANAT","IMG","CONSENT","DISPO","XFER","MULTI","OWN?"];
 const E_FULL=[
- "E0 Routine — can be grouped with the next trip, or assess within 4 hours.",
- "E1 Time-sensitive — assess within 2 hours; can be grouped with another trip to the ED.",
- "E2 Urgent — assess within 1 hour.",
- "E3 Emergent — assess immediately, escalate now (10-minute timer)."];
+ "E0 Routine — assess within 2 hours.",
+ "E1 Time-sensitive — assess within 1 hour.",
+ "E2 Urgent — assess within 30 minutes.",
+ "E3 Emergent — assess immediately; escalate now."];
 const O_FULL=[
  "O0 Nonoperative for now (≠ low acuity).",
  "O1 Possibly operative — depends on workup.",
@@ -2569,7 +2569,7 @@ function fmtDL(iso){
   const h=Math.floor(mins/60),m=mins%60,str=(h?h+"h ":"")+m+"m";
   return over?{cls:"over",txt:"OVERDUE "+str}:ms<15*60000?{cls:"soon",txt:"due in "+str}:{cls:"ok",txt:"due in "+str};
 }
-const E_WINDOW_MIN={3:10,2:60,1:120,0:240};
+const E_WINDOW_MIN={3:0,2:30,1:60,0:120};
 function reviewWindowMin(c){
   if(!c||c.type!=="CONSULT")return null;
   const e=Math.max(0,Math.min(3,c.E||0));
@@ -5780,10 +5780,8 @@ function tcFormatFor(p){
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
   const exam=mergeScoreLines(stripExamSmartLists(g("exam")),[completedGcsLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
-  const plan=g("plan").split("\n").map(tidy).filter(Boolean).map(l=>"- "+l).join("\n");
-  return [tidy(g("title")),"",hpi,"","Exam:\n"+exam,"","Plan:",plan,"","Imaging: "+tidy(g("img"))]
-    .concat(g("labs")?["","Labs/Vitals: "+tidy(g("labs"))]:[])
-    .join("\n");
+  const plan=g("plan").split("\n").map(tidy).filter(Boolean).join("\n");
+  return [hpi,tidy(g("img")),tidy(g("labs")),exam,plan].filter(Boolean).join("\n\n");
 }
 function tcHasParts(p){return TC_PARTS.some(k=>String(tcGet(p,k)||"").trim())}
 function tcUseExamFor(p){
@@ -5807,9 +5805,15 @@ function tcRenderFlags(p){
 // every edit lands on the same card object, so both views stay in step
 function tcAfterEdit(p){
   tcRenderFlags(p);
+  tcAutoReady(p);
   tcStore(p);
   if(p==="ftc"&&F){renderSugg();renderFlags()}
 }
+function tcAutoReady(p){
+  const out=tcEl(p,"out");if(!out||tcOutputDirty(p))return;
+  out.value=tcHasParts(p)?tcFormatFor(p):"";
+}
+function tcOutputDirty(p){return p==="ftc"&&ftcOutDirty}
 function tcTarget(p){
   if(p==="ftc")return F;
   return tcFromId?(S.consults||[]).find(x=>x.id===tcFromId):null;
