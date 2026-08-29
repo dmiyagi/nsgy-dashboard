@@ -452,6 +452,10 @@ details.moredet[open]>summary{margin-bottom:8px}
 .gcsopts{display:flex;gap:5px;flex-wrap:wrap}
 .gcsopts button{font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .gcsopts button.on{border-color:var(--ok);color:var(--ok);background:#123527}
+.volcalc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:4px}
+.volcalc input{padding:7px 8px;font-size:13px}
+.volout{font-size:12px;color:var(--mut);margin-top:6px}
+.volout b{color:var(--ok)}
 .gcsout{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--mut)}
 .gcsout b{color:var(--ok);font-size:13px}
 .gcsout button{font-size:11px;font-weight:800;padding:4px 9px;border-radius:7px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer;font-family:var(--font)}
@@ -562,7 +566,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.55 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.56 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1410,9 +1414,27 @@ function spineCompressionStableText(t){const s=t||"";return (spineStableUpperTex
 function spineBCVIText(t){const s=t||"";return spineTraumaText(s)&&/\b(?:foramen transversarium|transverse foramen|vertebral artery|BCVI|Horner|cervical bruit|expanding neck hematoma|Le Fort ?(?:II|III|2|3)|carotid canal|basilar skull|hanging|strangulation|M4|DAI.{0,20}GCS\s*(?:<|less than)?\s*6)\b/i.test(s)}
 function spineTPFxText(t){const s=t||"";return /\b(?:TP|transverse process)\s*(?:fx|fracture)s?\b|\b(?:fx|fracture)s?\s+(?:of\s+)?(?:the\s+)?(?:TP|transverse process)\b/i.test(s)}
 function spineOdontoidHangmanText(t){const s=t||"";return spineTraumaText(s)&&!spineStableUpperText(s)&&/\b(?:odontoid|dens|type\s*ii\s*(?:dens|odontoid)|hangman|pars (?:fracture|fx)|C2 (?:fracture|fx)|Jefferson|C1 ring|TAL|transverse atlantal ligament)\b/i.test(s)}
+function positiveCueText(t,cueRe){
+  return String(t||"").split(/[.;\n]/).some(seg=>{
+    cueRe.lastIndex=0;
+    if(!cueRe.test(seg))return false;
+    cueRe.lastIndex=0;
+    const negBefore=/\b(?:no|not|denies?|denied|without|w\/o|negative for|neg for|absent|resolved)\b.{0,45}$/i;
+    let m;
+    while((m=cueRe.exec(seg))){
+      const before=seg.slice(Math.max(0,m.index-55),m.index);
+      const after=seg.slice(m.index+m[0].length,m.index+m[0].length+35);
+      if(!negBefore.test(before)&&!/^\s*(?:denied|absent|negative|resolved)\b/i.test(after))return true;
+    }
+    return false;
+  });
+}
+function caudaCuePositive(t){
+  return positiveCueText(t,/\b(?:cauda|CES|saddle|urinary retention|bowel\s*(?:\/|or)\s*bladder\s*(?:dysfunction|symptoms?|incontinence)?|sphincter symptoms?|incontinence|post-?void|PVR)\b/gi);
+}
 // ---------- problem playbook (keyword-matched grading suggestions) ----------
 const SUGG=[
- {re:/cauda|\bces\b|saddle|urinary retention/i,n:"Cauda equina syndrome",s:{E:3,O:2,W:2,mods:["NΔ"]},
+ {re:caudaCuePositive,n:"Cauda equina syndrome",s:{E:3,O:2,W:2,mods:["NΔ"]},
   look:["Confirmed compression = spinal emergency; a 48-h window is NOT permission to wait [2]","Document saddle sensation, rectal tone, post-void residual, and motor timeline with exact times","Incomplete or progressive syndromes are the most time-critical","Emergent MRI; if unavailable, escalate or transfer"],
   action:"Check PVR, saddle exam, rectal tone; get emergent MRI",trig:"immediately for progressive weakness or new retention"},
  {re:isTraumaticSAHText,n:"Traumatic SAH / tSAH",s:{E:1,O:0,W:1,mods:["W"]},
@@ -1682,7 +1704,7 @@ const FLAGS=[
  {re:/hypertens.{0,20}brady|brady.{0,20}hypertens|cushing/i,label:"Cushing physiology — late sign, act NOW [1]",lv:"e3",apply:{E:3}},
  {re:/somnolen|lethargic|drowsy|sleepier/i,label:"Somnolence — trajectory concern: NΔ, consider E↑",lv:"warn",apply:{mods:["NΔ"]}},
  {re:/new weakness|progressive weakness|weaker|can'?t (walk|ambulate)|lost ambulation|foot drop/i,label:"Weakness evolving — NΔ; E3 if rapidly progressive",lv:"warn",apply:{mods:["NΔ"]}},
- {re:/retention|saddle|bowel or bladder|incontinen|post-?void/i,label:"Saddle/sphincter symptoms — screen for cauda equina [2]",lv:"warn",apply:{}},
+ {re:caudaCuePositive,label:"Saddle/sphincter symptoms — screen for cauda equina [2]",lv:"warn",apply:{}},
  {re:/vomit|emesis|worst headache|thunderclap/i,label:"Vomiting / thunderclap — ICP or SAH signal",lv:"warn",apply:{}},
  {re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|\bdapt\b|\bdoac\b|anticoag|\binr\b/i,label:"Anticoagulant/antiplatelet mentioned — AC modifier + reversal plan",lv:"warn",apply:{mods:["AC"]}},
  {re:infectionConcernText,label:"R/o SSI/infection — verify if antibiotics already given; if stable and not started, ask chief/attending before antibiotics if sampling/cultures should happen first",lv:"warn",apply:{E:2,W:2,mods:["INF"]}},
@@ -1831,7 +1853,7 @@ function scoreKey(ns,kind){return ns+":"+kind}
 function scoreToggle(ns,kind,on){scoreOpen[scoreKey(ns,kind)]=!!on}
 function scoreOpenAttr(ns,kind,show){
   const k=scoreKey(ns,kind);
-  const open=(scoreOpen[k]!==undefined)?scoreOpen[k]:!!show;
+  const open=(scoreOpen[k]!==undefined)?scoreOpen[k]:false;
   return (open?" open":"")+' ontoggle="scoreToggle(\''+ns+'\',\''+kind+'\',this.open)"';
 }
 // summary line + reset, per calculator
@@ -1996,6 +2018,22 @@ function inferIchState(ns,txt){
   if(s.ivh===undefined&&/\bivh\b|intraventricular/i.test(txt||""))s.ivh="1";
   if(s.infra===undefined&&/cerebell|pontine|brainstem|infratentorial/i.test(txt||""))s.infra="1";
 }
+function ichVolume(ns){
+  const s=ICH_STATE[ns]||{};
+  const vals=["va","vb","vc"].map(k=>parseFloat(s[k]));
+  if(vals.some(v=>!isFinite(v)||v<=0))return null;
+  return vals[0]*vals[1]*vals[2]/2;
+}
+function ichVolumeHtml(ns){
+  const s=ICH_STATE[ns]||{},vol=ichVolume(ns);
+  const val=k=>esc(s[k]||"");
+  return '<div class="gcsrow"><div class="glabel">ICH volume calculator, cm: (A x B x C) / 2</div>'+
+    '<div class="volcalc">'+
+      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_a" value="'+val("va")+'" placeholder="A" oninput="setIchDim(\''+ns+'\',\'va\',this.value)">'+
+      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_b" value="'+val("vb")+'" placeholder="B" oninput="setIchDim(\''+ns+'\',\'vb\',this.value)">'+
+      '<input type="number" min="0" step="0.1" id="ich_'+ns+'_c" value="'+val("vc")+'" placeholder="C" oninput="setIchDim(\''+ns+'\',\'vc\',this.value)">'+
+    '</div><div class="volout" id="ich_'+ns+'_vol">'+(vol===null?"Enter all three dimensions.":('<b>'+vol.toFixed(1)+' mL</b> estimated volume; ICH volume score '+(vol>=30?"+1":"0")+'.'))+'</div></div>';
+}
 function renderIchAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=scoreContextText(ns);
@@ -2006,10 +2044,21 @@ function renderIchAid(ns,targetId,force){
     '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setIchPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+o[0])+'</button>').join("")+'</div></div>';
   el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"ich",show)+'><summary>ICH score calculator</summary><div class="scorebody">'+
     '<div class="note">For spontaneous/nontraumatic ICH. Uses historical cohort mortality estimates; do not use alone for prognosis or goals-of-care.</div>'+
-    '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
+    '<div class="gcsgrid">'+row("gcs","Glasgow Coma Score")+row("age","Age")+ichVolumeHtml(ns)+row("vol","ICH volume")+row("ivh","Intraventricular hemorrhage")+row("infra","Origin")+'</div>'+
     '<div class="gcsout"><b>'+ichSummary(ns)+'</b>'+scoreBtns(ns,"ich")+(ns==="ref"?'<span>*No patients in original cohort scored 6.</span>':'<button type="button" onclick="insertIchScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
 function setIchPart(ns,k,v){ICH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderIchContext(ns);if(ns==="ftc")renderFTCFlags()}
+function setIchDim(ns,k,v){
+  ICH_STATE[ns]=ICH_STATE[ns]||{};
+  ICH_STATE[ns][k]=v;
+  const vol=ichVolume(ns);
+  if(vol!==null)ICH_STATE[ns].vol=vol>=30?"1":"0";
+  snapFocus();
+  if(ns==="form")syncFormScoreFields();
+  renderIchContext(ns);
+  if(ns==="ftc")renderFTCFlags();
+  restoreFocus();
+}
 function renderIchContext(ns){
   if(ns==="form")renderIchAid("form","f_ich",false);
   else if(ns==="tc")renderIchAid("tc","tc_ich",false);
