@@ -232,6 +232,11 @@ button.tbtn.set{border-color:var(--e2);color:var(--e2)}
 .crow .ract.doneitem{color:var(--ok);text-decoration:line-through}
 .crow .rdl{font-size:11px;white-space:nowrap}
 button.rdone{border:1px solid var(--line);color:var(--mut);background:transparent;border-radius:6px;font-weight:800;font-size:11px;padding:2px 9px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+button.rcheck{width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:8px;font-weight:900;font-size:15px;padding:0;cursor:pointer;font-family:var(--font);line-height:1}
+button.rcheck.stage{border-color:var(--acc);color:var(--acc)}
+button.rcheck.done{background:#123527}
+.rtags{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow:hidden;flex:0 1 auto}
+.rtags .bg{font-size:9.5px;padding:1px 5px;max-width:72px;overflow:hidden;text-overflow:ellipsis}
 button.rdone.finaldone{background:#123527}
 .crow .car{color:var(--mut);font-size:12px}
 .colbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:6px;font-size:10.5px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
@@ -298,6 +303,7 @@ button.rdone.finaldone{background:#123527}
 .chartdot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent;display:inline-block}
 .chartdot.on{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.18)}
 .chartdot.amseen.on{border-color:#1f8f5a;background:#1f8f5a;box-shadow:0 0 0 1px rgba(31,143,90,.18)}
+.crow .chartdots{flex:0 0 auto}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 @media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
@@ -573,7 +579,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.61 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.63 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2598,7 +2604,7 @@ function migrate(d){
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
-    if((!c.type||c.type==="CONSULT")&&!c.reviewOff&&!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
+    if((!c.type||c.type==="CONSULT")&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
@@ -3190,8 +3196,8 @@ function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
-  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null}
-  touch(c);render();showToast("Timers off")}
+  if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=false;resetReviewClock(c,Date.now(),true)}
+  touch(c);render();showToast(c.type==="CONSULT"?"Manual timers cleared — auto review timer restored":"Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
@@ -3204,7 +3210,7 @@ function clearOverdueTimers(id){
   if(overdueISO(c.deadlineISO)){c.deadlineISO=null;n++}
   (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
   (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
-  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;n++}
+  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewManual=false;resetReviewClock(c,Date.now(),true);n++}
   if(n&&pinnedTopId===id)pinnedTopId=null;
   touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
 }
@@ -3219,9 +3225,9 @@ function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.
 function clearDL(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.deadlineISO=null;
-  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
+  if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=false;resetReviewClock(c,Date.now(),true)}
   if(pinnedTopId===id)pinnedTopId=null;
-  touch(c);render();showToast("Timer off — back to priority order");
+  touch(c);render();showToast(c.type==="CONSULT"?"Manual timer cleared — auto review timer restored":"Timer off — back to priority order");
 }
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
@@ -4087,6 +4093,7 @@ function saveForm(){
   const ix=S.consults.findIndex(x=>x.id===F.id);
   const prev=ix>=0?S.consults[ix]:null;
   if(F.deadlineISO)F.reviewManual=true;
+  else if(F.type==="CONSULT"&&!F.reviewOff)F.reviewManual=false;
   if(F.type==="CONSULT"&&!F.reviewOff&&!F.reviewManual&&(isNew||!F.reviewDueISO||(prev&&prev.E!==F.E)))resetReviewClock(F);
   if(ix>=0)S.consults[ix]=F;else S.consults.push(F);
   const saved=F;
@@ -4418,6 +4425,17 @@ function roundStageBtn(r){
   }
   return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done and archive this patient until the next round" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
 }
+function roundStageBox(r){
+  const nx=roundNextCheck(r);
+  if(!nx){
+    const n=roundChecks().length;
+    return '<button class="rcheck done" title="All '+n+' checks done — tap to undo the last one" aria-label="Undo last rounds check" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓</button>';
+  }
+  return '<button class="rcheck stage" title="Mark '+esc(nx.label)+' done and archive this patient until the next round" aria-label="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓</button>';
+}
+function roundStepBox(r,i){
+  return '<button class="rcheck" title="Mark to-do done" aria-label="Mark to-do done" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+i+')">✓</button>';
+}
 function roundCheckAdvance(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const nx=roundNextCheck(r);if(!nx)return;
@@ -4719,23 +4737,25 @@ function roundProblemText(r){
 }
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
+  const nxi=nx?(r.steps||[]).indexOf(nx):-1;
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
-  const tags=(r.tags||[]).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
+  const tags=[
+    roundTeam(r)?'<span class="bg '+teamBadgeClass(roundTeam(r))+'">'+esc(roundTeam(r))+'</span>':"",
+    roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
+    ...(r.tags||[]).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>'),
+    r.nccuSO?'<span class="bg warn">NCCU</span>':""
+  ].filter(Boolean).join("");
   return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
-    '<span class="bg t">▤</span>'+
+    roundStageBox(r)+
+    chartDotsHtml(r)+
     (r.worry?'<span class="bg warn">!</span>':"")+
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
-    (roundTeam(r)?'<span class="bg '+teamBadgeClass(roundTeam(r))+'">'+esc(roundTeam(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
-    (roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"")+
-    tags+
-    chartDotsHtml(r)+
-    (r.nccuSO?'<span class="bg warn">NCCU</span>':"")+
+    (tags?'<span class="rtags">'+tags+'</span>':"")+
     '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
-    (nx?'<button class="rdone" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+(r.steps||[]).indexOf(nx)+')">✓ done</button><span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
+    (nx?roundStepBox(r,nxi)+'<span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
-    roundStageBtn(r)+
     '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){

@@ -63,14 +63,30 @@ function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 function load(){try{return JSON.parse(localStorage.getItem(LS))||{consults:[]}}catch(e){return {consults:[]}}}
 function isSnoozed(c){return !!(c&&c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function boardVisible(c){return !c||c.type!=="CHART"}
-function nextDue(c){
+const E_WINDOW_MIN={3:0,2:30,1:60,0:120};
+function domTotal(c){return c&&c.domains&&c.domains.some(d=>d!==null&&d!==undefined)?c.domains.reduce((a,d)=>a+(d||0),0):null}
+function cLevel(c){const t=domTotal(c);return t!==null?(t<=5?1:t<=11?2:t<=23?3:4):(c&&c.cQuick)||0}
+function reviewWindowMin(c){return c&&c.type==="CONSULT"?E_WINDOW_MIN[Math.max(0,Math.min(3,c.E||0))]:null}
+function ensureReviewClock(c){
+  if(!c||c.type!=="CONSULT"||c.reviewOff||c.reviewManual)return;
+  const m=reviewWindowMin(c);if(m===null)return;
+  const t=c.reviewAt||c.created||c.updatedAt||Date.now();
+  c.reviewAt=t;
+  c.reviewDueISO=new Date(t+m*60000).toISOString();
+}
+function explicitDue(c){
   const xs=[];
   if(c.deadlineISO)xs.push(c.deadlineISO);
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO)xs.push(s.dueISO)});
   (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO)xs.push(t.dueISO)});
-  if(c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO)xs.push(c.reviewDueISO);
   return xs.sort((a,b)=>Date.parse(a)-Date.parse(b))[0]||null;
 }
+function boardDue(c){
+  const due=explicitDue(c);if(due)return due;
+  if(c&&c.type==="CONSULT"&&!c.reviewOff){ensureReviewClock(c);return c.reviewDueISO||null}
+  return null;
+}
+function nextDue(c){return boardDue(c)}
 function fmtDL(iso){
   if(!iso)return {cls:"ok",txt:"no timer"};
   const ms=Date.parse(iso)-Date.now(),over=ms<=0,mins=Math.ceil(Math.abs(ms)/60000);
@@ -89,18 +105,27 @@ function pendingText(c){
   return c.prob||"Next item";
 }
 function urgencyRank(c){
-  let r=(c.E||0)*100;
-  const due=nextDue(c),dl=due?fmtDL(due):null;
-  if(dl&&dl.cls==="over")r+=1200;
-  else if(dl&&dl.cls==="soon")r+=500;
+  let r=(c.E||0)*100+(c.O||0)*12+(c.W||0)*8+cLevel(c)*2;
   if(c.type==="CONSULT"&&(!c.wf||!c.wf.seen))r+=160;
   return r;
+}
+function sortItem(a,b){
+  const ad=boardDue(a),bd=boardDue(b),at=ad?Date.parse(ad):0,bt=bd?Date.parse(bd):0;
+  if(!!at!==!!bt)return at?-1:1;
+  if(at&&bt&&at!==bt)return at-bt;
+  const ar=urgencyRank(a),br=urgencyRank(b);
+  if(br!==ar)return br-ar;
+  if((b.E||0)!==(a.E||0))return(b.E||0)-(a.E||0);
+  if((b.O||0)!==(a.O||0))return(b.O||0)-(a.O||0);
+  if((b.W||0)!==(a.W||0))return(b.W||0)-(a.W||0);
+  if(cLevel(b)!==cLevel(a))return cLevel(b)-cLevel(a);
+  return (a.created||0)-(b.created||0);
 }
 function nextItem(){
   const S=load();
   return (S.consults||[])
     .filter(c=>boardVisible(c)&&!c.closed&&!isSnoozed(c))
-    .sort((a,b)=>urgencyRank(b)-urgencyRank(a)||(a.created||0)-(b.created||0))[0]||null;
+    .sort(sortItem)[0]||null;
 }
 function render(){
   const c=nextItem(),circle=document.getElementById("circle");
