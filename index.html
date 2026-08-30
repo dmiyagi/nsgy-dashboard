@@ -580,7 +580,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.67 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.70 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -882,6 +882,9 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 </ul>
 <h4>Aneurysm / SAH</h4>
 <ul>
+<li>High-suspicion spontaneous SAH clues: thunderclap/worst headache, sudden onset, nausea/vomiting, photophobia, meningismus, LOC, or painful pupil-involving CN III palsy suggesting PComA aneurysm.</li>
+<li>If CTH is negative but the story remains high suspicion, LP is the rule-out pathway: xanthochromia and non-clearing RBCs support true SAH over traumatic tap.</li>
+<li>Unknown-source spontaneous SAH: after CTA/DSA, repeat DSA in 7-14 days if initial angiography is negative; perimesencephalic/prepontine-only blood after negative repeat supports PNSAH.</li>
 <li>Unsecured SAH: NCCU, q1 neurochecks, BP 100-140, Keppra until secured, nimodipine 21 d, angiogram within 24 h, TCDs 14 d, hydrocephalus/EVD watch.</li>
 <li>Secured SAH: NCCU, q1 neurochecks, BP 100-200 unless otherwise directed, nimodipine 21 d, TCDs 14 d, document clip/coil/stent status and residual/recanalization concern.</li>
 <li>For any aneurysm consult, document secured/unsecured, ruptured/incidental, location, size, morphology/growth, hydrocephalus/IVH, AC/antiplatelet status, and angiogram/follow-up plan.</li>
@@ -1407,7 +1410,19 @@ function aneurysmText(t){return /\b(?:aneurysm|aneurysmal|aSAH|uIA|pcomm|acomm|a
 function securedAneurysmText(t){return /\b(?:secured|coiled|clipped|clip\b|coil\b|pipeline|flow divert|stent.?coil|web device|treated aneurysm)\b/i.test(t||"")}
 function unsecuredAneurysmText(t){return /\b(?:unsecured|ruptured|rupture|sentinel headache|worst headache|thunderclap|aSAH|aneurysmal SAH)\b/i.test(t||"")&&aneurysmText(t)}
 function unrupturedAneurysmText(t){return aneurysmText(t)&&/\b(?:unruptured|incidental|known|surveillance|found|outpatient|asymptomatic)\b/i.test(t||"")&&!unsecuredAneurysmText(t)}
-function isAneurysmalSAHText(t){const s=t||"";return !isTraumaticSAHText(s)&&(unsecuredAneurysmText(s)||/\b(?:aSAH|aneurysmal\s+SAH|subarachnoid)\b|\bSAH\b/i.test(s))}
+function sahText(t){return /\b(?:SAH|subarachnoid(?: hemorrhage)?)\b/i.test(t||"")}
+function ruleoutASAHContext(t){return /(?:\brule.?out\b|\br\/o\b|\bsuspect(?:ed)?\b|\bpossible\b|\bquestion\b|\bunknown\b|\bundifferentiated\b).{0,24}(?:\baSAH\b|\baneurysmal\s+SAH\b|\baneurysm\b)|(?:\baSAH\b|\baneurysmal\s+SAH\b|\baneurysm\b).{0,24}(?:\brule.?out\b|\br\/o\b|\bsuspect(?:ed)?\b|\bpossible\b|\bquestion\b|\bunknown\b|\bundifferentiated\b)/i.test(t||"")}
+function suspectASAHText(t){
+  const s=String(t||"");
+  return !isTraumaticSAHText(s)&&(sahText(s)||ruleoutASAHContext(s))&&(
+    ruleoutASAHContext(s)||
+    /\b(?:spontaneous|unknown etiology|undifferentiated|rule.?out|r\/o|suspect(?:ed)?|possible|cta negative|angio(?:gram)? negative|dsa negative|perimesencephalic|prepontine|PNSAH)\b/i.test(s)||
+    /\b(?:thunderclap|worst headache|sentinel headache|sudden[- ]onset|hyperacute|nuchal rigidity|meningismus|photophobia|xanthochromia|loss of consciousness|LOC)\b/i.test(s)||
+    /\b(?:third nerve|CN ?III|oculomotor|ptosis|down and out|dilated pupil|nonreactive pupil|PComA|posterior communicating)\b/i.test(s)
+  );
+}
+function sahUnknownEtiologyText(t){const s=String(t||"");return suspectASAHText(s)&&!unsecuredAneurysmText(s)&&(!/\b(?:aSAH|aneurysmal\s+SAH|secured|coiled|clipped)\b/i.test(s)||ruleoutASAHContext(s))}
+function isAneurysmalSAHText(t){const s=t||"";return !isTraumaticSAHText(s)&&!ruleoutASAHContext(s)&&(unsecuredAneurysmText(s)||/\b(?:aSAH|aneurysmal\s+SAH)\b/i.test(s))}
 function carotidText(t){return /\b(?:ICA stenosis|carotid stenosis|carotid artery stenosis|internal carotid|carotid bifurcation|carotid plaque|TCAR|CEA|carotid endarterectomy|carotid stent|carotid revascularization|NASCET)\b/i.test(t||"")}
 function symptomaticCarotidText(t){return carotidText(t)&&/\b(?:symptomatic|TIA|amaurosis|transient monocular|stroke|infarct|weakness|numbness|visual changes|difficulty speaking|aphasia|dysarthria|crescendo)\b/i.test(t||"")}
 function icpCrisisText(t){return /\b(?:ICP crisis|elevated ICP|intracranial pressure|refractory ICP|icp\s*(?:>|>=|over|above)\s*(?:20|22|25)|decompensat|herniat|DECRA|hyperosmolar|mannitol|23\.?4?%|3% saline|HTS)\b/i.test(t||"")}
@@ -1435,6 +1450,18 @@ function nicoReachChecklistHtml(){
   const excl=["aneurysm/AVM/VST/tumor","bilateral fixed pupils or extensor posturing","IVH >50% lateral ventricle","thalamic >25% / brainstem extension","non-reversible AC/coagulopathy","plt <75K or INR >1.4","ESRD/liver/mech valve","CMO/DNR"];
   const box=(h,arr)=>'<div class="checklist"><b>'+h+'</b>'+arr.map(x=>'<label><input type="checkbox"><span>'+x+'</span></label>').join("")+'</div>';
   return box("NICO",nico)+box("REACH",reach)+box("Key exclusions",excl);
+}
+const SAH_RULEOUT_TASKS=[
+  "SAH rule-out: noncontrast CTH timing from onset; if negative but high suspicion, LP for xanthochromia/non-clearing RBCs",
+  "CTA head/neck for vascular source; DSA if CTA negative/equivocal or anatomy needed",
+  "If initial CTA/DSA negative spontaneous SAH, plan repeat DSA in 7-14 days",
+  "While possible unsecured aSAH: SBP <140, nimodipine, seizure prophylaxis, coags/plt/T&S/Na/troponin/EKG",
+  "Hydrocephalus/IVH/low GCS: EVD consideration and senior notification"
+];
+function addSahRuleoutChecklist(){addUniqueLines("f_tasks",SAH_RULEOUT_TASKS);showToast("SAH rule-out checklist added")}
+function sahRuleoutChecklistHtml(){
+  const items=["Thunderclap/worst sudden headache, meningismus, photophobia, N/V, LOC","PComA cue: painful pupil-involving CN III palsy, ptosis, down-and-out eye, dilated/nonreactive pupil","CTH first; LP if CTH negative but suspicion remains high","CTA then DSA for source/anatomy; repeat DSA in 7-14 days if spontaneous SAH remains unexplained","Treat as possible unsecured aSAH while excluding: SBP <140, nimodipine, seizure prophylaxis, hydrocephalus/EVD watch"];
+  return '<div class="checklist">'+items.map(x=>'<label><input type="checkbox"><span>'+x+'</span></label>').join("")+'</div>';
 }
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
 function infectionConcernText(t){return /\b(?:r\/o|rule out|concern for|c\/f|possible|suspected)?\s*(?:SSI|surgical site infection|infection|infected|wound infection|wound dehisc|wound drainage|purulen|abscess|osteomyelitis|discitis|empyema|ventriculitis|meningitis|shunt infection|hardware infection|fever|febrile)\b/i.test(t||"")}
@@ -1476,6 +1503,9 @@ const SUGG=[
  {re:isTraumaticSAHText,n:"Traumatic SAH / tSAH",s:{E:1,O:0,W:1,mods:["W"]},
   look:["Treat as traumatic intracranial hemorrhage rather than aneurysmal SAH unless the story/imaging suggests aneurysm","Use the traumatic hemorrhage workflow: neuro exam, AC/antiplatelet status, repeat CTH timing, BP/Na goals, seizure/trauma considerations","Reference traumatic-lesion thresholds and ACS TBI guidance; if associated SDH/EDH/contusion exists, let that lesion drive urgency","Institutional note: isolated tSAH may be dischargeable when exam/imaging/context allow, but confirm local pathway and senior review"],
   action:"Review trauma CT, AC status, and associated SDH/EDH/contusion; set repeat CTH or discharge pathway per senior",trig:"exam decline, new/worsening hemorrhage, AC/reversal issue, hydrocephalus, or concerning aneurysmal pattern"},
+ {re:sahUnknownEtiologyText,n:"SAH unknown / rule out aSAH",s:{E:3,O:1,W:3,mods:["W","VASC","IMG"]},
+  look:["High-suspicion history: thunderclap/worst headache, sudden onset, nausea/vomiting, photophobia, meningismus, LOC, or painful pupil-involving CN III palsy/PComA cue","Workup: noncontrast CTH first; if CTH negative but story remains high suspicion, LP for xanthochromia and non-clearing RBCs","Once SAH is confirmed, obtain vascular imaging: CTA as screening, DSA for definitive aneurysm/anatomy planning","If CTA/DSA negative but spontaneous SAH remains unexplained, repeat DSA in 7-14 days; perimesencephalic/prepontine-only blood after negative repeat supports PNSAH","Immediate checklist while ruling out aSAH: SBP <140, EVD consideration for low GCS/IVH/hydrocephalus, seizure prophylaxis, nimodipine, coags/plt/T&S/Na/troponin/EKG"],
+  action:"Treat as possible unsecured aSAH until excluded: CTH/CTA ± LP/DSA, SBP <140, nimodipine, seizure prophylaxis, hydrocephalus/EVD watch",trig:"decline, hydrocephalus/IVH, rebleed concern, pupil-involving CN III palsy, or aneurysm found"},
  {re:isAneurysmalSAHText,n:"SAH / aneurysm",s:{E:3,O:1,W:3,mods:["W","VASC"]},
   look:["Unsecured ruptured aneurysm: rebleed risk — treatment preferably within 24 h [3]","O0/O1 ≠ low acuity — can be E3 without an open operation","BP control, nimodipine, hydrocephalus watch (EVD?)","Isolated traumatic tSAH is a different animal (often home per institutional practice)"],
   action:"Confirm CTA, establish BP goal, call senior re: securing plan",trig:"immediately for decline, headache surge, or pupil change"},
@@ -1563,7 +1593,7 @@ const SUGG=[
  {re:carotidText,n:"ICA / carotid stenosis",s:{E:1,O:1,W:1,mods:["VASC","IMG"]},
   look:["Bootcamp carotid checks: degree stenosis, laterality, widest plaque/widest vessel, symptomatic status, and AC/antiplatelet status","TCAR anatomy: bifurcation distance to clavicle/C-spine level, plaque length/runway, angle of mandible, Acomm/Pcomms","CEA anatomy: stenosis length across C-spine levels; note heavily calcified plaque, high bifurcation, prior neck surgery/radiation, DAPT tolerance, age/collateral concerns","Workup: CTA stenosis/high-risk ulcerated plaque, carotid US, MRI brain stroke vs TIA, TTE/cardioembolic source; soft thrombus/target-sign pathway may need heparin + repeat CTA per senior"],
   action:"Document symptomatic vs asymptomatic, % stenosis/laterality, CTA/CUS/MRI/TTE status, AC/AP plan, and TCAR/CEA/CAS anatomy",trig:"new stroke/TIA, crescendo symptoms, soft thrombus, complete occlusion uncertainty, or unstable neuro exam"},
- {re:t=>isAneurysmalSAHText(t)||/hunt.?hess|fisher/i.test(t||""),n:"SAH scoring reminder",s:{mods:["VASC"]},
+ {re:t=>isAneurysmalSAHText(t)||sahUnknownEtiologyText(t)||/hunt.?hess|fisher/i.test(t||""),n:"SAH scoring reminder",s:{mods:["VASC"]},
   look:["Use Hunt-Hess / modified Fisher when presenting aneurysmal SAH consults","Document hydrocephalus, IVH, aneurysm secured vs unsecured, BP goal, nimodipine, TCD plan","Score-driven labels help sign-out and staffing but do not replace E/O/W urgency"],
   action:"Add Hunt-Hess + modified Fisher score to the consult presentation",trig:"decline, rebleed concern, hydrocephalus, or pupil change"},
  {re:/admit|admission|we will admit|plan.*admit/i,n:"Admission documentation reminder",s:{mods:["DISPO"]},
@@ -1862,6 +1892,7 @@ const FLAGS=[
  {re:/hydrocephalus|ventriculomegaly|temporal horns|transependymal/i,label:"Hydrocephalus/ventricle concern — may need urgent EVD/recheck timing",lv:"warn",apply:{W:2}},
  {re:/\bivh\b|intraventricular hemorrhage/i,label:"IVH present — watch hydrocephalus, EVD need, and exam trajectory",lv:"warn",apply:{W:2}},
  {re:unsecuredAneurysmText,label:"Unsecured/ruptured aneurysm — definite action: SAH protocol, BP goal, nimodipine, angiogram/securing plan, hydrocephalus watch",lv:"e3",apply:{E:3,W:3,mods:["VASC","W"]}},
+ {re:sahUnknownEtiologyText,label:"SAH unknown source / rule out aSAH — treat as possible unsecured aneurysm until excluded; CTH/CTA ± LP/DSA, SBP <140, nimodipine, hydrocephalus watch",lv:"e3",apply:{E:3,W:3,mods:["VASC","IMG","W"]}},
  {re:t=>securedAneurysmText(t)&&aneurysmText(t),label:"Secured aneurysm — confirm clip/coil/stent status, residual/recanalization, BP goal, TCD/nimodipine plan if SAH-window",lv:"info",apply:{mods:["VASC"]}},
  {re:unrupturedAneurysmText,label:"Unruptured/incidental aneurysm — document size, location, morphology/growth, symptoms, smoking/HTN/family history, and follow-up vs angiogram plan",lv:"info",apply:{mods:["VASC"]}},
  {re:/ICH Score\s+[3-6]\b/i,label:"ICH Score ≥3 — high-risk score; document exam, IVH/hydrocephalus, volume, AC/reversal, and senior discussion",lv:"e3",apply:{E:2,W:3,mods:["W"]}},
@@ -1901,7 +1932,7 @@ const FLAGS=[
  {re:/who owns|ownership|unclear (team|service|primary)/i,label:"Ownership unclear — OWN? modifier; patients wait on this",lv:"info",apply:{mods:["OWN?"]}},
  // labs to send before staffing, by pathology
  {re:isTraumaticSAHText,label:"Lab tSAH: traumatic hemorrhage workflow — repeat CTH timing, AC/antiplatelet status, plt/coags if relevant, trauma/dispo pathway",lv:"info",apply:{}},
- {re:isAneurysmalSAHText,label:"Lab aSAH staffing: coags, plt, T&S, Na baseline, troponin/EKG; Hunt-Hess / modified Fisher when relevant",lv:"info",apply:{}},
+ {re:t=>isAneurysmalSAHText(t)||sahUnknownEtiologyText(t),label:"Lab SAH/aSAH staffing: coags, plt, T&S, Na baseline, troponin/EKG; Hunt-Hess / modified Fisher when relevant",lv:"info",apply:{}},
  {re:/\bich\b|intracerebral|basal ganglia.{0,20}(bleed|hemorrhage)|lobar hemorrhage/i,label:"Lab Labs for staffing: plt (trial excl <75K), INR (excl >1.4), coags, tox — check NICO/REACH criteria (Reference)",lv:"info",apply:{}},
  {re:symptomaticCarotidText,label:"Symptomatic ICA/carotid stenosis — time-sensitive vascular consult; document last-known-well, symptoms, stroke/TIA imaging, and senior/vascular-neuro plan",lv:"warn",apply:{E:2,W:2,mods:["VASC"]}},
  {re:carotidText,label:"Lab Carotid staffing: coags + AC/antiplatelet status, % stenosis (widest plaque/widest vessel), laterality, bifurcation level, plaque/runway, hx neck surgery/XRT",lv:"info",apply:{mods:["VASC","IMG"]}},
@@ -2095,7 +2126,7 @@ function hhSummary(ns){
 function renderHhAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=scoreContextText(ns);
-  const show=force||isAneurysmalSAHText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
+  const show=force||isAneurysmalSAHText(txt)||sahUnknownEtiologyText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
   const s=HH_STATE[ns]||{};
   el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"hh",show)+'><summary>Hunt-Hess score</summary><div class="scorebody">'+
     '<div class="note">Aneurysmal SAH aid. Use with modified Fisher and clinical judgment.</div>'+
@@ -2456,6 +2487,7 @@ function renderSmartHints(){
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
   if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push(box("Trauma GCS &lt;8 detected","Consider Bolt/Licox task with full procedure checklist.",'<span class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Bolt/Licox</button></span>'));
+  if(F.type==="CONSULT"&&sahUnknownEtiologyText(txt))hints.push(box("SAH rule-out / unknown source",sahRuleoutChecklistHtml(),'<span class="qbtns"><button type="button" onclick="addSahRuleoutChecklist()">＋ To-Do</button></span>'));
   if(F.type==="CONSULT"&&ichTrialCandidateText(txt))hints.push(box("NICO / REACH criteria",nicoReachChecklistHtml(),'<span class="qbtns"><button type="button" onclick="addNicoReachChecklist()">＋ To-Do</button></span>'));
   el.innerHTML=hints.join("");
 }
@@ -2610,6 +2642,18 @@ function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
 function useSuggAction(i){const s=curSugg[i];if(s&&s.action)document.getElementById("f_action").value=s.action}
 function useSuggTrig(i){const s=curSugg[i];if(s&&s.trig)document.getElementById("f_trig").value=s.trig}
 const CLOSE_ITEMS=["Primary team assigned or patient dispo complete","All documentation has been completed and signed","If signing off or discharged, CoC updated","If surgical patient, added to wound check list"];
+function closeItemKey(t){return String(t||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
+function closeItemIdxForTask(t){
+  const k=closeItemKey(t);
+  return CLOSE_ITEMS.findIndex(x=>closeItemKey(x)===k);
+}
+function syncCloseTaskState(c,task){
+  if(!c||!task)return;
+  let i=Number.isInteger(task.closeIdx)?task.closeIdx:closeItemIdxForTask(task.t);
+  if(i<0)return;
+  c.closeChecks=c.closeChecks||{};
+  c.closeChecks[i]=!!task.done;
+}
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
  {id:"icu",s:"06:00",e:"07:00",t:"ICU signout — BB7 conf (1217#)",tasks:["Write every patient's exam + plan (smiley = intact; crosses for motor; sq/tu/wt/l/wd/tf)","Relay plans by secure chat to primary teams — add the day team so they don't page you all day","Clarify plans + dispo with chiefs","Eat breakfast while multitasking"]},
@@ -2803,7 +2847,8 @@ function setReviewClockForMin(c,min,at){
 }
 function consultMilestoneSnoozeMin(k){
   if(k==="seen"||k==="staffedC")return 15;
-  if(["staffedA","commplan"].includes(k))return 30;
+  if(k==="staffedA")return 5;
+  if(k==="commplan")return 120;
   return null;
 }
 function ensureReviewClock(c){
@@ -3334,7 +3379,7 @@ function checksHtml(c){
     '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span>'+(!t.done?taskTimerBtn(c,i,t):"")+'</div>'+taskTimerRow(c,i)).join("")+
     '<div style="font-size:11px;color:var(--mut)">'+(open?open+" open":"all done ✓")+'</div></div>';
 }
-function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;if(c.tasks[i].done)c.tasks[i].dueISO=null;syncBoardDoneToRounds(c,c.tasks[i].t,c.tasks[i].done);touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
+function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;if(c.tasks[i].done)c.tasks[i].dueISO=null;syncCloseTaskState(c,c.tasks[i]);syncBoardDoneToRounds(c,c.tasks[i].t,c.tasks[i].done);touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
 // ---------- consent watch ----------
 function hasConsentTask(c){
   const loc=String(c.loc||"").toUpperCase();
@@ -3560,6 +3605,7 @@ function rowDone(id){
   }
   if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
     c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;c.tasks[p.i].dueISO=null;
+    syncCloseTaskState(c,c.tasks[p.i]);
     syncBoardDoneToRounds(c,c.lastDone,true);
     const nx=compactPending(c);touch(c);reflowQueue();render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
   }
@@ -4141,11 +4187,16 @@ let closingId=null;
 function startClose(id){
   const c=S.consults.find(x=>x.id===id);
   if(c&&c.type&&c.type!=="CONSULT"){c.closed=true;c.closedAt=Date.now();touch(c);render();return}
+  if(c&&(c.tasks||[]).length)(c.tasks||[]).forEach(t=>syncCloseTaskState(c,t));
   closingId=id;
-  document.getElementById("closeChecks").innerHTML=CLOSE_ITEMS.map((t,i)=>'<label><input type="checkbox"><span>'+t+'</span></label>').join("");
+  document.getElementById("closeChecks").innerHTML=CLOSE_ITEMS.map((t,i)=>'<label><input type="checkbox" '+(c&&c.closeChecks&&c.closeChecks[i]?"checked":"")+' onchange="closeCheckToggle('+i+',this.checked)"><span>'+t+'</span></label>').join("");
   document.getElementById("ovClose").classList.add("show");
 }
 function hideClose(){document.getElementById("ovClose").classList.remove("show");closingId=null}
+function closeCheckToggle(i,on){
+  const c=S.consults.find(x=>x.id===closingId);if(!c)return;
+  c.closeChecks=c.closeChecks||{};c.closeChecks[i]=!!on;touch(c);save();
+}
 function uncheckedCloseItems(){
   return Array.from(document.querySelectorAll("#closeChecks label")).map((lab,i)=>({
     checked:!!lab.querySelector("input").checked,
@@ -4154,14 +4205,25 @@ function uncheckedCloseItems(){
 }
 function addCloseItemsToTodos(){
   const c=S.consults.find(x=>x.id===closingId);if(!c)return;
-  const items=uncheckedCloseItems();
+  c.closeChecks=c.closeChecks||{};
+  const items=Array.from(document.querySelectorAll("#closeChecks label")).map((lab,i)=>({i:i,checked:!!lab.querySelector("input").checked,text:CLOSE_ITEMS[i]})).filter(x=>!x.checked&&x.text);
   c.tasks=c.tasks||[];
   let n=0;
-  items.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
+  items.forEach(it=>{
+    const existing=c.tasks.find(x=>x.closeIdx===it.i||closeItemKey(x.t)===closeItemKey(it.text));
+    if(existing){existing.closeIdx=it.i;syncCloseTaskState(c,existing)}
+    else{c.tasks.push({t:it.text,done:false,closeIdx:it.i});n++}
+  });
   c.closed=false;touch(c);hideClose();render();
   showToast(n?("Added "+n+" Stage B to-do"+(n>1?"s":"")):"No new Stage B to-dos");
 }
-function confirmClose(){const c=S.consults.find(x=>x.id===closingId);if(c){c.closed=true;c.closedAt=Date.now();touch(c)}hideClose();render()}
+function confirmClose(){
+  const c=S.consults.find(x=>x.id===closingId);if(!c){hideClose();return}
+  (c.tasks||[]).forEach(t=>syncCloseTaskState(c,t));
+  const missing=uncheckedCloseItems();
+  if(missing.length){showToast("Still needs "+missing.length+" Stage B item"+(missing.length>1?"s":""));return}
+  c.closed=true;c.closedAt=Date.now();touch(c);hideClose();render();
+}
 // ---------- day schedule ----------
 function todayStr(){return new Date().toDateString()}
 function ensureDay(){if(S.day.date!==todayStr()){S.day={date:todayStr(),checks:{},at:{}}}S.day.at=S.day.at||{}}
@@ -4197,7 +4259,7 @@ const SO_TMPLS={
  floor:{name:"General",fields:[["One-liner",""],["Exam + change from baseline",""],["Overnight events",""],["Pending studies","and who follows up"],["Meds of consequence","AC, abx, steroids, ASM"],["Goals","BP / Na / pain"],["Dispo + barriers",""],["Contingency","if X happens, do Y"]]}
 };
 function detectTmpl(t){
-  if(isAneurysmalSAHText(t)||/\bsah\b|subarachnoid/i.test(t))return "asah";
+  if(isAneurysmalSAHText(t)||sahUnknownEtiologyText(t)||/\bsah\b|subarachnoid/i.test(t))return "asah";
   if(carotidText(t)||aneurysmText(t)||vascularMalformationText(t)||/\bcoil\b|pcomm|acomm/i.test(t))return "vascular";
   if(/tssh|transsphenoidal|pituitary|sellar/i.test(t))return "tssh";
   if(/\bdhc\b|hemicrani|severe tbi|intubated/i.test(t))return "tbi";
@@ -4212,7 +4274,7 @@ function roundTags(t){
   const tags=[];
   const add=x=>{if(x&&!tags.includes(x))tags.push(x)};
   const s=String(t||"");
-  if(isTraumaticSAHText(s))add("tSAH");else if(isAneurysmalSAHText(s)||/\bsah\b|subarachnoid/i.test(s))add("SAH");
+  if(isTraumaticSAHText(s))add("tSAH");else if(sahUnknownEtiologyText(s))add("r/o aSAH");else if(isAneurysmalSAHText(s)||/\bsah\b|subarachnoid/i.test(s))add("SAH");
   if(aneurysmText(s))add("Aneurysm");
   if(carotidText(s))add("Carotid");
   if(/\bsdh\b|subdural|seps/i.test(s))add("SDH");
@@ -4760,7 +4822,7 @@ function roundProblemText(r){
   return s||SO_TMPLS[r.soT].name;
 }
 function roundPrimaryDxTag(r){
-  const pr=["ICH","Aneurysm","Tumor","SAH","SDH","EDH","Spine","Pituitary","Shunt","EVD","Carotid","VASC","Infection","AO","Trial"];
+  const pr=["r/o aSAH","ICH","Aneurysm","Tumor","SAH","SDH","EDH","Spine","Pituitary","Shunt","EVD","Carotid","VASC","Infection","AO","Trial"];
   const tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
   return pr.find(x=>tags.includes(x))||tags[0]||"";
 }
