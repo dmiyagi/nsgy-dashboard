@@ -410,6 +410,7 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .bg.team-pink{background:#3b1732;color:#ff8ad8;border:1px solid #ff8ad8}
 .bg.team-blue{background:#12304c;color:#6db7ff;border:1px solid #6db7ff}
 .bg.team-purple{background:#2b1d45;color:#b48bff;border:1px solid #b48bff}
+.bg.primarydx{background:#173a3c;color:var(--teal);border:1px solid var(--teal);font-weight:900}
 .wounddetail{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 9px 9px;margin:-5px 0 7px;padding:7px 10px}
 .woundlog{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .woundlog button{font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
@@ -579,7 +580,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.66 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.67 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1413,6 +1414,28 @@ function icpCrisisText(t){return /\b(?:ICP crisis|elevated ICP|intracranial pres
 function baclofenPumpText(t){const s=t||"";return /\b(?:baclofen|baclofen pump|intrathecal baclofen|IT baclofen|pump alarm|pump refill|pump failure|pump stopped|battery dead|out of medication|cyproheptadine)\b/i.test(s)||(/\bwithdrawal\b/i.test(s)&&/\b(?:baclofen|pump)\b/i.test(s))}
 function pituitaryText(t){const s=t||"";return /\b(?:pituitary|sellar|suprasellar|transsphenoidal|TSSH|macroadenoma|craniopharyngioma|DI watch)\b/i.test(s)||(/\b(?:apoplexy|bitemporal|visual field)\b/i.test(s)&&/\b(?:pituitary|sellar|suprasellar|macroadenoma)\b/i.test(s))}
 function ichTrialText(t){return /\b(?:NICO|REACH|lobar hemorrhage|basal ganglia hemorrhage|spontaneous ICH|ICH volume|NIHSS|mRS|trial criteria)\b/i.test(t||"")}
+function ichTrialCandidateText(t){
+  const s=String(t||"");
+  if(ichTrialText(s))return true;
+  if(!/\b(?:ich|iph|intracerebral|intraparenchymal|basal ganglia.{0,20}(?:bleed|hemorrhage)|lobar hemorrhage)\b/i.test(s))return false;
+  if(/\b(?:trauma|traumatic|fall|mvc|mva|assault|contusion|tSAH|SDH|EDH)\b/i.test(s))return false;
+  return /\b(?:spontaneous|nontraumatic|lobar|basal ganglia|putaminal|lentiform|external capsule|volume|\d+\s*(?:cc|ml|cm3|cm³)|gcs|nihss|mrs|lkw|last known well|onset|within 24)\b/i.test(s);
+}
+const NICO_REACH_TASKS=[
+  "NICO/REACH screen: age, baseline mRS, LKW/onset time",
+  "NICO: lobar/basal ganglia ICH 30-80 cc, GCS 5-14, NIHSS >5, surgery feasible within 24 h",
+  "REACH: anterior basal ganglia ICH 20-80 mL, age 18-70, mRS 0-1, GCS 5-14, within 24 h",
+  "Exclude aneurysm/AVM/VST/tumor, major IVH/thalamic/brainstem extension, fixed pupils/posturing",
+  "Check platelets/INR and non-reversible AC/coagulopathy exclusions; discuss with senior/trial screening team"
+];
+function addNicoReachChecklist(){addUniqueLines("f_tasks",NICO_REACH_TASKS);showToast("NICO/REACH checklist added")}
+function nicoReachChecklistHtml(){
+  const nico=["18-80","lobar/basal ganglia ICH","30-80 cc","GCS 5-14","NIHSS >5","surgery feasible within 24 h LKW"];
+  const reach=["18-70","mRS 0-1","anterior basal ganglia ICH","20-80 mL","GCS 5-14","within 24 h"];
+  const excl=["aneurysm/AVM/VST/tumor","bilateral fixed pupils or extensor posturing","IVH >50% lateral ventricle","thalamic >25% / brainstem extension","non-reversible AC/coagulopathy","plt <75K or INR >1.4","ESRD/liver/mech valve","CMO/DNR"];
+  const box=(h,arr)=>'<div class="checklist"><b>'+h+'</b>'+arr.map(x=>'<label><input type="checkbox"><span>'+x+'</span></label>').join("")+'</div>';
+  return box("NICO",nico)+box("REACH",reach)+box("Key exclusions",excl);
+}
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
 function infectionConcernText(t){return /\b(?:r\/o|rule out|concern for|c\/f|possible|suspected)?\s*(?:SSI|surgical site infection|infection|infected|wound infection|wound dehisc|wound drainage|purulen|abscess|osteomyelitis|discitis|empyema|ventriculitis|meningitis|shunt infection|hardware infection|fever|febrile)\b/i.test(t||"")}
 function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet(?:\s+(?:fx|fracture|dislocation|disloc|sublux))?|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar|fx)\b/i.test(t||"")}
@@ -1531,7 +1554,7 @@ const SUGG=[
  {re:vascularMalformationText,n:"Vascular malformation / Moyamoya",s:{E:1,O:1,W:2,mods:["VASC","IMG"]},
   look:["Bootcamp MRI protocols: MRI Brain WWO Moyamoya + MRA Brain WO; MRI Brain WWO Vascular Malformation + MRA Brain WO","For AVM/dural AVF, capture hemorrhage status, seizure/deficit, venous drainage, eloquence, prior embolization/radiation/surgery, and angio status","If ruptured or hydrocephalus/ICP concern, urgency follows hemorrhage/SAH/ICH rules rather than the label alone"],
   action:"Order protocol MRI/MRA or angio plan per senior; document rupture status, deficit/seizure, and prior treatment",trig:"rupture, new deficit, hydrocephalus, seizure cluster, or worsening headache"},
- {re:ichTrialText,n:"ICH NICO / REACH screen",s:{E:2,O:1,W:2,mods:["W"]},
+ {re:ichTrialCandidateText,n:"ICH NICO / REACH screen",s:{E:2,O:1,W:2,mods:["W"]},
   look:["NICO screen: lobar/basal ganglia ICH, age 18-80, 30-80 cc, GCS 5-14, NIHSS >5, surgery feasible within 24 h LKW","REACH screen: age 18-70, mRS 0-1, anterior basal ganglia ICH 20-80 mL, GCS 5-14, within 24 h","Key exclusions include underlying aneurysm/AVM/VST/tumor, fixed pupils/posturing, major IVH/thalamic/brainstem involvement, non-reversible AC/coagulopathy, plt <75K or INR >1.4","Bootcamp note: if likely qualifies, do not empirically give hypertonics pre-op unless herniation or suspected ICP need"],
   action:"Calculate volume/GCS/NIHSS/mRS, check exclusions, and message trial screening team/senior if potentially eligible",trig:"possible qualifying spontaneous ICH within 24 h, especially before hypertonics or operative decision"},
  {re:/stroke|\blvo\b|infarct|ischemi|\bbcvi\b/i,n:"Ischemia / vascular",s:{E:2,O:1,W:2,mods:["VASC"]},
@@ -2433,6 +2456,7 @@ function renderSmartHints(){
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
   if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push(box("Trauma GCS &lt;8 detected","Consider Bolt/Licox task with full procedure checklist.",'<span class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Bolt/Licox</button></span>'));
+  if(F.type==="CONSULT"&&ichTrialCandidateText(txt))hints.push(box("NICO / REACH criteria",nicoReachChecklistHtml(),'<span class="qbtns"><button type="button" onclick="addNicoReachChecklist()">＋ To-Do</button></span>'));
   el.innerHTML=hints.join("");
 }
 // ---------- measurement parsing & threshold alerts ----------
@@ -4736,10 +4760,9 @@ function roundProblemText(r){
   return s||SO_TMPLS[r.soT].name;
 }
 function roundPrimaryDxTag(r){
-  const s=roundProblemText(r).replace(/\s+/g," ").trim();
-  if(!s)return "";
-  const first=s.split(/\s+(?:s\/p|after|with|w\/|for|due to)\s+/i)[0].trim();
-  return (first||s).replace(/[.,;:]+$/,"").slice(0,42);
+  const pr=["ICH","Aneurysm","Tumor","SAH","SDH","EDH","Spine","Pituitary","Shunt","EVD","Carotid","VASC","Infection","AO","Trial"];
+  const tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
+  return pr.find(x=>tags.includes(x))||tags[0]||"";
 }
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
@@ -4747,6 +4770,14 @@ function roundRowCard(r){
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
   const dx=roundPrimaryDxTag(r);
   const team=roundTeam(r);
+  const otherTags=(r.tags||[]).filter(t=>t!==dx).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
+  const tags=[
+    team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"",
+    dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"",
+    roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
+    otherTags,
+    r.nccuSO?'<span class="bg warn">NCCU</span>':""
+  ].filter(Boolean).join("");
   return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     roundStageBox(r)+
@@ -4755,7 +4786,7 @@ function roundRowCard(r){
     (r.worry?'<span class="bg warn">!</span>':"")+
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
-    ((team||dx)?'<span class="rtags">'+(team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+(dx?'<span class="bg mod">'+esc(dx)+'</span>':"")+'</span>':"")+
+    (tags?'<span class="rtags">'+tags+'</span>':"")+
     '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
     (nx?roundStepBox(r,nxi)+'<span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
     '<span class="car">▸</span></div></div>';
