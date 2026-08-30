@@ -236,7 +236,7 @@ button.rcheck{width:28px;height:28px;min-width:28px;display:inline-flex;align-it
 button.rcheck.stage{border-color:var(--acc);color:var(--acc)}
 button.rcheck.done{border-color:var(--ok);color:var(--ok);background:#123527}
 .rtags{display:inline-flex;align-items:center;gap:4px;min-width:0;overflow:hidden;flex:0 1 auto}
-.rtags .bg{font-size:9.5px;padding:1px 5px;max-width:72px;overflow:hidden;text-overflow:ellipsis}
+.rtags .bg{font-size:9.5px;padding:1px 5px;max-width:132px;overflow:hidden;text-overflow:ellipsis}
 button.rdone.finaldone{background:#123527}
 .crow .car{color:var(--mut);font-size:12px}
 .colbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:6px;font-size:10.5px;padding:2px 8px;cursor:pointer;font-family:var(--font)}
@@ -253,7 +253,7 @@ button.rdone.finaldone{background:#123527}
 .filterctrl select option{background:var(--card);color:var(--text)}
 .caremeta{font-size:12px;color:var(--mut);margin:3px 0}
 .caregrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-@media(max-width:520px){.boardtools{gap:6px}.filterctrl{padding:4px 5px;font-size:9.5px}.filterctrl select{font-size:10px;max-width:84px}.caregrid{grid-template-columns:1fr}.crow{gap:5px;padding:7px 8px}.crow .rdl{font-size:10.5px;padding:2px 5px}.crow .rwho{font-size:13px}.crow .rprob{font-size:12.5px;max-width:92px}.crow .ract{font-size:12px}.rtags .bg{max-width:52px}}
+@media(max-width:520px){.boardtools{gap:6px}.filterctrl{padding:4px 5px;font-size:9.5px}.filterctrl select{font-size:10px;max-width:84px}.caregrid{grid-template-columns:1fr}.crow{gap:5px;padding:7px 8px}.crow .rdl{font-size:10.5px;padding:2px 5px}.crow .rwho{font-size:13px}.crow .rprob{display:none}.crow .ract{font-size:12px}.rtags .bg{max-width:86px}}
 .wf.mini button{font-size:9.5px;padding:2px 7px}
 .crowwrap{padding:7px 10px}
 .crowwrap .crow{padding:0;background:none;border:none;margin:0}
@@ -579,7 +579,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.64 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.66 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4735,16 +4735,18 @@ function roundProblemText(r){
      .replace(/\s+/g," ").trim();
   return s||SO_TMPLS[r.soT].name;
 }
+function roundPrimaryDxTag(r){
+  const s=roundProblemText(r).replace(/\s+/g," ").trim();
+  if(!s)return "";
+  const first=s.split(/\s+(?:s\/p|after|with|w\/|for|due to)\s+/i)[0].trim();
+  return (first||s).replace(/[.,;:]+$/,"").slice(0,42);
+}
 function roundRowCard(r){
   const nx=(r.steps||[]).find(s=>!s.done);
   const nxi=nx?(r.steps||[]).indexOf(nx):-1;
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
-  const tags=[
-    roundTeam(r)?'<span class="bg '+teamBadgeClass(roundTeam(r))+'">'+esc(roundTeam(r))+'</span>':"",
-    roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
-    ...(r.tags||[]).slice(0,2).map(t=>'<span class="bg mod">'+esc(t)+'</span>'),
-    r.nccuSO?'<span class="bg warn">NCCU</span>':""
-  ].filter(Boolean).join("");
+  const dx=roundPrimaryDxTag(r);
+  const team=roundTeam(r);
   return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     roundStageBox(r)+
@@ -4753,7 +4755,7 @@ function roundRowCard(r){
     (r.worry?'<span class="bg warn">!</span>':"")+
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
-    (tags?'<span class="rtags">'+tags+'</span>':"")+
+    ((team||dx)?'<span class="rtags">'+(team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+(dx?'<span class="bg mod">'+esc(dx)+'</span>':"")+'</span>':"")+
     '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
     (nx?roundStepBox(r,nxi)+'<span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
     '<span class="car">▸</span></div></div>';

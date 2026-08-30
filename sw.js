@@ -1,4 +1,4 @@
-const C = "nsgy-v64";
+const C = "nsgy-v66";
 const SHELL = ["./", "./index.html", "./watch.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
