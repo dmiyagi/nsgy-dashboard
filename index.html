@@ -326,6 +326,9 @@ button.rdone.finaldone{background:#123527}
 .calrow .ctime{font-size:11px;color:var(--mut);white-space:nowrap}
 .calrow button{margin-left:4px}
 .nccucard{border-left-color:var(--e3)}
+.nccucard .badges .primarydx{flex:0 0 auto}
+.nccucard .state{overflow:hidden;text-overflow:ellipsis}
+.nccucard.compact .state{white-space:nowrap}
 .nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
 .nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px;cursor:pointer}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
@@ -585,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.70 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.72 · 2026-09-02</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5840,13 +5843,15 @@ function nccuCompactNoteHtml(r){
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuIsCompact(r);
+  const dx=roundPrimaryDxTag(r);
   const body=compact
     ? (nccuCompactTodoHtml(r)+nccuCompactNoteHtml(r))
     : ('<div class="nccugrid">'+nccuDetailFields().map(([label,pats])=>'<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+nccuFieldHead(r,label,label)+'<span>'+nccuFieldHtml(r,label,soPick(r,pats)||"___")+'</span></div>').join("")+nccuExamHtml(r)+nccuPlanHtml(r)+nccuTodoHtml(r)+nccuNoteHtml(r)+'</div>');
   const nChg=nccuDiff?nccuChangeCount(r):0;
-  return '<div class="card nccucard hastrash" data-id="'+r.id+'">'+
+  return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from NCCU" aria-label="Remove from NCCU" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">NCCU</span>'+soTmplBadge(r)+
+    (compact&&dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"")+
     (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
     '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
