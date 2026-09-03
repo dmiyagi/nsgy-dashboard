@@ -456,6 +456,11 @@ details.planbox .sgt{font-weight:800;font-size:13px;color:var(--teal)}
 details.planbox .sgs{font-size:11px;color:var(--mut)}
 .planshort{font-size:12.5px;color:#d9e2ef;margin:6px 0 2px;line-height:1.5}
 .planfull{margin-top:8px;max-height:280px;overflow:auto}
+details.planbox.reachbox{border-color:#5a4a1c;background:#1d1a10}
+details.planbox.reachbox .sgt{color:var(--e1)}
+ul.reachlist{margin:8px 0 0 18px;font-size:12px;color:#d9e2ef;line-height:1.55}
+ul.reachlist li{margin-bottom:3px}
+ul.reachlist .rx{color:var(--mut);font-size:11px}
 .scoreaid .note{font-size:11px;color:var(--mut);margin-bottom:8px}
 .gcsout button.scoreclr{border:1px solid var(--line);color:var(--mut);background:transparent}
 .gcsout button.scoreclr:hover{border-color:var(--mut);color:var(--text)}
@@ -1655,13 +1660,13 @@ function addQuickProcSteps(c){
 // ---------- procedure library (supplies + step chains, 2026 survival guide) ----------
 const PROC_LIB=[
  {re:/evd\s*flush|flush(?:ing)?\s+(?:the\s+)?evd/i,name:"Flush EVD",
-  supplies:["2 sterile flushes","Sterile gloves","Alcohol wipes","Clave if no access port (post-OR EVD)"],
+  supplies:["2 sterile flushes","Extra sterile flushes","Sterile gloves","Extra sterile gloves","Alcohol wipes","Steri-strips","Extra nylon suture","Clave if no access port (post-OR EVD)"],
   steps:["Gather supplies — 2 flushes, gloves, alcohol wipes","Tell nursing / floor","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Write sig event note","Write sig note"]},
  {re:/\bevd\b|ventriculostomy/i,name:"EVD (adult)",dvt:true,
-  supplies:["Cranial access kit","EVD tower","Sterile flushes","Razor + blade","Chucks","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
+  supplies:["Cranial access kit","EVD tower","Sterile flushes","Extra sterile flushes","Steri-strips","Extra nylon suture","Extra sterile gloves","Razor + blade","Chucks","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
  {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds",
-  supplies:["Empty syringe","Saline flushes","Sterile gloves","Alcohol pads"],
+  supplies:["Empty syringe","Saline flushes","Extra sterile flushes","Sterile gloves","Extra sterile gloves","Alcohol pads","Steri-strips"],
   steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Write sig note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
   supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Chucks","Sterile gown + gloves + drape","Nylon + monocryl","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
@@ -1685,7 +1690,7 @@ const PROC_LIB=[
   supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile popsicle stick","Chucks","Tape","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Procedure note + update handoff + log"]},
  {re:/lumbar drain|\bld\b(?! ?kit)/i,name:"Lumbar drain",dvt:true,
-  supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Popsicle stick","Tape","Chloroprep ×3, chucks, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon"],
+  supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Popsicle stick","Tape","Chloroprep ×3, chucks, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon","Steri-strips","Extra nylon suture"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Procedure note + update handoff + log"]},
  {re:/\bhalo\b/i,name:"Halo",
   supplies:["Needles/syringes/marker/chlorapreps","Torque wrench (BB6 halo cart)","Caliper + crown + vest + pins (brace shop — text Tom)","Weights (OR)","Traction bed (call early / steal from ED)"],
@@ -1736,6 +1741,72 @@ function staffDVTThenConsent(lines){
   return out;
 }
 // ---------- live note flags ----------
+// ---------- REACH trial exclusions ----------
+// Prompted on a spontaneous ICH when the note does not already address them.
+const REACH_EXCL=[
+ ["Secondary cause on imaging","Ruptured aneurysm, AVM, vascular anomaly, Moyamoya, venous sinus thrombosis, mass/tumor, hemorrhagic conversion of infarct, or recurrence of an ICH within 1 year"],
+ ["NIHSS < 5",""],
+ ["Bilateral fixed dilated pupils",""],
+ ["Extensor motor posturing",""],
+ ["IVH > 50% of either lateral ventricle","visually estimated"],
+ ["Thalamic ICH, or basal ganglia bleed involving > 25% thalamus",""],
+ ["Infratentorial ICH","midbrain, pontine or cerebellar"],
+ ["Anticoagulant that cannot be rapidly reversed","met if no clinically significant coagulopathy remains after targeted correction"],
+ ["Active bleeding elsewhere","retroperitoneal, GI, GU or respiratory tract"],
+ ["Uncorrected coagulopathy or known clotting disorder",""],
+ ["Platelets < 75,000 or INR > 1.4 after correction",""],
+ ["Long-term anticoagulation needed < 5 days from ICH",""],
+ ["End-stage renal disease",""],
+ ["Mechanical heart valve",""],
+ ["End-stage liver disease",""],
+ ["Drug or alcohol use that would interfere with adherence","site investigator judgment"],
+ ["Positive pregnancy test","without surgical sterilization or post-menopausal"],
+ ["Life expectancy < 6 months prior to the ICH",""],
+ ["No reasonable expectation of recovery, DNR, or CMO before randomization",""],
+ ["Enrolled in another interventional trial","observational studies are fine"],
+ ["Unable or unwilling to give written informed consent","subject or legal representative"],
+ ["Homeless or unable to meet follow-up requirements",""]
+];
+function reachRelevant(t){
+  const s=String(t||"");
+  return ichScoreText(s)||ichTrialText(s)||/\bREACH\b/i.test(s);
+}
+// if the note already argues an exclusion, don't nag
+function reachExclusionsAddressed(t){
+  const s=String(t||"");
+  if(/\breach\b[^.]{0,40}\b(excl|ineligible|not eligible|eligible|screen)/i.test(s))return true;
+  return /\b(?:exclusion|ineligible|not eligible|does not qualify|screened out|aneurysm|avm|arteriovenous|moyamoya|venous sinus thrombosis|tumor|mass lesion|hemorrhagic conversion|nihss|fixed (?:and )?dilated|posturing|infratentorial|pontine|cerebell|thalamic|mechanical valve|esrd|end.stage|cirrhosis|dnr|cmo|comfort measures|hospice|pregnan)\b/i.test(s);
+}
+function reachText(){
+  return "REACH exclusions\n"+REACH_EXCL.map(e=>"- "+e[0]+(e[1]?" ("+e[1]+")":"")).join("\n");
+}
+function copyReach(){toClip(reachText());showToast("REACH exclusions copied")}
+function addReachToTasks(){
+  if(!F)return;
+  addUniqueLines("f_tasks",["REACH: screen exclusions and document eligibility"]);
+  showToast("Added REACH screening to to-do");
+}
+function addReachToNote(){
+  if(!F)return;
+  const el=document.getElementById("f_note");if(!el)return;
+  if(el.value.indexOf("REACH exclusions")>=0){showToast("Already in notes");return}
+  el.value=(el.value.trim()?el.value.trim()+"\n\n":"")+reachText();
+  F.note=el.value;
+  showToast("REACH exclusions added to notes");
+}
+function reachBoxHtml(txt){
+  if(!reachRelevant(txt))return "";
+  const addressed=reachExclusionsAddressed(txt);
+  const rows=REACH_EXCL.map(e=>'<li>'+esc(e[0])+(e[1]?' <span class="rx">'+esc(e[1])+'</span>':"")+'</li>').join("");
+  return '<details class="planbox reachbox"'+(addressed?"":" open")+'><summary>'+
+    '<span class="sgt">REACH exclusions</span><span class="sgs">'+
+    (addressed?"exclusions look addressed — tap to re-check":"not addressed in this note yet")+'</span></summary>'+
+    '<div class="qbtns">'+
+      '<button type="button" onclick="copyReach()">⧉ Copy list</button>'+
+      '<button type="button" onclick="addReachToNote()">＋ Notes</button>'+
+      '<button type="button" onclick="addReachToTasks()">＋ To-Do</button>'+
+    '</div><ul class="reachlist">'+rows+'</ul></details>';
+}
 // ---------- admission / plan protocols (nsgy_bootcamp.txt) ----------
 // Each entry carries a one-line text-message form and the full order set.
 // `short` is what gets sent over text; `full` is what gets pasted into a note.
@@ -2475,6 +2546,29 @@ function addLinkedBoltFromForm(){
   render();renderFlags();
   showToast(t?"Linked Bolt/Licox proc task added":"Bolt/Licox task already linked");
 }
+const GLOBUS_EMAIL="CranialCaseSupport@globusmedical.com";
+// Chen's cranial robot cases need the rep called at booking time — this has
+// been missed before, with the rep already at the airport
+function globusCaseText(t){
+  const s=String(t||"");
+  const robot=/\bglobus\b|excelsius|cranial robot|\brobot(?:ic)?\b/i.test(s);
+  const chen=/\bchen\b|\bcc\b(?![a-z])|clark chen/i.test(s);
+  const cranial=/\bcrani|brain|sEEG|seeg|biopsy|DBS|laser|LITT|visualase/i.test(s);
+  return robot&&(chen||cranial);
+}
+function copyGlobusEmail(){toClip(GLOBUS_EMAIL);showToast("Globus booking email copied")}
+function addGlobusChecklist(){
+  if(!F)return;
+  addUniqueLines("f_tasks",[
+    "Email "+GLOBUS_EMAIL+" to book the Globus cranial rep",
+    "Confirm the rep replied and is coming — do not assume Marcus booked it",
+    "Confirm robot + cranial accessories on the OR pick list"]);
+  showToast("Added Globus rep booking steps");
+}
+function globusHintHtml(){
+  return "Globus cranial robot case — the rep must be booked by email at <b>"+esc(GLOBUS_EMAIL)+"</b>. "+
+    "Marcus sometimes does it but not always; a missed booking has already sent a rep home from the airport. Confirm you get a reply.";
+}
 function renderSmartHints(){
   const el=document.getElementById("smarthints");if(!el)return;
   if(!F){el.innerHTML="";return}
@@ -2489,6 +2583,7 @@ function renderSmartHints(){
   if(F.type==="CONSULT"&&traumaLowGcsCue(txt))hints.push(box("Trauma GCS &lt;8 detected","Consider Bolt/Licox task with full procedure checklist.",'<span class="qbtns"><button type="button" onclick="addLinkedBoltFromForm()">＋ Bolt/Licox</button></span>'));
   if(F.type==="CONSULT"&&sahUnknownEtiologyText(txt))hints.push(box("SAH rule-out / unknown source",sahRuleoutChecklistHtml(),'<span class="qbtns"><button type="button" onclick="addSahRuleoutChecklist()">＋ To-Do</button></span>'));
   if(F.type==="CONSULT"&&ichTrialCandidateText(txt))hints.push(box("NICO / REACH criteria",nicoReachChecklistHtml(),'<span class="qbtns"><button type="button" onclick="addNicoReachChecklist()">＋ To-Do</button></span>'));
+  if(globusCaseText(txt))hints.push(box("⚠︎ Globus robot — book the rep",globusHintHtml(),'<span class="qbtns"><button type="button" onclick="copyGlobusEmail()">⧉ Copy email</button><button type="button" onclick="addGlobusChecklist()">＋ To-Do</button></span>'));
   el.innerHTML=hints.join("");
 }
 // ---------- measurement parsing & threshold alerts ----------
@@ -2624,7 +2719,7 @@ function renderSugg(){
     const up=upgradeOf();
     head+='<div class="autochip"><span>✓ Auto-graded from your text: <b>E'+F.E+"/O"+F.O+"/W"+F.W+(F.mods.length?" + "+F.mods.join(", "):"")+'</b> — tap any selector to take over</span></div>';
   }
-  head+=planBoxHtml(txt);
+  head+=reachBoxHtml(txt)+planBoxHtml(txt);
   el.innerHTML=head+(curSugg.length?('<div class="sgnote">Suggestions are starting points from the rubric — override freely. Bracketed numbers = citations in Reference.</div>'+curSugg.map((s,i)=>{
     const parts=[];if(s.s.E!==undefined)parts.push("E"+s.s.E);if(s.s.O!==undefined)parts.push("O"+s.s.O);if(s.s.W!==undefined)parts.push("W"+s.s.W);
     const sug=(parts.length?parts.join("/"):"")+((s.s.mods&&s.s.mods.length)?(parts.length?" + ":"")+s.s.mods.join(", "):"");
@@ -7175,7 +7270,8 @@ const BOOKING_TMPLS=[
  "Left / right craniotomy for arteriovenous malformation resection, microscope/Kinevo if possible, ultrasound, indocyanine green, Brainlab; CPT 61682/61686/61692 + 69990 + 61781",
  "Left / right stent insertion carotid artery intracranial intravascular; CPT 61635",
  "Left / right stent insertion extracranial intravascular; CPT 0075T",
- "Left / right placement of Visualase fiber, laser ablation, brain"];
+ "Left / right placement of Visualase fiber, laser ablation, brain",
+ "Left / right cranial procedure with Globus Excelsius cranial robot — EMAIL CranialCaseSupport@globusmedical.com to book the rep"];
 function copyBooking(i){toClip(BOOKING_TMPLS[i]);showToast("Booking text copied")}
 function bookingCptLine(t){
   if(/external ventricular drain/i.test(t))return "CPT 61210; possible bolt/ICP monitor 61107";
@@ -7191,7 +7287,11 @@ function renderBookings(){
     const cpt=bookingCptLine(t);
     return '<div class="calrow" onclick="copyBooking('+i+')"><span class="cprob" style="white-space:normal">'+esc(t)+(cpt?'<span class="csub"> '+esc(cpt)+'</span>':"")+'</span><span class="ctime">⧉</span></div>';
   }).join("")||'<div class="empty" style="padding:12px">No booking template match.</div>';
-  ["bookinglist","bookinglist2"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html});
+  const banner='<div class="banner" style="border-color:var(--e2);color:var(--e2)">'+
+    '<b>Globus cranial robot (Dr Chen / CC):</b> email <b>'+esc(GLOBUS_EMAIL)+'</b> to book the rep when you book the case. '+
+    'Marcus helps but does not always do it — confirm you get a reply. '+
+    '<button type="button" class="rdone" style="margin-left:6px" onclick="copyGlobusEmail()">⧉ Copy email</button></div>';
+  ["bookinglist","bookinglist2"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=banner+html});
 }
 function enableNativeDictation(root){
   (root||document).querySelectorAll('textarea,input[type="text"],input[type="tel"],input:not([type])').forEach(el=>{
