@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.72 · 2026-09-02</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.73 · 2026-09-02</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1130,7 +1130,7 @@ Mantenga la pierna recta.
 Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de los pies.</div></div></details>
 
 <details class="ref"><summary>Procedure kits (supplies + steps)</summary><div class="rb">
-<p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove prolenes"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · Flush EVD · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · suture/staple removal.</p>
+<p class="note">These load automatically when you type a procedure into a Floor proc task ("place EVD", "shunt tap", "pull JP", "remove dssg", "remove staples", "remove sutures"…). Full walkthroughs live in the survival guide; the app carries supplies + step chains for: EVD (adult) · Flush EVD · IT meds · Bolt/Licox · shunt tap · shuntogram · fontanelle/reservoir tap · subcut fluid tap · LP · lumbar drain · halo · SEPS · drain pulls · dressing removal · staple removal · suture removal.</p>
 <h4>Baby EVD deltas</h4><p>Max lido 1–2 cc · sterile paper towels to square head · white drape as major drape · flat baby changes angle (aim canthus, hand lower toward tragus plane) · pass only 4.5 cm · 1–2 tack-ups TIGHT · big bites if macerated tissue.</p>
 </div></details>
 
@@ -1701,6 +1701,15 @@ const PROC_LIB=[
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
   supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
+ {re:/(remove|rm|take down|take off).{0,20}(dssg|dressing)|\bdssg removal\b|dressing removal/i,name:"Remove dressing",
+  supplies:["Sterile gloves","Gauze","Staple remover","Tape or tegaderm if re-dressing needed"],
+  steps:["Rm dssg","Update handoff"]},
+ {re:/(remove|rm|pull|take out).{0,20}staples?|staple removal/i,name:"Remove staples",
+  supplies:["Staple remover","Sterile gloves","Gauze","Steri-strips"],
+  steps:["Rm staples","Staff thread","Note","Handoff"]},
+ {re:/(remove|rm|pull|take out).{0,20}(sutures?|stitches?|prolenes?|nylons?)|suture removal/i,name:"Remove sutures",
+  supplies:["Suture removal kit","Sterile gloves","Gauze","Steri-strips"],
+  steps:["Rm sutures","Staff thread","Note","Handoff"]},
  {re:/(remove|pull|take out).{0,20}(prolene|nylon|suture|stitch|staple)|suture removal|staple removal/i,name:"Suture / staple removal",
   supplies:["Suture removal kit or staple remover","Sterile gloves","Steri strips","Gauze + tegaderm"],
   steps:["Verify POD # / wound healed (typically ≥10–14 d)","Remove sutures/staples","Steri strips","Document + update handoff"]},
@@ -5270,7 +5279,7 @@ function tiedTypeForRoundTodo(t){
   const s=String(t||"");
   if(/\b(?:call|page|text|contact|notify|reach)\b/i.test(s)||/\b(?:mri|ct|cta|ctv|x-?ray|xr|ultrasound|us)\b/i.test(s))return "COMM";
   if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(s))return "PCON";
-  if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
+  if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|remove dssg|rm dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
   return null;
 }
 function roundSuggestedCards(r,lines){
@@ -6589,7 +6598,7 @@ function renderCapture(){
   capActions=[];
   const pathAbbrev=knownPathAbbrev(text);
   const quickProcText=/\b(?:evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(text);
-  const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|staples?|sutures?|prolenes?)\b/i.test(text);
+  const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(text);
   if(text.length<4&&!pathAbbrev&&!knownProcCue){el.innerHTML="";return}
   const bed=extractBed(text);
   const rmatch=findRoundsMatch(text,bed);
