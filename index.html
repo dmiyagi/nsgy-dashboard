@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.73 · 2026-09-02</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.74 · 2026-09-04</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3372,8 +3372,8 @@ function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   (c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
-  if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=false;resetReviewClock(c,Date.now(),true)}
-  touch(c);render();showToast(c.type==="CONSULT"?"Manual timers cleared — auto review timer restored":"Timers off")}
+  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
+  touch(c);render();showToast("Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
   (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
@@ -3386,7 +3386,7 @@ function clearOverdueTimers(id){
   if(overdueISO(c.deadlineISO)){c.deadlineISO=null;n++}
   (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
   (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
-  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewManual=false;resetReviewClock(c,Date.now(),true);n++}
+  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null;n++}
   if(n&&pinnedTopId===id)pinnedTopId=null;
   touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
 }
@@ -3401,9 +3401,9 @@ function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.
 function clearDL(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.deadlineISO=null;
-  if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=false;resetReviewClock(c,Date.now(),true)}
+  if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
   if(pinnedTopId===id)pinnedTopId=null;
-  touch(c);render();showToast(c.type==="CONSULT"?"Manual timer cleared — auto review timer restored":"Timer off — back to priority order");
+  touch(c);render();showToast("Timer off — back to priority order");
 }
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
@@ -4276,10 +4276,6 @@ function saveForm(){
   const saved=F;
   formDraftClear();
   const roundSynced=syncBoardTodoToRounds(saved);
-  if(isNew){
-    boardTypeFilter=boardType(saved);
-    boardOwnerFilter="ALL";
-  }
   const boltAuto=F.type==="CONSULT"&&traumaLowGcsCue([F.prob,F.state,F.action,F.note].filter(Boolean).join(" "))?createLinkedBoltTask(saved):null;
   const linkedNow=maybePromptPatientLink(saved);
   closeForm();render();
