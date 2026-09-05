@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.74 · 2026-09-04</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.75 · 2026-09-05</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3980,9 +3980,12 @@ function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toCli
 function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
 function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{},()=>fallbackCopy(t))}else fallbackCopy(t)}
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta)}
-function wipe(){if(confirm("Wipe ALL consults and checkboxes? (If sync is on, the wipe propagates to your other devices too.)")){
-  const now=Date.now();S.tomb=S.tomb||{};S.consults.forEach(c=>S.tomb[c.id]=now);
-  S.consults=[];S.day={date:"",checks:{}};
+function wipe(){if(confirm("Wipe visible Board consults and checkboxes? Future snoozed tasks stay scheduled. (If sync is on, the wipe propagates to your other devices too.)")){
+  const now=Date.now();S.tomb=S.tomb||{};
+  const keep=[];const drop=[];
+  (S.consults||[]).forEach(c=>{(isSnoozed(c)?keep:drop).push(c)});
+  drop.forEach(c=>S.tomb[c.id]=now);
+  S.consults=keep;S.day={date:"",checks:{}};
   save();render();renderBlocks();doSync(true);
 }}
 // ---------- form ----------
