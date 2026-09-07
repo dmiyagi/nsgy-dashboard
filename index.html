@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.78 · 2026-09-06</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.80 · 2026-09-06</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -675,7 +675,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <!-- ============ CALENDAR ============ -->
 <section class="view" id="view-cal">
   <div class="banner">Longitudinal view — every task with a deadline or a ◷ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
-  <div class="rowflex"><button class="btn" onclick="openForm(null,false,'CHART')">＋ Add dated task / event</button><button class="btn sec sm" onclick="openForm(null,false,'PROC')">＋ Procedure</button><button class="btn sec sm" onclick="openForm(null,false,'BOOK')">＋ Booking</button></div>
+  <div class="rowflex"><button class="btn" onclick="openForm(null,false,'CHART')">＋ Add dated task / event</button><button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button><button class="btn sec sm" onclick="openForm(null,false,'PROC')">＋ Procedure</button><button class="btn sec sm" onclick="openForm(null,false,'BOOK')">＋ Booking</button></div>
   <div id="calwounds"></div>
   <div id="calcards"></div>
 </section>
@@ -712,6 +712,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
     <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO/CC only</button>
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
+    <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
   <div class="bulkexport">
@@ -5024,7 +5025,7 @@ function renderRounds(){
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
-  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderWoundRounds(list)+renderFormerWounds()+trashHtml("round");
+  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundWoundList(list)+trashHtml("round");
 }
 function renderRoundArchive(items){
   if(!items||!items.length)return "";
@@ -5054,6 +5055,16 @@ function addRoundWoundList(id){
   r.woundListed=true;r.woundOpen=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
   renderRounds();renderCal();save();showToast("Added to wound check list");
 }
+function addStandaloneWoundCheck(){
+  const label=(prompt("Patient / room for wound check?","")||"").trim();
+  if(!label)return;
+  const detail=(prompt("Wound / staple / suture note?","Wound / suture / staple / incision check")||"").trim();
+  const now=Date.now();
+  const r={id:"w"+uid(),raw:detail||"Wound / suture / staple / incision check",label:label,tags:["Wound"],team:teamFromText(label+" "+detail),attg:attgFromText(label+" "+detail),soT:"floor",so:{},seen:false,plan:"",steps:[],collapsed:true,woundListed:true,woundStandalone:true,woundOpen:true,woundChecks:{},woundLog:[],created:now,updatedAt:now};
+  S.formerWounds=S.formerWounds||[];
+  S.formerWounds.push(r);
+  renderRounds();renderCal();save();showToast("Added wound check — "+label);
+}
 function renderWoundRounds(list,scope){
   const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
@@ -5061,18 +5072,41 @@ function renderWoundRounds(list,scope){
     items.map(r=>woundRow(r,false,scope)).join("")+
     '</details>';
 }
+function woundPatientKey(r){
+  const room=roundRoom(r).toLowerCase(),pt=roundPatient3(r).toLowerCase();
+  if(room&&pt)return room+"|"+pt;
+  return String(roundIdentityText(r)||r.label||"").toLowerCase().replace(/\s+/g," ").trim();
+}
+function renderRoundWoundList(list){
+  const rows=[],seen={};
+  (list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).forEach(r=>{
+    const k=woundPatientKey(r);if(k)seen[k]=true;
+    rows.push([r,false]);
+  });
+  (S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).forEach(r=>{
+    const k=woundPatientKey(r);
+    if(k&&seen[k])return;
+    if(k)seen[k]=true;
+    rows.push([r,true]);
+  });
+  if(!rows.length)return "";
+  return '<details class="closedsec" open><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+
+    rows.map(([r,former])=>woundRow(r,former)).join("")+
+    '</details>';
+}
 function renderFormerWounds(scope){
   const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
-  return '<details class="closedsec"><summary>Former Patients: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
+  return '<details class="closedsec"><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
     items.map(r=>woundRow(r,true,scope)).join("")+
     '</details>';
 }
 function woundRow(r,former,scope){
   const open=!!r.woundOpen;
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
+  const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
   return '<div class="calrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
-    '<span class="bg mod">'+(former?"Former":"Wound")+'</span><span class="cwho">'+esc(roundIdentityText(r)||r.label||"")+'</span>'+
+    '<span class="bg mod">'+kind+'</span><span class="cwho">'+esc(roundIdentityText(r)||r.label||"")+'</span>'+
     '<span class="cprob">'+esc(roundProblemText(r).slice(0,110))+'</span>'+
     (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
     (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
