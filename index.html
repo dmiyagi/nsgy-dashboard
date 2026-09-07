@@ -114,11 +114,10 @@ section.view.active{display:block}
 .cardbtns{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
 .cardbtns button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);cursor:pointer;font-family:var(--font)}
 .cardbtns button.finaldone,button.rdone.finaldone{border-color:var(--ok);color:var(--ok);background:#123527}
-.webtrash{display:none;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
+.webtrash{display:block;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
-.webtrash.wtrash{display:block}
-@media(min-width:760px){.webtrash{display:block}}
+.calrow.hastrash{position:relative;padding-right:46px}
 .empty{color:var(--mut);text-align:center;padding:30px 10px;font-size:14px}
 details.closedsec{margin-top:16px}
 details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
@@ -647,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.96 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.97 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3663,7 +3662,8 @@ function renderSnoozed(){
   document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>boardVisible(c)&&!c.closed&&isHiddenSnoozed(c)&&matchSearch(c)).length+")";
   el.innerHTML=list.map(c=>{
     const d=new Date(c.snoozeISO);
-    return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
+    return '<div class="calrow hastrash" onclick="openForm(\''+c.id+'\')">'+
+     '<button class="webtrash" title="Cancel scheduled item" aria-label="Cancel scheduled item" onclick="event.stopPropagation();del(\''+c.id+'\',true)">✕</button>'+
      '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+'</span>'+
      '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||"")+'</span>'+
      '<span class="ctime">'+(d.getMonth()+1)+"/"+d.getDate()+'</span>'+
@@ -3674,7 +3674,7 @@ function renderCal(){
   const el=document.getElementById("calcards");if(!el)return;
   const cw=document.getElementById("calwounds");
   if(cw)cw.innerHTML=renderWoundRounds((S.rounds||[]).filter(matchSearch),"cal")+renderFormerWounds("cal");
-  const items=S.consults.filter(c=>!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
+  const items=S.consults.filter(c=>boardVisible(c)&&!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
   const byDay={};
   items.forEach(c=>{
     const iso=isSnoozed(c)?c.snoozeISO:(c.deadlineISO||c.snoozeISO);
@@ -3690,11 +3690,11 @@ function renderCal(){
     return '<div class="calday"><div class="cdh '+cls+'">'+lbl+'</div>'+
       byDay[k].sort((a,b)=>Date.parse(a[1])-Date.parse(b[1])).map(([c,iso])=>{
         const t=new Date(iso);
-        return '<div class="calrow" data-id="'+c.id+'" onclick="openForm(\''+c.id+'\')">'+
+        return '<div class="calrow hastrash" data-id="'+c.id+'" onclick="openForm(\''+c.id+'\')">'+
+         '<button class="webtrash" title="Cancel calendar item" aria-label="Cancel calendar item" onclick="event.stopPropagation();del(\''+c.id+'\',true)">✕</button>'+
          '<span class="bg t tc-'+(TYPES[c.type]?c.type:"CONSULT")+'">'+(TYPES[c.type]||TYPES.CONSULT).i+" "+(TYPES[c.type]||TYPES.CONSULT).l+'</span>'+
          '<span class="cwho">'+esc(c.loc||"")+'</span><span class="cprob">'+esc(c.prob||c.action||"")+'</span>'+
-         '<span class="ctime">'+(isSnoozed(c)?"◷":"◷ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span>'+
-         '<button class="rdone" title="Cancel calendar item" onclick="event.stopPropagation();del(\''+c.id+'\',true)">Cancel</button></div>';
+         '<span class="ctime">'+(isSnoozed(c)?"◷":"◷ "+t.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}))+'</span></div>';
       }).join("")+'</div>';
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
@@ -3713,9 +3713,9 @@ function render(){
   document.getElementById("closedsum").textContent="Closed consults ("+closed.length+")";
   const tb=document.getElementById("boardtrash");if(tb)tb.innerHTML=trashHtml("consult");
   document.getElementById("closedcards").innerHTML=closed.map(c=>
-    '<div class="card closedc"><div class="badges"><span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span></div>'+
+    '<div class="card closedc hastrash">'+trashBtn(c.id,"consult")+'<div class="badges"><span class="bg e'+c.E+'">E'+c.E+'</span><span class="bg o">O'+c.O+'</span><span class="bg c">'+esc(cStr(c))+'</span></div>'+
     '<span class="who">'+esc(c.loc)+'</span> · <span class="prob">'+esc(c.prob)+'</span>'+
-    '<div class="cardbtns"><button onclick="reopen(\''+c.id+'\')">Reopen</button><button onclick="del(\''+c.id+'\')">Delete</button></div></div>').join("");
+    '<div class="cardbtns"><button onclick="reopen(\''+c.id+'\')">Reopen</button></div></div>').join("");
   save();
 }
 function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+'\')">▴ collapse</button>'}
@@ -4099,11 +4099,11 @@ function trashHtml(kind){
   if(!items.length)return "";
   return '<details class="closedsec trashsec"><summary>⌫ Trash — recently deleted ('+items.length+')</summary>'+
     '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="trashEmpty()">Empty trash</button></div>'+
-    items.map(x=>'<div class="calrow">'+
+    items.map(x=>'<div class="calrow hastrash">'+
+      '<button class="webtrash" title="Remove from trash" aria-label="Remove from trash" onclick="event.stopPropagation();trashDrop(\''+x.item.id+'\')">✕</button>'+
       '<span class="bg mod">'+esc(new Date(x.ts).toLocaleString([],{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}))+'</span>'+
       '<span class="cprob">'+esc(trashLabel(x).slice(0,110)||"(untitled)")+'</span>'+
       '<button class="rdone" onclick="event.stopPropagation();trashRestore(\''+x.item.id+'\')">↩︎ Restore</button>'+
-      '<button class="rdone wrm" onclick="event.stopPropagation();trashDrop(\''+x.item.id+'\')">✕</button>'+
       '</div>').join("")+'</details>';
 }
 function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];S.trash=(S.trash||[]).filter(x=>!x.item||x.item.id!==c.id);c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();renderRounds();save()}
