@@ -2868,7 +2868,7 @@ function migrate(d){
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
-    if((!c.type||c.type==="CONSULT")&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
+    if((!c.type||c.type==="CONSULT")&&!c.timersOff&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
@@ -3028,6 +3028,7 @@ function reviewWindowMin(c){
 function resetReviewClock(c,at,force){
   const m=reviewWindowMin(c);if(m===null)return;
   // never re-arm something the user deliberately switched off or set by hand
+  if(c.timersOff)return;
   if(!force&&(c.reviewOff||c.reviewManual))return;
   const t=at||Date.now();
   delete c.reviewOff;
@@ -3036,6 +3037,7 @@ function resetReviewClock(c,at,force){
 }
 function setReviewClockForMin(c,min,at){
   if(!c||c.type!=="CONSULT")return;
+  if(c.timersOff)return;
   const t=at||Date.now();
   delete c.reviewOff;
   c.reviewAt=t;
@@ -3049,6 +3051,7 @@ function consultMilestoneSnoozeMin(k){
 }
 function ensureReviewClock(c){
   if(!c||c.type!=="CONSULT")return;
+  if(c.timersOff)return;
   if(c.reviewOff)return;
   if(!c.reviewAt||!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
 }
@@ -3459,8 +3462,9 @@ function dlBtnsHtml(c){
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
-  (c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
+  c.timersOff=true;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
+  c.timersOff=true;
   c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
   touch(c);render();showToast("Timers off")}
@@ -3476,20 +3480,26 @@ function clearOverdueTimers(id){
   if(overdueISO(c.deadlineISO)){c.deadlineISO=null;n++}
   (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
   (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
-  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO)){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null;n++}
+  if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO))n++;
+  if(n){
+    c.timersOff=true;
+    if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
+  }
   if(n&&pinnedTopId===id)pinnedTopId=null;
   touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
 }
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
   const cleared=clearOverdueStepDL(c);
+  c.timersOff=false;
   c.deadlineISO=new Date(Date.now()+min*60000).toISOString();
   if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=true;c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
   touch(c);render();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
-function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();showToast("Review timer cleared")}
+function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.timersOff=true;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();showToast("Review timer cleared")}
 function clearDL(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
+  c.timersOff=true;
   c.deadlineISO=null;
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
   if(pinnedTopId===id)pinnedTopId=null;
@@ -3534,6 +3544,7 @@ function togTaskTimer(id,i){const k=id+":"+i;openTaskTimer=(openTaskTimer===k)?n
 function setStepDL(id,i,min){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.steps||!c.steps[i])return;
   if(pinnedTopId===id)pinnedTopId=null;
+  if(min)c.timersOff=false;
   c.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openStepTimer=null;touch(c);render();
   showToast(min?("Timer set on: "+c.steps[i].t.slice(0,40)):"Timer cleared");
@@ -3541,6 +3552,7 @@ function setStepDL(id,i,min){
 function setTaskDL(id,i,min){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.tasks||!c.tasks[i])return;
   if(pinnedTopId===id)pinnedTopId=null;
+  if(min)c.timersOff=false;
   c.tasks[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openTaskTimer=null;touch(c);render();
   showToast(min?("Timer set on: "+c.tasks[i].t.slice(0,40)):"Timer cleared");
