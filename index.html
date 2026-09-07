@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.93 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.94 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -772,6 +772,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
     <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
+    <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Chart check</button>
     <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
   </div>
@@ -5260,7 +5261,6 @@ function renderRounds(){
       '<button onclick="roundMarkSO(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO</button>'+
       '<button onclick="roundAddWoundAndRemove(\''+r.id+'\')">＋ Wound list</button>'+
       '<button onclick="roundAddChartAndRemove(\''+r.id+'\')">▤ Chart check</button>'+
-      '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div>'+
      '<div class="sendto"><select id="st_'+r.id+'" onchange="roundSendPick(\''+r.id+'\',this.value)">'+roundSendOpts(r)+'</select>'+
        '<input type="date" id="sd_'+r.id+'" value="'+esc((roundSendSel[r.id]||{}).date||"")+'" onchange="roundSendDate(\''+r.id+'\',this.value)" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">'+
