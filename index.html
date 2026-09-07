@@ -428,6 +428,16 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .wdate.today{border-color:var(--e1);color:#ffe987;background:#33280e}
 .wtarget{background:#173a3c;color:var(--teal);border:1px solid var(--teal);font-weight:900}
 .wounddetail{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 9px 9px;margin:-5px 0 7px;padding:7px 10px}
+.woundtop{display:flex;gap:7px;align-items:flex-start;margin-bottom:7px;color:var(--mut);font-size:12px;line-height:1.35}
+.woundtop b{color:var(--text)}
+.woundtop span{flex:1;min-width:0}
+.woundedit{display:grid;grid-template-columns:minmax(120px,240px) 1fr;gap:7px;margin-bottom:7px}
+.woundedit input,.woundedit textarea{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
+.woundedit textarea{min-height:42px;resize:vertical}
+.woundcompact .woundrow{grid-template-columns:auto auto minmax(120px,1fr) auto auto;padding:5px 8px}
+.woundcompact .woundrow .cprob{display:none}
+.woundcompact .woundrow .rtags{flex-wrap:nowrap;overflow:hidden}
+.woundcompact .wdate{font-size:9.5px;padding:1px 6px}
 .woundlog{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .woundlog button{font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .woundlog button:hover{border-color:var(--e3);color:var(--e3)}
@@ -636,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.89 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.93 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -704,7 +714,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ SO BOARD ============ -->
 <section class="view" id="view-nccu">
-  <div class="banner">SO board view — send patients here from the Send bar on a Rounds card, then pick any sign-out format from the SO editor. High-value fields render as quick boxes.</div>
+  <div class="banner">SO board view — tap SO on a Rounds card, then pick any sign-out format from the SO editor. High-value fields render as quick boxes.</div>
   <div class="rowflex">
     <button class="btn sec sm" id="nccuCompactBtn" onclick="setNccuCompact(true)">⊟ Compact</button>
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
@@ -760,7 +770,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
     <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
-    <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO/CC only</button>
+    <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
     <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
     <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
     <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
@@ -1249,6 +1259,9 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       </div>
       <div style="font-size:11px;color:var(--mut);margin-top:4px">Same-day times stay on the board. Tomorrow / +1 wk hide from the board until then.</div>
     </div>
+    <details class="moredet" id="fld_tc"><summary>Text consult — build the send-ready version</summary>
+      <div id="ftcbody"></div>
+    </details>
     <div class="fld" id="fld_E"><div class="axhead"><button type="button" class="axtog" data-ax="E" onclick="togAxisDetail('E')">more</button></div>
       <div class="selrow" id="selE"></div>
       <div id="eMini"></div>
@@ -1282,9 +1295,6 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div id="f_hh"></div>
     <div id="f_ich"></div>
     <div id="f_ao"></div>
-    <details class="moredet" id="fld_tc"><summary>Text consult — build the send-ready version</summary>
-      <div id="ftcbody"></div>
-    </details>
     <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
     <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea></div>
@@ -2879,10 +2889,17 @@ function migrate(d){
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
-  d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
+  d.woundCompact=!!d.woundCompact;
+  (d.rounds||[]).forEach(r=>{r.woundOpen=false});
+  d.formerWounds.forEach(r=>{
+    if(!Array.isArray(r.woundLog))r.woundLog=[];
+    if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;
+    r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
+    r.woundOpen=false;
+  });
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false}}
 let lastSaved="";
 let syncApplying=false;
 function save(){
@@ -3851,7 +3868,7 @@ function card(c){
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
-    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO Sign-out</button>'):"";
+    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'):"";
     return '<div class="card hastrash E'+c.E+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges">'+typeBadgeHtml(c)+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
@@ -5239,10 +5256,10 @@ function renderRounds(){
      '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
      '<div class="cardbtns">'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
-      '<button onclick="togSoCcResp(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO/CC</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
-      '<button onclick="'+(r.woundListed?'removeWoundCheck':'addRoundWoundList')+'(\''+r.id+'\')">'+(r.woundListed?'✓ Wound list':'＋ Wound list')+'</button>'+
-      '<button onclick="openSO(\''+r.id+'\')">SO Sign-out</button>'+
+      '<button onclick="roundMarkSO(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO</button>'+
+      '<button onclick="roundAddWoundAndRemove(\''+r.id+'\')">＋ Wound list</button>'+
+      '<button onclick="roundAddChartAndRemove(\''+r.id+'\')">▤ Chart check</button>'+
       '<button onclick="delRound(\''+r.id+'\')">✕</button>'+
      '</div>'+
      '<div class="sendto"><select id="st_'+r.id+'" onchange="roundSendPick(\''+r.id+'\',this.value)">'+roundSendOpts(r)+'</select>'+
@@ -5277,27 +5294,65 @@ function woundRoundCandidate(r){
 }
 function addRoundWoundList(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundListed=true;r.woundOpen=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-inpt"]=true;
   renderRounds();renderCal();save();showToast("Added to wound check list");
+}
+function roundRemoveAfterSend(r,msg){
+  if(!r)return;
+  const ts=Date.now();
+  trashPush("round",r);
+  S.tomb=S.tomb||{};S.tomb[r.id]=ts;
+  if(r.woundListed){
+    S.formerWounds=S.formerWounds||[];
+    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:ts+1}));
+  }
+  S.rounds=(S.rounds||[]).filter(x=>x.id!==r.id);
+  renderRounds();render();renderCal();flushAutosave();
+  showToast(msg||("Moved off rounds — "+(r.label||"")),()=>restoreRound(r),"Undo");
+}
+function roundAddWoundAndRemove(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-former"]=true;
+  roundRemoveAfterSend(r,"Moved to wound list — "+(r.label||""));
+}
+function roundAddChartAndRemove(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const res=roundChartCardFor(r);
+  roundRemoveAfterSend(r,(res&&res.isNew?"Chart check created — ":"Chart check refreshed — ")+(r.label||""));
 }
 function addStandaloneWoundCheck(){
   const label=(prompt("Patient / room for wound check?","")||"").trim();
   if(!label)return;
   const detail=(prompt("Wound / staple / suture note?","Wound / suture / staple / incision check")||"").trim();
   const now=Date.now();
-  const r={id:"w"+uid(),raw:detail||"Wound / suture / staple / incision check",label:label,tags:["Wound"],team:teamFromText(label+" "+detail),attg:attgFromText(label+" "+detail),soT:"floor",so:{},seen:false,plan:"",steps:[],collapsed:true,woundListed:true,woundStandalone:true,woundOpen:true,woundChecks:{},woundLog:[],created:now,updatedAt:now};
+  const r={id:"w"+uid(),raw:detail||"Wound / suture / staple / incision check",label:label,tags:["Wound"],team:teamFromText(label+" "+detail),attg:attgFromText(label+" "+detail),soT:"floor",so:{},seen:false,plan:"",steps:[],collapsed:true,woundListed:true,woundStandalone:true,woundOpen:false,woundChecks:{},woundLog:[],created:now,updatedAt:now};
   S.formerWounds=S.formerWounds||[];
   S.formerWounds.push(r);
+  woundRowOpen[r.id]=true;
+  woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-former"]=true;
   renderRounds();renderCal();save();showToast("Added wound check — "+label);
 }
 function woundSortKey(r){
   return [roundRoom(r)||"ZZZ",roundPatient3(r)||"",roundIdentityText(r)||r.label||"",roundProblemText(r)||""].join(" ").toLowerCase();
 }
 function woundSort(a,b){return woundSortKey(a).localeCompare(woundSortKey(b),undefined,{numeric:true})}
+const woundSecOpen={};
+const woundRowOpen={};
+function woundControlsHtml(scope){
+  return '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="toggleWoundCompact()">'+(S.woundCompact?'⊞ Full wound view':'⊟ Compact wound view')+'</button></div>';
+}
+function toggleWoundCompact(){
+  S.woundCompact=!S.woundCompact;renderRounds();renderCal();save();
+}
+function woundSecAttr(k){return (woundSecOpen[k]?' open':'')+' ontoggle="woundSecToggle(\''+k+'\',this.open)"'}
+function woundSecToggle(k,on){woundSecOpen[k]=!!on}
 function renderWoundRounds(list,scope){
   const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
-  return '<details class="closedsec" open><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+
+  const k="wound-"+(scope||"main")+"-inpt";
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
     items.map(r=>woundRow(r,false,scope)).join("")+
     '</details>';
 }
@@ -5320,14 +5375,16 @@ function renderRoundWoundList(list){
   });
   if(!rows.length)return "";
   rows.sort((a,b)=>woundSort(a[0],b[0]));
-  return '<details class="closedsec" open><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+
+  const k="wound-round-all";
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+woundControlsHtml("round")+
     rows.map(([r,former])=>woundRow(r,former)).join("")+
     '</details>';
 }
 function renderFormerWounds(scope){
   const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
-  return '<details class="closedsec"><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
+  const k="wound-"+(scope||"main")+"-former";
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
     items.map(r=>woundRow(r,true,scope)).join("")+
     '</details>';
 }
@@ -5374,13 +5431,12 @@ function woundProblemHtml(r){
   return d?html.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):html;
 }
 function woundRowBadges(r,former,latest,kind){
-  const team=roundTeam(r),attg=roundAttg(r),dx=roundPrimaryDxTag(r),target=woundTargetTag(r),removeDate=woundDateFromText(r);
+  const team=roundTeam(r),attg=roundAttg(r),target=woundTargetTag(r),removeDate=woundDateFromText(r);
+  const showTarget=!/^(?:incision|wound)$/i.test(target);
   const tags=[
     team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"",
-    '<span class="bg wtarget">'+esc(target)+'</span>',
-    dx&&dx.toLowerCase()!==target.toLowerCase()?'<span class="bg primarydx">'+esc(dx)+'</span>':"",
-    attg?'<span class="bg mod">'+esc(attg)+'</span>':"",
-    former?'<span class="bg mod">'+esc(kind)+'</span>':""
+    showTarget?'<span class="bg wtarget">'+esc(target)+'</span>':"",
+    attg?'<span class="bg mod">'+esc(attg)+'</span>':""
   ].filter(Boolean).join("");
   const dates=[
     r.woundNextDate?'<span class="wdate next'+woundDateState(r.woundNextDate)+'">next '+esc(r.woundNextDate)+'</span>':"",
@@ -5389,8 +5445,22 @@ function woundRowBadges(r,former,latest,kind){
   ].filter(Boolean).join("");
   return {tags:tags,dates:dates};
 }
+const WEDIT=new Set();
+function findWoundRecord(id,former){
+  return former?(S.formerWounds||[]).find(x=>x.id===id):(S.rounds||[]).find(x=>x.id===id);
+}
+function woundEditHtml(r,former,scope){
+  const editing=WEDIT.has(r.id);
+  const label=roundIdentityText(r)||r.label||"";
+  const raw=roundProblemText(r)||r.raw||"";
+  if(!editing)return '<div class="woundtop"><span><b>'+esc(label)+'</b>'+(raw?' · '+woundProblemHtml(r):"")+'</span><button class="rdone" onclick="event.stopPropagation();woundEditStart(\''+r.id+'\','+(former?'true':'false')+')">Edit</button></div>';
+  return '<div class="woundedit">'+
+    '<input type="text" id="we_lab_'+r.id+'" value="'+esc(r.label||label)+'" placeholder="Room patient team">'+
+    '<textarea id="we_raw_'+r.id+'" placeholder="Wound / staples / sutures / date">'+esc(r.raw||raw)+'</textarea>'+
+    '</div><div class="qbtns" style="margin-bottom:7px"><button type="button" onclick="woundEditSave(\''+r.id+'\','+(former?'true':'false')+',\''+esc(scope||"")+'\')">Save</button><button type="button" onclick="woundEditCancel(\''+r.id+'\','+(former?'true':'false')+')">Cancel</button></div>';
+}
 function woundRow(r,former,scope){
-  const open=!!r.woundOpen;
+  const open=!!woundRowOpen[r.id];
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
   const b=woundRowBadges(r,former,latest,kind);
@@ -5401,13 +5471,32 @@ function woundRow(r,former,scope){
     '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+(former
+    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+(former
         ?'<button class="rdone wrm" onclick="event.stopPropagation();removeFormerWound(\''+r.id+'\')">✕ Remove</button>'
         :'<button class="rdone wrm" onclick="event.stopPropagation();removeWoundCheck(\''+r.id+'\')">✕ Remove from wound list</button>')+woundLogHtml(r,former)+'</div>':"");
 }
 function toggleWoundOpen(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundOpen=!r.woundOpen;r.updatedAt=Date.now();renderRounds();renderCal();save();
+  woundRowOpen[id]=!woundRowOpen[id];renderRounds();renderCal();
+}
+function woundEditStart(id,former){
+  const r=findWoundRecord(id,former);if(!r)return;
+  woundRowOpen[id]=true;WEDIT.add(id);renderRounds();renderCal();
+}
+function woundEditCancel(id,former){
+  WEDIT.delete(id);renderRounds();renderCal();
+}
+function woundEditSave(id,former,scope){
+  const r=findWoundRecord(id,former);if(!r)return;
+  const lab=document.getElementById("we_lab_"+id),raw=document.getElementById("we_raw_"+id);
+  if(lab&&lab.value.trim())r.label=lab.value.trim();
+  if(raw&&raw.value.trim())r.raw=raw.value.trim();
+  r.team=teamFromText([r.label,r.raw].filter(Boolean).join(" "));
+  r.attg=attgFromText([r.label,r.raw].filter(Boolean).join(" "));
+  r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
+  r.updatedAt=Date.now();WEDIT.delete(id);
+  renderRounds();renderCal();flushAutosave();
+  showToast("Wound line saved — "+(r.label||""));
 }
 function dateInputHtml(id,kind,val){
   return '<input type="date" id="'+kind+'_'+id+'" value="'+esc(val||"")+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">';
@@ -5528,12 +5617,12 @@ function removeFormerWound(id){
 // takes the patient off the active wound list without touching the rounding card
 function removeWoundCheck(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  const before={listed:r.woundListed,open:r.woundOpen,next:r.woundNextDate};
-  r.woundListed=false;r.woundOpen=false;
+  const before={listed:r.woundListed,open:!!woundRowOpen[id],next:r.woundNextDate};
+  r.woundListed=false;woundRowOpen[id]=false;
   r.updatedAt=Date.now();renderRounds();renderCal();flushAutosave();
   showToast("Removed from wound checks — "+(r.label||""),()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
-    rr.woundListed=before.listed;rr.woundOpen=before.open;rr.woundNextDate=before.next;
+    rr.woundListed=before.listed;woundRowOpen[id]=before.open;rr.woundNextDate=before.next;
     rr.updatedAt=Date.now();renderRounds();renderCal();flushAutosave();
   },"Undo");
 }
@@ -5588,6 +5677,16 @@ function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){
   renderRounds();renderNccu();flushAutosave();
   showToast(r.soCcResp?("Added to SO board — "+soLabel(r)):("Removed from SO board — "+soLabel(r)));
 }}
+function roundMarkSO(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  if(!r.soCcResp||!r.nccuSO){
+    r.soCcResp=true;r.nccuSO=true;
+    if(!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
+    r.updatedAt=Date.now();syncLinkedSo(r);
+    renderRounds();renderNccu();flushAutosave();
+  }
+  openSO(id);
+}
 function clearSeen(){
   const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil}));
   const beforeCycle=S.roundCycleAt;
@@ -5759,10 +5858,8 @@ function syncRoundTodosToBoard(r,lines){
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
   type=type&&TYPES[type]?type:"CHART";
   if(type==="CHART"){
-    const res=roundChartCardFor(r);
     document.querySelector('nav button[data-view="board"]').click();
-    render();renderRounds();save();
-    showToast((res&&res.isNew?"Chart check created for ":"Chart check refreshed for ")+r.label);
+    roundAddChartAndRemove(id);
     return;
   }
   document.querySelector('nav button[data-view="board"]').click();
@@ -5782,7 +5879,7 @@ function soTmplBadge(r){
 }
 function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
   if(!r.soT)r.soT="floor";if(!r.so)r.so={};
-  document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
+  document.getElementById("soTitle").textContent="SO — "+soLabel(r);
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
   renderSoBoardBtn();
@@ -5840,8 +5937,23 @@ function soSourceOneLiner(r){
   const rr=r.roundId&&(S.rounds||[]).find(x=>x.id===r.roundId);
   return (rr&&rr.raw)||r.prob||"";
 }
+function soExamSource(r){
+  if(!r)return "";
+  const rr=(r.roundId&&(S.rounds||[]).find(x=>x.id===r.roundId))||((S.rounds||[]).find(x=>x.id===r.id));
+  const src=rr||r;
+  const cur=String(src.exam||"").trim();
+  if(cur)return cur;
+  const hist=(src.examHist||[]).slice().reverse().find(x=>x&&String(x.text||"").trim());
+  if(hist)return String(hist.text||"").trim();
+  return String(src.prevExam||"").trim();
+}
+function soFieldValue(r,k){
+  const v=String((r&&r.so&&r.so[k])||"").trim();
+  if(v)return v;
+  return soIsExamField(k)?soExamSource(r):"";
+}
 function soFieldHtml(r,f){
-  const k=f[0],v=(r.so&&r.so[k])||"";
+  const k=f[0],v=soFieldValue(r,k);
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
   const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
   const head='<div class="nccuhead"><b>'+esc(k)+'</b>'+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
@@ -5906,8 +6018,8 @@ function soHighlight(s){
 }
 function soText(r){
   const t=SO_TMPLS[r.soT||"floor"];
-  const lines=t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___"));
-  soExtraActive(r).forEach(b=>lines.push(b.k+": "+((r.so&&r.so[b.k])||"___")));
+  const lines=t.fields.map(f=>f[0]+": "+(soFieldValue(r,f[0])||"___"));
+  soExtraActive(r).forEach(b=>lines.push(b.k+": "+(soFieldValue(r,b.k)||"___")));
   return t.name+" sign-out — "+soLabel(r)+"\n"+lines.join("\n");
 }
 // the same suggestions, offered inside the sign-out sheet
@@ -5939,15 +6051,15 @@ function dismissSoSuggestFromModal(k){
 function soFilledPairs(r){
   const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
   const out=[];
-  t.fields.forEach(f=>{const v=String((r.so&&r.so[f[0]])||"").trim();if(v)out.push([f[0],v])});
-  soExtraActive(r).forEach(b=>{const v=String((r.so&&r.so[b.k])||"").trim();if(v)out.push([b.k,v])});
+  t.fields.forEach(f=>{const v=soFieldValue(r,f[0]);if(v)out.push([f[0],v])});
+  soExtraActive(r).forEach(b=>{const v=soFieldValue(r,b.k);if(v)out.push([b.k,v])});
   return out;
 }
 function soGapCount(r){
   const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
   let n=0;
-  t.fields.forEach(f=>{if(!String((r.so&&r.so[f[0]])||"").trim())n++});
-  soExtraActive(r).forEach(b=>{if(!String((r.so&&r.so[b.k])||"").trim())n++});
+  t.fields.forEach(f=>{if(!soFieldValue(r,f[0]))n++});
+  soExtraActive(r).forEach(b=>{if(!soFieldValue(r,b.k))n++});
   return n;
 }
 function soSpeakText(r){
@@ -6160,7 +6272,10 @@ function nccuResetAll(){
 function soPick(r,pats){
   const so=(r&&r.so)||{};
   const keys=String(pats||"").split("|");
-  for(const k of keys){if(so[k])return so[k]}
+  for(const k of keys){
+    const v=so[k]||soFieldValue(r,k);
+    if(v)return v;
+  }
   return "";
 }
 const SO_BOARD_BOXES={
@@ -6557,7 +6672,7 @@ function renderNccu(){
   renderNccuHighlightChips();
   const db=document.getElementById("nccuDiffBtn");if(db)db.classList.toggle("on",nccuDiff);
   const pts=nccuPatients();
-  el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No SO board patients yet.<br>On a Rounds card, pick <b>● SO board view</b> in the Send bar and tap <b>→ Send</b>.</div>';
+  el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No SO board patients yet.<br>On a Rounds card, tap <b>SO</b>.</div>';
 }
 // r.nccuView is "full" | "compact" | unset (follow the toolbar). The old
 // boolean r.nccuCompact could not express "expanded while the toolbar says
@@ -6603,11 +6718,11 @@ function soActiveFields(c){
   const startIdx=t.fields.findIndex(f=>/overnight events/i.test(f[0]));
   return t.fields.slice(startIdx>=0?startIdx:Math.min(2,t.fields.length));
 }
-function soStarted(c){return soActiveFields(c).some(f=>c.so&&c.so[f[0]])}
+function soStarted(c){return soActiveFields(c).some(f=>soFieldValue(c,f[0]))}
 function soComplete(c){
   if(!c||c.type!=="CHART")return false;
   const t=SO_TMPLS[c.soT||"floor"];if(!t)return false;
-  return t.fields.every(f=>c.so&&c.so[f[0]]);
+  return t.fields.every(f=>soFieldValue(c,f[0]));
 }
 function soValsHtml(c){
   if(c.type!=="CHART")return "";
@@ -7827,7 +7942,7 @@ function attachSwipe(containerId,kind){
 // ---------- bed board export ----------
 function sendRoundTo(id,type){
   const r=S.rounds.find(x=>x.id===id);if(!r||!TYPES[type])return;
-  if(type==="CHART"){const res=roundChartCardFor(r);render();renderRounds();save();showToast((res&&res.isNew?"Chart check created for ":"Chart check refreshed for ")+r.label);return}
+  if(type==="CHART"){roundAddChartAndRemove(id);return}
   const t=blankC();t.loc=r.label;t.prob=roundProblemText(r).slice(0,110);t.team=roundTeam(r);t.attg=roundAttg(r);t.worry=!!r.worry;t.roundId=r.id;t.owner="me";t.soT=r.soT||"floor";t.so=Object.assign({},r.so||{});t.note=roundExamNote(r);
   applyTypeDefaults(t,type,{fresh:true});
   t.updatedAt=Date.now();
@@ -7882,9 +7997,8 @@ function roundSend(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   if(type==="CHART"){
     const res=roundChartCardFor(r);if(res&&res.card)res.card.snoozeISO=date+"T06:00:00";
-    render();renderRounds();save();
     const d=new Date(date+"T12:00:00");
-    showToast("◷ "+r.label+" → Chart check on "+(d.getMonth()+1)+"/"+d.getDate());
+    roundRemoveAfterSend(r,"◷ "+r.label+" → Chart check on "+(d.getMonth()+1)+"/"+d.getDate());
     return;
   }
   const t=blankC();
