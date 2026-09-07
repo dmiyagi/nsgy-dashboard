@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.75 · 2026-09-05</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.78 · 2026-09-06</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -676,6 +676,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <section class="view" id="view-cal">
   <div class="banner">Longitudinal view — every task with a deadline or a ◷ snooze date, grouped by day. Tap a row to open it. Snoozed tasks return to the board automatically on their date.</div>
   <div class="rowflex"><button class="btn" onclick="openForm(null,false,'CHART')">＋ Add dated task / event</button><button class="btn sec sm" onclick="openForm(null,false,'PROC')">＋ Procedure</button><button class="btn sec sm" onclick="openForm(null,false,'BOOK')">＋ Booking</button></div>
+  <div id="calwounds"></div>
   <div id="calcards"></div>
 </section>
 
@@ -2773,6 +2774,8 @@ let S=load();
 let globalSearch="";
 let startupCompactBoard=true;
 function migrate(d){
+  d.round24=!!d.round24;
+  d.round24At=d.round24At||0;
   (d.consults||[]).forEach(c=>{
     if(!c.type)c.type="CONSULT";
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
@@ -2786,7 +2789,7 @@ function migrate(d){
   d.formerWounds.forEach(r=>{if(!Array.isArray(r.woundLog))r.woundLog=[];if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{}}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0}}
 let lastSaved="";
 let syncApplying=false;
 function save(){
@@ -3544,6 +3547,8 @@ function renderSnoozed(){
 }
 function renderCal(){
   const el=document.getElementById("calcards");if(!el)return;
+  const cw=document.getElementById("calwounds");
+  if(cw)cw.innerHTML=renderWoundRounds((S.rounds||[]).filter(matchSearch),"cal")+renderFormerWounds("cal");
   const items=S.consults.filter(c=>!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
   const byDay={};
   items.forEach(c=>{
@@ -4677,6 +4682,7 @@ function wakeAllRounds(){
 }
 function toggleRound24(){
   S.round24=!S.round24;
+  S.round24At=Date.now();
   renderRounds();flushAutosave();
   showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p chart · 5a chart":"Day view — AM seen · 1p · 4p");
 }
@@ -4707,8 +4713,9 @@ function roundExamHtml(r){
   const nHist=(r.examHist||[]).length;
   const hasAny=!!String(cur||"").trim()||nHist>0;
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
-    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this)">'+esc(cur)+'</textarea></div>'+
+    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
+      '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
       (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
       (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
       (hasAny?'<button type="button" class="xbtn" onclick="clearRoundExamAll(\''+r.id+'\')">✕ Clear all'+(nHist?" ("+(nHist+1)+")":"")+'</button>':"")+
@@ -4838,9 +4845,11 @@ function roundEditInput(id){
   r._edit={label:lab?lab.value:"",raw:raw?raw.value:"",tags:tg?tg.value:""};
   autosave();
 }
-function roundExamSave(id,el){
+function roundExamSave(id,el,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  const v=el.value.trim();
+  el=el||document.getElementById("rexam_"+id);
+  const v=el?el.value.trim():String(r.exam||"").trim();
+  const beforeHist=(r.examHist||[]).length;
   r.examHist=r.examHist||[];
   if(v){
     const last=r.examHist[r.examHist.length-1];
@@ -4853,13 +4862,15 @@ function roundExamSave(id,el){
   }else{
     r.exam="";
   }
+  r.examOpen=true;
   r.updatedAt=Date.now();renderRounds();save();
+  if(explicit)showToast((r.examHist||[]).length>beforeHist?"Exam saved to trend":"Exam saved");
 }
 function roundExamPreset(id,kind){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id);if(!el)return;
   el.value=kind==="spine"?TC_SPINE_EXAM:TC_CNS_EXAM;
-  roundExamSave(id,el);
+  roundExamSave(id,el,true);
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
@@ -5041,23 +5052,23 @@ function woundRoundCandidate(r){
 function addRoundWoundList(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundListed=true;r.woundOpen=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
-  renderRounds();save();showToast("Added to wound check list");
+  renderRounds();renderCal();save();showToast("Added to wound check list");
 }
-function renderWoundRounds(list){
+function renderWoundRounds(list,scope){
   const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
   return '<details class="closedsec" open><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+
-    items.map(r=>woundRow(r,false)).join("")+
+    items.map(r=>woundRow(r,false,scope)).join("")+
     '</details>';
 }
-function renderFormerWounds(){
+function renderFormerWounds(scope){
   const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r));
   if(!items.length)return "";
   return '<details class="closedsec"><summary>Former Patients: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
-    items.map(r=>woundRow(r,true)).join("")+
+    items.map(r=>woundRow(r,true,scope)).join("")+
     '</details>';
 }
-function woundRow(r,former){
+function woundRow(r,former,scope){
   const open=!!r.woundOpen;
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   return '<div class="calrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
@@ -5066,13 +5077,13 @@ function woundRow(r,former){
     (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
     (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former)+(former
+    (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+(former
         ?'<button class="rdone wrm" onclick="event.stopPropagation();removeFormerWound(\''+r.id+'\')">✕ Remove</button>'
         :'<button class="rdone wrm" onclick="event.stopPropagation();removeWoundCheck(\''+r.id+'\')">✕ Remove from wound list</button>')+woundLogHtml(r,former)+'</div>':"");
 }
 function toggleWoundOpen(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundOpen=!r.woundOpen;r.updatedAt=Date.now();renderRounds();save();
+  r.woundOpen=!r.woundOpen;r.updatedAt=Date.now();renderRounds();renderCal();save();
 }
 function dateInputHtml(id,kind,val){
   return '<input type="date" id="'+kind+'_'+id+'" value="'+esc(val||"")+'" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">';
@@ -5092,16 +5103,17 @@ function woundHiddenUntilNext(r){
   const t=woundNextAt(r);
   return woundComplete(r)&&t&&Date.now()<t;
 }
-function woundDateControls(r,former){
+function woundDateControls(r,former,scope){
+  const kind="wn"+(scope||"");
   return '<span class="woundchecks">'+
     '<button class="rdone" onclick="addWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Log check</button>'+
-    hiddenDateInputHtml(r.id,"wn",r.woundNextDate||"","snoozeWoundCheck('"+r.id+"',"+(former?'true':'false')+")")+
-    '<button class="rdone" onclick="openWoundNextPicker(\''+r.id+'\')">Next check'+(r.woundNextDate?' '+esc(r.woundNextDate):'')+'</button>'+
+    hiddenDateInputHtml(r.id,kind,r.woundNextDate||"","snoozeWoundCheck('"+r.id+"',"+(former?'true':'false')+",'"+esc(scope||"")+"')")+
+    '<button class="rdone" onclick="openWoundNextPicker(\''+r.id+'\',\''+esc(scope||"")+'\')">Next check'+(r.woundNextDate?' '+esc(r.woundNextDate):'')+'</button>'+
     (r.woundNextDate?'<button class="rdone" onclick="woundCheckToBoard(\''+r.id+'\','+(former?'true':'false')+')">Board on date</button>':"")+
     '</span>';
 }
-function openWoundNextPicker(id){
-  const el=document.getElementById("wn_"+id);if(!el)return;
+function openWoundNextPicker(id,scope){
+  const el=document.getElementById("wn"+(scope||"")+"_"+id);if(!el)return;
   if(el.showPicker)el.showPicker();else{el.focus();el.click()}
 }
 function woundLogHtml(r,former){
@@ -5121,7 +5133,7 @@ function woundCheckBoxes(r,former){
 }
 function toggleWoundCheck(id,k,former,on){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;r.updatedAt=Date.now();renderRounds();save();
+  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;r.updatedAt=Date.now();renderRounds();renderCal();save();
 }
 function addWoundCheck(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5129,15 +5141,15 @@ function addWoundCheck(id,former){
   r.woundChecks=r.woundChecks||{};r.woundChecks.seen=true;r.woundLog=r.woundLog||[];
   if(!r.woundLog.some(x=>x.date===date))r.woundLog.push({date:date,ts:Date.now()});
   r.updatedAt=Date.now();
-  renderRounds();save();
+  renderRounds();renderCal();save();
   const d=new Date(date+"T12:00:00");showToast("Wound check added for "+(d.getMonth()+1)+"/"+d.getDate());
 }
-function snoozeWoundCheck(id,former){
+function snoozeWoundCheck(id,former,scope){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  const el=document.getElementById("wn_"+id),date=el?el.value:"";
+  const el=document.getElementById("wn"+(scope||"")+"_"+id),date=el?el.value:"";
   if(!date){showToast("Pick the next wound-check date");return}
   r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
-  renderRounds();save();showToast("Next wound check "+date+" at 4 AM");
+  renderRounds();renderCal();save();showToast("Next wound check "+date+" at 4 AM");
 }
 function woundCheckToBoard(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5153,17 +5165,17 @@ function removeWoundLog(id,date,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundLog=(r.woundLog||[]).filter(x=>x.date!==date);
   if(!(r.woundLog||[]).length&&r.woundChecks)r.woundChecks.seen=false;
-  r.updatedAt=Date.now();renderRounds();save();showToast("Removed logged check "+date);
+  r.updatedAt=Date.now();renderRounds();renderCal();save();showToast("Removed logged check "+date);
 }
 function removeFormerWound(id){
   const r=(S.formerWounds||[]).find(x=>x.id===id);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);
-  renderRounds();flushAutosave();
+  renderRounds();renderCal();flushAutosave();
   showToast("Removed from former wound checks"+(r?" — "+(r.label||""):""),()=>{
     if(S.tomb)delete S.tomb[id];
     if(r){r.updatedAt=Date.now();S.formerWounds=(S.formerWounds||[]).concat([r])}
-    renderRounds();flushAutosave();
+    renderRounds();renderCal();flushAutosave();
   },"Undo");
 }
 // takes the patient off the active wound list without touching the rounding card
@@ -5171,11 +5183,11 @@ function removeWoundCheck(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const before={listed:r.woundListed,open:r.woundOpen,next:r.woundNextDate};
   r.woundListed=false;r.woundOpen=false;
-  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  r.updatedAt=Date.now();renderRounds();renderCal();flushAutosave();
   showToast("Removed from wound checks — "+(r.label||""),()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
     rr.woundListed=before.listed;rr.woundOpen=before.open;rr.woundNextDate=before.next;
-    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+    rr.updatedAt=Date.now();renderRounds();renderCal();flushAutosave();
   },"Undo");
 }
 function roundEdit(id){REDIT.add(id);renderRounds()}
@@ -6818,7 +6830,7 @@ async function fetchGistFile(f){
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
-function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,ts:Date.now()}}
+function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
 function mergeState(local,remote){
   const tomb={},tCut=Date.now()-TOMB_KEEP_MS;
@@ -6868,7 +6880,10 @@ function mergeState(local,remote){
   else{const today=new Date().toDateString();if(rd.date===today&&day.date!==today)day=rd}
   // the most recent morning reset wins, whichever device ran it
   const roundCycleAt=Math.max(local.roundCycleAt||0,remote.roundCycleAt||0);
-  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt};
+  const l24=local.round24At||0,r24=remote.round24At||0;
+  const round24At=Math.max(l24,r24);
+  const round24=(l24||r24)?(l24>=r24?!!local.round24:!!remote.round24):!!(local.round24||remote.round24);
+  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At};
 }
 async function doSync(auto){
   const cfg=syncCfg();
@@ -6887,7 +6902,7 @@ async function doSync(auto){
   let failed=false;
   try{
     const res=await ghGistGet(cfg.gist);
-    let remote={consults:[],tomb:{},day:{date:"",checks:{}}};
+    let remote={consults:[],tomb:{},day:{date:"",checks:{}},round24:false,round24At:0};
     if(res.notModified&&gistCache){
       remote=gistCache;                       // nothing changed upstream since last GET
     }else{
@@ -6900,11 +6915,11 @@ async function doSync(auto){
       gistCache=remote;
     }
     const merged=mergeState(S,remote);
-    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;
+    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
-    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0});
-    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt});
+    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0});
+    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At});
     if(remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
       gistEtag="";                            // our own write invalidates the cached tag
@@ -6987,7 +7002,7 @@ async function findAllSyncGists(){
 }
 function absorbRemote(remote){
   const m=mergeState(S,remote);
-  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;
+  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;S.round24=m.round24;S.round24At=m.round24At;
 }
 // if an earlier build ever made a second sync gist, pull its contents in rather
 // than stranding whatever was written there
