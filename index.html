@@ -636,7 +636,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.88 · 2026-08-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.89 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1718,6 +1718,12 @@ const TYPES={
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","cbdet"];
 const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
 const ADMIT_TASKS=["Meds list","Med rec","H&P","Admit orders"];
+function normalizeAdmitPrep(c){
+  if(!c||c.type!=="ADMIT")return;
+  const keys=new Set(ADMIT_TASKS.map(t=>t.toLowerCase()));
+  c.tasks=(c.tasks||[]).filter(t=>!keys.has(String(t.t||"").trim().toLowerCase()));
+  if(keys.has(String(c.action||"").trim().toLowerCase()))c.action="";
+}
 function normalizeDcPrep(c){
   if(!c||c.type!=="DC")return c;
   c.steps=[];
@@ -2867,6 +2873,7 @@ function migrate(d){
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(c.type==="DC")normalizeDcPrep(c);
+    if(c.type==="ADMIT")normalizeAdmitPrep(c);
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.timersOff&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
@@ -3840,6 +3847,7 @@ function card(c){
   if(c.collapsed)return rowCard(c,dl,isTask);
   if(isTask){
     if(c.type==="DC")normalizeDcPrep(c);
+    if(c.type==="ADMIT")normalizeAdmitPrep(c);
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
@@ -4113,9 +4121,8 @@ function applyTypeDefaults(c,type,opts){
   if(type==="PCON")addQuickProcSteps(c);
   if(type==="DC")normalizeDcPrep(c);
   if(type==="ADMIT"){
-    c.tasks=c.tasks||[];
-    ADMIT_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
-    if(!c.action)c.action=ADMIT_TASKS[0];
+    c.wf=c.wf||{};
+    normalizeAdmitPrep(c);
   }
   if(type==="BOOK"){
     c.tasks=c.tasks||[];
@@ -4123,7 +4130,7 @@ function applyTypeDefaults(c,type,opts){
   }
   return c;
 }
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
 function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
@@ -4362,12 +4369,14 @@ function saveForm(){
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
   F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
   if(F.type==="DC")normalizeDcPrep(F);
+  if(F.type==="ADMIT")normalizeAdmitPrep(F);
   ensureInfectionChecklistOnCard(F,[F.prob,F.state,F.action,F.note].filter(Boolean).join(" "));
   if(F.type==="CHART")F.E=0;
   F.deadlineISO=null;
   const sv=document.getElementById("f_snooze").value;
   if(sv){
     const sdt=new Date(sv),end=new Date();end.setHours(23,59,59,999);
+    F.timersOff=false;
     if(sdt<=end){F.deadlineISO=sdt.toISOString();F.snoozeISO=null}
     else F.snoozeISO=sdt.toISOString();
   }else F.snoozeISO=null;
