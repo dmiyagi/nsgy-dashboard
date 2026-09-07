@@ -414,10 +414,24 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .bg.team-blue{background:#12304c;color:#6db7ff;border:1px solid #6db7ff}
 .bg.team-purple{background:#2b1d45;color:#b48bff;border:1px solid #b48bff}
 .bg.primarydx{background:#173a3c;color:var(--teal);border:1px solid var(--teal);font-weight:900}
+.woundrow{display:grid;grid-template-columns:auto auto minmax(140px,auto) minmax(120px,1fr) auto auto;gap:7px;align-items:center}
+.woundrow .rwho{font-weight:900;white-space:nowrap;color:var(--text)}
+.woundrow .rtags{display:flex;gap:5px;flex-wrap:wrap;min-width:0;overflow:visible}
+.woundrow .rtags .bg{font-size:10px;max-width:120px}
+.woundrow .cprob mark{background:rgba(242,211,75,.18);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:900}
+.wdates{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.wdate{font-size:10px;font-weight:900;line-height:1.35;border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.wdate.next{border-color:var(--acc);color:var(--acc);background:#102848}
+.wdate.remove{border-color:var(--e1);color:#ffd37a;background:#30220d}
+.wdate.due{border-color:var(--e3);color:#ffccd5;background:#32131a}
+.wdate.done{border-color:var(--ok);color:var(--ok);background:#123020}
+.wdate.today{border-color:var(--e1);color:#ffe987;background:#33280e}
+.wtarget{background:#173a3c;color:var(--teal);border:1px solid var(--teal);font-weight:900}
 .wounddetail{background:var(--card);border:1px solid var(--line);border-top:0;border-radius:0 0 9px 9px;margin:-5px 0 7px;padding:7px 10px}
 .woundlog{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .woundlog button{font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
 .woundlog button:hover{border-color:var(--e3);color:var(--e3)}
+@media(max-width:700px){.woundrow{grid-template-columns:auto auto minmax(80px,1fr) auto}.woundrow .rtags{grid-column:3/4;flex-wrap:nowrap;overflow:hidden}.woundrow .cprob{grid-column:2/5;white-space:nowrap}.woundrow .wdates{grid-column:2/5;justify-content:flex-start}.woundrow .car{grid-column:4;grid-row:1}.woundrow .rtags .bg{max-width:82px}.wdate{font-size:9.5px;padding:1px 6px}}
 .searchhit{outline:1px solid var(--acc)}
 /* proc kit suggestion */
 .prockit{background:var(--card2);border:1px solid var(--purp);border-left:4px solid var(--purp);border-radius:9px;padding:8px 10px;margin-top:7px}
@@ -459,6 +473,40 @@ details.planbox .sgt{font-weight:800;font-size:13px;color:var(--teal)}
 details.planbox .sgs{font-size:11px;color:var(--mut)}
 .planshort{font-size:12.5px;color:#d9e2ef;margin:6px 0 2px;line-height:1.5}
 .planfull{margin-top:8px;max-height:280px;overflow:auto}
+.sosuggest{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px;padding:6px 8px;background:rgba(90,162,255,.07);border:1px dashed #2c4a72;border-radius:9px}
+.sosuggest .ssl{font-size:11px;color:var(--mut);font-weight:700;margin-right:2px}
+.sosuggest .ssitem{display:inline-flex;align-items:stretch}
+.sosuggest button{font-size:11px;font-weight:700;padding:3px 8px;border:1px solid var(--line);background:var(--card2);color:var(--acc);cursor:pointer;font-family:var(--font);border-radius:7px 0 0 7px}
+.sosuggest button.ssx{border-left:none;border-radius:0 7px 7px 0;color:var(--mut);padding:3px 6px}
+.sosuggest button:hover{border-color:var(--acc)}
+.sosuggest button.ssx:hover{border-color:var(--e3);color:var(--e3)}
+.sosuggest.inmodal{margin-top:10px}
+.presentsheet{max-width:900px}
+.presentbody{max-height:70vh;overflow:auto}
+.pcard{border-left:3px solid var(--acc);padding:2px 0 10px 12px;margin-bottom:16px}
+.pcard h3{font-size:16px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.pcard h3 .phead{font-weight:600;color:var(--acc);font-size:14px}
+.pcard h3 .pgap{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--e2);border:1px solid var(--e2);border-radius:6px;padding:1px 6px}
+.pcard h3 .pgap.done{color:var(--ok);border-color:var(--ok)}
+.prow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:3px 0;border-top:1px solid rgba(139,167,214,.14)}
+.prow em{font-style:normal;color:var(--mut);font-weight:800;font-size:11.5px;text-transform:uppercase;letter-spacing:.35px}
+.prow span{white-space:pre-wrap;color:#e9eef7}
+.presentbody.big{font-size:17px;line-height:1.6}
+.presentbody.big .prow{grid-template-columns:180px minmax(0,1fr);padding:5px 0}
+.presentbody.big .prow em{font-size:13px}
+.presentbody.big .pcard h3{font-size:20px}
+.bg.gapbadge{background:#3a3312;color:var(--e2);border:1px solid var(--e2)}
+.bg.gapbadge.done{background:#123527;color:var(--ok);border-color:var(--ok)}
+@media(max-width:640px){.prow{grid-template-columns:1fr}.prow em{margin-bottom:-2px}}
+.nccufield.extrabox{border-left:2px solid var(--purp)}
+.nccufield.big{grid-column:1/-1}
+.nccufield.big span{white-space:pre-wrap}
+.nccufield{position:relative}
+.boxtools{position:absolute;right:5px;top:4px;display:none;gap:2px}
+.nccufield:hover .boxtools{display:flex}
+.boxtools button{font-size:10px;line-height:1;padding:2px 5px;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:5px;cursor:pointer;font-family:var(--font)}
+.boxtools button:hover{border-color:var(--acc);color:var(--acc)}
+@media(hover:none){.boxtools{display:flex;opacity:.55}}
 details.planbox.reachbox{border-color:#5a4a1c;background:#1d1a10}
 details.planbox.reachbox .sgt{color:var(--e1)}
 ul.reachlist{margin:8px 0 0 18px;font-size:12px;color:#d9e2ef;line-height:1.55}
@@ -588,7 +636,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.84 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.88 · 2026-08-29</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -660,8 +708,9 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="rowflex">
     <button class="btn sec sm" id="nccuCompactBtn" onclick="setNccuCompact(true)">⊟ Compact</button>
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
+    <button class="btn sm" onclick="openPresent()" title="Read the sign-out straight off the screen">▶︎ Present</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
-    <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every NCCU card">Δ Reset all</button>
+    <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every SO board card">Δ Reset all</button>
     <div class="nccuhbar">
       <input class="nccuhighlight" id="nccuHighlightInput" placeholder="Highlight word or phrase…" onkeydown="nccuHighlightKey(event)">
       <button class="nccuhadd" type="button" onclick="addNccuHighlight()">Add</button>
@@ -1273,6 +1322,19 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 </div>
 
 <!-- ============ TEXT CONSULT MODAL ============ -->
+<div class="overlay" id="ovPresent">
+  <div class="sheet presentsheet">
+    <h2>▶︎ Sign-out — read straight down</h2>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Only filled fields appear, in sign-out order. Blank counts are shown but never read.</p>
+    <div class="presentbody" id="presentbody"></div>
+    <div class="sheetbtns">
+      <button class="btn sec" onclick="hidePresent()">Close</button>
+      <button class="btn sec" id="presentSizeBtn" onclick="togglePresentSize()">A− Smaller</button>
+      <button class="btn" onclick="copyPresentAll()">⧉ Copy all</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="ovTC">
   <div class="sheet">
     <h2>▯ Text consult formatter</h2>
@@ -1337,6 +1399,8 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
     <div class="sheetbtns">
       <button class="btn sec" onclick="hideSO()">Close</button>
       <button class="btn sec" id="soToRoundsBtn" onclick="soToRounds()">→ Rounds sign-out</button>
+      <button class="btn sec" id="soBoardBtn" onclick="soToggleBoard()">→ SO Board</button>
+      <button class="btn sec" onclick="copySOSpeak()">⧉ Copy (skip blanks)</button>
       <button class="btn" onclick="copySO()">Copy sign-out</button>
     </div>
   </div>
@@ -4387,17 +4451,128 @@ function togBlock(id){S.blocksOpen[id]=!document.getElementById("bl_"+id).classL
 function togTask(id,i){ensureDay();const k=id+"_"+i;S.day.checks[k]=!S.day.checks[k];S.day.at=S.day.at||{};S.day.at[k]=Date.now();renderBlocks()}
 // ---------- rounds ----------
 const SO_TMPLS={
- nccu:{name:"NCCU",fields:[["One-liner","pathology, key procedure/device dates, current ICU issue"],["Events","free-text event block"],["Last 24 hrs","major events, imaging, procedure, exam change"],["Vitals","Tmax, HR, BP/SBP goal, O2"],["Vent","mode, settings, oxygenation, extubation plan"],["EVD/Output","level, ICPs, output, waveform, clamp/wean plan"],["I/Os","24h in/out, UOP, drains, net balance"],["Last BM","date, bowel regimen"],["Drips/rate","pressors, sedation, cardene, HTS, insulin, other rates"],["Nutrition","diet/tube feeds/NPO, swallow status"],["Lines","EVD/LD, central line, arterial line, Foley, drains"],["Labs","Na, WBC, Hgb, Plt, INR/coags"],["Micro/ID","cultures, CSF, antibiotics, source control"],["Daily meds","AC/AP, ASM, steroids, nimodipine, antibiotics, home meds"],["Images","last imaging, pending imaging, comparison"],["Exam","current neuro exam + meaningful baseline"],["A/P Neuro","neuro plan and escalation triggers"],["Pulm","vent/O2 plan, pulmonary issues"],["Cards","BP/MAP goals, pressors, rhythm, cardiac meds"],["GI","diet, bowel regimen, GI ppx"],["Renal","I/O, fluids, Na/osm, renal function"],["GU","Foley, retention, urology issues"],["ID","fever curve, cultures, antibiotics"],["Heme","Hgb/Plt/coags, DVT ppx, AC plan"],["Endo","glucose, steroids, endocrine issues"],["Prophylaxis","DVT, GI, seizure, antibiotic prophylaxis"]]},
- asah:{name:"aSAH",fields:[["One-liner","age, grade, aneurysm, clip/coil, post-bleed day"],["Exam @ SBP","intact at SBP 130"],["EVD","level, ICPs ok?"],["New events / imaging","today"],["TCDs","negative / velocities"],["Na goal + last","eunatremia, last 140"],["BP goal","SBP 100–200 (secured?)"],["Nimodipine","on/held"],["Active problems","and how addressed"]]},
- tssh:{name:"TSSH",fields:[["One-liner","date of TSSH"],["Exam incl. visual fields","full fields?"],["DI watch","Na, UOP <200/h, spec grav >1.005"],["Endocrine labs","POD1 wnl?"],["Nasal packs","out date, keflex ppx"],["Active problems","and how addressed"]]},
- tbi:{name:"Severe TBI",fields:[["One-liner","injury, surgery, devices"],["Exam","intubated: eyes, pupils, corneal/cough, motor"],["EVD + ICP course","level, max ICP, what fixed it"],["Drains","JP output"],["Imaging","latest CT, stable?"],["Na goal","HTS/florinef, last Na"],["ICP management","mannitol, sedation"],["BP goal","SBP <160"],["Seizure meds / LTM","Keppra, LTM on?"],["Active medical issues","VAP, lines, etc."]]},
- crani:{name:"Post-op crani",fields:[["One-liner","side, pathology, date"],["Exam vs pre-op","new deficits?"],["Drains + output","JP to suction, serosang"],["Post-op imaging","done / pending MRI wwo"],["BP goal","SBP <140 ×48 h"],["Na goal + last","eunatremia, last 142"],["Seizure ppx","Keppra 7 d"],["Dispo planning","RA, PO, voiding, PT/OT rec"],["Active problems","and how addressed"]]},
- spine:{name:"Spine",fields:[["One-liner","levels, procedure, date"],["Motor exam","delt/bi/tri/ff · IP/quad/AT/EHL/gastroc + baseline"],["Drains","JP/blake, output, NSG vs PRS"],["Imaging pending","upright XR, MRI"],["Activity / brace","Aspen at all times?"],["MAP goal if cord","MAP >85, day _ of 7"],["DVT ppx","held/on since"],["Dispo","and barriers"]]},
- vascular:{name:"Vascular",fields:[["One-liner","carotid/aneurysm, side/location, secured?"],["Symptoms + timing","TIA/stroke/amaurosis/headache, LKW"],["Exam","naming/repetition, visual fields, focal deficit"],["Imaging","CTA/CUS/MRI/TTE/angio status"],["Anatomy","% stenosis, laterality, bifurcation/plaque/runway or aneurysm size/morphology"],["Meds","ASA/DAPT/P2Y12, AC/last dose"],["Plan","medical vs CEA/TCAR/stent/angio/follow-up"],["Escalation trigger","new symptoms, decline, rebleed/hydrocephalus"]]},
- shunt:{name:"Shunt",fields:[["One-liner","shunt type, valve + setting, indication"],["Baseline vs current exam","who knows baseline"],["Prior failure phenotype","how they failed before"],["Imaging comparison","which prior CT is the comparison"],["Valve plan","setting change, recheck after MRI"],["Escalation trigger","somnolence, vomiting, pupil"],["Family / collateral","who to call"]]},
- evd:{name:"EVD / IVH",fields:[["One-liner","pathology, EVD side + date"],["Exam",""],["EVD","level, output/hr, ICP range"],["Clamp trial","status, f@level date"],["CSF labs / cultures","cells, cx pending"],["Imaging","ventricle size vs prior"],["Wean plan","and who decides"],["Escalation trigger","ICP >, exam change"]]},
- csdh:{name:"SDH",fields:[["One-liner","side, thickness, acute-on-chronic?"],["Exam + baseline",""],["Imaging","thickness, MLS, stable × how long"],["AC status","drug, held since, restart date"],["Operative plan","burr holes / SEPS / observe — senior decision"],["Seizure ppx",""],["Escalation trigger","exam or pupil change"]]},
- floor:{name:"General",fields:[["One-liner",""],["Exam + change from baseline",""],["Overnight events",""],["Pending studies","and who follows up"],["Meds of consequence","AC, abx, steroids, ASM"],["Goals","BP / Na / pain"],["Dispo + barriers",""],["Contingency","if X happens, do Y"]]}
+ // Labels are the storage keys — they are kept stable so existing sign-outs
+ // stay attached. Placeholders carry the expected value/format for each field.
+ nccu:{name:"NCCU",fields:[
+  ["One-liner","52F aSAH pcomm coiled POD2 · EVD R at 5 · PBD3"],
+  ["Events","overnight events in the order they happened"],
+  ["Last 24 hrs","major events, imaging, procedure, exam change"],
+  ["Exam","GCS/E-V-M, pupils, motor by group vs baseline"],
+  ["Vitals","Tmax 37.8 · HR 78 · SBP 100-140 · SpO2 96% RA"],
+  ["Vent","AC/VC 450 x14, PEEP 5, FiO2 40%, SBT plan"],
+  ["EVD/Output","R EVD at 5 · ICP 8-14 · 12 mL/h · good waveform · clamp trial ___"],
+  ["I/Os","in 2.4 L / out 2.1 L · UOP 0.8 mL/kg/h · net +300"],
+  ["Last BM","date · bowel regimen (senna/colace)"],
+  ["Drips/rate","nicardipine 5 mg/h · propofol 20 · HTS 3% at 30"],
+  ["Nutrition","diet/tube feeds/NPO · swallow screen passed?"],
+  ["Lines","EVD R · a-line L radial · CVL RIJ · Foley · JP"],
+  ["Labs","Na 138 · WBC 9.2 · Hgb 10.4 · Plt 210 · INR 1.1"],
+  ["Micro/ID","CSF cx NGTD d3 · blood cx pending · abx day 2/7"],
+  ["Daily meds","nimodipine 60 q4 (d5/21) · Keppra 500 BID · dex taper"],
+  ["Images","CTH 0600 stable vs 2200 · MRI pending"],
+  ["A/P Neuro","q1h checks · SBP 100-200 · goal Na 135-145 · escalate for ___"],
+  ["Pulm","SBT tomorrow if PEEP 5 / FiO2 <40%"],
+  ["Cards","SBP goal 100-200 · nicardipine prn · rhythm SR"],
+  ["GI","diet · PPI · bowel regimen"],
+  ["Renal","Cr 0.8 · UOP 0.8 mL/kg/h · even fluid goal"],
+  ["GU","Foley d3 · plan to remove ___"],
+  ["ID","Tmax 37.8 · cx sent ___ · abx ___ day _/_"],
+  ["Heme","Hgb 10.4 · Plt 210 · INR 1.1 · DVT ppx held/on since ___"],
+  ["Endo","glucose 110-160 · ISS · dex + PPI while >10 mg/d"],
+  ["Prophylaxis","DVT ___ · GI PPI · ASM Keppra · abx ___"]]},
+ asah:{name:"aSAH",fields:[
+  ["One-liner","52F HH2 mFisher3 pcomm, coiled 8/21, PBD3"],
+  ["Exam @ SBP","intact at SBP 130 · any deficit that is SBP-dependent"],
+  ["EVD","R at 5 (secured) / at 10 (unsecured) · ICP 8-14 · 10 mL/h"],
+  ["New events / imaging","today: CTH stable, no new hydro"],
+  ["TCDs","day 5/14 · MCA 90 cm/s, no vasospasm"],
+  ["Na goal + last","eunatremia 135-145 · last Na 140"],
+  ["BP goal","secured 100-200 · unsecured 100-140 + nicardipine prn"],
+  ["Nimodipine","60 mg q4h · day 5 of 21 · held for hypotension?"],
+  ["Active problems","and how addressed"]]},
+ tssh:{name:"TSSH",fields:[
+  ["One-liner","48M TSSH for macroadenoma, POD1"],
+  ["Exam incl. visual fields","fields full to confrontation · EOMI · no CSF rhinorrhea"],
+  ["DI watch","Na 142 · UOP <200 mL/h x2 · spec grav >1.005"],
+  ["Endocrine labs","AM cortisol ___ · TSH/fT4 ___ · prolactin ___"],
+  ["Nasal packs","out POD1 · keflex while packs in"],
+  ["Active problems","and how addressed"]]},
+ tbi:{name:"Severe TBI",fields:[
+  ["One-liner","28M MVC, R crani for SDH 8/20, EVD + bolt"],
+  ["Exam","intubated: eyes, pupils 3→2 brisk, corneal/cough, motor by limb"],
+  ["EVD + ICP course","R at 10 · ICP max 24 · fixed by HTS/drainage/sedation"],
+  ["Drains","JP serosang 40 mL/24h"],
+  ["Imaging","CTH 0600 stable vs 2200 · no new mass effect"],
+  ["Na goal","goal 150-155 · last 148 · 3% at 30 mL/h"],
+  ["ICP management","tier 1-2: HOB 30, midline, HTS, drainage, sedation"],
+  ["BP goal","SBP <160 · CPP >60"],
+  ["Seizure meds / LTM","Keppra 500 BID x7d · cEEG on since ___"],
+  ["Active medical issues","and how addressed"]]},
+ crani:{name:"Post-op crani",fields:[
+  ["One-liner","R crani for meningioma 8/22, POD1"],
+  ["Exam vs pre-op","no new deficit · baseline L pronator drift"],
+  ["Drains + output","JP to suction, serosang, 30 mL/24h"],
+  ["Post-op imaging","CTH POD0 stable · MRI w/wo pending"],
+  ["BP goal","SBP <140 x48h · prn labetalol"],
+  ["Na goal + last","eunatremia 135-145 · last 142"],
+  ["Seizure ppx","Keppra 500 BID x7d"],
+  ["Dispo planning","RA, PO, voiding, PT/OT rec, DVT ppx POD1"],
+  ["Active problems","and how addressed"]]},
+ spine:{name:"Spine",fields:[
+  ["One-liner","L4-5 TLIF 8/22, POD1"],
+  ["Motor exam","delt/bi/tri/we/ff/fa 5/5 · IP/quad/AT/EHL/gastroc 5/5 · no clonus"],
+  ["Drains","blake to suction · 40 mL/24h · NSG vs PRS"],
+  ["Imaging pending","upright XR before discharge · MRI ___"],
+  ["Activity / brace","OOB as tolerated · TLSO/Aspen at all times?"],
+  ["MAP goal if cord","MAP >85 · day 3 of 7"],
+  ["DVT ppx","SCDs · lovenox from POD1 · held since ___"],
+  ["Dispo","and barriers (pain, voiding, PT)"]]},
+ vascular:{name:"Vascular",fields:[
+  ["One-liner","68M symptomatic L ICA 80%, for TCAR 8/25"],
+  ["Symptoms + timing","TIA/amaurosis/stroke · LKW date+time"],
+  ["Exam","naming/repetition intact · fields full · no focal deficit"],
+  ["Imaging","CTA ___ · CUS ___ · MRI ___ · TTE ___ · angio ___"],
+  ["Anatomy","80% L ICA · bifurcation C4 · plaque >5 cm from clavicle (TCAR runway)"],
+  ["Meds","ASA 81 continued · Plavix loaded ___ · P2Y12 at 24h ___"],
+  ["Plan","medical vs CEA vs TCAR vs stent · who decides"],
+  ["Active problems","and how addressed"]]},
+ shunt:{name:"Shunt",fields:[
+  ["One-liner","VPS 2019, Strata at 1.5, for NPH"],
+  ["Baseline vs current exam","who knows the baseline and how to reach them"],
+  ["Prior failure phenotype","how they failed before (somnolence? vomiting?)"],
+  ["Imaging comparison","which prior CT is the comparison — date"],
+  ["Valve plan","setting change ___ · recheck XR after any MRI"],
+  ["Escalation trigger","somnolence, vomiting, pupil change"],
+  ["Family / collateral","who to call, number"]]},
+ evd:{name:"EVD / IVH",fields:[
+  ["One-liner","IVH with hydrocephalus, R EVD 8/21"],
+  ["Exam","GCS/E-V-M, pupils, motor"],
+  ["EVD","R at 10 · 12 mL/h · ICP 8-14 · waveform good"],
+  ["Clamp trial","clamped 0800 · tolerating · f@level since ___"],
+  ["CSF labs / cultures","WBC ___ · glc ___ · cx NGTD d___"],
+  ["Imaging","ventricle size stable vs ___"],
+  ["Wean plan","raise 5 cm q12h if tolerating · who decides"],
+  ["Escalation trigger","ICP >20 sustained, exam change, no drainage"]]},
+ csdh:{name:"SDH",fields:[
+  ["One-liner","R cSDH 12 mm, acute-on-chronic, on apixaban"],
+  ["Exam + baseline","no deficit · baseline ___"],
+  ["Imaging","12 mm · MLS 4 mm · stable x2 scans (0600, 2200)"],
+  ["AC status","apixaban, held since 8/20 · restart 14d from stable scan"],
+  ["Operative plan","burr holes / SEPS / observe — senior decision"],
+  ["Seizure ppx","Keppra 500 BID x7d / none"],
+  ["Escalation trigger","exam or pupil change, new headache"]]},
+ floor:{name:"General",fields:[
+  ["One-liner","age, problem, key date"],
+  ["Exam + change from baseline","what changed and when"],
+  ["Overnight events","in the order they happened"],
+  ["Vitals","Tmax · HR · SBP range · SpO2"],
+  ["I/Os","in/out · UOP · drains · net"],
+  ["Labs","Na · WBC · Hgb · Plt · INR"],
+  ["Pending studies","and who follows up"],
+  ["Meds of consequence","AC, abx, steroids, ASM — with day _/_"],
+  ["Goals","BP ___ · Na 135-145 · pain ___"],
+  ["Dispo + barriers","what is holding them"],
+  ["Contingency","if X happens, do Y — and who to call"]]}
 };
 function detectTmpl(t){
   if(isAneurysmalSAHText(t)||sahUnknownEtiologyText(t)||/\bsah\b|subarachnoid/i.test(t))return "asah";
@@ -4985,7 +5160,7 @@ function roundRowCard(r){
     dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"",
     roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
     otherTags,
-    r.nccuSO?'<span class="bg warn">NCCU</span>':""
+    r.nccuSO?'<span class="bg warn">SO</span>':""
   ].filter(Boolean).join("");
   return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
@@ -5031,7 +5206,7 @@ function renderRounds(){
     if(r.collapsed)return roundRowCard(r);
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
-    const nccu=r.nccuSO?'<span class="bg warn">NCCU</span>':"";
+    const nccu=r.nccuSO?'<span class="bg warn">SO</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+esc(roundProblemText(r))+'</div>'+
@@ -5135,15 +5310,75 @@ function renderFormerWounds(scope){
     items.map(r=>woundRow(r,true,scope)).join("")+
     '</details>';
 }
+function woundSourceText(r){return [r.raw,r.label,roundProblemText(r)].filter(Boolean).join(" ")}
+function woundTargetTag(r){
+  const s=woundSourceText(r);
+  if(/\b(?:staples?|staple\s*remov(?:al|e)|remove\s*staples?)\b/i.test(s))return "Staples";
+  if(/\b(?:sutures?|stitches?|nylons?|prolenes?|suture\s*remov(?:al|e)|remove\s*sutures?)\b/i.test(s))return "Sutures";
+  if(/\b(?:dssg|dressings?|remove\s*dressings?|rm\s*dssg)\b/i.test(s))return "Dressing";
+  if(/\b(?:incision|wound)\b/i.test(s))return "Incision";
+  if(/\bdrain\s*(?:site|stitch|suture)?\b/i.test(s))return "Drain site";
+  return "Wound";
+}
+function woundDateFromText(r){
+  const s=woundSourceText(r);
+  const near="(?:staples?|sutures?|stitches?|nylons?|prolenes?|dssg|dressings?|incision|wound|remove|removal|rm|out)";
+  const date="(\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?)";
+  const a=s.match(new RegExp("\\b"+near+"\\b[^\\n]{0,24}\\b"+date+"\\b","i"));
+  if(a)return a[1];
+  const b=s.match(new RegExp("\\b"+date+"\\b[^\\n]{0,24}\\b"+near+"\\b","i"));
+  return b?b[1]:"";
+}
+function parseWoundDate(s){
+  if(!s)return null;
+  if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s))return new Date(s+"T12:00:00");
+  const m=String(s).match(/^(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?$/);
+  if(!m)return null;
+  let y=m[3]?Number(m[3]):new Date().getFullYear();
+  if(y<100)y+=2000;
+  return new Date(y,Number(m[1])-1,Number(m[2]),12);
+}
+function woundDateState(s){
+  const d=parseWoundDate(s);if(!d)return "";
+  const today=parseWoundDate(todayDateStr());
+  const dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  const tt=new Date(today.getFullYear(),today.getMonth(),today.getDate()).getTime();
+  if(dd<tt)return " due";
+  if(dd===tt)return " today";
+  return "";
+}
+function escRe(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
+function woundProblemHtml(r){
+  const txt=roundProblemText(r).slice(0,130),d=woundDateFromText(r),html=esc(txt);
+  return d?html.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):html;
+}
+function woundRowBadges(r,former,latest,kind){
+  const team=roundTeam(r),attg=roundAttg(r),dx=roundPrimaryDxTag(r),target=woundTargetTag(r),removeDate=woundDateFromText(r);
+  const tags=[
+    team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"",
+    '<span class="bg wtarget">'+esc(target)+'</span>',
+    dx&&dx.toLowerCase()!==target.toLowerCase()?'<span class="bg primarydx">'+esc(dx)+'</span>':"",
+    attg?'<span class="bg mod">'+esc(attg)+'</span>':"",
+    former?'<span class="bg mod">'+esc(kind)+'</span>':""
+  ].filter(Boolean).join("");
+  const dates=[
+    r.woundNextDate?'<span class="wdate next'+woundDateState(r.woundNextDate)+'">next '+esc(r.woundNextDate)+'</span>':"",
+    removeDate?'<span class="wdate remove'+woundDateState(removeDate)+'">remove '+esc(removeDate)+'</span>':"",
+    latest?'<span class="wdate done">seen '+esc(latest.date)+'</span>':""
+  ].filter(Boolean).join("");
+  return {tags:tags,dates:dates};
+}
 function woundRow(r,former,scope){
   const open=!!r.woundOpen;
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
-  return '<div class="calrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
-    '<span class="bg mod">'+kind+'</span><span class="cwho">'+esc(roundIdentityText(r)||r.label||"")+'</span>'+
-    '<span class="cprob">'+esc(roundProblemText(r).slice(0,110))+'</span>'+
-    (r.woundNextDate?'<span class="ctime">next '+esc(r.woundNextDate)+'</span>':"")+
-    (latest?'<span class="ctime">seen '+esc(latest.date)+'</span>':"")+
+  const b=woundRowBadges(r,former,latest,kind);
+  return '<div class="calrow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
+    '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
+    '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
+    '<span class="rtags">'+b.tags+'</span>'+
+    '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
+    (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
     (open?'<div class="wounddetail">'+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+(former
         ?'<button class="rdone wrm" onclick="event.stopPropagation();removeFormerWound(\''+r.id+'\')">✕ Remove</button>'
@@ -5324,7 +5559,14 @@ function purgeRounds(){
   S.rounds.forEach(r=>S.tomb[r.id]=now);
   S.rounds=[];renderRounds();save();doSync(true);
 }
-function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){r.soCcResp=!r.soCcResp;r.updatedAt=Date.now();renderRounds();save()}}
+function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){
+  r.soCcResp=!r.soCcResp;
+  r.nccuSO=!!r.soCcResp;
+  if(r.nccuSO&&!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
+  r.updatedAt=Date.now();syncLinkedSo(r);
+  renderRounds();renderNccu();flushAutosave();
+  showToast(r.soCcResp?("Added to SO board — "+soLabel(r)):("Removed from SO board — "+soLabel(r)));
+}}
 function clearSeen(){
   const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil}));
   const beforeCycle=S.roundCycleAt;
@@ -5522,11 +5764,30 @@ function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
   document.getElementById("soTitle").textContent="SO Sign-out — "+soLabel(r);
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
+  renderSoBoardBtn();
   buildSOChips();buildSOFields();
   document.getElementById("ovSO").classList.add("show");
   if(focusField)setTimeout(()=>focusSOField(focusField),60);
 }
 function hideSO(){document.getElementById("ovSO").classList.remove("show");soId=null}
+function renderSoBoardBtn(){
+  const r=findAny(soId),btn=document.getElementById("soBoardBtn");if(!btn||!r)return;
+  btn.textContent=r.nccuSO?"✓ On SO Board":"→ SO Board";
+  btn.classList.toggle("on",!!r.nccuSO);
+}
+function soToggleBoard(){
+  const r=findAny(soId);if(!r)return;
+  if(r.nccuSO){
+    r.nccuSO=false;r.soCcResp=false;
+    showToast("Removed from SO board — "+soLabel(r));
+  }else{
+    r.nccuSO=true;
+    if((S.rounds||[]).some(x=>x.id===r.id))r.soCcResp=true;
+    if(!r.soT)r.soT=detectTmpl([r.raw,r.prob,r.loc,r.label].filter(Boolean).join(" "));
+    showToast("Added to SO board — "+soLabel(r));
+  }
+  r.updatedAt=Date.now();syncLinkedSo(r);renderSoBoardBtn();renderRounds();renderNccu();flushAutosave();
+}
 function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
@@ -5535,7 +5796,11 @@ function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
   const one=SO_TMPLS[r.soT].fields[0][0];
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
-  document.getElementById("sofields").innerHTML=SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("");
+  const extras=soExtraActive(r).map(b=>[b.k,soExtraPh(b.k)]);
+  document.getElementById("sofields").innerHTML=
+    SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("")+
+    extras.map(f=>soFieldHtml(r,f)).join("")+
+    soModalSuggestHtml(r);
   renderSOHints();
 }
 function focusSOField(k){
@@ -5563,12 +5828,15 @@ function soFieldHtml(r,f){
   return '<div class="fld">'+head+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
 function soIsExamField(k){return /\bexam\b|motor|baseline/i.test(k||"")}
-function soIsTrendField(k){return /^(Labs|I\/Os|EVD\/Output|Renal)$/i.test(k||"")}
+function soIsTrendField(k){return /\b(?:labs?|na|sodium|i\/?os?|output|evd|icp|drain|vitals?|bp|sbp|map|tcd|vent|di watch|endocrine|renal|micro|csf|cultures?|drips?|imag(?:e|es|ing)?|ct|cth|mri|scan|size|thickness|mls|weight|glucose|nihss)\b/i.test(k||"")}
 function soFocus(el){el.dataset.prev=el.value||""}
 function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
   const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
-  if(!quiet&&(soIsExamField(k)||soIsTrendField(k))&&prev&&prev!==val)r.soPrev[k]=prev;
   const changed=r.so[k]!==val;
+  if(changed&&(soIsExamField(k)||soIsTrendField(k))){
+    const last=String(r.so[k]||prev||"").trim();
+    if(last&&last!==val)r.soPrev[k]=last;
+  }
   // remember what the field held before this edit, so the NCCU view can show
   // what moved since the card was last marked seen
   if(changed){
@@ -5617,12 +5885,95 @@ function soHighlight(s){
 }
 function soText(r){
   const t=SO_TMPLS[r.soT||"floor"];
-  return t.name+" sign-out — "+soLabel(r)+"\n"+t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___")).join("\n");
+  const lines=t.fields.map(f=>f[0]+": "+((r.so&&r.so[f[0]])||"___"));
+  soExtraActive(r).forEach(b=>lines.push(b.k+": "+((r.so&&r.so[b.k])||"___")));
+  return t.name+" sign-out — "+soLabel(r)+"\n"+lines.join("\n");
 }
+// the same suggestions, offered inside the sign-out sheet
+function soModalSuggestHtml(r){
+  const sug=soExtraSuggestions(r);
+  if(!sug.length)return "";
+  return '<div class="sosuggest inmodal"><span class="ssl">Add a section for:</span>'+
+    sug.map(b=>'<span class="ssitem"><button type="button" onclick="toggleSoExtraFromModal(\''+esc(b.k)+'\')">＋ '+esc(b.k)+'</button>'+
+      '<button type="button" class="ssx" title="Not relevant" onclick="dismissSoSuggestFromModal(\''+esc(b.k)+'\')">×</button></span>').join("")+
+    '</div>';
+}
+function toggleSoExtraFromModal(k){
+  const r=findAny(soId);if(!r)return;
+  r.soExtra=r.soExtra||{};
+  const on=!soExtraOn(r,k);
+  r.soExtra[k]=on;
+  if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[k]}
+  r.updatedAt=Date.now();buildSOFields();renderNccu();flushAutosave();
+  showToast(on?("Added "+k):("Removed "+k));
+}
+function dismissSoSuggestFromModal(k){
+  const r=findAny(soId);if(!r)return;
+  r.soSuggestOff=r.soSuggestOff||{};r.soSuggestOff[k]=true;
+  r.updatedAt=Date.now();buildSOFields();renderNccu();flushAutosave();
+}
+// ---------- present mode: read the sign-out straight off the screen ----------
+// Blanks are dropped rather than spoken as "___", so what is on screen is
+// exactly what you say.
+function soFilledPairs(r){
+  const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
+  const out=[];
+  t.fields.forEach(f=>{const v=String((r.so&&r.so[f[0]])||"").trim();if(v)out.push([f[0],v])});
+  soExtraActive(r).forEach(b=>{const v=String((r.so&&r.so[b.k])||"").trim();if(v)out.push([b.k,v])});
+  return out;
+}
+function soGapCount(r){
+  const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
+  let n=0;
+  t.fields.forEach(f=>{if(!String((r.so&&r.so[f[0]])||"").trim())n++});
+  soExtraActive(r).forEach(b=>{if(!String((r.so&&r.so[b.k])||"").trim())n++});
+  return n;
+}
+function soSpeakText(r){
+  const pairs=soFilledPairs(r);
+  const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
+  const body=pairs.filter(p=>p[0]!=="One-liner").map(p=>p[0]+": "+p[1]);
+  return head+(body.length?"\n"+body.join("\n"):"");
+}
+function soPresentPatients(){
+  return nccuPatients().filter(r=>soFilledPairs(r).length);
+}
+function openPresent(){
+  const pts=soPresentPatients();
+  if(!pts.length){showToast("Nothing filled in yet to present");return}
+  renderPresent();
+  document.getElementById("ovPresent").classList.add("show");
+}
+function hidePresent(){document.getElementById("ovPresent").classList.remove("show")}
+let presentBig=true;
+function togglePresentSize(){presentBig=!presentBig;renderPresent()}
+function renderPresent(){
+  const el=document.getElementById("presentbody");if(!el)return;
+  const pts=soPresentPatients();
+  const btn=document.getElementById("presentSizeBtn");
+  if(btn)btn.textContent=presentBig?"A− Smaller":"A+ Bigger";
+  el.className="presentbody"+(presentBig?" big":"");
+  el.innerHTML=pts.map(r=>{
+    const pairs=soFilledPairs(r).filter(p=>p[0]!=="One-liner");
+    const gaps=soGapCount(r);
+    return '<article class="pcard">'+
+      '<h3>'+esc(soLabel(r))+'<span class="phead">'+esc(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"")+'</span>'+
+      (gaps?'<span class="pgap" title="fields still blank — not read aloud">'+gaps+' blank</span>':'<span class="pgap done">complete</span>')+'</h3>'+
+      pairs.map(p=>'<div class="prow"><em>'+esc(p[0])+'</em><span>'+esc(p[1])+'</span></div>').join("")+
+      '</article>';
+  }).join("")||'<div class="empty">Nothing filled in yet.</div>';
+}
+function copyPresentAll(){
+  const t=soPresentPatients().map(soSpeakText).join("\n\n");
+  if(!t){showToast("Nothing to copy");return}
+  toClip(t);showToast("Full sign-out copied");
+}
+function copySOSpeak(){const r=findAny(soId);if(!r)return;toClip(soSpeakText(r));showToast("Sign-out copied — blanks skipped")}
 function copySO(){const r=findAny(soId);if(!r)return;toClip(soText(r));showToast("Sign-out copied");}
 const NCCU_FIELDS=[
   ["Events","Events"],
   ["Last 24 hrs","Last 24 hrs"],
+  ["Exam","Exam"],
   ["Vitals","Vitals"],
   ["Vent","Vent"],
   ["EVD/Output","EVD/Output"],
@@ -5635,7 +5986,6 @@ const NCCU_FIELDS=[
   ["Micro/ID","Micro/ID"],
   ["Daily meds","Daily meds"],
   ["Images","Images"],
-  ["Exam","Exam"],
   ["A/P Neuro","A/P Neuro"],
   ["Pulm","Pulm"],
   ["Cards","Cards"],
@@ -5812,6 +6162,104 @@ const SO_OPTIONAL_BOXES=[
   {key:"na",label:"Na",fields:["Na goal","Na goal + last","Labs","Renal","DI watch"],re:/\b(?:na|sodium|euna|hts|florinef|di watch)\b/i},
   {key:"bp",label:"BP",fields:["BP goal","Vitals","Cards","MAP goal if cord"],re:/\b(?:sbp|bp|map|pressors?|cardene|nicard)\b/i}
 ];
+// ---------- add-on boxes for patients the template does not cover ----------
+// Each entry watches for a complexity signal. `covers` names the template
+// fields that already handle it, so nothing is suggested twice.
+const SO_EXTRA_BOXES=[
+ {k:"AC / antiplatelet",ph:"apixaban, held since 8/20 · restart 14d from stable scan",
+  covers:["AC status","Meds","Heme","Meds of consequence"],
+  re:/\b(?:warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|asa\b|dapt|doac|anticoag|antiplatelet)\b/i},
+ {k:"Seizures / ASM",ph:"Keppra 500 BID x7d · last seizure ___ · cEEG on since ___",
+  covers:["Seizure ppx","Seizure meds / LTM"],
+  re:/\b(?:seizure|status epilepticus|epilep|keppra|levetiracetam|depakote|valproate|dilantin|phenytoin|asm|aed|cEEG|LTM|postictal)\b/i},
+ {k:"ID / cultures",ph:"Tmax 38.4 · blood cx d2 NGTD · vanc/ctx day 3/14 · source ___",
+  covers:["Micro/ID","ID"],
+  re:/\b(?:fever|febrile|tmax|infect|abscess|empyema|ventriculitis|meningitis|osteo|discitis|culture|cx\b|abx|antibiotic|vanc|ceftriaxone|cefepime|zosyn|wbc)\b/i},
+ {k:"Vasospasm / TCD",ph:"PBD5 · MCA 90 cm/s · no spasm · nimodipine d5/21",
+  covers:["TCDs"],
+  re:/\b(?:vasospasm|spasm|tcd|transcranial|nimodipine|dci|delayed cerebral)\b/i},
+ {k:"Endocrine / DI",ph:"Na 142 · UOP <200/h · spec grav >1.005 · DDAVP given ___",
+  covers:["DI watch","Endocrine labs","Endo"],
+  re:/\b(?:\bdi\b|diabetes insipidus|siadh|cortisol|acth|ddavp|desmopressin|thyroid|tsh|prolactin|pituitary|endocrine|hyponatrem|hypernatrem)\b/i},
+ {k:"Hemodynamics / pressors",ph:"norepi 0.05 · MAP >65 · nicardipine off since ___",
+  covers:["Drips/rate","Cards"],
+  re:/\b(?:pressor|norepi|levophed|phenylephrine|neo\b|vasopressin|epi\b|dobutamine|shock|hypotens|map goal|cardene|nicardipine)\b/i},
+ {k:"Airway / trach",ph:"trach POD3 · cuff down · PMV trial ___ · vent weaning",
+  covers:["Vent","Pulm"],
+  re:/\b(?:trach|tracheostomy|extubat|reintubat|ett|airway|peg\b|pmv|vent wean)\b/i},
+ {k:"Goals of care",ph:"family meeting ___ · DNR/DNI · CMO discussion · surrogate ___",
+  covers:[],
+  re:/\b(?:goals of care|gooc|\bgoc\b|dnr|dni|cmo|comfort measures|palliative|hospice|withdraw|family meeting|surrogate|hcp\b)\b/i},
+ {k:"Family / collateral",ph:"daughter ___ (number) · who knows the baseline",
+  covers:["Family / collateral"],
+  re:/\b(?:family|daughter|son|spouse|wife|husband|next of kin|collateral|baseline unknown|hcp\b|poa\b)\b/i},
+ {k:"Dispo barriers",ph:"needs rehab bed · PT/OT rec ___ · insurance ___ · awaiting ___",
+  covers:["Dispo","Dispo planning","Dispo + barriers"],
+  re:/\b(?:dispo|discharge|rehab|snf|ltach|placement|insurance|pt\/ot|home with|barrier)\b/i},
+ {k:"Trial eligibility",ph:"NICO/REACH screen ___ · exclusions checked ___ · consented ___",
+  covers:[],
+  re:/\b(?:nico|reach|trial|enroll|randomi|study|eligib)\b/i},
+ {k:"Peds / weight",ph:"wt 18 kg · weight-based dosing · fontanelle soft/flat",
+  covers:[],
+  re:/\b(?:peds|paediatric|pediatric|infant|neonate|baby|w&i|fontanelle|kg\b|weight-based)\b/i},
+ {k:"Pressure injury / skin",ph:"sacral stage 2 · turn q2h · wound care consult ___",
+  covers:[],
+  re:/\b(?:pressure (?:ulcer|injury)|decub|skin breakdown|sacral|wound care|braden)\b/i},
+ {k:"Renal / CRRT",ph:"Cr 2.4 · CRRT since ___ · nephrology following",
+  covers:["Renal"],
+  re:/\b(?:crrt|hemodialysis|\bhd\b|dialysis|esrd|aki|creatinine|nephrolog)\b/i}
+];
+function soExtraOn(r,k){
+  if(r&&r.soExtra&&r.soExtra[k]!==undefined)return !!r.soExtra[k];
+  return !!(r&&r.so&&String(r.so[k]||"").trim());
+}
+function soExtraCovered(r,box){
+  const fields=soFieldsFor(r);
+  return (box.covers||[]).some(f=>fields.includes(f));
+}
+// what the template does not already handle, and the text says matters
+function soExtraSuggestions(r){
+  if(!r)return [];
+  const txt=soBoardText(r);
+  const dis=r.soSuggestOff||{};
+  return SO_EXTRA_BOXES.filter(b=>
+    !soExtraOn(r,b.k) && !dis[b.k] && !soExtraCovered(r,b) && b.re.test(txt));
+}
+function soExtraActive(r){
+  if(!r)return [];
+  return SO_EXTRA_BOXES.filter(b=>soExtraOn(r,b.k));
+}
+function soExtraPh(k){const b=SO_EXTRA_BOXES.find(x=>x.k===k);return b?b.ph:""}
+function toggleSoExtra(id,k){
+  const r=findAny(id);if(!r)return;
+  r.soExtra=r.soExtra||{};
+  const on=!soExtraOn(r,k);
+  r.soExtra[k]=on;
+  if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[k]}
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast(on?("Added "+k):("Removed "+k),()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.soExtra[k]=!on;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+function dismissSoSuggest(id,k){
+  const r=findAny(id);if(!r)return;
+  r.soSuggestOff=r.soSuggestOff||{};r.soSuggestOff[k]=true;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Hidden — "+k,()=>{
+    const rr=findAny(id);if(!rr)return;
+    delete rr.soSuggestOff[k];rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+// one compact strip; it disappears entirely when there is nothing to suggest
+function soSuggestStripHtml(r){
+  const sug=soExtraSuggestions(r);
+  if(!sug.length)return "";
+  return '<div class="sosuggest"><span class="ssl">More than the template covers:</span>'+
+    sug.map(b=>'<span class="ssitem"><button type="button" onclick="event.stopPropagation();toggleSoExtra(\''+r.id+'\',\''+esc(b.k)+'\')">＋ '+esc(b.k)+'</button>'+
+      '<button type="button" class="ssx" title="Not relevant" onclick="event.stopPropagation();dismissSoSuggest(\''+r.id+'\',\''+esc(b.k)+'\')">×</button></span>').join("")+
+    '</div>';
+}
 function soFieldsFor(r){return (SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor).fields.map(f=>f[0])}
 function soBoxFieldFor(r,opt){
   const fields=soFieldsFor(r);
@@ -5852,19 +6300,34 @@ function toggleSoBoardBox(id,key){
   r.soBoardOn[key]=!soBoardOptionalOn(r,opt);
   r.updatedAt=Date.now();renderNccu();flushAutosave();
 }
-function soBoardBoxHtml(r,label){
+function soBoxBig(r,label){return !!(r&&r.soBig&&r.soBig[label])}
+function toggleSoBoxBig(id,label){
+  const r=findAny(id);if(!r)return;
+  r.soBig=r.soBig||{};r.soBig[label]=!r.soBig[label];
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function soBoardBoxHtml(r,label,extra){
   const val=soPick(r,label)||"___";
-  return '<div class="nccufield" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+nccuFieldHead(r,label,label)+'<span>'+nccuFieldHtml(r,label,val)+'</span></div>';
+  const big=soBoxBig(r,label);
+  return '<div class="nccufield'+(big?" big":"")+(extra?" extrabox":"")+'" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+
+    nccuFieldHead(r,label,label)+
+    '<span>'+nccuFieldHtml(r,label,val)+'</span>'+
+    '<span class="boxtools">'+
+      '<button type="button" title="'+(big?"Smaller":"More room")+'" onclick="event.stopPropagation();toggleSoBoxBig(\''+r.id+'\',\''+esc(label)+'\')">'+(big?"⤡":"⤢")+'</button>'+
+      (extra?'<button type="button" title="Remove this box" onclick="event.stopPropagation();toggleSoExtra(\''+r.id+'\',\''+esc(label)+'\')">×</button>':"")+
+    '</span></div>';
 }
 function soBoardFieldsHtml(r){
   const boxLabels=soBoardBoxLabels(r),boxed={};
   boxLabels.forEach(k=>boxed[k]=true);
   const boxes=boxLabels.map(label=>soBoardBoxHtml(r,label)).join("");
   const rest=soFieldsFor(r).filter(k=>k!=="One-liner"&&!boxed[k]);
-  return soBoardToggleHtml(r)+
+  const extras=soExtraActive(r);
+  return soBoardToggleHtml(r)+soSuggestStripHtml(r)+
     '<div class="nccugrid">'+
     boxes+
     rest.map(label=>soBoardBoxHtml(r,label)).join("")+
+    extras.map(b=>soBoardBoxHtml(r,b.k,true)).join("")+
     nccuTodoHtml(r)+nccuNoteHtml(r)+
     '</div>';
 }
@@ -6046,6 +6509,7 @@ function nccuCardHtml(r){
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+soTmplBadge(r)+
     (compact&&dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"")+
+    (function(){const g=soGapCount(r);return g?'<span class="bg gapbadge" title="fields still blank">'+g+' blank</span>':'<span class="bg gapbadge done" title="every field filled">✓ full</span>'})()+
     (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
     '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
@@ -6056,12 +6520,14 @@ function nccuCardHtml(r){
 function nccuRemove(id){
   const r=findAny(id);if(!r||!r.nccuSO)return;
   const prevT=r.soT||"";
+  const prevCc=!!r.soCcResp;
   r.nccuSO=false;
+  r.soCcResp=false;
   r.updatedAt=Date.now();syncLinkedSo(r);
   renderNccu();renderRounds();flushAutosave();
   showToast("Removed "+soLabel(r)+" from SO board",()=>{
     const rr=findAny(id);if(!rr)return;
-    rr.nccuSO=true;rr.soT=prevT||"nccu";rr.updatedAt=Date.now();syncLinkedSo(rr);
+    rr.nccuSO=true;rr.soCcResp=prevCc;rr.soT=prevT||rr.soT||"floor";rr.updatedAt=Date.now();syncLinkedSo(rr);
     renderNccu();renderRounds();flushAutosave();
   });
 }
@@ -7370,13 +7836,15 @@ function roundSendOpts(r){
 function sendRoundToNccu(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   if(r.nccuSO){showToast(soLabel(r)+" is already on SO board");return}
+  const prevCc=!!r.soCcResp;
   r.nccuSO=true;
+  r.soCcResp=true;
   if(!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
   r.updatedAt=Date.now();syncLinkedSo(r);
   renderRounds();renderNccu();flushAutosave();
   showToast("→ SO board — "+soLabel(r),()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
-    rr.nccuSO=false;
+    rr.nccuSO=false;rr.soCcResp=prevCc;
     rr.updatedAt=Date.now();syncLinkedSo(rr);
     renderRounds();renderNccu();flushAutosave();
   });
