@@ -309,7 +309,7 @@ button.rdone.finaldone{background:#123527}
 @media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
 /* type colour scheme */
 .tc-CONSULT{--tc:#5aa2ff} .tc-COMM{--tc:#3fd68f} .tc-CHART{--tc:#8ba7d6} .tc-PROC{--tc:#b48bff}
-.tc-PCON{--tc:#ffa94d} .tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-DC{--tc:#f2c14b}
+.tc-PCON{--tc:#ffa94d} .tc-POC{--tc:#3ecfd4} .tc-CONSENT{--tc:#ff85c0} .tc-ADMIT{--tc:#7dc4ff} .tc-DC{--tc:#f2c14b}
 .tc-BOOK{--tc:#f2d34b}
 /* snooze + calendar */
 .bg.snz{background:#1e2a1c;color:#a4d97f;border:1px solid #a4d97f}
@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.83 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.84 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -622,6 +622,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
         <button class="btn sec sm tc-PCON" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'PCON')"><span class="screwico" aria-hidden="true"></span> Quick proc</button>
         <button class="btn sec sm tc-POC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'POC')">＋ POC</button>
         <button class="btn sec sm tc-CONSENT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'CONSENT')">✎ Consent</button>
+        <button class="btn sec sm tc-ADMIT" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'ADMIT')">ADM Prep</button>
         <button class="btn sec sm tc-BOOK" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'BOOK')">⊞ Booking</button>
         <button class="btn sec sm tc-WOUND" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'WOUND')">□ Wound</button>
         <button class="btn sec sm tc-DC" style="border-color:var(--tc);color:var(--tc)" onclick="openForm(null,false,'DC')">DC prep</button>
@@ -1641,6 +1642,9 @@ const TYPES={
  BOOK:{i:"⊞",l:"Booking",probL:"What — patient",probPh:"R crani for tumor · ED12",dlL:"Book by",
   presets:[["ASAP",5],["+30 min",30],["+1 h",60],["+2 h",120],["+1 day",1440],["Clear",0]],
   rem:"OR booking to-do: exact procedure name + laterality, attending, consent, DVT ppx held, H&P/rH&P, pre-op note, coags/T&S/CBC, NPO, antibiotics/equipment, postop bed, Teams Booking chat, OR front desk."},
+ ADMIT:{i:"ADM",l:"Admission prep",probL:"Admit — patient / service",probPh:"admit ED12 Miy to NSGY floor",dlL:"Ready by",
+  presets:[["+30 min",30],["+1 h",60],["+2 h",120],["+4 h",240],["Before signout","17:45"],["Clear",0]],
+  rem:"Admission prep to-do: meds list, med rec, H&P, admit orders."},
  WOUND:{i:"□",l:"Wound check",probL:"What — patient",probPh:"suture/staple/incision check · C243 Miy",dlL:"Next check",
   presets:[["+1 day",1440],["+2 days",2880],["+3 days",4320],["+1 wk",10080],["Clear",0]],
   rem:"Dedicated wound/suture/staple/incision check. Can be snoozed to calendar/board date and linked back to a Rounds patient."},
@@ -1649,6 +1653,7 @@ const TYPES={
   rem:"Med rec signed & e-prescribed → follow-up providers / CoC → discharge summary → dc order."}};
 const TASK_HIDE=["fld_O","fld_W","fld_C","fld_mods","cbdet"];
 const QUICK_PROC_STEPS=["Let nurse/team know","Gather supplies","Let team know","Write sig event note"];
+const ADMIT_TASKS=["Meds list","Med rec","H&P","Admit orders"];
 function normalizeDcPrep(c){
   if(!c||c.type!=="DC")return c;
   c.steps=[];
@@ -3093,7 +3098,7 @@ function boardVisible(c){return !!c}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","CHART","COMM","PROC","PCON","POC","CONSENT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
+  const keys=["CONSULT","CHART","COMM","PROC","PCON","POC","CONSENT","ADMIT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
   if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
@@ -3290,6 +3295,7 @@ const TYPE_WF={
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note"]],
  CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
  BOOK:[["name","Name/laterality"],["consent","Consent"],["labs","Hold DVT + labs/NPO"],["docs","H&P/rH&P + pre-op"],["or","OR notified"],["__close","Done"]],
+ ADMIT:[["meds","Meds list"],["medrec","Med rec"],["hp","H&P"],["orders","Admit orders"],["__close","Done"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
@@ -4030,6 +4036,11 @@ function applyTypeDefaults(c,type,opts){
   if(type==="CHART"||type==="WOUND")c.E=0;
   if(type==="PCON")addQuickProcSteps(c);
   if(type==="DC")normalizeDcPrep(c);
+  if(type==="ADMIT"){
+    c.tasks=c.tasks||[];
+    ADMIT_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
+    if(!c.action)c.action=ADMIT_TASKS[0];
+  }
   if(type==="BOOK"){
     c.tasks=c.tasks||[];
     BOOK_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
@@ -4094,6 +4105,8 @@ function setTypeUI(){
   const tcEl=document.getElementById("fld_tc");if(tcEl)tcEl.style.display=(F.type==="CONSULT")?"":"none";
   document.getElementById("tasksLabel").textContent=(F.type==="CHART")
     ? "Chart-check to-dos (one per line)"
+    : (F.type==="ADMIT")
+      ? "Admission prep to-dos (one per line)"
     : "To-Do (optional, one per line)";
   document.getElementById("probLabel").textContent=t.probL;
   document.getElementById("f_prob").placeholder="Type anything here…";
