@@ -588,7 +588,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.80 · 2026-09-06</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.81 · 2026-09-06</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5065,8 +5065,12 @@ function addStandaloneWoundCheck(){
   S.formerWounds.push(r);
   renderRounds();renderCal();save();showToast("Added wound check — "+label);
 }
+function woundSortKey(r){
+  return [roundRoom(r)||"ZZZ",roundPatient3(r)||"",roundIdentityText(r)||r.label||"",roundProblemText(r)||""].join(" ").toLowerCase();
+}
+function woundSort(a,b){return woundSortKey(a).localeCompare(woundSortKey(b),undefined,{numeric:true})}
 function renderWoundRounds(list,scope){
-  const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r));
+  const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
   return '<details class="closedsec" open><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+
     items.map(r=>woundRow(r,false,scope)).join("")+
@@ -5090,12 +5094,13 @@ function renderRoundWoundList(list){
     rows.push([r,true]);
   });
   if(!rows.length)return "";
+  rows.sort((a,b)=>woundSort(a[0],b[0]));
   return '<details class="closedsec" open><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+
     rows.map(([r,former])=>woundRow(r,former)).join("")+
     '</details>';
 }
 function renderFormerWounds(scope){
-  const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r));
+  const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
   return '<details class="closedsec"><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+
     items.map(r=>woundRow(r,true,scope)).join("")+
