@@ -117,6 +117,7 @@ section.view.active{display:block}
 .webtrash{display:none;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
+.webtrash.wtrash{display:block}
 @media(min-width:760px){.webtrash{display:block}}
 .empty{color:var(--mut);text-align:center;padding:30px 10px;font-size:14px}
 details.closedsec{margin-top:16px}
@@ -646,7 +647,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.94 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.96 · 2026-09-07</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -657,8 +658,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <button data-view="board" class="active"><span class="ico">▣</span>Board</button>
   <button data-view="rounds"><span class="ico">▤</span>Rounds</button>
   <button data-view="nccu"><span class="ico">●</span>SO Board</button>
-  <button data-view="day"><span class="ico">◴</span>Day</button>
   <button data-view="cal"><span class="ico">◷</span>Cal</button>
+  <button data-view="day"><span class="ico">◴</span>Day</button>
   <button data-view="booking"><span class="ico">⊞</span>Booking</button>
   <button data-view="ref"><span class="ico">≡</span>Reference</button>
 </nav>
@@ -3186,11 +3187,11 @@ function setBoardType(k){
 }
 function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function setBoardSort(k){boardSortMode=k||"bubble";render()}
-function boardVisible(c){return !!c}
+function boardVisible(c){return !!(c&&c.type!=="CHART")}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","CHART","COMM","PROC","PCON","POC","CONSENT","ADMIT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
+  const keys=["CONSULT","COMM","PROC","PCON","POC","CONSENT","ADMIT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
   if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
@@ -3656,10 +3657,10 @@ let snoozeFilter="";
 function renderSnoozed(){
   const el=document.getElementById("snoozecards");if(!el)return;
   const q=snoozeFilter.toLowerCase();
-  const list=S.consults.filter(c=>!c.closed&&isHiddenSnoozed(c)&&matchSearch(c))
+  const list=S.consults.filter(c=>boardVisible(c)&&!c.closed&&isHiddenSnoozed(c)&&matchSearch(c))
     .filter(c=>!q||[c.loc,c.prob,c.note,c.action].filter(Boolean).join(" ").toLowerCase().includes(q))
     .sort((a,b)=>Date.parse(a.snoozeISO)-Date.parse(b.snoozeISO));
-  document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>!c.closed&&isHiddenSnoozed(c)&&matchSearch(c)).length+")";
+  document.getElementById("snoozesum").textContent="◷ Scheduled / snoozed ("+S.consults.filter(c=>boardVisible(c)&&!c.closed&&isHiddenSnoozed(c)&&matchSearch(c)).length+")";
   el.innerHTML=list.map(c=>{
     const d=new Date(c.snoozeISO);
     return '<div class="calrow" onclick="openForm(\''+c.id+'\')">'+
@@ -3811,7 +3812,7 @@ function rowTap(e,id){
   if(e.target&&e.target.closest&&e.target.closest("button,input,select,textarea,a,label,.wf,.dlbtns,.steps,.step,.steptimer,.checks,.chk,.cardbtns,.badges,.next,.lastdone,.evsec,.evhead,.evitem,.evq,.evfind"))return;
   togCollapse(id);
 }
-function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render()}}
+function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render();renderRounds()}}
 function collapseAll(v){S.consults.forEach(c=>{if(!c.closed&&c.collapsed!==v){c.collapsed=v;touch(c)}});render()}
 function doneAction(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
@@ -3825,6 +3826,7 @@ function doneAction(id){
   c.action=nxt?nxt.t:"";
   if(c.action)setPin(c.id);
   touch(c);render();
+  renderRounds();
   if(c.action){showToast("Next → "+c.action.slice(0,44)+(nxt&&nxt.dueISO?" (◷ set)":""))}
   else{reflowQueue()}
 }
@@ -3837,13 +3839,13 @@ function rowDone(id){
   if(p.kind==="step"&&c.steps&&c.steps[p.i]){
     c.lastDone=c.steps[p.i].t;c.steps[p.i].done=true;c.steps[p.i].dueISO=null;
     syncBoardDoneToRounds(c,c.lastDone,true);
-    const nx=compactPending(c);touch(c);render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
+    const nx=compactPending(c);touch(c);render();renderRounds();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
   }
   if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
     c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;c.tasks[p.i].dueISO=null;
     syncCloseTaskState(c,c.tasks[p.i]);
     syncBoardDoneToRounds(c,c.lastDone,true);
-    const nx=compactPending(c);touch(c);reflowQueue();render();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
+    const nx=compactPending(c);touch(c);reflowQueue();render();renderRounds();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
   }
 }
 function undoLastDone(id){
@@ -4042,16 +4044,16 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
   const missingGate=c.type==="CONSULT"?consultGateMissing(c):[];
   scheduleBoardReflow(c.id);
   if(missingGate.length&&!(c.wf&&c.wf.seen)){setPin(c.id);render();return}
-  render();}
+  render();renderRounds();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
-function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render()}}
+function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render();renderRounds()}}
 function del(id,skipConfirm){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(!skipConfirm&&!confirm("Delete permanently?"))return;
   trashPush("consult",c);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.consults=S.consults.filter(x=>x.id!==id);
-  render();
+  render();renderRounds();
   showToast("Deleted "+(c.loc||c.prob||"item"),()=>restoreConsult(c));
 }
 // device-local so it never bloats the gist; the undo toast covers the moment,
@@ -4104,7 +4106,7 @@ function trashHtml(kind){
       '<button class="rdone wrm" onclick="event.stopPropagation();trashDrop(\''+x.item.id+'\')">✕</button>'+
       '</div>').join("")+'</details>';
 }
-function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];S.trash=(S.trash||[]).filter(x=>!x.item||x.item.id!==c.id);c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();save()}
+function restoreConsult(c){if(S.tomb)delete S.tomb[c.id];S.trash=(S.trash||[]).filter(x=>!x.item||x.item.id!==c.id);c.updatedAt=Date.now();if(!S.consults.some(x=>x.id===c.id))S.consults.push(c);render();renderRounds();save()}
 function copyLine(id){const c=S.consults.find(x=>x.id===id);if(c)toClip(masterLine(c))}
 function copyNotes(id){const c=S.consults.find(x=>x.id===id);if(c&&c.note){toClip(c.note);showToast("Notes copied — "+(c.loc||""))}}
 function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).sort(boardSort);toClip(act.map(masterLine).join("\n")||"(no active consults)")}
@@ -4113,7 +4115,7 @@ function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;
 function wipe(){if(confirm("Wipe visible Board consults and checkboxes? Future snoozed tasks stay scheduled. (If sync is on, the wipe propagates to your other devices too.)")){
   const now=Date.now();S.tomb=S.tomb||{};
   const keep=[];const drop=[];
-  (S.consults||[]).forEach(c=>{(isSnoozed(c)?keep:drop).push(c)});
+  (S.consults||[]).forEach(c=>{((!boardVisible(c)||isSnoozed(c))?keep:drop).push(c)});
   drop.forEach(c=>S.tomb[c.id]=now);
   S.consults=keep;S.day={date:"",checks:{}};
   save();render();renderBlocks();doSync(true);
@@ -4419,7 +4421,7 @@ function saveForm(){
   const roundSynced=syncBoardTodoToRounds(saved);
   const boltAuto=F.type==="CONSULT"&&traumaLowGcsCue([F.prob,F.state,F.action,F.note].filter(Boolean).join(" "))?createLinkedBoltTask(saved):null;
   const linkedNow=maybePromptPatientLink(saved);
-  closeForm();render();
+  closeForm();render();renderRounds();
   if(boltAuto)showToast("Linked Bolt/Licox proc task added");
   else if(linkedNow)showToast("Linked cards for "+[patientRoom(saved),patientLast3(saved)].filter(Boolean).join(" "));
   else if(roundSynced)showToast("Synced "+roundSynced+" to-do"+(roundSynced>1?"s":"")+" to rounds");
@@ -4793,6 +4795,9 @@ function parseRounds(){
 // sequential to-dos on a rounds patient
 let openRStepTimer=null;
 let editingExamHist="";
+function roundWorkRecord(id){
+  return (S.rounds||[]).find(x=>x.id===id)||(S.formerWounds||[]).find(x=>x.id===id)||null;
+}
 function rStepTimerBtn(r,i,s){
   const dl=s.dueISO?fmtDL(s.dueISO):null;
   return '<button class="tbtn'+(dl?" set":"")+'" onclick="event.stopPropagation();togRStepTimer(\''+r.id+'\','+i+')">'+clockIcon()+(dl?dl.txt.replace("due in ","").replace("OVERDUE ","−"):'')+'</button>';
@@ -4931,7 +4936,7 @@ function toggleRound24(){
   showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p chart · 5a chart":"Day view — AM seen · 1p · 4p");
 }
 function toggleRoundChart(id,k){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=roundWorkRecord(id);if(!r)return;
   r.chartChecks=r.chartChecks||{};
   r.chartChecks[k]=!r.chartChecks[k];
   // finishing a check parks the patient until the next round is due
@@ -4939,13 +4944,13 @@ function toggleRoundChart(id,k){
   else{delete r.chartChecks[k];r.archiveUntil=0}
   r.updatedAt=Date.now();renderRounds();flushAutosave();
 }
-function rStepDone(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
+function rStepDone(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
   const nx=(r.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
-function rStepUndo(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
-function rStepRemove(id,i){const r=S.rounds.find(x=>x.id===id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;r.steps.splice(i,1);r.updatedAt=Date.now();renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
+function rStepUndo(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
+function rStepRemove(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;r.steps.splice(i,1);r.updatedAt=Date.now();renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
 function togRStepTimer(id,i){const k=id+":"+i;openRStepTimer=(openRStepTimer===k)?null:k;renderRounds()}
 function setRStepDL(id,i,min){
-  const r=S.rounds.find(x=>x.id===id);if(!r||!r.steps||!r.steps[i])return;
+  const r=roundWorkRecord(id);if(!r||!r.steps||!r.steps[i])return;
   r.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
 }
@@ -5267,7 +5272,36 @@ function renderRounds(){
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
   }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
-  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundWoundList(list)+trashHtml("round");
+  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundChartCheckList()+renderRoundWoundList(list)+trashHtml("round");
+}
+function renderRoundChartCheckList(){
+  const items=(S.consults||[]).filter(c=>!c.closed&&c.type==="CHART"&&matchSearch(c)).slice().sort((a,b)=>String(a.loc||"").localeCompare(String(b.loc||""),undefined,{numeric:true}));
+  if(!items.length)return "";
+  const k="chart-round-all";
+  return '<details class="closedsec"'+woundSecAttr(k)+'><summary>Chart Checks ('+items.length+')</summary>'+
+    items.map(chartCheckListRow).join("")+
+    '</details>';
+}
+function chartCheckListRow(c){
+  const dl=fmtDL(nextDue(c));
+  const open=!c.collapsed;
+  const wf=wfChips(c,false);
+  const worry=c.worry?'<span class="bg warn">! 2–3×/day</span>':"";
+  return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
+    '<button class="webtrash wtrash" title="Remove chart check" aria-label="Remove chart check" onclick="event.stopPropagation();del(\''+c.id+'\',true)">✕</button>'+
+    '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
+      typeBadgeHtml(c,true)+
+      (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+      worry+
+      '<span class="rwho">'+esc(c.loc||"")+'</span>'+
+      '<span class="rprob">'+esc(c.prob||c.action||"")+'</span>'+
+      '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
+    (open?'<div class="wounddetail">'+
+      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
+      stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
+      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
+    '</div>':"")+
+    '</div>';
 }
 function renderRoundArchive(items){
   if(!items||!items.length)return "";
@@ -5464,16 +5498,17 @@ function woundRow(r,former,scope){
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
   const b=woundRowBadges(r,former,latest,kind);
-  return '<div class="calrow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
+  const remove='<button class="webtrash wtrash" title="Remove wound check" aria-label="Remove wound check" onclick="event.stopPropagation();'+(former?'removeFormerWound':'removeWoundCheck')+'(\''+r.id+'\')">✕</button>';
+  return '<div class="card woundcard hastrash" data-id="'+r.id+'">'+remove+
+    '<div class="calrow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
     '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
     '<span class="rtags">'+b.tags+'</span>'+
     '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+(former
-        ?'<button class="rdone wrm" onclick="event.stopPropagation();removeFormerWound(\''+r.id+'\')">✕ Remove</button>'
-        :'<button class="rdone wrm" onclick="event.stopPropagation();removeWoundCheck(\''+r.id+'\')">✕ Remove from wound list</button>')+woundLogHtml(r,former)+'</div>':"");
+    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundMajorTasksHtml(r)+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+woundLogHtml(r,former)+'</div>':"")+
+    '</div>';
 }
 function toggleWoundOpen(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5484,7 +5519,7 @@ function woundEditStart(id,former){
   woundRowOpen[id]=true;WEDIT.add(id);renderRounds();renderCal();
 }
 function woundEditCancel(id,former){
-  WEDIT.delete(id);renderRounds();renderCal();
+  WEDIT.delete(id);woundRowOpen[id]=false;renderRounds();renderCal();
 }
 function woundEditSave(id,former,scope){
   const r=findWoundRecord(id,former);if(!r)return;
@@ -5494,7 +5529,7 @@ function woundEditSave(id,former,scope){
   r.team=teamFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.attg=attgFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
-  r.updatedAt=Date.now();WEDIT.delete(id);
+  r.updatedAt=Date.now();WEDIT.delete(id);woundRowOpen[id]=false;
   renderRounds();renderCal();flushAutosave();
   showToast("Wound line saved — "+(r.label||""));
 }
@@ -5545,6 +5580,9 @@ function woundCheckBoxes(r,former){
     [["seen","seen"],["thread","staffing thread"],["note","note"]].map(([k,l])=>
       '<label><input type="checkbox" '+(w[k]?"checked":"")+' onchange="toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+',this.checked)"><span>'+l+'</span></label>').join("")+
     '</span>';
+}
+function woundMajorTasksHtml(r){
+  return '<div class="woundtasks">'+roundChartHtml(r)+rStepsHtml(r)+'</div>';
 }
 function toggleWoundCheck(id,k,former,on){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5847,7 +5885,7 @@ function syncRoundTodosToBoard(r,lines){
   const todoLines=(lines||roundOpenTodos(r)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
   const rk=roundIdent(r.label,r.raw);
-  (S.consults||[]).filter(c=>boardVisible(c)&&!c.closed&&((c.roundId&&c.roundId===r.id)||patientKey(c)===rk)).forEach(c=>{
+  (S.consults||[]).filter(c=>!c.closed&&((c.roundId&&c.roundId===r.id)||patientKey(c)===rk)).forEach(c=>{
     c.roundId=r.id;
     c.tasks=c.tasks||[];
     todoLines.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
@@ -8010,7 +8048,7 @@ function roundSend(id){
   t.snoozeISO=date+"T06:00:00";
   t.updatedAt=Date.now();
   S.consults.push(t);
-  render();save();
+  render();renderRounds();save();
   const d=new Date(date+"T12:00:00");
   showToast("◷ "+r.label+" → "+TYPES[type].l+" on "+(d.getMonth()+1)+"/"+d.getDate());
 }
