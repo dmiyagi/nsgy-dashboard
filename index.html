@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.97 · 2026-09-07</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.98 · 2026-09-08</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5260,6 +5260,7 @@ function renderRounds(){
      '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
      '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
+     '<div class="qbtns" style="margin:5px 0 0"><button type="button" onpointerdown="event.preventDefault()" onclick="roundNoteSave(\''+r.id+'\',document.getElementById(\'rnote_'+r.id+'\'),true)">Save notes</button></div>'+
      '<div class="cardbtns">'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
@@ -5317,11 +5318,12 @@ function renderRoundArchive(items){
         '<span class="car">↩︎</span></div>';
     }).join("")+'</details>';
 }
-function roundNoteSave(id,el){
+function roundNoteSave(id,el,manual){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const v=el.value.trim();
-  if(r.note===v)return;
+  if(r.note===v){if(manual)showToast("Notes saved — "+(r.label||""));return}
   r.note=v;r.updatedAt=Date.now();autosave();
+  if(manual)showToast("Notes saved — "+(r.label||""));
 }
 function woundRoundCandidate(r){
   return !!r.woundListed;
