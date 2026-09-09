@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.106 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.107 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5262,7 +5262,7 @@ function roundProblemText(r){
   s=s.replace(/\b(?:PINK|BLUE|PURPLE)\b/ig," ")
      .replace(/\s*[-–—:;,]\s*/g," ")
      .replace(/\s+/g," ").trim();
-  return s||SO_TMPLS[r.soT].name;
+  return s||soTemplate(r).name;
 }
 function roundPrimaryDxTag(r){
   const pr=["r/o aSAH","ICH","Aneurysm","Tumor","SAH","SDH","EDH","Spine","Pituitary","Shunt","EVD","Carotid","VASC","Infection","AO","Trial"];
@@ -5994,12 +5994,20 @@ function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.labe
 // sign-out builder (works for rounds cards or chart-check consults)
 let soId=null;
 function soLabel(r){return r.label||r.loc||"patient"}
+function soTemplate(r){
+  const key=(r&&r.soT)||"floor";
+  return SO_TMPLS[key]||SO_TMPLS.floor;
+}
+function normalizeSoTemplate(r){
+  if(r&&(!r.soT||!SO_TMPLS[r.soT]))r.soT="floor";
+  return soTemplate(r);
+}
 function soTmplBadge(r){
-  const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
+  const t=soTemplate(r);
   return '<span class="bg c">'+esc(t.name)+'</span>';
 }
 function openSO(id,focusField){soId=id;const r=findAny(id);if(!r)return;
-  if(!r.soT)r.soT="floor";if(!r.so)r.so={};
+  normalizeSoTemplate(r);if(!r.so)r.so={};
   document.getElementById("soTitle").textContent="SO — "+soLabel(r);
   const btn=document.getElementById("soToRoundsBtn");
   if(btn)btn.style.display=(S.rounds||[]).some(x=>x.id===id)?"none":"";
@@ -6028,16 +6036,18 @@ function soToggleBoard(){
   r.updatedAt=Date.now();syncLinkedSo(r);renderSoBoardBtn();renderRounds();renderNccu();flushAutosave();
 }
 function buildSOChips(){const r=findAny(soId);if(!r)return;
+  normalizeSoTemplate(r);
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();save()});}
 function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
-  const one=SO_TMPLS[r.soT].fields[0][0];
+  const tmpl=normalizeSoTemplate(r);
+  const one=tmpl.fields[0][0];
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
   const extras=soOrderedExtras(r).map(b=>[b.k,soExtraPh(b.k)]);
   document.getElementById("sofields").innerHTML=
-    SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("")+
+    tmpl.fields.map(f=>soFieldHtml(r,f)).join("")+
     extras.map(f=>soFieldHtml(r,f)).join("")+
     soModalSuggestHtml(r);
   renderSOHints();
@@ -6138,7 +6148,7 @@ function soHighlight(s){
   return x;
 }
 function soText(r){
-  const t=SO_TMPLS[r.soT||"floor"];
+  const t=soTemplate(r);
   const lines=t.fields.map(f=>f[0]+": "+(soFieldValue(r,f[0])||"___"));
   soOrderedExtras(r).forEach(b=>lines.push(b.k+": "+(soFieldValue(r,b.k)||"___")));
   return t.name+" sign-out — "+soLabel(r)+"\n"+lines.join("\n");
@@ -6170,14 +6180,14 @@ function dismissSoSuggestFromModal(k){
 // Blanks are dropped rather than spoken as "___", so what is on screen is
 // exactly what you say.
 function soFilledPairs(r){
-  const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
+  const t=soTemplate(r);
   const out=[];
   t.fields.forEach(f=>{const v=soFieldValue(r,f[0]);if(v)out.push([f[0],v])});
   soOrderedExtras(r).forEach(b=>{const v=soFieldValue(r,b.k);if(v)out.push([b.k,v])});
   return out;
 }
 function soGapCount(r){
-  const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
+  const t=soTemplate(r);
   let n=0;
   t.fields.forEach(f=>{if(!soFieldValue(r,f[0]))n++});
   soOrderedExtras(r).forEach(b=>{if(!soFieldValue(r,b.k))n++});
@@ -6531,7 +6541,7 @@ function soSuggestStripHtml(r){
       '<button type="button" class="ssx" title="Not relevant" onclick="event.stopPropagation();dismissSoSuggest(\''+r.id+'\',\''+esc(b.k)+'\')">×</button></span>').join("")+
     '</div>';
 }
-function soFieldsFor(r){return (SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor).fields.map(f=>f[0])}
+function soFieldsFor(r){return soTemplate(r).fields.map(f=>f[0])}
 function soBoxFieldFor(r,opt){
   const fields=soFieldsFor(r);
   return (opt.fields||[]).find(f=>fields.includes(f))||"";
@@ -6807,7 +6817,17 @@ function renderNccu(){
   renderNccuHighlightChips();
   const db=document.getElementById("nccuDiffBtn");if(db)db.classList.toggle("on",nccuDiff);
   const pts=nccuPatients();
-  el.innerHTML=pts.length?pts.map(nccuCardHtml).join(""):'<div class="empty">No SO board patients yet.<br>On a Rounds card, tap <b>SO</b>.</div>';
+  el.innerHTML=pts.length?pts.map(r=>{
+    try{return nccuCardHtml(r)}
+    catch(e){
+      console.error("SO board card failed",r,e);
+      return '<div class="card nccucard hastrash" data-id="'+esc(r&&r.id||"")+'">'+
+        '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+esc(r&&r.id||"")+'\')">✕</button>'+
+        '<div class="badges"><span class="bg warn">SO render issue</span></div>'+
+        '<span class="who">'+esc(soLabel(r||{}))+'</span><div class="state">Open Edit SO to repair this card.</div>'+
+        '<div class="cardbtns"><button onclick="openSO(\''+esc(r&&r.id||"")+'\')">Edit SO</button></div></div>';
+    }
+  }).join(""):'<div class="empty">No SO board patients yet.<br>On a Rounds card, tap <b>SO</b>.</div>';
 }
 // r.nccuView is "full" | "compact" | unset (follow the toolbar). The old
 // boolean r.nccuCompact could not express "expanded while the toolbar says
@@ -6835,7 +6855,7 @@ function toggleOneNccuCompact(id){
 function copyNccuSignout(){
   const pts=nccuPatients();
   const txt=pts.map(r=>{
-    const tmpl=SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor;
+    const tmpl=soTemplate(r);
     const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
     const detail=tmpl.fields.filter(f=>f[0]!=="One-liner").map(f=>f[0]+": "+(soPick(r,f[0])||"___")).join("\n");
     const todos=nccuTodoArr(r);
@@ -6848,7 +6868,7 @@ function copyNccuSignout(){
 // recorded values shown on the chart-check card
 function soActiveFields(c){
   if(!c||c.type!=="CHART")return [];
-  const t=SO_TMPLS[c.soT||"floor"];
+  const t=soTemplate(c);
   if(!t)return [];
   const startIdx=t.fields.findIndex(f=>/overnight events/i.test(f[0]));
   return t.fields.slice(startIdx>=0?startIdx:Math.min(2,t.fields.length));
@@ -6856,12 +6876,12 @@ function soActiveFields(c){
 function soStarted(c){return soActiveFields(c).some(f=>soFieldValue(c,f[0]))}
 function soComplete(c){
   if(!c||c.type!=="CHART")return false;
-  const t=SO_TMPLS[c.soT||"floor"];if(!t)return false;
+  const t=soTemplate(c);if(!t)return false;
   return t.fields.every(f=>soFieldValue(c,f[0]));
 }
 function soValsHtml(c){
   if(c.type!=="CHART")return "";
-  const t=SO_TMPLS[c.soT||"floor"];
+  const t=soTemplate(c);
   if(!soStarted(c))return "";
   const complete=soComplete(c);
   return '<div class="sovals '+(complete?"done":"warn")+'">SO '+t.name+' '+(complete?"complete":"started")+'</div>';
