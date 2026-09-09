@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.99 · 2026-09-08</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.102 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2633,14 +2633,13 @@ function addKitToCard(c,p,mode){
     if(!st.some(s=>/staff thread/i.test(s)))st.splice(Math.min(1,st.length),0,STAFF_THREAD_STEP);
     if(p.dvt)st=staffDVTThenConsent(st);
     st.forEach(t=>{if(!c.steps.some(x=>x.t===t))c.steps.push({t:t,done:false})});
-    if(!c.action)c.action=(c.steps.find(s=>!s.done)||{}).t||"";
+    if(!c.action)c.action=(c.steps.find(s=>!effectivelyDone(c,s))||{}).t||"";
   }
 }
 function linkedBoltExists(c){
   if(!c)return false;
-  const loc=String(c.loc||"").toUpperCase();
   return (S.consults||[]).some(x=>!x.closed&&x.type==="PROC"&&/bolt|licox|icp monitor/i.test(x.prob||"")&&
-    (x.sourceId===c.id||(c.roundId&&x.roundId===c.roundId)||(loc&&String(x.loc||"").toUpperCase()===loc)));
+    (x.sourceId===c.id||(c.roundId&&x.roundId===c.roundId)||sameBoardIdentityByLoc(c,x)));
 }
 function createLinkedBoltTask(c){
   if(!c||linkedBoltExists(c))return null;
@@ -2881,19 +2880,25 @@ function migrate(d){
   d.round24At=d.round24At||0;
   (d.consults||[]).forEach(c=>{
     if(!c.type)c.type="CONSULT";
+    if(c.closed&&!c.closedAt)c.closedAt=c.updatedAt||c.created||Date.now();
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
+    if(!Array.isArray(c.steps))c.steps=[];
+    c.doneKeys=Array.isArray(c.doneKeys)?c.doneKeys:[];
+    (c.steps||[]).concat(c.tasks||[]).forEach(t=>{if(t&&t.done)rememberDone(c,t.t,true)});
     if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="ADMIT")normalizeAdmitPrep(c);
     if(c.type==="CHART")c.E=0;              // chart check is always a background task
     if((!c.type||c.type==="CONSULT")&&!c.timersOff&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
-  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
+  (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];r.doneKeys=Array.isArray(r.doneKeys)?r.doneKeys:[];(r.steps||[]).forEach(t=>{if(t&&t.done)rememberDone(r,t.t,true)});if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
   d.woundCompact=!!d.woundCompact;
   (d.rounds||[]).forEach(r=>{r.woundOpen=false});
   d.formerWounds.forEach(r=>{
     if(!Array.isArray(r.woundLog))r.woundLog=[];
+    r.doneKeys=Array.isArray(r.doneKeys)?r.doneKeys:[];
+    (r.steps||[]).forEach(t=>{if(t&&t.done)rememberDone(r,t.t,true)});
     if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;
     r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
     r.woundOpen=false;
@@ -2976,11 +2981,33 @@ function searchBlob(x){return Object.keys(x||{}).map(k=>{
   const v=x[k];return typeof v==="string"?v:(Array.isArray(v)?v.map(searchBlob).join(" "):"");
 }).join(" ").toLowerCase()}
 function matchSearch(x){const q=globalSearch.trim().toLowerCase();return !q||searchBlob(x).includes(q)}
-function patientRoom(c){return roundBedFromText([c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" "))||""}
+function isTempEDLoc(v){return /^(?:ED|ER)$/i.test(String(v||"").trim())}
+function tempEDFromText(t){const m=String(t||"").match(/^\s*(ED|ER)\b/i);return m?"ED":""}
+function handoffKey(t){
+  const s=String(t||"").toLowerCase()
+    .replace(/^\s*(?:ed|er)\b\s*[-–—:;,]?\s*/,"")
+    .replace(/\b(?:consult|handoff|patient|pt|new|rule|out|r\/o|with|w\/|for|the|and|from|transfer)\b/g," ")
+    .replace(/[^a-z0-9.]+/g," ").trim();
+  return s.split(/\s+/).filter(Boolean).slice(0,8).join("-");
+}
+function patientRoom(c){
+  const loc=String(c&&c.loc||"").trim();
+  return roundBedFromText([c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" "))||(isTempEDLoc(loc)?tempEDFromText(loc):"");
+}
 function patientLast3(c){return last3FromText([c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" "))||""}
 function patientKey(c){
   const room=patientRoom(c).toUpperCase().replace(/[^A-Z0-9]/g,""),ab=patientLast3(c).toUpperCase();
   return room&&ab?room+"|"+ab:"";
+}
+function sameBoardIdentityByLoc(a,b){
+  const aloc=String(a&&a.loc||"").trim(),bloc=String(b&&b.loc||"").trim();
+  if(!aloc||!bloc)return false;
+  if(isTempEDLoc(aloc)||isTempEDLoc(bloc)){
+    const ak=handoffKey([a&&a.prob,a&&a.action,a&&a.note].filter(Boolean).join(" "));
+    const bk=handoffKey([b&&b.prob,b&&b.action,b&&b.note].filter(Boolean).join(" "));
+    return !!(isTempEDLoc(aloc)&&isTempEDLoc(bloc)&&ak&&ak===bk);
+  }
+  return aloc.toUpperCase()===bloc.toUpperCase();
 }
 function patientTag(c){const ab=patientLast3(c);return ab?'<span class="bg mod">'+esc(ab)+'</span>':""}
 function linkedCards(c){
@@ -3094,8 +3121,8 @@ function overdueISO(iso){return !!(iso&&Date.parse(iso)<=Date.now())}
 function hasOverdueTimers(c){
   if(!c)return false;
   if(overdueISO(c.deadlineISO))return true;
-  if((c.steps||[]).some(s=>!s.done&&overdueISO(s.dueISO)))return true;
-  if((c.tasks||[]).some(t=>!t.done&&overdueISO(t.dueISO)))return true;
+  if((c.steps||[]).some(s=>!effectivelyDone(c,s)&&overdueISO(s.dueISO)))return true;
+  if((c.tasks||[]).some(t=>!effectivelyDone(c,t)&&overdueISO(t.dueISO)))return true;
   return !!(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO));
 }
 function compactTimerHtml(c){
@@ -3245,8 +3272,8 @@ function openWorkflowKeys(c){
 function currentWorkText(c){
   const bits=[];
   if(c.action)bits.push(c.action);
-  const st=(c.steps||[]).find(s=>!s.done);if(st)bits.push(st.t);
-  const tk=(c.tasks||[]).find(t=>!t.done);if(tk)bits.push(tk.t);
+  const st=(c.steps||[]).find(s=>!effectivelyDone(c,s));if(st)bits.push(st.t);
+  const tk=(c.tasks||[]).find(t=>!effectivelyDone(c,t));if(tk)bits.push(tk.t);
   const wf=openWorkflowKeys(c)[0];if(wf)bits.push(wf.k+" "+wf.l);
   return bits.join(" ");
 }
@@ -3257,7 +3284,7 @@ function isDeferredDocumentation(c){
 }
 function missingEmergentOpDocs(c){
   if(!isEmergentOperative(c))return false;
-  const txt=[currentWorkText(c),(c.steps||[]).filter(s=>!s.done).map(s=>s.t).join(" "),(c.tasks||[]).filter(t=>!t.done).map(t=>t.t).join(" ")].join(" ");
+  const txt=[currentWorkText(c),(c.steps||[]).filter(s=>!effectivelyDone(c,s)).map(s=>s.t).join(" "),(c.tasks||[]).filter(t=>!effectivelyDone(c,t)).map(t=>t.t).join(" ")].join(" ");
   return /\b(?:h&p|rH&P|pre-?op|note|doc|document|sign)\b/i.test(txt);
 }
 function chartCheckBoost(c){
@@ -3414,9 +3441,9 @@ function canCloseTask(c){
 function allCardWorkDone(c){
   if(!c)return false;
   if(compactPending(c))return false;
-  if(c.action&&!stepTextOpen(c,c.action))return false;
-  if(c.type!=="DC"&&(c.steps||[]).some(s=>!s.done))return false;
-  if((c.tasks||[]).some(t=>!t.done))return false;
+  if(c.action&&!wasDone(c,c.action)&&!stepTextOpen(c,c.action))return false;
+  if(c.type!=="DC"&&(c.steps||[]).some(s=>!effectivelyDone(c,s)))return false;
+  if((c.tasks||[]).some(t=>!effectivelyDone(c,t)))return false;
   const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
   if(set.length&&!set.every(([k])=>c.wf&&c.wf[k]))return false;
   // a plain task card with no checklist of its own is still finishable — a
@@ -3478,7 +3505,7 @@ function consentInterpBadge(c){
   return c&&c.type==="CONSENT"&&c.needsInterpreter?'<span class="bg warn">Interpreter'+(c.language?' · '+esc(c.language):"")+'</span>':"";
 }
 function dlBtnsHtml(c){
-  const hasStepT=(c.steps||[]).some(s=>!s.done&&s.dueISO)||(c.tasks||[]).some(t=>!t.done&&t.dueISO);
+  const hasStepT=(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.dueISO)||(c.tasks||[]).some(t=>!effectivelyDone(c,t)&&t.dueISO);
   const hasReview=c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO;
   return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
    (hasReview?'<button onclick="clearReviewDL(\''+c.id+'\')" title="Clear review timer">✕ review</button>':"")+
@@ -3495,16 +3522,16 @@ function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   touch(c);render();showToast("Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
-  (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
-  (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO&&Date.parse(t.dueISO)<=now){t.dueISO=null;cleared=true}});
+  (c.steps||[]).forEach(s=>{if(!effectivelyDone(c,s)&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
+  (c.tasks||[]).forEach(t=>{if(!effectivelyDone(c,t)&&t.dueISO&&Date.parse(t.dueISO)<=now){t.dueISO=null;cleared=true}});
   return cleared;
 }
 function clearOverdueTimers(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   let n=0;
   if(overdueISO(c.deadlineISO)){c.deadlineISO=null;n++}
-  (c.steps||[]).forEach(s=>{if(!s.done&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
-  (c.tasks||[]).forEach(t=>{if(!t.done&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
+  (c.steps||[]).forEach(s=>{if(!effectivelyDone(c,s)&&overdueISO(s.dueISO)){s.dueISO=null;n++}});
+  (c.tasks||[]).forEach(t=>{if(!effectivelyDone(c,t)&&overdueISO(t.dueISO)){t.dueISO=null;n++}});
   if(c.type==="CONSULT"&&!c.reviewOff&&overdueISO(c.reviewDueISO))n++;
   if(n){
     c.timersOff=true;
@@ -3560,7 +3587,7 @@ function taskTimerRow(c,i){
 function stepsHtml(c){
   const st=c.steps||[];if(!st.length)return "";
   return '<div class="steps">'+st.map((s,i)=>{
-    if(s.done)return '<div class="step done" onclick="undoStep(\''+c.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
+    if(effectivelyDone(c,s))return '<div class="step done" onclick="undoStep(\''+c.id+'\','+i+')">✓ '+esc(s.t)+'</div>';
     return '<div class="step active"><button onclick="doneStep(\''+c.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+stepTimerBtn(c,i,s)+'</div>'+stepTimerRow(c,i);
   }).join("")+'</div>';
 }
@@ -3585,15 +3612,15 @@ function setTaskDL(id,i,min){
 function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   if(c.action===c.steps[i].t)c.action="";
-  c.steps[i].done=true;c.steps[i].dueISO=null;syncBoardDoneToRounds(c,c.steps[i].t,true);touch(c);reflowQueue();render()
+  setWorkDone(c,c.steps[i],true);syncBoardDoneToRounds(c,c.steps[i].t,true);touch(c);reflowQueue();render()
 }}
-function undoStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){c.steps[i].done=false;touch(c);render()}}
+function undoStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){setWorkDone(c,c.steps[i],false);touch(c);render()}}
 // soonest live timer on a task: its own deadline or any open sub-task timer
 function nextDue(c){
   const cands=[];
   if(c.deadlineISO)cands.push(c.deadlineISO);
-  (c.steps||[]).forEach(s=>{if(!s.done&&s.dueISO)cands.push(s.dueISO)});
-  (c.tasks||[]).forEach(t=>{if(!t.done&&t.dueISO)cands.push(t.dueISO)});
+  (c.steps||[]).forEach(s=>{if(!effectivelyDone(c,s)&&s.dueISO)cands.push(s.dueISO)});
+  (c.tasks||[]).forEach(t=>{if(!effectivelyDone(c,t)&&t.dueISO)cands.push(t.dueISO)});
   if(!cands.length)return null;
   return cands.sort((a,b)=>Date.parse(a)-Date.parse(b))[0];
 }
@@ -3608,17 +3635,18 @@ function boardDue(c){
 }
 function checksHtml(c){
   const ts=c.tasks||[];if(!ts.length)return "";
-  const open=ts.filter(t=>!t.done).length;
-  return '<div class="checks">'+ts.map((t,i)=>
-    '<div class="chk'+(t.done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(t.done?"✓":"")+'</span><span>'+esc(t.t)+'</span>'+(!t.done?taskTimerBtn(c,i,t):"")+'</div>'+taskTimerRow(c,i)).join("")+
+  const open=ts.filter(t=>!effectivelyDone(c,t)).length;
+  return '<div class="checks">'+ts.map((t,i)=>{
+    const done=effectivelyDone(c,t);
+    return '<div class="chk'+(done?" on":"")+'" onclick="togChk(\''+c.id+'\','+i+')"><span class="bx">'+(done?"✓":"")+'</span><span>'+esc(t.t)+'</span>'+(!done?taskTimerBtn(c,i,t):"")+'</div>'+taskTimerRow(c,i);
+  }).join("")+
     '<div style="font-size:11px;color:var(--mut)">'+(open?open+" open":"all done ✓")+'</div></div>';
 }
-function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){c.tasks[i].done=!c.tasks[i].done;if(c.tasks[i].done)c.tasks[i].dueISO=null;syncCloseTaskState(c,c.tasks[i]);syncBoardDoneToRounds(c,c.tasks[i].t,c.tasks[i].done);touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
+function togChk(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.tasks&&c.tasks[i]){setWorkDone(c,c.tasks[i],!effectivelyDone(c,c.tasks[i]));syncCloseTaskState(c,c.tasks[i]);syncBoardDoneToRounds(c,c.tasks[i].t,c.tasks[i].done);touch(c);if(c.tasks[i].done&&(!c.type||c.type!=="CONSULT"||requireConsultGate(c)))reflowQueue();render()}}
 // ---------- consent watch ----------
 function hasConsentTask(c){
-  const loc=String(c.loc||"").toUpperCase();
   return (S.consults||[]).some(x=>x.type==="CONSENT"&&!x.closed&&x.id!==c.id&&
-    ((c.roundId&&x.roundId===c.roundId)||(loc&&String(x.loc||"").toUpperCase()===loc)));
+    ((c.roundId&&x.roundId===c.roundId)||sameBoardIdentityByLoc(c,x)));
 }
 function consentCueText(c){
   return [c.prob,c.state,c.action,c.note].filter(Boolean).join(" ");
@@ -3723,12 +3751,12 @@ function trashBtn(id,kind){
   return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+(kind==="round"?'delRound':'del')+'(\''+id+'\')">⌫</button>';
 }
 function compactPending(c){
-  if(c.action&&!stepTextOpen(c,c.action))return {kind:"action",t:c.action};
+  if(c.action&&!wasDone(c,c.action)&&!stepTextOpen(c,c.action))return {kind:"action",t:c.action};
   if(c.type!=="DC"){
-    const si=(c.steps||[]).findIndex(s=>!s.done);
+    const si=(c.steps||[]).findIndex(s=>!effectivelyDone(c,s));
     if(si>=0)return {kind:"step",i:si,t:c.steps[si].t};
   }
-  const ti=(c.tasks||[]).findIndex(t=>!t.done);
+  const ti=(c.tasks||[]).findIndex(t=>!effectivelyDone(c,t));
   if(ti>=0)return {kind:"task",i:ti,t:c.tasks[ti].t};
   return null;
 }
@@ -3780,7 +3808,7 @@ function rowCard(c,dl,isTask){
   const isChart=isTask&&c.type==="CHART";
   const rOver=reviewOverdue(c);
   const worryTag=(isChart&&c.worry)?'<span class="bg warn">!</span>':"";
-  const openChk=(c.tasks||[]).filter(t=>!t.done).length;
+  const openChk=(c.tasks||[]).filter(t=>!effectivelyDone(c,t)).length;
   return '<div class="card crowwrap hastrash E'+c.E+(rOver?' reviewover':'')+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
    '<div class="crow">'+
     typeBadgeHtml(c,true)+
@@ -3819,10 +3847,10 @@ function doneAction(id){
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   if(c.action){
     c.lastDone=c.action;
-    const st=(c.steps||[]).find(s=>!s.done&&s.t===c.action);if(st)st.done=true;
+    const st=(c.steps||[]).find(s=>!effectivelyDone(c,s)&&s.t===c.action);if(st)setWorkDone(c,st,true);else rememberDone(c,c.action,true);
     syncBoardDoneToRounds(c,c.lastDone,true);
   }
-  const nxt=(c.steps||[]).find(s=>!s.done);
+  const nxt=(c.steps||[]).find(s=>!effectivelyDone(c,s));
   c.action=nxt?nxt.t:"";
   if(c.action)setPin(c.id);
   touch(c);render();
@@ -3837,12 +3865,12 @@ function rowDone(id){
   if(!p)return;
   if(p.kind==="action"){doneAction(id);return}
   if(p.kind==="step"&&c.steps&&c.steps[p.i]){
-    c.lastDone=c.steps[p.i].t;c.steps[p.i].done=true;c.steps[p.i].dueISO=null;
+    c.lastDone=c.steps[p.i].t;setWorkDone(c,c.steps[p.i],true);
     syncBoardDoneToRounds(c,c.lastDone,true);
     const nx=compactPending(c);touch(c);render();renderRounds();showToast(nx?("Next → "+nx.t.slice(0,44)):"Chain complete");return;
   }
   if(p.kind==="task"&&c.tasks&&c.tasks[p.i]){
-    c.lastDone=c.tasks[p.i].t;c.tasks[p.i].done=true;c.tasks[p.i].dueISO=null;
+    c.lastDone=c.tasks[p.i].t;setWorkDone(c,c.tasks[p.i],true);
     syncCloseTaskState(c,c.tasks[p.i]);
     syncBoardDoneToRounds(c,c.lastDone,true);
     const nx=compactPending(c);touch(c);reflowQueue();render();renderRounds();showToast(nx?("Next → "+nx.t.slice(0,44)):"Checklist complete");
@@ -3851,14 +3879,16 @@ function rowDone(id){
 function undoLastDone(id){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.lastDone)return;
   const st=(c.steps||[]).slice().reverse().find(s=>s.done&&s.t===c.lastDone);
-  if(st)st.done=false;
+  if(st)setWorkDone(c,st,false);
+  else rememberDone(c,c.lastDone,false);
   c.action=c.lastDone;
   c.lastDone="";
   touch(c);render();
   showToast("Undone — back to: "+c.action.slice(0,44));
 }
-function stepTextOpen(c,t){return !!(t&&(c.steps||[]).some(s=>!s.done&&s.t===t))}
+function stepTextOpen(c,t){return !!(t&&(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.t===t))}
 function sameDL(a,b){return !!(a&&b&&Math.abs(Date.parse(a)-Date.parse(b))<30000)}
+function roundsPushButton(c){return '<button onclick="boardToRounds(\''+c.id+'\')">'+(c.roundId?'✓ Rounds':'＋ Rounds')+'</button>'}
 function card(c){
   const dl=fmtDL(nextDue(c));
   const rdl=reviewDL(c),rOver=reviewOverdue(c);
@@ -3886,7 +3916,7 @@ function card(c){
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
+     '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button>'+roundsPushButton(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg w3">W3 needs E review</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -3906,7 +3936,7 @@ function card(c){
    checksHtml(c)+
    evSection(c)+
    wf+
-   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button>'+closeDoneButton(c,false)+'</div>'+
+   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button>'+roundsPushButton(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button>'+closeDoneButton(c,false)+'</div>'+
   '</div>';
 }
 // ---------- evidence workspace ----------
@@ -3996,7 +4026,7 @@ function clearNoteTimersAfterCommPlan(c){
   if(!c||c.type!=="CONSULT"||admitOrPreopRelated(c))return;
   let cleared=false;
   (c.steps||[]).forEach(s=>{
-    if(!s.done&&s.dueISO&&/\b(?:note|doc|document|documentation|sign(?:ed)?)\b/i.test(s.t||"")){s.dueISO=null;cleared=true}
+    if(!effectivelyDone(c,s)&&s.dueISO&&/\b(?:note|doc|document|documentation|sign(?:ed)?)\b/i.test(s.t||"")){s.dueISO=null;cleared=true}
   });
   if(c.deadlineISO&&isDeferredDocumentation(c)){c.deadlineISO=null;cleared=true}
   if(cleared)showToast("Comm'd plan checked — routine note timer cleared");
@@ -4046,7 +4076,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
   if(missingGate.length&&!(c.wf&&c.wf.seen)){setPin(c.id);render();return}
   render();renderRounds();}
 function fmtTime(ms){return new Date(ms).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
-function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;touch(c);render();renderRounds()}}
+function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;c.reopenedAt=Date.now();touch(c);render();renderRounds()}}
 function del(id,skipConfirm){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(!skipConfirm&&!confirm("Delete permanently?"))return;
@@ -4150,7 +4180,25 @@ function applyTypeDefaults(c,type,opts){
   }
   return c;
 }
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],doneKeys:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function workKey(t){return String(t||"").trim().toLowerCase().replace(/\s+/g," ")}
+function rememberDone(o,t,on){
+  if(!o||!t)return;
+  const k=workKey(t);if(!k)return;
+  o.doneKeys=Array.isArray(o.doneKeys)?o.doneKeys:[];
+  if(on){if(!o.doneKeys.includes(k))o.doneKeys.push(k)}
+  else o.doneKeys=o.doneKeys.filter(x=>x!==k);
+}
+function wasDone(o,t){return !!(o&&Array.isArray(o.doneKeys)&&o.doneKeys.includes(workKey(t)))}
+function effectivelyDone(o,item){return !!(item&&(item.done||wasDone(o,item.t)))}
+function setWorkDone(o,item,on){
+  if(!item)return;
+  item.done=!!on;
+  item.dueISO=on?null:item.dueISO;
+  const now=Date.now();
+  if(on)item.doneAt=now;else item.undoneAt=now;
+  rememberDone(o,item.t,on);
+}
 function isSnoozed(c){return !!(c.snoozeISO&&Date.parse(c.snoozeISO)>Date.now())}
 function isChartDeferred(c){return c&&c.type==="CHART"&&isSnoozed(c)}
 function isHiddenSnoozed(c){return isSnoozed(c)&&!isChartDeferred(c)}
@@ -4460,7 +4508,7 @@ function addCloseItemsToTodos(){
     if(existing){existing.closeIdx=it.i;syncCloseTaskState(c,existing)}
     else{c.tasks.push({t:it.text,done:false,closeIdx:it.i});n++}
   });
-  c.closed=false;touch(c);hideClose();render();
+  c.closed=false;c.reopenedAt=Date.now();touch(c);hideClose();render();
   showToast(n?("Added "+n+" Stage B to-do"+(n>1?"s":"")):"No new Stage B to-dos");
 }
 function confirmClose(){
@@ -4754,14 +4802,20 @@ function splitPatients(txt){return parseBlocks(txt).map(b=>[b.main].concat(b.sub
 function roundIdent(label,raw){
   const room=(String(label||"").match(/^[A-Z0-9-]+/)||[""])[0].toUpperCase().replace(/[^A-Z0-9]/g,"");
   const ab=(last3FromText(raw)||last3FromText(label)||"").toUpperCase();
+  if(isTempEDLoc(room)&&!ab){
+    const hk=handoffKey(raw||label);
+    return hk?"ED#"+hk:"";
+  }
   return room+"|"+ab;
 }
 function findRoundLike(label,raw){
   const k=roundIdent(label,raw);
   const room=k.split("|")[0];
+  if(!k)return null;
   return (S.rounds||[]).find(r=>{
     const rk=roundIdent(r.label,r.raw);
     if(rk===k)return true;
+    if(/^ED#/.test(k)||/^ED#/.test(rk))return false;
     return room&&rk.split("|")[0]===room;   // same room, abbreviation missing on one side
   })||null;
 }
@@ -4809,7 +4863,7 @@ function rStepTimerRow(r,i){
 function rStepsHtml(r){
   const st=r.steps||[];if(!st.length)return "";
   return '<div class="rsteps">'+st.map((s,i)=>{
-    if(s.done)return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ <span class="stxt">'+esc(s.t)+'</span><button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>';
+    if(effectivelyDone(r,s))return '<div class="step done" onclick="rStepUndo(\''+r.id+'\','+i+')">✓ <span class="stxt">'+esc(s.t)+'</span><button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>';
     return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'<button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
@@ -4942,9 +4996,9 @@ function toggleRoundChart(id,k){
   r.archiveUntil=0;
   r.updatedAt=Date.now();renderRounds();flushAutosave();
 }
-function rStepDone(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
-  const nx=(r.steps||[]).find(s=>!s.done);showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
-function rStepUndo(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=false;syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
+function rStepDone(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){setWorkDone(r,r.steps[i],true);syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
+  const nx=(r.steps||[]).find(s=>!effectivelyDone(r,s));showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
+function rStepUndo(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){setWorkDone(r,r.steps[i],false);syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
 function rStepRemove(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;r.steps.splice(i,1);r.updatedAt=Date.now();renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
 function togRStepTimer(id,i){const k=id+":"+i;openRStepTimer=(openRStepTimer===k)?null:k;renderRounds()}
 function setRStepDL(id,i,min){
@@ -5191,7 +5245,7 @@ function roundPrimaryDxTag(r){
   return pr.find(x=>tags.includes(x))||tags[0]||"";
 }
 function roundRowCard(r){
-  const nx=(r.steps||[]).find(s=>!s.done);
+  const nx=(r.steps||[]).find(s=>!effectivelyDone(r,s));
   const nxi=nx?(r.steps||[]).indexOf(nx):-1;
   const dl=nx&&nx.dueISO?fmtDL(nx.dueISO):null;
   const dx=roundPrimaryDxTag(r);
@@ -5770,8 +5824,8 @@ function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
   showToast(added.length?("Added "+added.length+" to-do"+(added.length>1?"s":"")+(synced?" · synced "+synced+" board card"+(synced>1?"s":""):"")):"No new to-dos",added.length?()=>{const rr=S.rounds.find(x=>x.id===id);if(rr){rr.steps=(rr.steps||[]).filter(s=>!added.includes(s.t));rr.updatedAt=Date.now();renderRounds();save();}}:null);
 }}
 function roundOpenTodos(r){
-  const lines=(r.steps||[]).filter(s=>!s.done).map(s=>String(s.t||"").trim()).filter(Boolean);
-  todoLinesFromPlan(r.plan||"").forEach(t=>{if(t&&!lines.some(x=>x.toLowerCase()===t.toLowerCase()))lines.push(t)});
+  const lines=(r.steps||[]).filter(s=>!effectivelyDone(r,s)).map(s=>String(s.t||"").trim()).filter(Boolean);
+  todoLinesFromPlan(r.plan||"").forEach(t=>{if(t&&!wasDone(r,t)&&!lines.some(x=>x.toLowerCase()===t.toLowerCase()))lines.push(t)});
   return lines;
 }
 function roundExamNote(r){
@@ -5841,17 +5895,19 @@ function syncBoardTodoToRounds(c){
   const r=findRoundForConsult(c);if(!r)return 0;
   c.roundId=r.id;
   r.steps=r.steps||[];
-  const lines=[c.action].concat((c.tasks||[]).filter(t=>!t.done).map(t=>t.t)).map(t=>String(t||"").trim()).filter(Boolean);
+  const lines=[wasDone(c,c.action)?"":c.action].concat((c.tasks||[]).filter(t=>!effectivelyDone(c,t)).map(t=>t.t)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
-  lines.forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});n++}});
+  lines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});n++}});
   if(n)r.updatedAt=Date.now();
   return n;
 }
 function syncBoardDoneToRounds(c,text,done){
   const r=findRoundForConsult(c);if(!r||!text)return false;
   const step=(r.steps||[]).find(s=>String(s.t||"").trim().toLowerCase()===String(text||"").trim().toLowerCase());
+  rememberDone(c,text,!!done);
+  rememberDone(r,text,!!done);
   if(!step)return false;
-  step.done=!!done;
+  setWorkDone(r,step,!!done);
   r.updatedAt=Date.now();
   save();
   return true;
@@ -5863,8 +5919,10 @@ function syncRoundDoneToBoard(r,text,done){
   if(!c)return false;
   const task=(c.tasks||[]).find(t=>String(t.t||"").trim().toLowerCase()===key);
   const step=(c.steps||[]).find(s=>String(s.t||"").trim().toLowerCase()===key);
-  if(task)task.done=!!done;
-  if(step)step.done=!!done;
+  if(task)setWorkDone(c,task,!!done);
+  if(step)setWorkDone(c,step,!!done);
+  rememberDone(r,text,!!done);
+  rememberDone(c,text,!!done);
   if(c.action&&String(c.action).trim().toLowerCase()===key&&done)c.action="";
   touch(c);
   return true;
@@ -5888,7 +5946,7 @@ function syncRoundTodosToBoard(r,lines){
   (S.consults||[]).filter(c=>!c.closed&&((c.roundId&&c.roundId===r.id)||patientKey(c)===rk)).forEach(c=>{
     c.roundId=r.id;
     c.tasks=c.tasks||[];
-    todoLines.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
+    todoLines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
     if(n)touch(c);
   });
   return n;
@@ -6553,7 +6611,7 @@ function setNccuTodoDL(id,i,min){
 }
 function nccuNextTodo(r){
   const list=nccuTodoArr(r);
-  const i=list.findIndex(t=>!t.done);
+  const i=list.findIndex(t=>!effectivelyDone(r,t));
   return i>=0?{i:i,t:list[i]}:null;
 }
 // prior exams come from the rounding record when there is one, otherwise from
@@ -6583,14 +6641,15 @@ function nccuNoteHtml(r){
 }
 function nccuTodoHtml(r){
   const list=nccuTodoArr(r);
-  const open=list.filter(t=>!t.done).length;
+  const open=list.filter(t=>!effectivelyDone(r,t)).length;
   const rows=list.length?('<div class="nccutodos">'+list.map((t,i)=>{
-    return '<div class="nccutodo'+(t.done?' done':'')+'">'+
-      '<input type="checkbox" '+(t.done?'checked':'')+' onchange="nccuTodoToggle(\''+r.id+'\','+i+')">'+
+    const done=effectivelyDone(r,t);
+    return '<div class="nccutodo'+(done?' done':'')+'">'+
+      '<input type="checkbox" '+(done?'checked':'')+' onchange="nccuTodoToggle(\''+r.id+'\','+i+')">'+
       '<span class="ttxt">'+negHtml(t.t)+'</span>'+
-      (t.done?"":nccuTodoTimerBtn(r,i,t))+
+      (done?"":nccuTodoTimerBtn(r,i,t))+
       '<button type="button" class="xbtn" onclick="nccuTodoRemove(\''+r.id+'\','+i+')">×</button></div>'+
-      (t.done?"":nccuTodoTimerRow(r,i));
+      (done?"":nccuTodoTimerRow(r,i));
   }).join("")+'</div>'):'<div class="nccuempty">Nothing open.</div>';
   return '<div class="nccufield tbox"><div class="nccuhead"><b>To-Dos'+(open?' ('+open+' open)':'')+'</b></div>'+rows+
     '<div class="nccutodoadd"><input type="text" id="nccutodoin_'+r.id+'" placeholder="Add a to-do…" '+
@@ -6610,8 +6669,7 @@ function nccuNoteSave(id,el){
 function nccuTodoToggle(id,i){
   const r=findAny(id);if(!r)return;
   const list=nccuTodoArr(r);const t=list[i];if(!t)return;
-  t.done=!t.done;
-  if(t.done)t.dueISO=null;
+  setWorkDone(r,t,!effectivelyDone(r,t));
   if(nccuIsRound(r))syncRoundDoneToBoard(r,t.t,t.done);
   else syncBoardDoneToRounds(r,t.t,t.done);
   r.updatedAt=Date.now();
@@ -6649,7 +6707,7 @@ function nccuPatients(){
 function nccuCompactTodoHtml(r){
   const nx=nccuNextTodo(r);
   const list=nccuTodoArr(r);
-  const open=list.filter(t=>!t.done).length;
+  const open=list.filter(t=>!effectivelyDone(r,t)).length;
   if(!nx)return '<div class="nccunext none"><span class="ract">'+(list.length?"All to-dos done":"No to-dos")+'</span></div>';
   return '<div class="nccunext">'+
     '<button class="rdone" onclick="event.stopPropagation();nccuTodoToggle(\''+r.id+'\','+nx.i+')">✓ done</button>'+
@@ -6742,7 +6800,7 @@ function copyNccuSignout(){
     const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
     const detail=tmpl.fields.filter(f=>f[0]!=="One-liner").map(f=>f[0]+": "+(soPick(r,f[0])||"___")).join("\n");
     const todos=nccuTodoArr(r);
-    const todoTxt="To-Dos:"+(todos.length?"\n"+todos.map(t=>"  "+(t.done?"[x] ":"[ ] ")+t.t+(t.dueISO&&!t.done?" (due "+new Date(t.dueISO).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+")":"")).join("\n"):" none");
+    const todoTxt="To-Dos:"+(todos.length?"\n"+todos.map(t=>"  "+(effectivelyDone(r,t)?"[x] ":"[ ] ")+t.t+(t.dueISO&&!effectivelyDone(r,t)?" (due "+new Date(t.dueISO).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+")":"")).join("\n"):" none");
     const notes="Notes: "+((r.note||"").trim()||"___");
     return tmpl.name+" — "+head+"\n"+detail+"\n"+todoTxt+"\n"+notes;
   }).join("\n\n");
@@ -6775,7 +6833,7 @@ function soToRounds(){
   if((S.rounds||[]).some(r=>r.id===c.id)){showToast("Already a rounds patient");return}
   S.rounds=S.rounds||[];
   let r=(c.roundId&&S.rounds.find(x=>x.id===c.roundId))||
-        S.rounds.find(x=>String(x.label||"").toUpperCase()===String(c.loc||"").toUpperCase()&&c.loc);
+        findRoundLike(c.loc,[c.loc,c.prob,c.note].filter(Boolean).join(" "));
   if(!r){
     r={id:"r"+uid(),raw:c.prob||c.loc||"",label:c.loc||roundLabel(c.prob||""),tags:normalizeRoundTags(roundTags(c.prob||"")),team:c.team||teamFromText(c.prob||""),attg:c.attg||attgFromText(c.prob||""),soT:c.soT||"floor",so:{},seen:false,plan:"",worry:!!c.worry,collapsed:true,created:Date.now(),updatedAt:Date.now()};
     S.rounds.push(r);c.roundId=r.id;
@@ -7185,7 +7243,7 @@ function ftcSuggest(){
   if(!tcGet("ftc","src").trim())tcSet("ftc","src",tcCardText("ftc"));
   tcParseInto("ftc");
   const plan=[(document.getElementById("f_action")||{}).value]
-    .concat((F&&F.steps?F.steps.filter(s=>!s.done).map(s=>s.t):[]))
+    .concat((F&&F.steps?F.steps.filter(s=>!effectivelyDone(F,s)).map(s=>s.t):[]))
     .concat((tcGet("ftc","plan")||"").split("\n"));
   tcSet("ftc","plan",[...new Set(plan.map(s=>String(s||"").trim()).filter(Boolean))].join("\n"));
   tcRenderFlags("ftc");
@@ -7229,7 +7287,7 @@ function addORChain(){
     const chain=["Call chief","Call attending","Consent — exact booking name + laterality","Hold DVT ppx if relevant","Pre-op: NPO, STAT T&S, CBC/PT/PTT, reversal if AC","Update + sign H&P/consult note","Book OR + Teams Booking chat + OR desk 45647 + whiteboard"];
     c.steps=c.steps||[];
     chain.forEach(t=>{if(!c.steps.some(s=>s.t===t))c.steps.push({t:t,done:false})});
-    if(!c.action)c.action=c.steps.find(s=>!s.done).t;
+    if(!c.action)c.action=(c.steps.find(s=>!effectivelyDone(c,s))||{}).t||"";
     touch(c);render();showToast("OR chain added");
   }
   hideOR();
@@ -7237,7 +7295,7 @@ function addORChain(){
 // ---------- smart capture ----------
 let capActions=[];
 function extractBed(t){
-  return firstRoomToken(t)||null;
+  return firstRoomToken(t)||tempEDFromText(t)||null;
 }
 function normalizeCaptureProblem(s){
   return String(s||"").trim()
@@ -7249,6 +7307,11 @@ function parseCaptureConsult(text){
   const s=String(text||"").trim();
   const roomRe=new RegExp("^\\s*("+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)","i");
   const rm=s.match(roomRe);
+  const tempED=s.match(/^\s*(ED|ER)\b\s*(?:[-–—:;,]?\\s*)/i);
+  if(!rm&&tempED){
+    const tail=s.slice(tempED[0].length).trim();
+    return {bed:"ED",name:"",loc:"ED",problem:normalizeCaptureProblem(tail||s)};
+  }
   if(!rm)return {bed:extractBed(s)||"",name:"",loc:extractBed(s)||"",problem:normalizeCaptureProblem(s)};
   const bed=rm[1].toUpperCase().replace(/\s+/g,"");
   let tail=s.slice(rm[0].length).trim();
@@ -7267,9 +7330,11 @@ function extractCallName(t){
 function findRoundsMatch(t,bed){
   const T=t.toUpperCase();
   const tokens=patientRefTokens(t);
+  const genericED=isTempEDLoc(bed), hk=genericED?handoffKey(t):"";
   return (S.rounds||[]).find(r=>{
     const L=String(r.label||"").toUpperCase(),room=roundRoom(r).toUpperCase(),ab=roundPatient3(r).toUpperCase();
     if(!L&&!room&&!ab)return false;
+    if(genericED)return isTempEDLoc(room||L)&&hk&&handoffKey([r.raw,r.label].filter(Boolean).join(" "))===hk;
     if(bed&&(L.includes(bed)||bed.includes(L)||room===bed||room.includes(bed)||bed.includes(room)))return true;
     if(ab&&tokens.includes(ab))return true;
     return L.length>=3&&T.includes(L);
@@ -7291,8 +7356,13 @@ function patientRefTokens(t){
   String(t||"").replace(/\b[A-Za-z]{3,4}\b/g,w=>{if(!stop.test(w)&&!out.includes(w.toUpperCase()))out.push(w.toUpperCase());return w});
   return out;
 }
-function boardPatientMatch(c,bed,tokens,T){
+function boardPatientMatch(c,bed,tokens,T,raw){
   const loc=String(c.loc||"").toUpperCase(),room=patientRoom(c).toUpperCase(),ab=patientLast3(c).toUpperCase();
+  if(isTempEDLoc(bed)){
+    const hk=handoffKey(raw||T);
+    const cardIsTempED=isTempEDLoc(c.loc)||room==="ED";
+    return !!(cardIsTempED&&hk&&handoffKey([c.prob,c.action,c.note].filter(Boolean).join(" "))===hk);
+  }
   if(bed&&(loc.includes(bed)||bed.includes(loc)||room===bed||room.includes(bed)||bed.includes(room)))return true;
   if(ab&&tokens.includes(ab))return true;
   return loc.length>=3&&T.includes(loc);
@@ -7302,7 +7372,7 @@ function findPatientMatch(t,bed){
   const T=String(t||"").toUpperCase();
   const consult=(S.consults||[]).find(c=>{
     if(c.closed)return false;
-    return boardPatientMatch(c,bed,tokens,T);
+    return boardPatientMatch(c,bed,tokens,T,t);
   });
   if(consult)return {kind:"board",id:consult.id,label:consult.loc,raw:[consult.prob,consult.action].filter(Boolean).join(" · ")};
   const round=findRoundsMatch(t,bed);
@@ -7670,6 +7740,48 @@ async function fetchGistFile(f){
 }
 function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
+function mergeDoneList(a,b){
+  const seen={};
+  [a,b].forEach(o=>{
+    (o&&o.doneKeys||[]).forEach(k=>{k=workKey(k);if(k)seen[k]=seen[k]||{d:1,u:0}});
+    (o&&o.steps||[]).concat(o&&o.tasks||[]).forEach(t=>{
+      const k=workKey(t&&t.t);if(!k)return;
+      const s=seen[k]=seen[k]||{d:0,u:0};
+      if(t.done)s.d=Math.max(s.d,t.doneAt||1);
+      if(t.undoneAt)s.u=Math.max(s.u,t.undoneAt);
+    });
+  });
+  return Object.keys(seen).filter(k=>seen[k].d>=seen[k].u);
+}
+function mergeWorkArray(primary,secondary,pOwner,sOwner){
+  const sec={};
+  (secondary||[]).forEach(x=>{const k=workKey(x&&x.t);if(k&&!sec[k])sec[k]=x});
+  return (primary||[]).map(x=>{
+    const k=workKey(x&&x.t),y=k?sec[k]:null;
+    if(!y)return x;
+    const xDone=!!(x.done||wasDone(pOwner,x.t)),yDone=!!(y.done||wasDone(sOwner,y.t));
+    if(xDone===yDone)return x;
+    const xd=x.doneAt||0,xu=x.undoneAt||0,yd=y.doneAt||0,yu=y.undoneAt||0;
+    const xMark=xDone?xd:xu,yMark=yDone?yd:yu;
+    if(yMark>xMark){x.done=yDone;if(yDone){x.dueISO=null;x.doneAt=yd||Date.now()}else x.undoneAt=yu||Date.now()}
+    else if(xDone){x.dueISO=null}
+    return x;
+  });
+}
+function mergeWorkRecord(primary,secondary){
+  if(!primary||!secondary)return primary||secondary;
+  const pClose=primary.closedAt||0,sClose=secondary.closedAt||0,pOpen=primary.reopenedAt||0,sOpen=secondary.reopenedAt||0;
+  if(primary.closed!==secondary.closed){
+    const closeAt=Math.max(pClose,sClose),openAt=Math.max(pOpen,sOpen);
+    if(closeAt>openAt){primary.closed=true;primary.closedAt=closeAt}
+    else if(openAt>closeAt){primary.closed=false;primary.reopenedAt=openAt}
+  }
+  primary.steps=mergeWorkArray(primary.steps,secondary.steps,primary,secondary);
+  primary.tasks=mergeWorkArray(primary.tasks,secondary.tasks,primary,secondary);
+  primary.doneKeys=mergeDoneList(primary,secondary);
+  (primary.steps||[]).concat(primary.tasks||[]).forEach(t=>{if(t&&wasDone(primary,t.t)){t.done=true;t.dueISO=null}});
+  return primary;
+}
 function mergeState(local,remote){
   const tomb={},tCut=Date.now()-TOMB_KEEP_MS;
   // prune ancient tombstones so the gist does not grow without bound
@@ -7677,7 +7789,8 @@ function mergeState(local,remote){
   const byId={};
   (remote.consults||[]).concat(local.consults||[]).forEach(c=>{
     const ts=c.updatedAt||c.created||0;
-    if(!byId[c.id]||ts>(byId[c.id].updatedAt||byId[c.id].created||0))byId[c.id]=c;
+    if(!byId[c.id]||ts>(byId[c.id].updatedAt||byId[c.id].created||0))byId[c.id]=mergeWorkRecord(c,byId[c.id]);
+    else byId[c.id]=mergeWorkRecord(byId[c.id],c);
   });
   const consults=Object.values(byId).filter(c=>{
     const ts=c.updatedAt||c.created||0;
@@ -7686,7 +7799,8 @@ function mergeState(local,remote){
   const rById={};
   (remote.rounds||[]).concat(local.rounds||[]).forEach(r=>{
     const ts=r.updatedAt||r.created||0;
-    if(!rById[r.id]||ts>(rById[r.id].updatedAt||rById[r.id].created||0))rById[r.id]=r;
+    if(!rById[r.id]||ts>(rById[r.id].updatedAt||rById[r.id].created||0))rById[r.id]=mergeWorkRecord(r,rById[r.id]);
+    else rById[r.id]=mergeWorkRecord(rById[r.id],r);
   });
   const rounds=Object.values(rById).filter(r=>{
     const ts=r.updatedAt||r.created||0;
@@ -7695,7 +7809,8 @@ function mergeState(local,remote){
   const fById={};
   (remote.formerWounds||[]).concat(local.formerWounds||[]).forEach(r=>{
     const ts=r.updatedAt||r.created||0;
-    if(!fById[r.id]||ts>(fById[r.id].updatedAt||fById[r.id].created||0))fById[r.id]=r;
+    if(!fById[r.id]||ts>(fById[r.id].updatedAt||fById[r.id].created||0))fById[r.id]=mergeWorkRecord(r,fById[r.id]);
+    else fById[r.id]=mergeWorkRecord(fById[r.id],r);
   });
   const formerWounds=Object.values(fById).filter(r=>{
     const ts=r.updatedAt||r.created||0;
@@ -8059,6 +8174,40 @@ function linkToRounds(c){
   if(r)c.roundId=r.id;
   return c;
 }
+function boardToRounds(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  const raw=[c.loc,c.prob,c.state,c.action,c.note].filter(Boolean).join(" · ");
+  const label=roundLabel([c.loc,patientLast3(c)].filter(Boolean).join(" "))||roundLabel(raw)||c.loc||"Rounds";
+  let r=c.roundId?(S.rounds||[]).find(x=>x.id===c.roundId):null;
+  if(!r)r=findRoundLike(label,raw);
+  const now=Date.now();
+  let created=false;
+  if(!r){
+    r={
+      id:"r"+uid(),raw:raw||label,label:label,tags:normalizeRoundTags(roundTags(raw||label)),
+      team:c.team||teamFromText(raw),attg:c.attg||attgFromText(raw),
+      soT:c.soT||detectTmpl(raw),so:Object.assign({},c.so||{}),soPrev:Object.assign({},c.soPrev||{}),
+      seen:false,plan:"",note:"",steps:[],doneKeys:[],collapsed:true,created:now,updatedAt:now
+    };
+    S.rounds=S.rounds||[];
+    S.rounds.push(r);
+    created=true;
+  }else{
+    if(raw&&!String(r.raw||"").includes(raw))r.raw=[r.raw,raw].filter(Boolean).join(" · ");
+    r.label=r.label||label;
+    r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags(raw||label)));
+    r.team=r.team||c.team||teamFromText(raw);
+    r.attg=r.attg||c.attg||attgFromText(raw);
+    r.soT=r.soT||c.soT||detectTmpl(raw);
+    r.so=Object.assign({},c.so||{},r.so||{});
+    r.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+    r.updatedAt=now;
+  }
+  c.roundId=r.id;touch(c);
+  const synced=syncBoardTodoToRounds(c);
+  render();renderRounds();renderNccu();flushAutosave();
+  showToast((created?"Added to Rounds":"Updated Rounds")+" — "+(r.label||c.loc||"patient")+(synced?" · "+synced+" to-do"+(synced>1?"s":""):""));
+}
 function roundChartCardFor(r){
   if(!r)return null;
   let c=(S.consults||[]).find(x=>!x.closed&&x.type==="CHART"&&x.roundId===r.id);
@@ -8072,11 +8221,20 @@ function roundChartCardFor(r){
   c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
   c.nccuSO=!!(c.nccuSO||r.nccuSO);
   c.note=roundExamNote(r);
-  c.tasks=roundOpenTodos(r).map(t=>({t:t,done:false}));
+  c.tasks=reconcileTaskList(c,roundOpenTodos(r));
   c.updatedAt=Date.now();
   r.chartChecks=r.chartChecks||{};
   r.updatedAt=Date.now();
   return {card:c,isNew:isNew};
+}
+function reconcileTaskList(c,lines){
+  const byKey={};
+  (c.tasks||[]).forEach(t=>{const k=workKey(t.t);if(k&&!byKey[k])byKey[k]=t;if(t&&t.done)rememberDone(c,t.t,true)});
+  return (lines||[]).map(t=>{
+    const k=workKey(t);
+    if(!k||wasDone(c,t))return null;
+    return byKey[k]||{t:t,done:false};
+  }).filter(Boolean);
 }
 function exportRoundsTo(type){
   let n=0,refreshed=0;
