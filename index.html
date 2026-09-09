@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.102 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.103 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4607,17 +4607,24 @@ const SO_TMPLS={
   ["Seizure ppx","Keppra 500 BID x7d"],
   ["Dispo planning","RA, PO, voiding, PT/OT rec, DVT ppx POD1"],
   ["Active problems","and how addressed"]]},
- spine:{name:"Spine",fields:[
-  ["One-liner","L4-5 TLIF 8/22, POD1"],
-  ["Motor exam","delt/bi/tri/we/ff/fa 5/5 · IP/quad/AT/EHL/gastroc 5/5 · no clonus"],
-  ["Drains","blake to suction · 40 mL/24h · NSG vs PRS"],
-  ["Imaging pending","upright XR before discharge · MRI ___"],
-  ["Activity / brace","OOB as tolerated · TLSO/Aspen at all times?"],
-  ["MAP goal if cord","MAP >85 · day 3 of 7"],
-  ["DVT ppx","SCDs · lovenox from POD1 · held since ___"],
-  ["Dispo","and barriers (pain, voiding, PT)"]]},
- vascular:{name:"Vascular",fields:[
-  ["One-liner","68M symptomatic L ICA 80%, for TCAR 8/25"],
+	 spine:{name:"Spine",fields:[
+	  ["One-liner","L4-5 TLIF 8/22, POD1"],
+	  ["Motor exam","delt/bi/tri/we/ff/fa 5/5 · IP/quad/AT/EHL/gastroc 5/5 · no clonus"],
+	  ["Drains","blake to suction · 40 mL/24h · NSG vs PRS"],
+	  ["Imaging pending","upright XR before discharge · MRI ___"],
+	  ["Activity / brace","OOB as tolerated · TLSO/Aspen at all times?"],
+	  ["MAP goal if cord","MAP >85 · day 3 of 7"],
+	  ["DVT ppx","SCDs · lovenox from POD1 · held since ___"],
+	  ["Dispo","and barriers (pain, voiding, PT)"]]},
+	 tether:{name:"Tethered cord",fields:[
+	  ["One-liner","tethered cord release date/POD · baseline deficits"],
+	  ["Exam","motor/sensory exam vs baseline · pain/radicular symptoms"],
+	  ["Urinary status / bowel movements","voiding spontaneously vs Foley/straight cath · PVR ___ · BM date/regimen"],
+	  ["PT status","cleared / needs more sessions / rehab rec · ambulation distance"],
+	  ["IV meds","IV pain meds, IV antibiotics, steroids, drips, or none"],
+	  ["Other barriers to dispo","wound/drain, pain control, bowel/bladder, PT/OT, placement, family teaching"]]},
+	 vascular:{name:"Vascular",fields:[
+	  ["One-liner","68M symptomatic L ICA 80%, for TCAR 8/25"],
   ["Symptoms + timing","TIA/amaurosis/stroke · LKW date+time"],
   ["Exam","naming/repetition intact · fields full · no focal deficit"],
   ["Imaging","CTA ___ · CUS ___ · MRI ___ · TTE ___ · angio ___"],
@@ -4671,6 +4678,7 @@ function detectTmpl(t){
   if(/shunt|\bvps\b/i.test(t))return "shunt";
   if(/\bevd\b|\bivh\b|ventriculostomy/i.test(t))return "evd";
   if(/\bsdh\b|subdural|seps/i.test(t))return "csdh";
+  if(/tether(?:ed)?\s*cord|detether|cord\s*release|filum/i.test(t))return "tether";
   if(/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic/i.test(t))return "spine";
   if(/crani|resection|tumor|meningioma|glio|met\b/i.test(t))return "crani";
   return "floor";
@@ -6381,6 +6389,7 @@ const SO_BOARD_BOXES={
   tbi:["Exam","EVD + ICP course","Drains","Imaging","Na goal","ICP management","BP goal"],
   crani:["Exam vs pre-op","Drains + output","Post-op imaging","BP goal","Na goal + last","Seizure ppx"],
   spine:["Motor exam","Drains","Imaging pending","Activity / brace","MAP goal if cord","DVT ppx"],
+  tether:["Exam","Urinary status / bowel movements","PT status","IV meds","Other barriers to dispo"],
   vascular:["Symptoms + timing","Exam","Imaging","Anatomy","Meds","Plan"],
   shunt:["Baseline vs current exam","Imaging comparison","Valve plan","Escalation trigger"],
   evd:["Exam","EVD","Clamp trial","CSF labs / cultures","Imaging","Wean plan"],
