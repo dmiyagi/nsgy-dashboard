@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.103 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.105 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1551,6 +1551,7 @@ function sahRuleoutChecklistHtml(){
 }
 function vascularMalformationText(t){return /\b(?:AVM|arteriovenous malformation|vascular malformation|dural AVF|dAVF|fistula|moyamoya|cavernous malformation|cav mal)\b/i.test(t||"")}
 function infectionConcernText(t){return /\b(?:r\/o|rule out|concern for|c\/f|possible|suspected)?\s*(?:SSI|surgical site infection|infection|infected|wound infection|wound dehisc|wound drainage|purulen|abscess|osteomyelitis|discitis|empyema|ventriculitis|meningitis|shunt infection|hardware infection|fever|febrile)\b/i.test(t||"")}
+function ssiSignoutText(t){return /\b(?:SSI|surgical site infection|wound infection|wound dehisc|wound drainage|purulen|incision(?:al)? infection|infected incision|wound washout|cranial wound washout|cervical wound washout|thoracic wound washout|lumbar wound washout|sacral wound washout|hardware infection|CSF leak.{0,40}wound|wound.{0,40}CSF leak)\b/i.test(t||"")}
 function spineTraumaText(t){return /\b(?:spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|vertebral|odontoid|dens|hangman|jefferson|chance|burst|teardrop|facet(?:\s+(?:fx|fracture|dislocation|disloc|sublux))?|atlanto-?occipital|aod|cord injury|sci|collar|c-?collar|fx)\b/i.test(t||"")}
 function unstableSpineText(t){return /\b(?:unstable|three.column|two.column|burst|chance|flexion.distraction|fracture.dislocation|fx.dislocation|fx.disloc|translation|sublux(?:ation)?|perched facet|jumped facet|bilateral facet|teardrop|atlanto-?occipital|aod|transverse atlantal ligament|tal|jefferson|hangman type ii|hangman type iii|type ii odontoid|dens type ii|posterior ligamentous complex|plc)\b/i.test(t||"")}
 function sciRedText(t){return /\b(?:tetraplegia|quadriplegia|paraplegia|complete sci|asia a|sacral sparing absent|no sacral sparing|areflexia|bulbocavernosus|spinal shock|priapism|neurogenic shock|bradycardia.{0,20}hypotension|hypotension.{0,20}bradycardia|hypoventilation|diaphragmatic|respiratory arrest|bowel control|bladder control|high cervical|C[3-5].{0,20}(?:cord|SCI|injury))\b/i.test(t||"")}
@@ -4623,6 +4624,19 @@ const SO_TMPLS={
 	  ["PT status","cleared / needs more sessions / rehab rec · ambulation distance"],
 	  ["IV meds","IV pain meds, IV antibiotics, steroids, drips, or none"],
 	  ["Other barriers to dispo","wound/drain, pain control, bowel/bladder, PT/OT, placement, family teaching"]]},
+	 ssi:{name:"SSI / wound",fields:[
+	  ["One-liner","index surgery/date · site · concern for SSI/dehiscence/CSF leak"],
+	  ["Exam / baseline","neuro exam vs baseline · pain-limited?"],
+	  ["Wound / incision","erythema, drainage/purulence, dehiscence, fluctuance, exposed hardware, CSF leak?"],
+	  ["Systemic status","Tmax, HR/BP, sepsis physiology, mental status"],
+	  ["Labs / cultures","WBC, ESR/CRP · blood/wound/CSF cultures · timing relative to antibiotics"],
+	  ["Imaging / collection","US/CT/MRI findings · superficial vs deep · epidural/abscess/osteomyelitis/discitis"],
+	  ["Hardware / CSF involvement","instrumentation/shunt/EVD/crani hardware · CSF profile if sampled"],
+	  ["Antibiotics","none yet vs started · agent/day · ID/pharmacy plan"],
+	  ["Source control / OR","observe vs tap vs washout · cranial/spine level · PRS closure need · consent/booking status"],
+	  ["Wound care / drains","dressing plan, drain output, remove date, incision restrictions"],
+	  ["Dispo / barriers","culture finalization, abx plan/PICC, wound plan, PT/placement"],
+	  ["Escalation trigger","sepsis, exam decline, worsening drainage/dehiscence, exposed hardware, CSF leak"]]},
 	 vascular:{name:"Vascular",fields:[
 	  ["One-liner","68M symptomatic L ICA 80%, for TCAR 8/25"],
   ["Symptoms + timing","TIA/amaurosis/stroke · LKW date+time"],
@@ -4675,6 +4689,7 @@ function detectTmpl(t){
   if(carotidText(t)||aneurysmText(t)||vascularMalformationText(t)||/\bcoil\b|pcomm|acomm/i.test(t))return "vascular";
   if(/tssh|transsphenoidal|pituitary|sellar/i.test(t))return "tssh";
   if(/\bdhc\b|hemicrani|severe tbi|intubated/i.test(t))return "tbi";
+  if(ssiSignoutText(t))return "ssi";
   if(/shunt|\bvps\b/i.test(t))return "shunt";
   if(/\bevd\b|\bivh\b|ventriculostomy/i.test(t))return "evd";
   if(/\bsdh\b|subdural|seps/i.test(t))return "csdh";
@@ -4699,6 +4714,7 @@ function roundTags(t){
   if(/tumou?r|\bmass\b|glioma|meningioma|\bmet\b|metast/i.test(s))add("Tumor");
   if(!carotidText(s)&&/fusion|lami|tlif|acdf|xlif|alif|stenosis|spondy|corpectomy|spine|cervical|lumbar|thoracic|\bfx\b|fracture|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(s))add("Spine");
   if(/\bAO Spine\b|\b(?:spine|cervical|thoracic|lumbar|fracture|fx|facet|dens|odontoid|hangman|jefferson|TAL|PLC)\b.{0,35}\b(?:A[0-4]|B[1-3]|C|F[1-4]|BL)\b|\b(?:facet|dens|odontoid|TP|SP)\s*(?:fx|fracture)\b/i.test(s))add("AO");
+  if(ssiSignoutText(s))add("SSI");
   if(/infect|abscess|osteo|discitis|empyema|ventriculitis|meningitis|fever|purulen|wound/i.test(s))add("Infection");
   if(/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|plavix|brilinta|heparin|lovenox|dapt|asa\b|aspirin|anticoag/i.test(s))add("AC");
   if(vascularMalformationText(s)||/\bbcvi\b|vascular|arteriovenous|fistula|dural avf|moyamoya|pcomm|acomm/i.test(s))add("VASC");
@@ -4715,6 +4731,7 @@ function normalizeRoundTag(t){
   if(!s)return "";
   if(/\bIPH\b|intraparenchymal|intracerebral|hemorrhage/i.test(s))return "ICH";
   if(/anticoag|antiplatelet|coumadin|warfarin|eliquis|xarelto|plavix|heparin/i.test(s))return "AC";
+  if(/\bSSI\b|surgical site infection|wound infection|wound washout/i.test(s))return "SSI";
   if(/infection|wound concern|wound/i.test(s))return "Infection";
   if(/carotid|ica stenosis|tcar|cea/i.test(s))return "Carotid";
   if(/aneurysm|pcomm|acomm|uia/i.test(s))return "Aneurysm";
@@ -6018,7 +6035,7 @@ function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
   const one=SO_TMPLS[r.soT].fields[0][0];
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
-  const extras=soExtraActive(r).map(b=>[b.k,soExtraPh(b.k)]);
+  const extras=soOrderedExtras(r).map(b=>[b.k,soExtraPh(b.k)]);
   document.getElementById("sofields").innerHTML=
     SO_TMPLS[r.soT].fields.map(f=>soFieldHtml(r,f)).join("")+
     extras.map(f=>soFieldHtml(r,f)).join("")+
@@ -6123,7 +6140,7 @@ function soHighlight(s){
 function soText(r){
   const t=SO_TMPLS[r.soT||"floor"];
   const lines=t.fields.map(f=>f[0]+": "+(soFieldValue(r,f[0])||"___"));
-  soExtraActive(r).forEach(b=>lines.push(b.k+": "+(soFieldValue(r,b.k)||"___")));
+  soOrderedExtras(r).forEach(b=>lines.push(b.k+": "+(soFieldValue(r,b.k)||"___")));
   return t.name+" sign-out — "+soLabel(r)+"\n"+lines.join("\n");
 }
 // the same suggestions, offered inside the sign-out sheet
@@ -6156,14 +6173,14 @@ function soFilledPairs(r){
   const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
   const out=[];
   t.fields.forEach(f=>{const v=soFieldValue(r,f[0]);if(v)out.push([f[0],v])});
-  soExtraActive(r).forEach(b=>{const v=soFieldValue(r,b.k);if(v)out.push([b.k,v])});
+  soOrderedExtras(r).forEach(b=>{const v=soFieldValue(r,b.k);if(v)out.push([b.k,v])});
   return out;
 }
 function soGapCount(r){
   const t=SO_TMPLS[(r&&r.soT)||"floor"]||SO_TMPLS.floor;
   let n=0;
   t.fields.forEach(f=>{if(!soFieldValue(r,f[0]))n++});
-  soExtraActive(r).forEach(b=>{if(!soFieldValue(r,b.k))n++});
+  soOrderedExtras(r).forEach(b=>{if(!soFieldValue(r,b.k))n++});
   return n;
 }
 function soSpeakText(r){
@@ -6390,6 +6407,7 @@ const SO_BOARD_BOXES={
   crani:["Exam vs pre-op","Drains + output","Post-op imaging","BP goal","Na goal + last","Seizure ppx"],
   spine:["Motor exam","Drains","Imaging pending","Activity / brace","MAP goal if cord","DVT ppx"],
   tether:["Exam","Urinary status / bowel movements","PT status","IV meds","Other barriers to dispo"],
+  ssi:["Exam / baseline","Wound / incision","Systemic status","Labs / cultures","Imaging / collection","Hardware / CSF involvement","Antibiotics","Source control / OR","Dispo / barriers"],
   vascular:["Symptoms + timing","Exam","Imaging","Anatomy","Meds","Plan"],
   shunt:["Baseline vs current exam","Imaging comparison","Valve plan","Escalation trigger"],
   evd:["Exam","EVD","Clamp trial","CSF labs / cultures","Imaging","Wean plan"],
@@ -6407,6 +6425,9 @@ const SO_OPTIONAL_BOXES=[
 // Each entry watches for a complexity signal. `covers` names the template
 // fields that already handle it, so nothing is suggested twice.
 const SO_EXTRA_BOXES=[
+ {k:"POD",ph:"POD3 · OR date ___ · procedure ___",
+  covers:[],always:true,
+  re:/\b(?:pod\s*\d*|post-?op|postoperative|s\/p|status post|after surgery|or date|procedure date)\b/i},
  {k:"AC / antiplatelet",ph:"apixaban, held since 8/20 · restart 14d from stable scan",
   covers:["AC status","Meds","Heme","Meds of consequence"],
   re:/\b(?:warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|asa\b|dapt|doac|anticoag|antiplatelet)\b/i},
@@ -6414,7 +6435,7 @@ const SO_EXTRA_BOXES=[
   covers:["Seizure ppx","Seizure meds / LTM"],
   re:/\b(?:seizure|status epilepticus|epilep|keppra|levetiracetam|depakote|valproate|dilantin|phenytoin|asm|aed|cEEG|LTM|postictal)\b/i},
  {k:"ID / cultures",ph:"Tmax 38.4 · blood cx d2 NGTD · vanc/ctx day 3/14 · source ___",
-  covers:["Micro/ID","ID"],
+  covers:["Micro/ID","ID","Labs / cultures","Antibiotics"],
   re:/\b(?:fever|febrile|tmax|infect|abscess|empyema|ventriculitis|meningitis|osteo|discitis|culture|cx\b|abx|antibiotic|vanc|ceftriaxone|cefepime|zosyn|wbc)\b/i},
  {k:"Vasospasm / TCD",ph:"PBD5 · MCA 90 cm/s · no spasm · nimodipine d5/21",
   covers:["TCDs"],
@@ -6435,7 +6456,7 @@ const SO_EXTRA_BOXES=[
   covers:["Family / collateral"],
   re:/\b(?:family|daughter|son|spouse|wife|husband|next of kin|collateral|baseline unknown|hcp\b|poa\b)\b/i},
  {k:"Dispo barriers",ph:"needs rehab bed · PT/OT rec ___ · insurance ___ · awaiting ___",
-  covers:["Dispo","Dispo planning","Dispo + barriers"],
+  covers:["Dispo","Dispo planning","Dispo + barriers","Dispo / barriers"],
   re:/\b(?:dispo|discharge|rehab|snf|ltach|placement|insurance|pt\/ot|home with|barrier)\b/i},
  {k:"Trial eligibility",ph:"NICO/REACH screen ___ · exclusions checked ___ · consented ___",
   covers:[],
@@ -6464,7 +6485,11 @@ function soExtraSuggestions(r){
   const txt=soBoardText(r);
   const dis=r.soSuggestOff||{};
   return SO_EXTRA_BOXES.filter(b=>
-    !soExtraOn(r,b.k) && !dis[b.k] && !soExtraCovered(r,b) && b.re.test(txt));
+    !soExtraOn(r,b.k) && !dis[b.k] && !soExtraCovered(r,b) && (b.always||b.re.test(txt)));
+}
+function soOrderedExtras(r){
+  const extras=soOrderedExtras(r);
+  return extras.filter(b=>b.k==="POD").concat(extras.filter(b=>b.k!=="POD"));
 }
 function soExtraActive(r){
   if(!r)return [];
