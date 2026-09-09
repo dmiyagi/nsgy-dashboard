@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.98 · 2026-09-08</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.99 · 2026-09-08</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -766,7 +766,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
     <span class="hpill" id="roundcount">0 patients</span>
     <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
-    <button class="btn sec sm" onclick="clearSeen()" title="Start a new day: clears every check and empties the archive">Reset seen ✓ (AM)</button>
+    <button class="btn sec sm" onclick="clearSeen()" title="Start a new day: clears every check and any manual archives">Reset seen ✓ (AM)</button>
     <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
     <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
     <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
@@ -4869,7 +4869,7 @@ function roundStageBtn(r){
     const n=roundChecks().length;
     return '<button class="rdone finaldone" title="All '+n+' checks done — tap to undo the last one" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓ '+n+'/'+n+'</button>';
   }
-  return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done and archive this patient until the next round" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
+  return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
 }
 function roundStageBox(r){
   const nx=roundNextCheck(r);
@@ -4877,7 +4877,7 @@ function roundStageBox(r){
     const n=roundChecks().length;
     return '<button class="rcheck done" title="All '+n+' checks done — tap to undo the last one" aria-label="Undo last rounds check" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓</button>';
   }
-  return '<button class="rcheck stage" title="Mark '+esc(nx.label)+' done and archive this patient until the next round" aria-label="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓</button>';
+  return '<button class="rcheck stage" title="Mark '+esc(nx.label)+' done" aria-label="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓</button>';
 }
 function roundStepBox(r,i){
   return '<button class="rcheck" title="Mark to-do done" aria-label="Mark to-do done" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+i+')">✓</button>';
@@ -4887,11 +4887,10 @@ function roundCheckAdvance(id){
   const nx=roundNextCheck(r);if(!nx)return;
   const before={checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil};
   r.chartChecks=r.chartChecks||{};r.chartChecks[nx.k]=true;
-  r.archiveUntil=roundWakeAfter(r);
+  r.archiveUntil=0;
   r.updatedAt=Date.now();renderRounds();flushAutosave();
   const after=roundNextCheck(r);
-  const back=r.archiveUntil?(" · back at "+fmtClock(r.archiveUntil)+(after?" for "+after.label:"")):(after?" · "+after.label+" due now":"");
-  showToast("✓ "+nx.label+" — "+r.label+back,()=>{
+  showToast("✓ "+nx.label+" — "+r.label+(after?" · next: "+after.label:""),()=>{
     const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
     rr.chartChecks=before.checks;rr.archiveUntil=before.until;
     rr.updatedAt=Date.now();renderRounds();flushAutosave();
@@ -4939,9 +4938,8 @@ function toggleRoundChart(id,k){
   const r=roundWorkRecord(id);if(!r)return;
   r.chartChecks=r.chartChecks||{};
   r.chartChecks[k]=!r.chartChecks[k];
-  // finishing a check parks the patient until the next round is due
-  if(r.chartChecks[k])r.archiveUntil=roundWakeAfter(r);
-  else{delete r.chartChecks[k];r.archiveUntil=0}
+  if(!r.chartChecks[k])delete r.chartChecks[k];
+  r.archiveUntil=0;
   r.updatedAt=Date.now();renderRounds();flushAutosave();
 }
 function rStepDone(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){r.steps[i].done=true;syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
