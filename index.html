@@ -646,7 +646,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.105 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.106 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6428,6 +6428,9 @@ const SO_EXTRA_BOXES=[
  {k:"POD",ph:"POD3 · OR date ___ · procedure ___",
   covers:[],always:true,
   re:/\b(?:pod\s*\d*|post-?op|postoperative|s\/p|status post|after surgery|or date|procedure date)\b/i},
+ {k:"Pre-op status",ph:"done: consent, booking/case request, NPO, CBC/coags/T&S, H&P/pre-op note, DVT held, postop bed · not done: ___",
+  covers:[],always:true,
+  re:/\b(?:pre-?op|to the OR|book(?:ed|ing)?|case request|NPO|T&S|type and screen|consent|postop bed|OR front desk)\b/i},
  {k:"AC / antiplatelet",ph:"apixaban, held since 8/20 · restart 14d from stable scan",
   covers:["AC status","Meds","Heme","Meds of consequence"],
   re:/\b(?:warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|asa\b|dapt|doac|anticoag|antiplatelet)\b/i},
@@ -6488,8 +6491,10 @@ function soExtraSuggestions(r){
     !soExtraOn(r,b.k) && !dis[b.k] && !soExtraCovered(r,b) && (b.always||b.re.test(txt)));
 }
 function soOrderedExtras(r){
-  const extras=soOrderedExtras(r);
-  return extras.filter(b=>b.k==="POD").concat(extras.filter(b=>b.k!=="POD"));
+  const extras=soExtraActive(r);
+  const first=["POD","Pre-op status"];
+  return first.map(k=>extras.find(b=>b.k===k)).filter(Boolean)
+    .concat(extras.filter(b=>!first.includes(b.k)));
 }
 function soExtraActive(r){
   if(!r)return [];
