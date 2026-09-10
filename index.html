@@ -731,7 +731,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.111 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.112 · 2026-09-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1510,6 +1510,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <button class="btn sec" onclick="hideSO()">Close</button>
       <button class="btn sec" id="soToRoundsBtn" onclick="soToRounds()">→ Rounds sign-out</button>
       <button class="btn sec" id="soBoardBtn" onclick="soToggleBoard()">→ SO Board</button>
+      <button class="btn sec" onclick="soToStateSignout()">→ Update state</button>
       <button class="btn sec" onclick="copySOSpeak()">⧉ Copy (skip blanks)</button>
       <button class="btn" onclick="copySO()">Copy sign-out</button>
     </div>
@@ -6214,6 +6215,12 @@ function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.s
   syncLinkedSo(r);renderSOHints();
   if(quiet){if(changed)autosave()}
   else{flushAutosave();render();renderNccu()}}}
+function soToStateSignout(){
+  const r=findAny(soId);if(!r)return;
+  const n=sxSyncFromTemplate(r);
+  syncLinkedSo(r);renderNccu();flushAutosave();
+  showToast(n?("Updated "+n+" state line"+(n>1?"s":"")+" from template"):"State sign-out already matches template");
+}
 function soChangePreview(r,k,val){
   const cur=String(val||"");
   if(!r||!nccuFieldChanged(r,k))return soHighlight(cur);
@@ -7101,25 +7108,52 @@ function sxRoleForField(label){
   for(const [re,role] of SX_FIELD_ROLE)if(re.test(label))return role;
   return "state";
 }
-function sxMigrate(r){
-  if(!r||r.sxMigrated)return 0;
-  const so=r.so||{};
+function sxTemplateLabels(r){
+  const tmpl=soTemplate(r).fields.map(f=>f[0]);
+  const extra=(typeof soOrderedExtras==="function"?soOrderedExtras(r):soExtraActive(r)).map(b=>b.k);
+  return tmpl.concat(extra);
+}
+function sxFieldText(label,val){
+  const v=String(val||"").trim();
+  if(!v)return "";
+  return /^one-?liner$/i.test(label)?v:label+": "+v;
+}
+function sxSyncFromTemplate(r){
+  if(!r)return 0;
+  r.so=r.so||{};
+  const list=sxList(r);
   let n=0;
-  const tmpl=(SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).fields.map(f=>f[0]);
-  const extra=(typeof soExtraActive==="function")?soExtraActive(r).map(b=>b.k):[];
-  tmpl.concat(extra).forEach(label=>{
-    const v=String(so[label]||"").trim();
+  sxTemplateLabels(r).forEach(label=>{
+    const v=String(r.so[label]||"").trim();
     if(!v)return;
-    const list=sxList(r);
-    if(list.some(x=>x.t===v||x.t===label+": "+v))return;
-    list.push({id:uid(),t:(/^one-?liner$/i.test(label)?v:label+": "+v),
-      role:sxRoleForField(label),sys:sxGuessSys(label+" "+v),
-      ts:r.updatedAt||Date.now(),day:todayStr(),done:false});
-    n++;
+    const text=sxFieldText(label,v);
+    const src="so:"+label.toLowerCase();
+    let it=list.find(x=>x.src===src);
+    if(!it){
+      it=list.find(x=>!x.derived&&(x.t===text||x.t===v||x.t===label+": "+v));
+      if(it)it.src=src;
+    }
+    const role=sxRoleForField(label),sys=sxGuessSys(label+" "+v);
+    if(it){
+      let changed=false;
+      if(it.t!==text){it.t=text;changed=true}
+      if(it.role!==role){it.role=role;changed=true}
+      if(it.sys!==sys){it.sys=sys;changed=true}
+      if(it.done){it.done=false;changed=true}
+      if(it.dropped){it.dropped=false;changed=true}
+      if(changed){it.ts=Date.now();it.day=todayStr();n++}
+    }else{
+      list.push({id:uid(),t:text,role:role,sys:sys,ts:Date.now(),day:todayStr(),done:false,src:src});
+      n++;
+    }
   });
   r.sxMigrated=true;
   if(n)r.updatedAt=Date.now();
   return n;
+}
+function sxMigrate(r){
+  if(!r||r.sxMigrated)return 0;
+  return sxSyncFromTemplate(r);
 }
 function sxMigrateCard(id){
   const r=findAny(id);if(!r)return;
