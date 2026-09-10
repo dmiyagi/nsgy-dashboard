@@ -562,6 +562,13 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sxcond select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc);
   font-family:var(--font);font-size:11px;font-weight:700;padding:3px 6px;max-width:150px}
 .sxnone{font-size:11px;color:var(--mut);font-style:italic}
+.sweepsheet{max-width:760px}
+.swpos{font-size:12px;color:var(--mut);font-weight:600;margin-left:6px}
+.swhead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.swwho{font-size:17px;font-weight:800}
+.swpreview{background:var(--card2);border:1px solid var(--line);border-left:2px solid var(--ok);border-radius:9px;
+  padding:9px 11px;margin:10px 0;font-size:13px;line-height:1.55;white-space:pre-wrap;color:#d9e2ef}
+#sweepbody .sxadd input{font-size:15px;padding:9px 11px}
 .presentbody .pl{font-size:inherit;line-height:1.6;padding:2px 0}
 .presentbody .pl.delta{color:var(--e1)}
 .presentbody .pl.goal{color:var(--teal)}
@@ -724,7 +731,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.110 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.111 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -796,6 +803,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="rowflex">
     <button class="btn sec sm" id="nccuCompactBtn" onclick="setNccuCompact(true)">⊟ Compact</button>
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
+    <button class="btn sec sm" onclick="openSweep()" title="Step through patients one at a time">✎ Chart check</button>
     <button class="btn sm" onclick="openPresent()" title="Read the sign-out straight off the screen">▶︎ Present</button>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
     <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every SO board card">Δ Reset all</button>
@@ -1411,6 +1419,19 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 </div>
 
 <!-- ============ TEXT CONSULT MODAL ============ -->
+<div class="overlay" id="ovSweep">
+  <div class="sheet sweepsheet">
+    <h2>Chart check <span id="sweepPos" class="swpos"></span></h2>
+    <p style="font-size:12px;color:var(--mut);margin-bottom:8px">One patient at a time. Type what changed, then Next.</p>
+    <div id="sweepbody"></div>
+    <div class="sheetbtns">
+      <button class="btn sec" onclick="hideSweep()">Done</button>
+      <button class="btn sec" onclick="sweepStep(-1)">‹ Prev</button>
+      <button class="btn" onclick="sweepStep(1)">Next ›</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="ovPresent">
   <div class="sheet presentsheet">
     <h2>▶︎ Sign-out — read straight down</h2>
@@ -5305,7 +5326,7 @@ function roundRoom(r){return roundBedFromText(r.label)||roundBedFromText(r.raw)|
 function roundPatient3(r){
   const room=roundRoom(r);
   const fromLabel=String(r.label||"").replace(room,"").trim();
-  return last3FromText(r.raw)||last3FromText(r.label)||(fromLabel.match(/[A-Za-z]{3,4}/)||[""])[0]||"";
+  return last3FromText(r.label)||last3FromText(r.raw)||(fromLabel.match(/[A-Za-z]{3,4}/)||[""])[0]||"";
 }
 function roundIdentityText(r){return [roundRoom(r),roundTeam(r),roundPatient3(r)].filter(Boolean).join(" ")}
 function teamBadgeClass(t){
@@ -6717,13 +6738,17 @@ function sxGuessRole(t,isFirst){
      ||/\b(?:tomorrow|in the (?:am|morning)|this pm|on pod\s*\d)\b/i.test(s))return "transition";
   // an arrow is an explicit change; otherwise stability words beat change words
   if(/(?:→|->)/.test(s))return "delta";
+  if(/\d\s*(?:to|-->|→)\s*\d/i.test(s)&&/\b(?:na|icp|sbp|map|cpp|gcs|hgb|plt|inr|wbc|cr|uop|tmax|from)\b/i.test(s))return "delta";
   const stable=/\b(?:remain|continu|stable|generally|overall|baseline|unchanged|persist)\w*\b/i.test(s);
   if(!stable&&/\b(?:new|newly|wors|improv|increas|decreas|resolv|since|chang|spike|extubat|clamp|remov|complet|clear|develop|onset)\w*\b/i.test(s))return "delta";
   // a bare problem representation is the context line — but being first is not
   // enough on its own, or the first number typed becomes the one-liner
   if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s)&&s.length<70)return "context";
-  if(isFirst&&s.length<70&&!/[<>≥≤]/.test(s)
-     &&!/^\s*(?:na|icp|sbp|map|cpp|inr|plt|wbc|hgb|hct|tmax|gcs|uop|cr)\b/i.test(s))return "context";
+  if(isFirst&&s.length<70){
+    const demo=/\b\d{1,3}\s*[MF]\b|\byo\b|\byear[- ]old\b/i.test(s);
+    const setting=/\bat\s+\d|\d\s*[-–—]\s*\d|[<>≥≤]|\bq\d/i.test(s);
+    if(demo||(SX_CONDITIONS.some(c=>c.re.test(s))&&!setting))return "context";
+  }
   return "state";
 }
 function sxGuessSys(t){
@@ -7164,15 +7189,19 @@ function sxRecompressHtml(r){
     '<button type="button" onclick="event.stopPropagation();sxKeepAll(\''+r.id+'\')">Keep all</button>'+
     '<button type="button" onclick="event.stopPropagation();sxDropStale(\''+r.id+'\')">Drop all</button></div>';
 }
-function sxCardHtml(r){
+function sxListHtml(r){
   const items=sxAll(r);
   const ordered=SX_ROLES.map(ro=>items.filter(x=>x.role===ro.k)).reduce((a,b)=>a.concat(b),[]);
+  return ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
+    :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>';
+}
+function sxCardHtml(r,prefix){
+  const p=prefix||"";
   const legacy=!r.sxMigrated&&Object.keys(r.so||{}).some(k=>String(r.so[k]||"").trim());
   return '<div class="sxbody">'+
     sxRecompressHtml(r)+
-    (ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
-      :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>')+
-    sxQuickAddHtml(r,"")+
+    sxListHtml(r)+
+    sxQuickAddHtml(r,p)+
     sxCondPickerHtml(r)+
     sxPromptsHtml(r)+
     (legacy?'<div class="sxlegacy"><span>This patient still has an old template sign-out.</span>'+
@@ -8171,6 +8200,64 @@ function capOE(text){document.getElementById("cap").value="";document.getElement
 function capRounds(){document.querySelector('nav button[data-view="rounds"]').click()}
 function capBookingTab(){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";document.querySelector('nav button[data-view="booking"]').click()}
 function runCap(i){const a=capActions[i];if(a)a.fn()}
+// ---- capture from anywhere: type the bed, the line lands on that sign-out ----
+// Strips the patient reference out so the captured line reads cleanly.
+function sxStripRef(text,r){
+  let s=String(text||"").trim();
+  const bits=[roundRoom(r),roundPatient3(r),r&&r.label,r&&r.loc].filter(Boolean);
+  bits.forEach(b=>{
+    const esc=String(b).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    s=s.replace(new RegExp("^\\s*"+esc+"\\b[:,\\-–—]?\\s*","i"),"");
+  });
+  return s.trim()||String(text||"").trim();
+}
+function capToSignout(text,r){
+  if(!r)return;
+  const line=sxStripRef(text,r);
+  const it=sxAdd(r.id,line);
+  const cap=document.getElementById("cap");if(cap){cap.value="";renderCapture()}
+  renderNccu();renderRounds();render();flushAutosave();
+  showToast("→ "+soLabel(r)+" · "+(it?SX_ROLE[it.role].l:"added"),()=>{
+    if(!it)return;
+    if(it.toDo){const arr=nccuTodoArr(r);const i=arr.findIndex(x=>x.t===it.t);if(i>=0)arr.splice(i,1)}
+    else sxRemove(r.id,it.id,true);
+    r.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
+  },"Undo");
+}
+// ---- sweep: two patients in five minutes, one at a time ----
+let sweepIdx=0;
+function sweepPatients(){return nccuPatients()}
+function openSweep(startId){
+  const pts=sweepPatients();
+  if(!pts.length){showToast("No patients on the SO board yet");return}
+  const i=startId?pts.findIndex(p=>p.id===startId):0;
+  sweepIdx=i>=0?i:0;
+  renderSweep();
+  document.getElementById("ovSweep").classList.add("show");
+  setTimeout(()=>{const el=document.getElementById("sxin_w"+(pts[sweepIdx]||{}).id);if(el)el.focus()},80);
+}
+function hideSweep(){document.getElementById("ovSweep").classList.remove("show")}
+function sweepStep(d){
+  const pts=sweepPatients();if(!pts.length)return;
+  sweepIdx=(sweepIdx+d+pts.length)%pts.length;
+  renderSweep();
+  const el=document.getElementById("sxin_w"+pts[sweepIdx].id);if(el)el.focus();
+}
+function renderSweep(){
+  const el=document.getElementById("sweepbody");if(!el)return;
+  const pts=sweepPatients();
+  const r=pts[sweepIdx];
+  if(!r){el.innerHTML='<div class="empty">No patients.</div>';return}
+  const pos=document.getElementById("sweepPos");
+  if(pos)pos.textContent=(sweepIdx+1)+" of "+pts.length;
+  const nw=sxNewCount(r);
+  el.innerHTML=
+    '<div class="swhead"><span class="swwho">'+esc(soLabel(r))+'</span>'+
+      sxConditions(r).slice(0,3).map(c=>'<span class="bg c">'+esc(c.l)+'</span>').join("")+
+      (nw?'<span class="bg gapbadge">'+nw+' new</span>':"")+'</div>'+
+    '<div class="swpreview">'+esc(sxText(r)||"nothing captured yet")+'</div>'+
+    sxCardHtml(r,"w");
+}
 function renderCapture(){
   const text=document.getElementById("cap").value.trim();
   const el=document.getElementById("capsugg");
@@ -8212,7 +8299,20 @@ function renderCapture(){
       (parts.length?" · auto "+parts.join("/"):"")+(alerts.length?" · "+alerts.length+" threshold alert"+(alerts.length>1?"s":""):"");
   }
   const rows=[];
+  const soTarget=(function(){
+    const m=rmatch||pmatch;
+    if(!m)return null;
+    const r=findAny(m.id)||m;
+    return (r&&r.nccuSO)?r:null;
+  })();
   const add=(cls,ico,main,sub,fn)=>{capActions.push({fn:fn});rows.push('<button class="caprow '+cls+'" onclick="runCap('+(capActions.length-1)+')"><span class="ci">'+ico+'</span><span class="ct"><b>'+main+'</b>'+(sub?'<span class="csub">'+sub+'</span>':"")+'</span></button>')};
+  if(soTarget&&!bookCue&&!isCall){
+    const line=sxStripRef(text,soTarget);
+    const role=sxGuessRole(line,!sxByRole(soTarget,"context").length);
+    add("primary","▸","→ Sign-out: "+esc(soLabel(soTarget)),
+      SX_ROLE[role].l+" · “"+esc(line.slice(0,52))+(line.length>52?"…":"")+"”",
+      ()=>capToSignout(text,soTarget));
+  }
   if(bookCue){
     const bs=bookingSuggestionFor(text);
     add("primary","⊞",bs.name,(pmatch?"patient match: "+pmatch.label+" · ":"")+(bs.template||"adds OR booking + pre-op reminders"),()=>capBooking(text,pmatch));
