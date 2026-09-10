@@ -491,6 +491,76 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sosuggest button:hover{border-color:var(--acc)}
 .sosuggest button.ssx:hover{border-color:var(--e3);color:var(--e3)}
 .sosuggest.inmodal{margin-top:10px}
+/* ---- sign-out as captured facts ---- */
+.sxbody{margin-top:8px}
+.sxlist{display:flex;flex-direction:column;gap:2px}
+.sxrow{display:flex;align-items:center;gap:6px;padding:2px 0}
+.sxrow.done{opacity:.5}
+.sxrow.done .sxtext{text-decoration:line-through}
+.sxrow.stale .sxtext{border-style:dashed;color:var(--mut)}
+.sxrole{flex:0 0 auto;min-width:74px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
+  padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
+.sxrow.r-context .sxrole{border-color:var(--acc);color:var(--acc)}
+.sxrow.r-delta   .sxrole{border-color:var(--e1);color:var(--e1)}
+.sxrow.r-goal    .sxrole{border-color:var(--teal);color:var(--teal)}
+.sxrow.r-constraint .sxrole{border-color:var(--e2);color:var(--e2)}
+.sxrow.r-loop    .sxrole{border-color:var(--purp);color:var(--purp)}
+.sxrow.r-transition .sxrole{border-color:var(--ok);color:var(--ok)}
+.sxrow.r-contingency .sxrole{border-color:var(--e3);color:var(--e3)}
+.sxtext{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
+  font-family:var(--font);font-size:12.5px;padding:5px 8px}
+.sxtext:focus{outline:none;border-color:var(--acc)}
+.sxsys{flex:0 0 auto;font-size:10px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.sxdone{flex:0 0 auto;accent-color:var(--ok);width:15px;height:15px}
+.sxkeep,.sxdel{flex:0 0 auto;font-size:10px;font-weight:800;border:1px solid var(--line);background:transparent;
+  color:var(--mut);border-radius:5px;padding:2px 6px;cursor:pointer;font-family:var(--font)}
+.sxkeep{color:var(--e1);border-color:var(--e1)}
+.sxdel:hover{border-color:var(--e3);color:var(--e3)}
+.sxempty{font-size:12px;color:var(--mut);font-style:italic;padding:2px 0 6px}
+.sxadd{display:flex;gap:6px;margin-top:7px}
+.sxadd input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
+  font-family:var(--font);font-size:12.5px;padding:6px 9px}
+.sxadd input:focus{outline:none;border-color:var(--acc)}
+.sxadd button{flex:0 0 auto;border:1px solid var(--ok);color:var(--ok);background:transparent;border-radius:7px;
+  font-size:13px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font)}
+.sxprompts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:6px 8px;
+  background:rgba(90,162,255,.06);border:1px dashed #2c4a72;border-radius:9px}
+.sxprompts .ssl{font-size:11px;color:var(--mut);font-weight:700;width:100%}
+.sxrecompress{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:7px;padding:5px 8px;
+  background:#1d1a10;border:1px solid #5a4a1c;border-radius:8px;font-size:11.5px;color:var(--e1);font-weight:700}
+.sxrecompress button{margin-left:auto;font-size:11px;font-weight:800;border:1px solid var(--line);background:var(--card2);
+  color:var(--text);border-radius:6px;padding:3px 8px;cursor:pointer;font-family:var(--font)}
+.sxrecompress button+button{margin-left:0}
+.sxlegacy{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--mut)}
+.sxlegacy button{font-size:11px;font-weight:800;border:1px solid var(--acc);background:transparent;color:var(--acc);
+  border-radius:6px;padding:3px 8px;cursor:pointer;font-family:var(--font)}
+.sxpreview{margin-top:10px;padding:9px 11px;background:var(--card2);border:1px solid var(--line);
+  border-left:3px solid var(--ok);border-radius:9px}
+.sxpreview .pl{font-size:12.5px;line-height:1.55;color:#d9e2ef}
+.sxpreview .pl.head{font-weight:800;color:var(--text);font-size:13.5px;margin-bottom:3px}
+.sxpreview .pl.delta{color:var(--e1)}
+.sxpreview .pl.constraint{color:var(--e2)}
+.sxpreview .pl.loop{color:var(--purp)}
+.sxpreview .pl.contingency{color:#ff9aa5}
+.bg.loopbadge{background:#2b1d45;color:var(--purp);border:1px solid var(--purp)}
+.sxrow.live .sxrole{background:#12233a;border-style:dashed}
+.sxtext.livetext{flex:1;min-width:0;background:transparent;border:1px dashed var(--line);border-radius:7px;
+  color:#c8d3e4;font-size:12.5px;padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sxrow.fresh .sxtext,.sxrow.fresh .livetext{border-color:var(--ok)}
+.sxago{flex:0 0 auto;font-size:10px;color:var(--mut);white-space:nowrap}
+.sxadd.quick{margin-top:6px}
+.sxfromrounds{display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px 8px;
+  background:rgba(63,214,143,.06);border:1px dashed #2b5c46;border-radius:9px}
+.sxfromrounds .ssl{flex:0 0 auto;font-size:11px;font-weight:800;color:var(--ok)}
+.sxfromrounds .sxadd{flex:1;margin-top:0}
+.sxcount{flex:0 0 auto;font-size:10.5px;color:var(--mut);font-weight:700}
+.presentbody .pl{font-size:inherit;line-height:1.6;padding:2px 0}
+.presentbody .pl.delta{color:var(--e1)}
+.presentbody .pl.goal{color:var(--teal)}
+.presentbody .pl.constraint{color:var(--e2)}
+.presentbody .pl.loop{color:var(--purp)}
+.presentbody .pl.transition{color:var(--ok)}
+.presentbody .pl.contingency{color:#ff9aa5}
 .presentsheet{max-width:900px}
 .presentbody{max-height:70vh;overflow:auto}
 .pcard{border-left:3px solid var(--acc);padding:2px 0 10px 12px;margin-bottom:16px}
@@ -646,7 +716,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.107 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.109 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5150,7 +5220,7 @@ function roundExamInput(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const v=el.value.trim();
   if(r.exam===v)return;
-  r.exam=v;r.updatedAt=Date.now();autosave();
+  r.exam=v;r.examAt=sxNow();r.updatedAt=Date.now();autosave();
 }
 function roundExamHistInput(id,i){
   const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
@@ -5183,7 +5253,7 @@ function roundExamSave(id,el,explicit){
       r.examHist.push({ts:Date.now(),text:v});
       r.examHist=r.examHist.slice(-3);
     }
-    r.exam=v;
+    r.exam=v;r.examAt=sxNow();
     r.prevExam=v;
   }else{
     r.exam="";
@@ -5336,6 +5406,8 @@ function renderRounds(){
      roundChartHtml(r)+
      '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
+     (r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
+       (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':"")+
      '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
      '<div class="qbtns" style="margin:5px 0 0"><button type="button" onpointerdown="event.preventDefault()" onclick="roundNoteSave(\''+r.id+'\',document.getElementById(\'rnote_'+r.id+'\'),true)">Save notes</button></div>'+
      '<div class="cardbtns">'+
@@ -5841,7 +5913,7 @@ function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
   const lines=todoLinesFromPlan(el.value);
   r.steps=r.steps||[];
   const added=[];
-  lines.forEach(t=>{if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});added.push(t)}});
+  lines.forEach(t=>{if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false,ts:sxNow()});added.push(t)}});
   r.plan=lines.join(" · ");
   r.planDraft="";el.value="";
   const synced=syncRoundTodosToBoard(r,added);
@@ -6200,11 +6272,12 @@ function soSpeakText(r){
   return head+(body.length?"\n"+body.join("\n"):"");
 }
 function soPresentPatients(){
-  return nccuPatients().filter(r=>soFilledPairs(r).length);
+  return nccuPatients().filter(r=>sxHasContent(r)||soFilledPairs(r).length);
 }
 function openPresent(){
   const pts=soPresentPatients();
   if(!pts.length){showToast("Nothing filled in yet to present");return}
+  pts.forEach(sxMarkRead);flushAutosave();
   renderPresent();
   document.getElementById("ovPresent").classList.add("show");
 }
@@ -6218,17 +6291,18 @@ function renderPresent(){
   if(btn)btn.textContent=presentBig?"A− Smaller":"A+ Bigger";
   el.className="presentbody"+(presentBig?" big":"");
   el.innerHTML=pts.map(r=>{
-    const pairs=soFilledPairs(r).filter(p=>p[0]!=="One-liner");
-    const gaps=soGapCount(r);
+    const lines=sxHasContent(r)?sxAssemble(r):[{cls:"head",text:soLabel(r)}].concat(
+      soFilledPairs(r).filter(p=>p[0]!=="One-liner").map(p=>({cls:"state",text:p[0]+": "+p[1]})));
+    const loops=sxByRole(r,"loop").filter(x=>!x.done).length;
     return '<article class="pcard">'+
-      '<h3>'+esc(soLabel(r))+'<span class="phead">'+esc(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"")+'</span>'+
-      (gaps?'<span class="pgap" title="fields still blank — not read aloud">'+gaps+' blank</span>':'<span class="pgap done">complete</span>')+'</h3>'+
-      pairs.map(p=>'<div class="prow"><em>'+esc(p[0])+'</em><span>'+esc(p[1])+'</span></div>').join("")+
+      lines.map(l=>l.cls==="head"
+        ? '<h3>'+esc(l.text)+(loops?'<span class="pgap">'+loops+' open</span>':'<span class="pgap done">ready</span>')+'</h3>'
+        : '<div class="pl '+l.cls+'">'+esc(l.text)+'</div>').join("")+
       '</article>';
-  }).join("")||'<div class="empty">Nothing filled in yet.</div>';
+  }).join("")||'<div class="empty">Nothing captured yet.</div>';
 }
 function copyPresentAll(){
-  const t=soPresentPatients().map(soSpeakText).join("\n\n");
+  const t=soPresentPatients().map(r=>sxHasContent(r)?sxText(r):soSpeakText(r)).join("\n\n");
   if(!t){showToast("Nothing to copy");return}
   toClip(t);showToast("Full sign-out copied");
 }
@@ -6598,6 +6672,472 @@ function soBoardBoxHtml(r,label,extra){
       (extra?'<button type="button" title="Remove this box" onclick="event.stopPropagation();toggleSoExtra(\''+r.id+'\',\''+esc(label)+'\')">×</button>':"")+
     '</span></div>';
 }
+// ================= sign-out as a management model, not a form =================
+// Facts are captured through the day, each tagged with the ROLE it plays in the
+// handoff. Nothing is pre-created, so nothing is ever "blank" — the sign-out is
+// whatever has actually been captured, assembled in the order it is spoken.
+const SX_ROLES=[
+  {k:"context",   l:"Context",     hint:"why NSGY cares",              pre:"",        ord:1},
+  {k:"state",     l:"State",       hint:"current meaningful state",    pre:"",        ord:2},
+  {k:"delta",     l:"Δ Changed",   hint:"what changed — most airtime", pre:"Δ",       ord:3},
+  {k:"goal",      l:"Goal",        hint:"numbers that control care",   pre:"Goals",   ord:4},
+  {k:"constraint",l:"Constraint",  hint:"why not the obvious step",    pre:"Held",    ord:5},
+  {k:"loop",      l:"Open loop",   hint:"must be followed/done",       pre:"To do",   ord:6},
+  {k:"transition",l:"Next",        hint:"expected next step",          pre:"Next",    ord:7},
+  {k:"contingency",l:"If → then",  hint:"if X → do Y",                 pre:"",        ord:8}
+];
+const SX_ROLE=Object.fromEntries(SX_ROLES.map(r=>[r.k,r]));
+// Systems organise; they never force sections. Neuro is dominant and unlabelled.
+const SX_SYSTEMS=[["neuro","Neuro"],["cv","CV"],["pulm","Pulm"],["heme","Heme"],["id","ID"],
+  ["gu","GU/Renal"],["gi","GI/Nutrition"],["endo","Endo"],["msk","MSK/Trauma"],["rehab","Rehab/Dispo"]];
+const SX_SYS=Object.fromEntries(SX_SYSTEMS);
+function sxList(r){if(!r)return [];if(!Array.isArray(r.sx))r.sx=[];return r.sx}
+function sxActive(r){return sxList(r).filter(x=>!x.dropped)}
+// ---- role inference: typing a line should usually be enough ----
+function sxGuessRole(t,isFirst){
+  const s=String(t||"").trim();
+  if(!s)return "state";
+  // an if/then plan transfers differently from everything else
+  if(/\bif\b[^]*?(?:→|->|then\b|,\s*(?:then\s*)?[a-z])/i.test(s))return "contingency";
+  if(/^(?:f\/?u|follow|recheck|re-check|check|obtain|get|call|page|order|trend|clarify|ensure|confirm|repeat|send|ask|await|chase)\w*\b/i.test(s))return "loop";
+  // an exam description is the patient's state even when it reads like a limit
+  if(/^(?:exam|neuro exam|pupils?|motor|gcs|neuro|bue|ble|rue|rle|lue|lle|intact|aox|awake|alert|sedated|intubated)\b/i.test(s)
+     &&!/(?:→|->)/.test(s))return "state";
+  if(/\b(?:goal|goals|keep|maintain|target|parameter)\w*\b/i.test(s)||/(?:^|\s)(?:sbp|map|icp|na|cpp|inr|plt|cvp)\s*[<>≥≤]/i.test(s))return "goal";
+  if(/\b(?:cannot|can'?t|unable|held|holding|hold|contraindicat|declin|refus|prevent|delay|block|limit|defer|precl)\w*\b/i.test(s))return "constraint";
+  if(/^(?:plan|will|tomorrow|then|next|after|once|d\/?c|discontinu|remov|wean|start|begin|discharg|sign off|advanc|rais|clamp)\w*\b/i.test(s)
+     ||/\b(?:tomorrow|in the (?:am|morning)|this pm|on pod\s*\d)\b/i.test(s))return "transition";
+  // an arrow is an explicit change; otherwise stability words beat change words
+  if(/(?:→|->)/.test(s))return "delta";
+  const stable=/\b(?:remain|continu|stable|generally|overall|baseline|unchanged|persist)\w*\b/i.test(s);
+  if(!stable&&/\b(?:new|newly|wors|improv|increas|decreas|resolv|since|chang|spike|extubat|clamp|remov|complet|clear|develop|onset)\w*\b/i.test(s))return "delta";
+  // a bare problem representation is the context line — but being first is not
+  // enough on its own, or the first number typed becomes the one-liner
+  if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s)&&s.length<70)return "context";
+  if(isFirst&&s.length<70&&!/[<>≥≤]/.test(s)
+     &&!/^\s*(?:na|icp|sbp|map|cpp|inr|plt|wbc|hgb|hct|tmax|gcs|uop|cr)\b/i.test(s))return "context";
+  return "state";
+}
+function sxGuessSys(t){
+  const s=String(t||"");
+  // short abbreviations must match exactly — "pending" is not a PE, "acute" is not AC
+  const tok=re=>re.test(s);
+  if(tok(/\b(?:ac|pe|dvt|inr|plt|asa|hgb|hct)\b/i)||
+     tok(/\b(?:anticoag|antiplatelet|apixaban|eliquis|warfarin|heparin|lovenox|plavix|aspirin|platelet|transfus|coagulopath)\w*/i))return "heme";
+  if(tok(/\b(?:cx|wbc)\b/i)||
+     tok(/\b(?:fever|febril|tmax|cultur|abx|antibiotic|vanc|cefepim|ceftriaxon|infect|abscess|ventriculit|meningit|sepsis|osteomyelit)\w*/i))return "id";
+  if(tok(/\b(?:o2|ett|sbt|peep|fio2)\b/i)||
+     tok(/\b(?:ventilat|intubat|extubat|trach|pneumo|respirat|spo2|oxygenat|airway)\w*/i))return "pulm";
+  if(tok(/\b(?:map|sbp|bp|neo|hr)\b/i)||
+     tok(/\b(?:pressor|norepi|levophed|vasopressin|nicardipin|carden|arrhythm|afib|telemetr|bradycard|tachycard|hypotens|hypertens)\w*/i))return "cv";
+  if(tok(/\b(?:cr|di|uop|tov|foley)\b/i)||
+     tok(/\b(?:void|retention|creatinin|renal|dialys|crrt|urin|nephro|diures)\w*/i))return "gu";
+  if(tok(/\b(?:ng|bm|peg|npo)\b/i)||
+     tok(/\b(?:diet|tube feed|dobhoff|bowel|constipat|nutrition|swallow|aspirat)\w*/i))return "gi";
+  if(tok(/\b(?:siadh|tsh|dex)\b/i)||
+     tok(/\b(?:cortisol|acth|thyroid|glucos|insulin|steroid|endocrin|hypergly|hyponatrem|hypernatrem)\w*/i))return "endo";
+  if(tok(/\b(?:pt\/ot|slp|ot|pt)\b/i)||
+     tok(/\b(?:rehab|snf|placement|dispo|discharg|barrier|insuranc|ambulat)\w*/i))return "rehab";
+  if(tok(/\b(?:rib|ribs)\b/i)||
+     tok(/\b(?:pelvic|femur|orthoped|splint|weight.bearing|extremity fracture)\w*/i))return "msk";
+  return "neuro";
+}
+function sxAdd(id,text,role,sys){
+  const r=findAny(id);if(!r)return null;
+  const t=String(text||"").trim();if(!t)return null;
+  const list=sxList(r);
+  const isFirst=!list.some(x=>!x.dropped&&x.role==="context");
+  const role2=role||sxGuessRole(t,isFirst);
+  if(role2==="loop"){
+    // route it to the patient's real to-do list so Rounds and sign-out agree
+    const arr=nccuTodoArr(r);
+    if(!arr.some(x=>String(x.t||"").trim().toLowerCase()===t.toLowerCase())){
+      arr.push({t:t,done:false,ts:sxNow()});
+      if(nccuIsRound(r))syncRoundTodosToBoard(r,[t]);else syncBoardTodoToRounds(r);
+    }
+    r.updatedAt=Date.now();
+    return {role:"loop",toDo:true,t:t};
+  }
+  const item={id:uid(),t:t,role:role2,sys:sys||sxGuessSys(t),
+    ts:sxNow(),day:todayStr(),done:false};
+  list.push(item);
+  r.updatedAt=Date.now();
+  return item;
+}
+function sxAddFromInput(inputId,patientId){
+  const pid=patientId||inputId;
+  const el=document.getElementById("sxin_"+inputId);if(!el)return;
+  const v=el.value.trim();if(!v){el.focus();return}
+  const it=sxAdd(pid,v);
+  el.value="";
+  renderNccu();renderRounds();flushAutosave();
+  const nx=document.getElementById("sxin_"+inputId);if(nx)nx.focus();
+  if(it)showToast("Added as "+SX_ROLE[it.role].l+(it.toDo?" — also on the to-do list":""),()=>{
+    const rr=findAny(pid);if(!rr)return;
+    if(it.toDo){const arr=nccuTodoArr(rr);const i=arr.findIndex(x=>x.t===it.t);if(i>=0)arr.splice(i,1);
+      rr.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave()}
+    else sxRemove(pid,it.id,true);
+  },"Undo");
+}
+function sxFind(r,itemId){return sxList(r).find(x=>x.id===itemId)}
+function sxSetRole(id,itemId,role){
+  const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  it.role=role;r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function sxCycleRole(id,itemId){
+  const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  const i=SX_ROLES.findIndex(x=>x.k===it.role);
+  it.role=SX_ROLES[(i+1)%SX_ROLES.length].k;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast(SX_ROLE[it.role].l);
+}
+function sxToggleDone(id,itemId){
+  const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  it.done=!it.done;it.closedAt=it.done?Date.now():null;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function sxRemove(id,itemId,silent){
+  const r=findAny(id);if(!r)return;
+  const list=sxList(r),i=list.findIndex(x=>x.id===itemId);if(i<0)return;
+  const [gone]=list.splice(i,1);
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  if(!silent)showToast("Removed",()=>{const rr=findAny(id);if(rr){sxList(rr).splice(i,0,gone);rr.updatedAt=Date.now();renderNccu();flushAutosave()}},"Undo");
+}
+function sxEdit(id,itemId,el){
+  const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  const v=String(el.value||"").trim();
+  if(it.t===v)return;
+  it.t=v;r.updatedAt=Date.now();autosave();
+}
+// ---- recompress: yesterday's facts must re-earn their place ----
+function sxStale(r){
+  const t=todayStr();
+  return sxActive(r).filter(x=>x.day!==t&&!x.keptOn||(x.day!==t&&x.keptOn!==t));
+}
+function sxNeedsRecompress(r){
+  // a delta from a previous day is by definition no longer a delta
+  return sxStale(r).length;
+}
+function sxKeep(id,itemId){
+  const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  it.keptOn=todayStr();
+  if(it.role==="delta")it.role="state"; // it is background now, not news
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function sxKeepAll(id){
+  const r=findAny(id);if(!r)return;
+  const stale=sxStale(r);
+  if(!stale.length){showToast("Nothing to recompress");return}
+  const before=stale.map(x=>({id:x.id,role:x.role,keptOn:x.keptOn}));
+  stale.forEach(x=>{x.keptOn=todayStr();if(x.role==="delta")x.role="state"});
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Kept "+stale.length+" — deltas demoted to state",()=>{
+    const rr=findAny(id);if(!rr)return;
+    before.forEach(b=>{const it=sxFind(rr,b.id);if(it){it.role=b.role;it.keptOn=b.keptOn}});
+    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+function sxDropStale(id){
+  const r=findAny(id);if(!r)return;
+  const stale=sxStale(r);
+  if(!stale.length){showToast("Nothing to drop");return}
+  const ids=stale.map(x=>x.id),copy=stale.map(x=>JSON.parse(JSON.stringify(x)));
+  r.sx=sxList(r).filter(x=>ids.indexOf(x.id)<0);
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Dropped "+copy.length,()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.sx=sxList(rr).concat(copy);rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+// ---- condition boxes: a relevance prior, never an output template ----
+const SX_CONDITIONS=[
+ {k:"tbi",l:"Severe TBI / ICP",re:/\btbi\b|traumatic brain|\bbolt\b|licox|decra|herniat|diffuse axonal|\bdai\b/i,
+  prompts:["Best exam / limited by sedation","Bolt or EVD + ICP range","CT evolution vs prior","Na + osmotherapy strategy","CPP / MAP target","AED or cEEG","Bolt-removal plan","AC / DVT ppx status"]},
+ {k:"asah",l:"aSAH",re:/\basah\b|aneurysmal sah|subarachnoid|pcomm|acomm|coiled|clipped/i,
+  prompts:["Aneurysm secured or not","Exam at current SBP","EVD level + ICP","TCDs / vasospasm day","Na goal + last","BP goal","Nimodipine day _/21","Hydrocephalus / wean plan"]},
+ {k:"ich",l:"Spontaneous ICH",re:/\bich\b|\biph\b|intracerebral|intraparenchymal|basal ganglia|thalamic/i,
+  prompts:["Volume + location","Exam / NIHSS","Stability on repeat CT","BP goal","AC reversal status","Trial eligibility","IVH / hydrocephalus","Operative vs not"]},
+ {k:"sdh",l:"SDH",re:/\bsdh\b|subdural/i,
+  prompts:["Thickness + MLS","Acute vs chronic","Exam / baseline","Stability across scans","AC held since / restart date","Operative plan","Seizure ppx"]},
+ {k:"evd",l:"EVD / hydrocephalus",re:/\bevd\b|ventriculostomy|hydroceph|\bivh\b|external ventricular/i,
+  prompts:["EVD level + output/hr","ICP range + waveform","Ventricle size vs prior","Clamp trial stage","CSF studies / cultures","Wean plan + who decides","Escalation trigger"]},
+ {k:"shunt",l:"VP shunt",re:/shunt|\bvps\b|\bvpl\b|valve|strata|programmable/i,
+  prompts:["Valve type + setting","How they failed before","Baseline exam + who knows it","Shunt series / CT vs which prior","Tap or interrogation result","Next step if no better"]},
+ {k:"pocrani",l:"Post-op cranial",re:/post-?op|\bpod\b|craniotomy|craniectomy|resection|s\/p crani/i,
+  prompts:["Procedure + POD","Exam vs pre-op","Post-op imaging","Drain + output","Wound","BP / Na goal","Steroid + AED plan","Next milestone / dispo"]},
+ {k:"tumor",l:"Brain tumor",re:/tumou?r|mass|glioma|gbm|meningioma|met(?:astas)?|lesion/i,
+  prompts:["Pathology / suspected","Mass effect + edema","Steroid dose + taper","Seizure history + AED","Imaging pending","Operative or onc plan"]},
+ {k:"spinetrauma",l:"Acute spine trauma",re:/spine (?:fx|fracture|trauma)|burst|odontoid|hangman|jefferson|facet|sublux|\bsci\b|cord injury/i,
+  prompts:["Level + fracture type","Stability / AO class","Motor exam by group","Bowel/bladder + PVR","Collar or brace","MAP goal if cord","Operative timing"]},
+ {k:"pospine",l:"Post-op spine",re:/fusion|lami|discectomy|acdf|tlif|plif|corpectomy|instrument/i,
+  prompts:["Procedure + POD","Pre-op deficit vs now","Drain + wound","Brace + mobility","Voiding / bowel","PT + dispo barrier"]},
+ {k:"spineinf",l:"Spinal / CNS infection",re:/discitis|osteomyelit|epidural abscess|empyema|ventriculitis|meningitis|hardware infection|\bssi\b/i,
+  prompts:["Site + organism","Neuro exam","Cultures + day of abx","Source control done?","Hardware implications","Clearance before next step"]},
+ {k:"vascular",l:"Vascular lesion",re:/\bavm\b|fistula|davf|cavernoma|moyamoya|carotid|stenosis|dissection/i,
+  prompts:["Lesion + laterality","Symptoms + LKW","Imaging done / pending","Antiplatelet plan","Intervention plan + who"]},
+ {k:"acich",l:"AC in ICH",re:/(?:warfarin|coumadin|eliquis|apixaban|xarelto|heparin|lovenox|plavix|dapt|doac)/i,
+  prompts:["Agent + last dose","Reversal given","Indication for AC","When it can restart","DVT ppx status + timing"]},
+ {k:"peds",l:"Pediatric",re:/\bpeds\b|pediatric|infant|neonate|\bw&i\b|fontanelle/i,
+  prompts:["Weight + weight-based dosing","Fontanelle / head circumference","Baseline development","Parents at bedside / consent"]}
+];
+function sxConditions(r){
+  const txt=[r&&r.raw,r&&r.prob,r&&r.loc,r&&r.note].concat(sxActive(r).map(x=>x.t)).filter(Boolean).join(" ");
+  const picked=(r&&r.sxCond)||[];
+  const auto=SX_CONDITIONS.filter(c=>c.re.test(txt)).map(c=>c.k);
+  const keys=picked.length?picked:auto.slice(0,2);
+  return SX_CONDITIONS.filter(c=>keys.indexOf(c.k)>=0);
+}
+function sxPrompts(r){
+  const used=sxActive(r).map(x=>x.t.toLowerCase());
+  const dismissed=(r&&r.sxPromptOff)||{};
+  const out=[];
+  sxConditions(r).forEach(c=>c.prompts.forEach(p=>{
+    if(dismissed[p])return;
+    const key=p.toLowerCase().split(/[\/(]/)[0].trim().split(" ").slice(0,2).join(" ");
+    if(used.some(u=>u.indexOf(key)>=0))return;
+    if(out.indexOf(p)<0)out.push(p);
+  }));
+  return out;
+}
+function sxUsePrompt(id,p){
+  const el=document.getElementById("sxin_"+id)||document.getElementById("sxin_c"+id)||document.getElementById("sxin_r"+id);
+  if(el){el.value=p+": ";el.focus();}
+}
+function sxDismissPrompt(id,p){
+  const r=findAny(id);if(!r)return;
+  r.sxPromptOff=r.sxPromptOff||{};r.sxPromptOff[p]=true;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Hidden",()=>{const rr=findAny(id);if(rr){delete rr.sxPromptOff[p];rr.updatedAt=Date.now();renderNccu();flushAutosave()}},"Undo");
+}
+// ---- live entries: rounds data appears in the sign-out without retyping ----
+// Rounds and the SO board are the same record, so the exam and open to-dos are
+// pulled in as virtual lines that stay current until you pin or hide them.
+let _sxClock=0;
+function sxNow(){const t=Date.now();_sxClock=t>_sxClock?t:_sxClock+1;return _sxClock}
+function sxAgo(ts){
+  if(!ts)return "";
+  const m=Math.max(0,Math.round((Date.now()-ts)/60000));
+  if(m<1)return "just now";
+  if(m<60)return m+"m ago";
+  const h=Math.floor(m/60);
+  if(h<24)return h+"h ago";
+  return Math.floor(h/24)+"d ago";
+}
+function sxDerived(r){
+  if(!r)return [];
+  const hide=r.sxHide||{};
+  const stored=sxActive(r).map(x=>x.t.toLowerCase().trim());
+  const out=[];
+  const exam=String(r.exam||"").trim();
+  if(exam&&!hide["@exam"]&&!stored.some(t=>t===exam.toLowerCase()))
+    out.push({id:"@exam",t:exam,role:"state",sys:"neuro",derived:"exam",
+      ts:r.examAt||0,live:"Rounds exam"});
+  nccuTodoArr(r).forEach((s,i)=>{
+    if(s.done)return;
+    const key="@todo:"+i,t=String(s.t||"").trim();
+    if(!t||hide[key]||stored.some(x=>x===t.toLowerCase()))return;
+    out.push({id:key,t:t,role:"loop",sys:sxGuessSys(t),derived:"todo",idx:i,
+      ts:s.ts||0,live:"Rounds to-do"});
+  });
+  return out;
+}
+function sxAll(r){return sxDerived(r).concat(sxActive(r))}
+// pin a live line so you can edit it without it changing underneath you
+function sxPin(id,key){
+  const r=findAny(id);if(!r)return;
+  const d=sxDerived(r).find(x=>x.id===key);if(!d)return;
+  sxList(r).push({id:uid(),t:d.t,role:d.role,sys:d.sys,ts:Date.now(),day:todayStr(),done:false});
+  r.sxHide=r.sxHide||{};r.sxHide[key]=true;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Pinned — edits here no longer follow Rounds",()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.sx=sxList(rr).filter(x=>x.t!==d.t);delete rr.sxHide[key];
+    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+function sxHideDerived(id,key){
+  const r=findAny(id);if(!r)return;
+  r.sxHide=r.sxHide||{};r.sxHide[key]=true;
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Hidden from sign-out",()=>{
+    const rr=findAny(id);if(!rr)return;
+    delete rr.sxHide[key];rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+// closing a live to-do closes the real one on Rounds
+function sxCloseDerivedTodo(id,idx){
+  const r=findAny(id);if(!r)return;
+  const arr=nccuTodoArr(r),t=arr[idx];if(!t)return;
+  t.done=true;t.dueISO=null;
+  if(nccuIsRound(r))syncRoundDoneToBoard(r,t.t,true);else syncBoardDoneToRounds(r,t.t,true);
+  r.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
+  showToast("Closed — "+String(t.t||"").slice(0,40),()=>{
+    const rr=findAny(id);if(!rr)return;
+    const tt=nccuTodoArr(rr)[idx];if(tt)tt.done=false;
+    rr.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
+  },"Undo");
+}
+// ---- freshness: what has landed since you last read the sign-out ----
+function sxMarkRead(r){if(r){r.sxReadAt=sxNow();r.updatedAt=Date.now()}}
+function sxIsNew(r,it){
+  const seen=r&&r.sxReadAt;
+  return !!(seen&&it.ts&&it.ts>seen);
+}
+function sxNewCount(r){return sxAll(r).filter(x=>sxIsNew(r,x)).length}
+// ---- assembly: the smallest sufficient representation, in spoken order ----
+function sxByRole(r,role){return sxAll(r).filter(x=>x.role===role)}
+function sxPeriod(t){const s=String(t||"").trim();return /[.;:!?]$/.test(s)?s:s+"."}
+function sxJoinSentences(items){
+  // group non-neuro systems under a short label; neuro carries no heading
+  const neuro=items.filter(x=>(x.sys||"neuro")==="neuro").map(x=>x.t);
+  const out=[];
+  if(neuro.length)out.push(sxPeriod(neuro.join("; ")));
+  SX_SYSTEMS.forEach(([k,label])=>{
+    if(k==="neuro")return;
+    const g=items.filter(x=>x.sys===k).map(x=>x.t);
+    if(g.length)out.push(label+": "+sxPeriod(g.join("; ")));
+  });
+  return out;
+}
+// Returns [{cls, text}] so the same assembly drives the screen and the clipboard
+function sxAssemble(r){
+  const lines=[];
+  const ctx=sxByRole(r,"context").map(x=>x.t).join("; ");
+  const head=soLabel(r)+(ctx?" — "+ctx:"");
+  lines.push({cls:"head",text:head});
+  sxJoinSentences(sxByRole(r,"state")).forEach(t=>lines.push({cls:"state",text:t}));
+  const d=sxByRole(r,"delta");
+  if(d.length)lines.push({cls:"delta",text:"Δ "+sxPeriod(d.map(x=>x.t).join("; "))});
+  const g=sxByRole(r,"goal");
+  if(g.length)lines.push({cls:"goal",text:"Goals: "+sxPeriod(g.map(x=>x.t).join("; "))});
+  const c=sxByRole(r,"constraint");
+  if(c.length)lines.push({cls:"constraint",text:"Held: "+sxPeriod(c.map(x=>x.t).join("; "))});
+  const loops=sxByRole(r,"loop").filter(x=>!x.done);
+  if(loops.length)lines.push({cls:"loop",text:"To do: "+sxPeriod(loops.map(x=>x.t).join("; "))});
+  const tr=sxByRole(r,"transition");
+  if(tr.length)lines.push({cls:"transition",text:"Next: "+sxPeriod(tr.map(x=>x.t).join("; "))});
+  sxByRole(r,"contingency").forEach(x=>lines.push({cls:"contingency",text:sxPeriod(x.t)}));
+  return lines;
+}
+function sxText(r){return sxAssemble(r).map(l=>l.text).join("\n")}
+function sxHasContent(r){return sxAll(r).length>0}
+// ---- migration: pull an existing template sign-out into the new model once ----
+const SX_FIELD_ROLE=[
+  [/^one-?liner$/i,"context"],
+  [/goal|target|parameter|bp goal|na goal|map goal/i,"goal"],
+  [/pending|follow|open|to-?do|await/i,"loop"],
+  [/plan|dispo|wean|transition|next|milestone/i,"transition"],
+  [/escalat|contingenc|trigger|if /i,"contingency"],
+  [/^(?:events|last 24|overnight|new events)/i,"delta"],
+  [/hold|held|constraint|barrier/i,"constraint"]
+];
+function sxRoleForField(label){
+  for(const [re,role] of SX_FIELD_ROLE)if(re.test(label))return role;
+  return "state";
+}
+function sxMigrate(r){
+  if(!r||r.sxMigrated)return 0;
+  const so=r.so||{};
+  let n=0;
+  const tmpl=(SO_TMPLS[r.soT||"floor"]||SO_TMPLS.floor).fields.map(f=>f[0]);
+  const extra=(typeof soExtraActive==="function")?soExtraActive(r).map(b=>b.k):[];
+  tmpl.concat(extra).forEach(label=>{
+    const v=String(so[label]||"").trim();
+    if(!v)return;
+    const list=sxList(r);
+    if(list.some(x=>x.t===v||x.t===label+": "+v))return;
+    list.push({id:uid(),t:(/^one-?liner$/i.test(label)?v:label+": "+v),
+      role:sxRoleForField(label),sys:sxGuessSys(label+" "+v),
+      ts:r.updatedAt||Date.now(),day:todayStr(),done:false});
+    n++;
+  });
+  r.sxMigrated=true;
+  if(n)r.updatedAt=Date.now();
+  return n;
+}
+function sxMigrateCard(id){
+  const r=findAny(id);if(!r)return;
+  const n=sxMigrate(r);
+  renderNccu();flushAutosave();
+  showToast(n?("Imported "+n+" line"+(n>1?"s":"")+" from the old template"):"Nothing in the old template to import");
+}
+// ---- card UI -----------------------------------------------------------------
+function sxRoleChipsHtml(id,it){
+  return SX_ROLES.map(ro=>'<button type="button" class="'+(it.role===ro.k?"on":"")+'" title="'+esc(ro.hint)+'" '+
+    'onclick="event.stopPropagation();sxSetRole(\''+id+'\',\''+it.id+'\',\''+ro.k+'\')">'+esc(ro.l)+'</button>').join("");
+}
+function sxItemHtml(r,it){
+  const stale=!it.derived&&it.day!==todayStr()&&it.keptOn!==todayStr();
+  const fresh=sxIsNew(r,it);
+  const ago=sxAgo(it.ts);
+  if(it.derived){
+    // live from Rounds — read-only here, edited where it actually lives
+    return '<div class="sxrow r-'+it.role+' live'+(fresh?" fresh":"")+'" data-sxid="'+it.id+'">'+
+      '<span class="sxrole" title="'+esc(it.live)+' — updates itself">'+esc(SX_ROLE[it.role].l)+'</span>'+
+      (it.role==="loop"?'<input type="checkbox" class="sxdone" title="close it on Rounds too" onchange="event.stopPropagation();sxCloseDerivedTodo(\''+r.id+'\','+it.idx+')">':"")+
+      '<span class="sxtext livetext" title="'+esc(it.live)+'">'+esc(it.t)+'</span>'+
+      (it.sys&&it.sys!=="neuro"?'<span class="sxsys">'+esc(SX_SYS[it.sys]||it.sys)+'</span>':"")+
+      (ago?'<span class="sxago">'+esc(ago)+'</span>':"")+
+      '<button type="button" class="sxkeep" title="pin a copy so you can edit it here" onclick="event.stopPropagation();sxPin(\''+r.id+'\',\''+it.id+'\')">pin</button>'+
+      '<button type="button" class="sxdel" title="keep out of this sign-out" onclick="event.stopPropagation();sxHideDerived(\''+r.id+'\',\''+it.id+'\')">×</button>'+
+    '</div>';
+  }
+  return '<div class="sxrow r-'+it.role+(it.done?" done":"")+(stale?" stale":"")+(fresh?" fresh":"")+'" data-sxid="'+it.id+'">'+
+    '<button type="button" class="sxrole" title="'+esc(SX_ROLE[it.role].hint)+' — tap to change" '+
+      'onclick="event.stopPropagation();sxCycleRole(\''+r.id+'\',\''+it.id+'\')">'+esc(SX_ROLE[it.role].l)+'</button>'+
+    (it.role==="loop"?'<input type="checkbox" class="sxdone" '+(it.done?"checked":"")+' title="close this loop" onchange="event.stopPropagation();sxToggleDone(\''+r.id+'\',\''+it.id+'\')">':"")+
+    '<input class="sxtext" value="'+esc(it.t)+'" oninput="sxEdit(\''+r.id+'\',\''+it.id+'\',this)" onclick="event.stopPropagation()">'+
+    (it.sys&&it.sys!=="neuro"?'<span class="sxsys">'+esc(SX_SYS[it.sys]||it.sys)+'</span>':"")+
+    (ago?'<span class="sxago">'+esc(ago)+'</span>':"")+
+    (stale?'<button type="button" class="sxkeep" title="still management-defining — keep it" onclick="event.stopPropagation();sxKeep(\''+r.id+'\',\''+it.id+'\')">keep</button>':"")+
+    '<button type="button" class="sxdel" title="drop" onclick="event.stopPropagation();sxRemove(\''+r.id+'\',\''+it.id+'\')">×</button>'+
+  '</div>';
+}
+function sxPromptsHtml(r){
+  const ps=sxPrompts(r).slice(0,8);
+  if(!ps.length)return "";
+  const conds=sxConditions(r).map(c=>c.l).join(" · ");
+  return '<div class="sxprompts"><span class="ssl">'+esc(conds||"Consider")+' — does this define them now?</span>'+
+    ps.map(p=>'<span class="ssitem"><button type="button" onclick="event.stopPropagation();sxUsePrompt(\''+r.id+'\',\''+esc(p).replace(/'/g,"&#39;")+'\')">'+esc(p)+'</button>'+
+      '<button type="button" class="ssx" title="not relevant" onclick="event.stopPropagation();sxDismissPrompt(\''+r.id+'\',\''+esc(p).replace(/'/g,"&#39;")+'\')">×</button></span>').join("")+'</div>';
+}
+function sxRecompressHtml(r){
+  const n=sxNeedsRecompress(r);
+  if(!n)return "";
+  return '<div class="sxrecompress"><span>'+n+' line'+(n>1?"s":"")+' carried from before today — re-earn or drop</span>'+
+    '<button type="button" onclick="event.stopPropagation();sxKeepAll(\''+r.id+'\')">Keep all</button>'+
+    '<button type="button" onclick="event.stopPropagation();sxDropStale(\''+r.id+'\')">Drop all</button></div>';
+}
+function sxCardHtml(r){
+  const items=sxAll(r);
+  const ordered=SX_ROLES.map(ro=>items.filter(x=>x.role===ro.k)).reduce((a,b)=>a.concat(b),[]);
+  const legacy=!r.sxMigrated&&Object.keys(r.so||{}).some(k=>String(r.so[k]||"").trim());
+  return '<div class="sxbody">'+
+    sxRecompressHtml(r)+
+    (ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
+      :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>')+
+    sxQuickAddHtml(r,"")+
+    sxPromptsHtml(r)+
+    (legacy?'<div class="sxlegacy"><span>This patient still has an old template sign-out.</span>'+
+      '<button type="button" onclick="event.stopPropagation();sxMigrateCard(\''+r.id+'\')">⇣ Import it</button></div>':"")+
+  '</div>';
+}
+function sxQuickAddHtml(r,idPrefix){
+  const pid=(idPrefix||"")+r.id;
+  return '<div class="sxadd quick"><input id="sxin_'+pid+'" placeholder="Chart check — add a line" '+
+    'onclick="event.stopPropagation()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();sxAddFromInput(\''+pid+'\',\''+r.id+'\')}">'+
+    '<button type="button" onclick="event.stopPropagation();sxAddFromInput(\''+pid+'\',\''+r.id+'\')">＋</button></div>';
+}
+function sxPreviewHtml(r){
+  const lines=sxAssemble(r);
+  if(lines.length<=1&&!sxHasContent(r))return "";
+  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+esc(l.text)+'</div>').join("")+'</div>';
+}
+function copySxCard(id){
+  const r=findAny(id);if(!r)return;
+  if(!sxHasContent(r)){showToast("Nothing captured yet");return}
+  toClip(sxText(r));showToast("Sign-out copied");
+}
 function soBoardFieldsHtml(r){
   const boxLabels=soBoardBoxLabels(r),boxed={};
   boxLabels.forEach(k=>boxed[k]=true);
@@ -6730,7 +7270,7 @@ function nccuTodoAdd(id){
   const v=el.value.trim();if(!v){el.focus();return}
   const list=nccuTodoArr(r);
   if(list.some(x=>String(x.t||"").toLowerCase()===v.toLowerCase())){showToast("Already on the list");el.value="";return}
-  list.push({t:v,done:false});
+  list.push({t:v,done:false,ts:sxNow()});
   el.value="";
   r.updatedAt=Date.now();
   if(nccuIsRound(r))syncRoundTodosToBoard(r,[v]);
@@ -6783,19 +7323,26 @@ function nccuCardHtml(r){
   const compact=nccuIsCompact(r);
   const dx=roundPrimaryDxTag(r);
   const body=compact
-    ? (nccuCompactBoxesHtml(r)+nccuCompactTodoHtml(r)+nccuCompactNoteHtml(r))
-    : soBoardFieldsHtml(r);
+    ? (sxQuickAddHtml(r,"c")+sxPreviewHtml(r)+nccuCompactTodoHtml(r))
+    : (sxCardHtml(r)+sxPreviewHtml(r)+nccuNoteHtml(r));
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+soTmplBadge(r)+
     (compact&&dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"")+
-    (function(){const g=soGapCount(r);return g?'<span class="bg gapbadge" title="fields still blank">'+g+' blank</span>':'<span class="bg gapbadge done" title="every field filled">✓ full</span>'})()+
+    (function(){
+      const st=sxNeedsRecompress(r);
+      if(st)return '<span class="bg gapbadge" title="carried from a previous day — keep or drop">'+st+' to recompress</span>';
+      const loops=sxByRole(r,"loop").filter(x=>!x.done).length;
+      if(loops)return '<span class="bg loopbadge" title="open loops to hand off">'+loops+' open</span>';
+      return sxHasContent(r)?'<span class="bg gapbadge done" title="ready to read">✓ ready</span>':"";
+    })()+
     (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
     '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
-    '<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">Edit SO</button></div></div>';
+    '<div class="cardbtns"><button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button>'+
+    '<button onclick="openSO(\''+r.id+'\')">Template fields</button></div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
 function nccuRemove(id){
