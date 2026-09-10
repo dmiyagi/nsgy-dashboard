@@ -554,6 +554,14 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sxfromrounds .ssl{flex:0 0 auto;font-size:11px;font-weight:800;color:var(--ok)}
 .sxfromrounds .sxadd{flex:1;margin-top:0}
 .sxcount{flex:0 0 auto;font-size:10.5px;color:var(--mut);font-weight:700}
+.sxcond{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.sxcond .ssl{font-size:11px;color:var(--mut);font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.sxcond button{font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;font-family:var(--font);
+  border:1px solid var(--teal);background:#173a3c;color:var(--teal)}
+.sxcond button.sxauto{border-color:var(--line);background:var(--card2);color:var(--mut)}
+.sxcond select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc);
+  font-family:var(--font);font-size:11px;font-weight:700;padding:3px 6px;max-width:150px}
+.sxnone{font-size:11px;color:var(--mut);font-style:italic}
 .presentbody .pl{font-size:inherit;line-height:1.6;padding:2px 0}
 .presentbody .pl.delta{color:var(--e1)}
 .presentbody .pl.goal{color:var(--teal)}
@@ -716,7 +724,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.109 · 2026-09-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.110 · 2026-09-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6880,23 +6888,56 @@ const SX_CONDITIONS=[
  {k:"peds",l:"Pediatric",re:/\bpeds\b|pediatric|infant|neonate|\bw&i\b|fontanelle/i,
   prompts:["Weight + weight-based dosing","Fontanelle / head circumference","Baseline development","Parents at bedside / consent"]}
 ];
+function sxCondText(r){
+  return [r&&r.raw,r&&r.prob,r&&r.loc,r&&r.note].concat(sxAll(r).map(x=>x.t)).filter(Boolean).join(" ");
+}
+function sxAutoConditions(r){
+  const txt=sxCondText(r);
+  return SX_CONDITIONS.filter(c=>c.re.test(txt)).map(c=>c.k);
+}
+// Once you touch the picker the choice is yours; until then every match counts.
+// Capping this silently used to hide the newest problem on a mixed patient.
 function sxConditions(r){
-  const txt=[r&&r.raw,r&&r.prob,r&&r.loc,r&&r.note].concat(sxActive(r).map(x=>x.t)).filter(Boolean).join(" ");
-  const picked=(r&&r.sxCond)||[];
-  const auto=SX_CONDITIONS.filter(c=>c.re.test(txt)).map(c=>c.k);
-  const keys=picked.length?picked:auto.slice(0,2);
+  const keys=(r&&Array.isArray(r.sxCond))?r.sxCond:sxAutoConditions(r);
   return SX_CONDITIONS.filter(c=>keys.indexOf(c.k)>=0);
 }
+function sxCondOn(r,k){return sxConditions(r).some(c=>c.k===k)}
+function sxToggleCond(id,k){
+  const r=findAny(id);if(!r)return;
+  const cur=(Array.isArray(r.sxCond)?r.sxCond:sxAutoConditions(r)).slice();
+  const i=cur.indexOf(k);
+  if(i>=0)cur.splice(i,1);else cur.push(k);
+  r.sxCond=cur;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  const c=SX_CONDITIONS.find(x=>x.k===k);
+  showToast((i>=0?"Removed ":"Added ")+(c?c.l:k));
+}
+function sxAddCondFromSelect(id,el){
+  const k=el&&el.value;if(!k)return;
+  el.value="";
+  sxToggleCond(id,k);
+}
+function sxResetCond(id){
+  const r=findAny(id);if(!r)return;
+  const before=r.sxCond;
+  delete r.sxCond;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Back to auto-detect",()=>{
+    const rr=findAny(id);if(!rr)return;
+    if(before)rr.sxCond=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
 function sxPrompts(r){
-  const used=sxActive(r).map(x=>x.t.toLowerCase());
+  const used=sxAll(r).map(x=>x.t.toLowerCase());
   const dismissed=(r&&r.sxPromptOff)||{};
-  const out=[];
-  sxConditions(r).forEach(c=>c.prompts.forEach(p=>{
-    if(dismissed[p])return;
+  const keep=p=>{
+    if(dismissed[p])return false;
     const key=p.toLowerCase().split(/[\/(]/)[0].trim().split(" ").slice(0,2).join(" ");
-    if(used.some(u=>u.indexOf(key)>=0))return;
-    if(out.indexOf(p)<0)out.push(p);
-  }));
+    return !used.some(u=>u.indexOf(key)>=0);
+  };
+  // round-robin so a second or third condition is never crowded out
+  const queues=sxConditions(r).map(c=>c.prompts.filter(keep));
+  const out=[];
+  for(let i=0;queues.some(q=>i<q.length);i++)
+    queues.forEach(q=>{if(i<q.length&&out.indexOf(q[i])<0)out.push(q[i])});
   return out;
 }
 function sxUsePrompt(id,p){
@@ -7093,11 +7134,26 @@ function sxItemHtml(r,it){
     '<button type="button" class="sxdel" title="drop" onclick="event.stopPropagation();sxRemove(\''+r.id+'\',\''+it.id+'\')">×</button>'+
   '</div>';
 }
+function sxCondPickerHtml(r){
+  const on=sxConditions(r),onKeys=on.map(c=>c.k);
+  const auto=sxAutoConditions(r);
+  const custom=Array.isArray(r.sxCond);
+  const rest=SX_CONDITIONS.filter(c=>onKeys.indexOf(c.k)<0);
+  return '<div class="sxcond"><span class="ssl">Condition</span>'+
+    on.map(c=>'<button type="button" class="on" title="drop this condition" '+
+      'onclick="event.stopPropagation();sxToggleCond(\''+r.id+'\',\''+c.k+'\')">'+esc(c.l)+' ×</button>').join("")+
+    (on.length?"":'<span class="sxnone">none detected — add one</span>')+
+    (rest.length?'<select onclick="event.stopPropagation()" onchange="sxAddCondFromSelect(\''+r.id+'\',this)">'+
+      '<option value="">＋ add…</option>'+
+      rest.map(c=>'<option value="'+c.k+'">'+esc(c.l)+(auto.indexOf(c.k)>=0?" (detected)":"")+'</option>').join("")+
+      '</select>':"")+
+    (custom?'<button type="button" class="sxauto" title="go back to auto-detect" onclick="event.stopPropagation();sxResetCond(\''+r.id+'\')">auto</button>':"")+
+  '</div>';
+}
 function sxPromptsHtml(r){
-  const ps=sxPrompts(r).slice(0,8);
+  const ps=sxPrompts(r).slice(0,10);
   if(!ps.length)return "";
-  const conds=sxConditions(r).map(c=>c.l).join(" · ");
-  return '<div class="sxprompts"><span class="ssl">'+esc(conds||"Consider")+' — does this define them now?</span>'+
+  return '<div class="sxprompts"><span class="ssl">Does this define them now?</span>'+
     ps.map(p=>'<span class="ssitem"><button type="button" onclick="event.stopPropagation();sxUsePrompt(\''+r.id+'\',\''+esc(p).replace(/'/g,"&#39;")+'\')">'+esc(p)+'</button>'+
       '<button type="button" class="ssx" title="not relevant" onclick="event.stopPropagation();sxDismissPrompt(\''+r.id+'\',\''+esc(p).replace(/'/g,"&#39;")+'\')">×</button></span>').join("")+'</div>';
 }
@@ -7117,6 +7173,7 @@ function sxCardHtml(r){
     (ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
       :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>')+
     sxQuickAddHtml(r,"")+
+    sxCondPickerHtml(r)+
     sxPromptsHtml(r)+
     (legacy?'<div class="sxlegacy"><span>This patient still has an old template sign-out.</span>'+
       '<button type="button" onclick="event.stopPropagation();sxMigrateCard(\''+r.id+'\')">⇣ Import it</button></div>':"")+
@@ -7328,7 +7385,8 @@ function nccuCardHtml(r){
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
-    '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+soTmplBadge(r)+
+    '<div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+
+    sxConditions(r).slice(0,3).map(c=>'<span class="bg c">'+esc(c.l)+'</span>').join("")+
     (compact&&dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"")+
     (function(){
       const st=sxNeedsRecompress(r);
