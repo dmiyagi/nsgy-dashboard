@@ -731,7 +731,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.112 · 2026-09-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.113 · 2026-09-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5866,6 +5866,7 @@ function syncLinkedSo(r){
     rr.soTBeforeNccu=r.soTBeforeNccu||rr.soTBeforeNccu||"";
     rr.so=Object.assign({},rr.so||{},r.so||{});
     rr.soPrev=Object.assign({},rr.soPrev||{},r.soPrev||{});
+    copyLinkedSx(rr,r);
     rr.nccuSO=!!(rr.nccuSO||r.nccuSO);
     rr.updatedAt=now;
     return;
@@ -5876,10 +5877,18 @@ function syncLinkedSo(r){
       c.soTBeforeNccu=r.soTBeforeNccu||c.soTBeforeNccu||"";
       c.so=Object.assign({},c.so||{},r.so||{});
       c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+      copyLinkedSx(c,r);
       c.nccuSO=!!(c.nccuSO||r.nccuSO);
       c.updatedAt=now;
     });
   }
+}
+function cloneSx(sx){return Array.isArray(sx)?sx.map(x=>Object.assign({},x)):[]}
+function copyLinkedSx(dst,src){
+  if(!dst||!src||!Array.isArray(src.sx))return;
+  dst.sx=cloneSx(src.sx);
+  dst.sxMigrated=!!src.sxMigrated;
+  dst.sxReadAt=src.sxReadAt||dst.sxReadAt;
 }
 function togWorry(id){const r=findAny(id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();render();save()}}
 function purgeRounds(){
@@ -8566,6 +8575,20 @@ function mergeWorkArray(primary,secondary,pOwner,sOwner){
     return x;
   });
 }
+function mergeSxArray(primary,secondary,pOwner,sOwner){
+  const byKey={};
+  function key(x){return (x&&x.src)||((x&&x.id)?("id:"+x.id):workKey(x&&x.t))}
+  function stamp(x,o){return (x&&(x.ts||x.updatedAt))||(o&&(o.updatedAt||o.created))||0}
+  function add(arr,owner){
+    (arr||[]).forEach(x=>{
+    const k=key(x);if(!k)return;
+    const cur=byKey[k];
+      if(!cur||stamp(x,owner)>=stamp(cur,cur._owner))byKey[k]=Object.assign({},cur||{},x,{_owner:owner});
+    });
+  }
+  add(secondary,sOwner);add(primary,pOwner);
+  return Object.values(byKey).map(x=>{const y=Object.assign({},x);delete y._owner;return y}).sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
 function mergeWorkRecord(primary,secondary){
   if(!primary||!secondary)return primary||secondary;
   const pClose=primary.closedAt||0,sClose=secondary.closedAt||0,pOpen=primary.reopenedAt||0,sOpen=secondary.reopenedAt||0;
@@ -8577,6 +8600,7 @@ function mergeWorkRecord(primary,secondary){
   primary.steps=mergeWorkArray(primary.steps,secondary.steps,primary,secondary);
   primary.tasks=mergeWorkArray(primary.tasks,secondary.tasks,primary,secondary);
   primary.doneKeys=mergeDoneList(primary,secondary);
+  primary.sx=mergeSxArray(primary.sx,secondary.sx,primary,secondary);
   (primary.steps||[]).concat(primary.tasks||[]).forEach(t=>{if(t&&wasDone(primary,t.t)){t.done=true;t.dueISO=null}});
   return primary;
 }
