@@ -562,6 +562,14 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sxcond select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc);
   font-family:var(--font);font-size:11px;font-weight:700;padding:3px 6px;max-width:150px}
 .sxnone{font-size:11px;color:var(--mut);font-style:italic}
+.sxcheck{position:relative;margin-top:8px;padding:7px 26px 7px 9px;background:#2a1e10;border:1px solid #6b4b1c;border-radius:9px}
+.sxckrow{font-size:11.5px;line-height:1.45}
+.sxckrow+.sxckrow{margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,202,122,.18)}
+.sxcheck .ckmsg{display:block;color:#ffca7a;font-weight:700}
+.sxcheck .cklines{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.sxcheck .ckx{position:absolute;right:6px;top:5px;border:none;background:transparent;color:var(--mut);
+  font-size:13px;cursor:pointer;font-family:var(--font);line-height:1}
+.sxcheck .ckx:hover{color:var(--e3)}
 .sweepsheet{max-width:760px}
 .swpos{font-size:12px;color:var(--mut);font-weight:600;margin-left:6px}
 .swhead{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
@@ -731,7 +739,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.113 · 2026-09-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.114 · 2026-09-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6751,7 +6759,8 @@ function sxGuessRole(t,isFirst){
   if(/\b(?:goal|goals|keep|maintain|target|parameter)\w*\b/i.test(s)||/(?:^|\s)(?:sbp|map|icp|na|cpp|inr|plt|cvp)\s*[<>≥≤]/i.test(s))return "goal";
   if(/\b(?:cannot|can'?t|unable|held|holding|hold|contraindicat|declin|refus|prevent|delay|block|limit|defer|precl)\w*\b/i.test(s))return "constraint";
   if(/^(?:plan|will|tomorrow|then|next|after|once|d\/?c|discontinu|remov|wean|start|begin|discharg|sign off|advanc|rais|clamp)\w*\b/i.test(s)
-     ||/\b(?:tomorrow|in the (?:am|morning)|this pm|on pod\s*\d)\b/i.test(s))return "transition";
+     ||/\b(?:tomorrow|in the (?:am|morning)|this pm|on pod\s*\d)\b/i.test(s)
+     ||/\b(?:home|rehab|snf|sign ?off|floor|step ?down)\b.{0,40}\b(?:once|when|after|pending)\b/i.test(s))return "transition";
   // an arrow is an explicit change; otherwise stability words beat change words
   if(/(?:→|->)/.test(s))return "delta";
   if(/\d\s*(?:to|-->|→)\s*\d/i.test(s)&&/\b(?:na|icp|sbp|map|cpp|gcs|hgb|plt|inr|wbc|cr|uop|tmax|from)\b/i.test(s))return "delta";
@@ -6759,11 +6768,12 @@ function sxGuessRole(t,isFirst){
   if(!stable&&/\b(?:new|newly|wors|improv|increas|decreas|resolv|since|chang|spike|extubat|clamp|remov|complet|clear|develop|onset)\w*\b/i.test(s))return "delta";
   // a bare problem representation is the context line — but being first is not
   // enough on its own, or the first number typed becomes the one-liner
-  if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s)&&s.length<70)return "context";
-  if(isFirst&&s.length<70){
+  if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s))return "context";
+  if(isFirst){
     const demo=/\b\d{1,3}\s*[MF]\b|\byo\b|\byear[- ]old\b/i.test(s);
-    const setting=/\bat\s+\d|\d\s*[-–—]\s*\d|[<>≥≤]|\bq\d/i.test(s);
-    if(demo||(SX_CONDITIONS.some(c=>c.re.test(s))&&!setting))return "context";
+    const setting=/\bat\s+\d|(?:^|[^A-Za-z])\d+\s*[-–—]\s*\d|[<>≥≤]|\bq\d/i.test(s);
+    const exam=/^\s*(?:ble|lle|rle|bue|lue|rue|na|icp|sbp|map|cpp|inr|plt|wbc|hgb|tmax|gcs|uop|cr)\b/i.test(s);
+    if(!exam&&(demo||(SX_CONDITIONS.some(c=>c.re.test(s))&&!setting)))return "context";
   }
   return "state";
 }
@@ -6927,7 +6937,28 @@ const SX_CONDITIONS=[
  {k:"acich",l:"AC in ICH",re:/(?:warfarin|coumadin|eliquis|apixaban|xarelto|heparin|lovenox|plavix|dapt|doac)/i,
   prompts:["Agent + last dose","Reversal given","Indication for AC","When it can restart","DVT ppx status + timing"]},
  {k:"peds",l:"Pediatric",re:/\bpeds\b|pediatric|infant|neonate|\bw&i\b|fontanelle/i,
-  prompts:["Weight + weight-based dosing","Fontanelle / head circumference","Baseline development","Parents at bedside / consent"]}
+  prompts:["Weight + weight-based dosing","Fontanelle / head circumference","Baseline development","Parents at bedside / consent"]},
+ // Hot order: why detethered + baseline deficit → POD/procedure → BLE vs
+ // baseline → wound/CSF → voiding → mobility/pain → discharge barrier.
+ {k:"tether",l:"Tethered cord",re:/tether|detether|de-?tether|filum|lipomyelomeningocele|lipomeningocele|myelomeningocele|\bmmc\b|split cord|diastematomyelia|dermal sinus|conus/i,
+  prompts:["Indication + baseline deficit","Procedure + POD · primary vs redo","BLE motor vs pre-op baseline",
+    "Sensory / saddle vs baseline","Wound + CSF leak concern","Voiding · CIC or spontaneous vs baseline",
+    "Bowel regimen vs baseline","Mobility / gait vs baseline","Pain control","Intraop monitoring change",
+    "Positioning / activity restriction","Discharge barrier"],
+  checks:[{re:/\b(?:ble|lle|rle|le)\b\s*\d\/5|\b\d\/5\b|weak|strength|sensory|numb|parasthes|paresthes|bladder|bowel|void|cic\b|incontinen|retention|gait|ambulat/i,
+    not:/baseline|pre-?op|unchanged|at her |at his |chronic|new (?:since|from)|vs |compared/i,
+    msg:"Label LE and bowel/bladder findings baseline vs current — these kids often have chronic deficits"}]},
+ // Hot order: index op → wound delta → systemic → neuro → depth/hardware/CSF
+ // → cultures/abx → source-control decision → pending action.
+ {k:"ssi",l:"SSI / wound concern",re:/\bssi\b|surgical site infection|wound (?:infection|concern|check|breakdown|dehis)|dehisc|incision(?:al)? (?:erythema|drainage|swelling|concern)|purulen|wound drainage|exposed hardware|pseudomeningocele/i,
+  prompts:["Index op + POD","Wound change + when it started","Surface: erythema / dehiscence / drainage",
+    "Depth: superficial · deep · hardware · epidural/intracranial","Systemic: fever, WBC, CRP/ESR, cultures",
+    "Neuro vs baseline","Hardware involved — retain vs explant","CSF leak / pseudomeningocele",
+    "Abx: empiric vs targeted · cultures first?","Source control: observe · aspirate · washout",
+    "AC/AP + last dose if OR likely","Ownership: NSGY vs ID vs PRS"],
+  checks:[{scope:"patient",re:/erythema|dehisc|drainage|swelling|purulen|fluctuan|warm|tender|discolor|necro/i,
+    not:/superficial|deep|fascial|hardware|epidural|intracranial|collection|abscess|osteo|washout|debride|explant|aspirat|observe|wound care|\bmri\b|\bct\b/i,
+    msg:"Wound descriptors given without depth or management state — say superficial vs deep/hardware, and observe vs abx vs washout"}]}
 ];
 function sxCondText(r){
   return [r&&r.raw,r&&r.prob,r&&r.loc,r&&r.note].concat(sxAll(r).map(x=>x.t)).filter(Boolean).join(" ");
@@ -7202,6 +7233,38 @@ function sxItemHtml(r,it){
     '<button type="button" class="sxdel" title="drop" onclick="event.stopPropagation();sxRemove(\''+r.id+'\',\''+it.id+'\')">×</button>'+
   '</div>';
 }
+// A check fires when a captured line matches `re` but never qualifies it with
+// `not`. It flags the specific line so the fix is obvious.
+function sxChecks(r){
+  const out=[];
+  // the context line states the indication, not a finding — never flag it
+  const lines=sxAll(r).filter(l=>l.role==="state"||l.role==="delta");
+  sxConditions(r).forEach(c=>(c.checks||[]).forEach(chk=>{
+    const hits=lines.filter(l=>chk.re.test(l.t)&&!chk.not.test(l.t));
+    if(!hits.length)return;
+    // a patient-scope check is satisfied if any line anywhere resolves it
+    if(chk.scope==="patient"&&lines.some(l=>chk.not.test(l.t)))return;
+    out.push({msg:chk.msg,lines:hits.map(h=>h.t)});
+  }));
+  return out;
+}
+function sxChecksHtml(r){
+  if(r&&r.sxChecksOff)return "";
+  const ck=sxChecks(r);
+  if(!ck.length)return "";
+  return '<div class="sxcheck">'+ck.map(c=>
+    '<div class="sxckrow"><span class="ckmsg">'+esc(c.msg)+'</span>'+
+    '<span class="cklines">'+c.lines.map(t=>esc(t.slice(0,48))).join(" · ")+'</span></div>').join("")+
+    '<button type="button" class="ckx" title="stop checking this patient" onclick="event.stopPropagation();sxMuteChecks(\''+r.id+'\')">×</button></div>';
+}
+function sxMuteChecks(id){
+  const r=findAny(id);if(!r)return;
+  r.sxChecksOff=true;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Checks off for "+soLabel(r),()=>{
+    const rr=findAny(id);if(!rr)return;
+    delete rr.sxChecksOff;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
 function sxCondPickerHtml(r){
   const on=sxConditions(r),onKeys=on.map(c=>c.k);
   const auto=sxAutoConditions(r);
@@ -7246,6 +7309,7 @@ function sxCardHtml(r,prefix){
     sxListHtml(r)+
     sxQuickAddHtml(r,p)+
     sxCondPickerHtml(r)+
+    sxChecksHtml(r)+
     sxPromptsHtml(r)+
     (legacy?'<div class="sxlegacy"><span>This patient still has an old template sign-out.</span>'+
       '<button type="button" onclick="event.stopPropagation();sxMigrateCard(\''+r.id+'\')">⇣ Import it</button></div>':"")+
