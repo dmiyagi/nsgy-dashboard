@@ -331,6 +331,8 @@ button.rdone.finaldone{background:#123527}
 .nccucard.compact .state{white-space:nowrap}
 .nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
 .nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px;cursor:pointer}
+.nccufield.dragging{opacity:.55;border-color:var(--acc)}
+.nccufield .draghint{float:right;color:var(--mut);font-size:10px;text-transform:none;letter-spacing:0}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
 .nccuhead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .nccuhead b{margin-bottom:0;flex:1;min-width:0}
@@ -739,7 +741,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.116 · 2026-09-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.117 · 2026-09-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6225,6 +6227,7 @@ function buildSOFields(){const r=findAny(soId);if(!r)return;
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
   const extras=soOrderedExtras(r).map(b=>[b.k,soExtraPh(b.k)]);
   document.getElementById("sofields").innerHTML=
+    soBoxTemplateMenuHtml(r)+
     tmpl.fields.map(f=>soFieldHtml(r,f)).join("")+
     extras.map(f=>soFieldHtml(r,f)).join("")+
     soModalSuggestHtml(r);
@@ -6652,10 +6655,15 @@ const SO_BOARD_BOXES={
 };
 const SO_OPTIONAL_BOXES=[
   {key:"evd",label:"EVD",fields:["EVD","EVD/Output","EVD + ICP course"],re:/\b(?:evd|external ventricular|ivh|icp)\b/i},
-  {key:"drain",label:"Drain",fields:["Drains","Drains + output","EVD/Output","EVD + ICP course"],re:/\b(?:drain|jp|blake|hemovac|ld|lumbar drain|seps)\b/i},
+  {key:"drain",label:"Drain",fields:["Drains","Drains + output","EVD/Output","EVD + ICP course","Lines"],extra:"Drain",re:/\b(?:drain|jp|blake|hemovac|ld|lumbar drain|seps)\b/i},
   {key:"vent",label:"Vent",fields:["Vent"],re:/\b(?:vent|intubat|ett|trach|oxygen|fio2|peep)\b/i},
   {key:"na",label:"Na",fields:["Na goal","Na goal + last","Labs","Renal","DI watch"],re:/\b(?:na|sodium|euna|hts|florinef|di watch)\b/i},
-  {key:"bp",label:"BP",fields:["BP goal","Vitals","Cards","MAP goal if cord"],re:/\b(?:sbp|bp|map|pressors?|cardene|nicard)\b/i}
+  {key:"bp",label:"BP",fields:["BP goal","Vitals","Cards","MAP goal if cord"],re:/\b(?:sbp|bp|map|pressors?|cardene|nicard)\b/i},
+  {key:"abx",label:"ABX",fields:["Antibiotics"],extra:"Antibiotics",re:/\b(?:abx|antibiotic|ancef|cefazolin|vanc|cefepime|ceftriaxone|zosyn|bactrim|culture|cx\b|infect|ssi|wound)\b/i},
+  {key:"steroid",label:"Steroids",fields:["Steroid + AED plan"],extra:"Steroids",re:/\b(?:steroid|dex|dexamethasone|hydrocort|prednisone|solumedrol|ppi|iss)\b/i},
+  {key:"asm",label:"ASM",fields:["Seizure ppx"],extra:"Seizures / ASM",re:/\b(?:seizure|keppra|levetiracetam|asm|aed|cEEG|LTM|dilantin|phenytoin|valproate)\b/i},
+  {key:"ac",label:"AC/AP",fields:["AC status","Meds","Heme","Meds of consequence"],extra:"AC / antiplatelet",re:/\b(?:eliquis|apixaban|xarelto|warfarin|heparin|lovenox|asa\b|aspirin|plavix|anticoag|antiplatelet)\b/i},
+  {key:"dispo",label:"Dispo",fields:["Dispo + barriers","Dispo / barriers","Dispo planning","Other barriers to dispo"],extra:"Dispo barriers",re:/\b(?:dispo|rehab|snf|ltach|placement|barrier|pt\/ot|insurance)\b/i}
 ];
 // ---------- add-on boxes for patients the template does not cover ----------
 // Each entry watches for a complexity signal. `covers` names the template
@@ -6667,6 +6675,15 @@ const SO_EXTRA_BOXES=[
  {k:"Pre-op status",ph:"done: consent, booking/case request, NPO, CBC/coags/T&S, H&P/pre-op note, DVT held, postop bed · not done: ___",
   covers:[],always:true,
   re:/\b(?:pre-?op|to the OR|book(?:ed|ing)?|case request|NPO|T&S|type and screen|consent|postop bed|OR front desk)\b/i},
+ {k:"Drain",ph:"JP/blake/EVD/LD ___ · level/suction/output ___ · pull plan ___",
+  covers:["Drains","Drains + output","EVD","EVD/Output","EVD + ICP course","Lines"],
+  re:/\b(?:drain|jp|blake|hemovac|evd|ld|lumbar drain|seps)\b/i},
+ {k:"Antibiotics",ph:"Ancef periop · vanc/cefepime day __/__ · cultures ___",
+  covers:["Micro/ID","ID","Labs / cultures","Antibiotics","Daily meds","Meds of consequence","Prophylaxis"],
+  re:/\b(?:abx|antibiotic|ancef|cefazolin|vanc|cefepime|ceftriaxone|zosyn|bactrim|culture|cx\b|infect|ssi|wound)\b/i},
+ {k:"Steroids",ph:"dex 4q6 + PPI/ISS · taper ___ · off steroids ___",
+  covers:["Steroid + AED plan","Daily meds","Meds of consequence","Endo","A/P Neuro","Active problems"],
+  re:/\b(?:steroid|dex|dexamethasone|hydrocort|prednisone|solumedrol|ppi|iss)\b/i},
  {k:"AC / antiplatelet",ph:"apixaban, held since 8/20 · restart 14d from stable scan",
   covers:["AC status","Meds","Heme","Meds of consequence"],
   re:/\b(?:warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|asa\b|dapt|doac|anticoag|antiplatelet)\b/i},
@@ -6768,9 +6785,10 @@ function soSuggestStripHtml(r){
     '</div>';
 }
 function soFieldsFor(r){return soTemplate(r).fields.map(f=>f[0])}
+function soExtraDef(k){return SO_EXTRA_BOXES.find(x=>x.k===k)}
 function soBoxFieldFor(r,opt){
   const fields=soFieldsFor(r);
-  return (opt.fields||[]).find(f=>fields.includes(f))||"";
+  return (opt.fields||[]).find(f=>fields.includes(f))||(opt.extra&&soExtraDef(opt.extra)?opt.extra:"");
 }
 function soBoardText(r){
   return [r&&r.raw,r&&r.prob,r&&r.loc,r&&r.note].concat(Object.values((r&&r.so)||{})).filter(Boolean).join(" ");
@@ -6781,6 +6799,24 @@ function soBoardOptionalOn(r,opt){
   const f=soBoxFieldFor(r,opt);
   return !!(f&&((r.so&&r.so[f])||opt.re.test(soBoardText(r))));
 }
+const SO_ORDER_HINT=["POD","Pre-op status","One-liner","Exam","Exam @ SBP","Exam vs pre-op","Exam + baseline","Motor exam","Exam + change from baseline","Urinary status / bowel movements","EVD","EVD/Output","EVD + ICP course","Drain","Drains","Drains + output","Vent","Vitals","BP goal","MAP goal if cord","Na goal","Na goal + last","Labs","Micro/ID","ID","Antibiotics","Steroids","Seizures / ASM","Seizure ppx","Daily meds","Meds of consequence","AC / antiplatelet","AC status","Imaging","Images","Post-op imaging","New events / imaging","Overnight events","Pending studies","Plan","A/P Neuro","Source control / OR","Dispo + barriers","Dispo / barriers","Other barriers to dispo","Notes"];
+function soOrderRank(label){
+  const i=SO_ORDER_HINT.findIndex(x=>x.toLowerCase()===String(label||"").toLowerCase());
+  return i>=0?i:1000;
+}
+function soApplyCustomOrder(r,labels){
+  const order=(r&&Array.isArray(r.soBoxOrder))?r.soBoxOrder:[];
+  if(!order.length)return labels;
+  const ix={};order.forEach((k,i)=>ix[k]=i);
+  return labels.slice().sort((a,b)=>{
+    const ai=ix[a],bi=ix[b];
+    if(ai!==undefined||bi!==undefined)return (ai===undefined?9999:ai)-(bi===undefined?9999:bi);
+    return soOrderRank(a)-soOrderRank(b)||a.localeCompare(b);
+  });
+}
+function soSuggestedSort(labels){
+  return labels.slice().sort((a,b)=>soOrderRank(a)-soOrderRank(b)||a.localeCompare(b));
+}
 function soBoardBoxLabels(r){
   const fields=soFieldsFor(r),picked=[],seen={};
   (SO_BOARD_BOXES[(r&&r.soT)||"floor"]||SO_BOARD_BOXES.floor).forEach(f=>{if(fields.includes(f)&&!seen[f]){seen[f]=true;picked.push(f)}});
@@ -6788,7 +6824,7 @@ function soBoardBoxLabels(r){
     const f=soBoxFieldFor(r,opt);
     if(f&&soBoardOptionalOn(r,opt)&&!seen[f]){seen[f]=true;picked.push(f)}
   });
-  return picked;
+  return soApplyCustomOrder(r,soSuggestedSort(picked));
 }
 function soBoardToggleHtml(r){
   r.soBoardOn=r.soBoardOn||{};
@@ -6804,8 +6840,71 @@ function toggleSoBoardBox(id,key){
   const r=findAny(id);if(!r)return;
   const opt=SO_OPTIONAL_BOXES.find(x=>x.key===key);if(!opt)return;
   r.soBoardOn=r.soBoardOn||{};
-  r.soBoardOn[key]=!soBoardOptionalOn(r,opt);
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  const on=!soBoardOptionalOn(r,opt);
+  r.soBoardOn[key]=on;
+  if(opt.extra){
+    r.soExtra=r.soExtra||{};
+    r.soExtra[opt.extra]=on;
+    if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[opt.extra]}
+  }
+  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+}
+function soBoxTemplateMenuHtml(r){
+  const btns=SO_OPTIONAL_BOXES.map(opt=>{
+    const f=soBoxFieldFor(r,opt);
+    if(!f)return "";
+    const on=soBoardOptionalOn(r,opt);
+    return '<button type="button" class="'+(on?'on':'')+'" onclick="toggleSoBoardBox(\''+r.id+'\',\''+opt.key+'\')">'+(on?'✓ ':'＋ ')+esc(opt.label)+'</button>';
+  }).filter(Boolean).join("");
+  return btns?'<div class="chips soboxchips" style="margin:0 0 10px"><span class="ssl">Boxes:</span>'+btns+'<button type="button" onclick="soResetBoxOrder(\''+r.id+'\')">Suggested order</button></div>':"";
+}
+function soAllBoardLabels(r){
+  const fields=soFieldsFor(r),seen={},labels=[];
+  soBoardBoxLabels(r).forEach(k=>{if(!seen[k]){seen[k]=true;labels.push(k)}});
+  fields.filter(k=>k!=="One-liner").forEach(k=>{if(!seen[k]){seen[k]=true;labels.push(k)}});
+  soExtraActive(r).forEach(b=>{if(!seen[b.k]){seen[b.k]=true;labels.push(b.k)}});
+  return soApplyCustomOrder(r,soSuggestedSort(labels));
+}
+function soResetBoxOrder(id){
+  const r=findAny(id);if(!r)return;
+  delete r.soBoxOrder;r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function soMoveBox(id,from,to){
+  const r=findAny(id);if(!r||!from||!to||from===to)return;
+  const labels=soAllBoardLabels(r);
+  const arr=(r.soBoxOrder&&r.soBoxOrder.length?r.soBoxOrder.slice():labels.slice()).filter(x=>labels.includes(x));
+  labels.forEach(x=>{if(!arr.includes(x))arr.push(x)});
+  const i=arr.indexOf(from),j=arr.indexOf(to);if(i<0||j<0)return;
+  arr.splice(j,0,arr.splice(i,1)[0]);
+  r.soBoxOrder=arr;r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function soBoxDragStart(ev,id,label){
+  ev.stopPropagation();
+  ev.dataTransfer.setData("text/plain",label);
+  ev.dataTransfer.effectAllowed="move";
+  const el=ev.currentTarget;if(el)el.classList.add("dragging");
+}
+function soBoxDragEnd(ev){const el=ev.currentTarget;if(el)el.classList.remove("dragging")}
+function soBoxDrop(ev,id,label){
+  ev.preventDefault();ev.stopPropagation();
+  const from=ev.dataTransfer.getData("text/plain");
+  soMoveBox(id,from,label);
+}
+function soLabelIsTemplateField(r,label){return soFieldsFor(r).includes(label)}
+function soLabelIsOptional(r,label){
+  return SO_OPTIONAL_BOXES.some(opt=>soBoxFieldFor(r,opt)===label)||soExtraActive(r).some(b=>b.k===label);
+}
+function soRemoveBoardLabel(id,label){
+  const r=findAny(id);if(!r)return;
+  SO_OPTIONAL_BOXES.forEach(opt=>{
+    if(soBoxFieldFor(r,opt)===label){
+      r.soBoardOn=r.soBoardOn||{};r.soBoardOn[opt.key]=false;
+      if(opt.extra&&opt.extra===label){r.soExtra=r.soExtra||{};r.soExtra[label]=false}
+    }
+  });
+  if(soExtraDef(label)){r.soExtra=r.soExtra||{};r.soExtra[label]=false}
+  r.soBoxOrder=(r.soBoxOrder||[]).filter(x=>x!==label);
+  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxBig(r,label){return !!(r&&r.soBig&&r.soBig[label])}
 function toggleSoBoxBig(id,label){
@@ -6816,12 +6915,13 @@ function toggleSoBoxBig(id,label){
 function soBoardBoxHtml(r,label,extra){
   const val=soPick(r,label)||"___";
   const big=soBoxBig(r,label);
-  return '<div class="nccufield'+(big?" big":"")+(extra?" extrabox":"")+'" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+
-    nccuFieldHead(r,label,label)+
+  const removable=extra||(!soLabelIsTemplateField(r,label)&&soLabelIsOptional(r,label));
+  return '<div class="nccufield'+(big?" big":"")+(extra?" extrabox":"")+'" draggable="true" ondragstart="soBoxDragStart(event,\''+r.id+'\',\''+jsq(label)+'\')" ondragend="soBoxDragEnd(event)" ondragover="event.preventDefault()" ondrop="soBoxDrop(event,\''+r.id+'\',\''+jsq(label)+'\')" onclick="openSO(\''+r.id+'\',\''+esc(label)+'\')">'+
+    nccuFieldHead(r,label,label).replace("</b>","<span class=\"draghint\">drag</span></b>")+
     '<span>'+nccuFieldHtml(r,label,val)+'</span>'+
     '<span class="boxtools">'+
       '<button type="button" title="'+(big?"Smaller":"More room")+'" onclick="event.stopPropagation();toggleSoBoxBig(\''+r.id+'\',\''+esc(label)+'\')">'+(big?"⤡":"⤢")+'</button>'+
-      (extra?'<button type="button" title="Remove this box" onclick="event.stopPropagation();toggleSoExtra(\''+r.id+'\',\''+esc(label)+'\')">×</button>':"")+
+      (removable?'<button type="button" title="Remove this box" onclick="event.stopPropagation();soRemoveBoardLabel(\''+r.id+'\',\''+esc(label)+'\')">×</button>':"")+
     '</span></div>';
 }
 // ================= sign-out as a management model, not a form =================
@@ -7477,16 +7577,11 @@ function copySxCard(id){
   toClip(sxText(r));showToast("Sign-out copied");
 }
 function soBoardFieldsHtml(r){
-  const boxLabels=soBoardBoxLabels(r),boxed={};
-  boxLabels.forEach(k=>boxed[k]=true);
-  const boxes=boxLabels.map(label=>soBoardBoxHtml(r,label)).join("");
-  const rest=soFieldsFor(r).filter(k=>k!=="One-liner"&&!boxed[k]);
-  const extras=soExtraActive(r);
+  const labels=soAllBoardLabels(r);
   return soBoardToggleHtml(r)+soSuggestStripHtml(r)+
+    '<div class="qbtns" style="margin-top:6px"><button type="button" onclick="event.stopPropagation();soResetBoxOrder(\''+r.id+'\')">Suggested order</button></div>'+
     '<div class="nccugrid">'+
-    boxes+
-    rest.map(label=>soBoardBoxHtml(r,label)).join("")+
-    extras.map(b=>soBoardBoxHtml(r,b.k,true)).join("")+
+    labels.map(label=>soBoardBoxHtml(r,label,!soLabelIsTemplateField(r,label))).join("")+
     nccuTodoHtml(r)+nccuNoteHtml(r)+
     '</div>';
 }
