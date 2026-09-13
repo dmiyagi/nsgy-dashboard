@@ -741,7 +741,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.117 · 2026-09-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.119 · 2026-09-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5016,9 +5016,16 @@ function rStepsHtml(r){
 const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60]];
 const ROUND_CHECKS_24=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60],["pmseen","PM seen",18*60],["pm9","9p chart",21*60],["amchart","5a chart",29*60]];
 function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
+function hasActiveChartCheck(r){
+  return !!(r&&r.id&&(S.consults||[]).some(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id));
+}
+function roundChecksFor(r){
+  const checks=roundChecks();
+  return hasActiveChartCheck(r)?checks.filter(([k])=>k!=="am"):checks;
+}
 function roundChartHtml(r){
   r.chartChecks=r.chartChecks||{};
-  const checks=roundChecks();
+  const checks=roundChecksFor(r);
   const done=checks.filter(([k])=>r.chartChecks[k]).length;
   return '<div class="wf">'+checks.map(([k,l])=>'<button class="routine '+(r.chartChecks[k]?"on":"")+'" onclick="toggleRoundChart(\''+r.id+'\',\''+k+'\')">'+(r.chartChecks[k]?"✓ ":"")+l+'</button>').join("")+
     '<span class="chartprog'+(done===checks.length?" all":"")+'">'+done+'/'+checks.length+'</span>'+
@@ -5042,12 +5049,12 @@ function fmtClock(ts){
 }
 function roundArchived(r){return !!(r&&r.archiveUntil&&Date.now()<r.archiveUntil)}
 function roundNextCheck(r){
-  const checks=roundChecks(),cc=(r&&r.chartChecks)||{};
+  const checks=roundChecksFor(r),cc=(r&&r.chartChecks)||{};
   const i=checks.findIndex(([k])=>!cc[k]);
   return i>=0?{i:i,k:checks[i][0],label:checks[i][1],due:checks[i][2]}:null;
 }
 function roundLastDoneCheck(r){
-  const checks=roundChecks(),cc=(r&&r.chartChecks)||{};
+  const checks=roundChecksFor(r),cc=(r&&r.chartChecks)||{};
   for(let i=checks.length-1;i>=0;i--)if(cc[checks[i][0]])return {i:i,k:checks[i][0],label:checks[i][1],due:checks[i][2]};
   return null;
 }
@@ -5062,7 +5069,7 @@ function roundWakeAfter(r){
 function roundStageBtn(r){
   const nx=roundNextCheck(r);
   if(!nx){
-    const n=roundChecks().length;
+    const n=roundChecksFor(r).length;
     return '<button class="rdone finaldone" title="All '+n+' checks done — tap to undo the last one" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓ '+n+'/'+n+'</button>';
   }
   return '<button class="rdone rstage" title="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓ '+esc(nx.label)+'</button>';
@@ -5070,7 +5077,7 @@ function roundStageBtn(r){
 function roundStageBox(r){
   const nx=roundNextCheck(r);
   if(!nx){
-    const n=roundChecks().length;
+    const n=roundChecksFor(r).length;
     return '<button class="rcheck done" title="All '+n+' checks done — tap to undo the last one" aria-label="Undo last rounds check" onclick="event.stopPropagation();roundCheckUndo(\''+r.id+'\')">✓</button>';
   }
   return '<button class="rcheck stage" title="Mark '+esc(nx.label)+' done" aria-label="Mark '+esc(nx.label)+' done" onclick="event.stopPropagation();roundCheckAdvance(\''+r.id+'\')">✓</button>';
@@ -5322,7 +5329,7 @@ function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
-  const checks=roundChecks();
+  const checks=roundChecksFor(r);
   return '<span class="chartdots" title="'+checks.map(c=>c[1]).join(" / ")+'">'+checks.map(([k])=>'<span class="chartdot '+(k==="am"||k==="pmseen"?"amseen ":"")+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
@@ -5582,21 +5589,28 @@ function woundSortKey(r){
 function woundSort(a,b){return woundSortKey(a).localeCompare(woundSortKey(b),undefined,{numeric:true})}
 const woundSecOpen={};
 const woundRowOpen={};
-function woundControlsHtml(scope){
-  return '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="toggleWoundCompact()">'+(S.woundCompact?'⊞ Full wound view':'⊟ Compact wound view')+'</button></div>';
+function woundControlsHtml(scope,total,due){
+  return '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="toggleWoundCompact()">'+(S.woundCompact?'⊞ Full wound view':'⊟ Compact wound view')+'</button>'+
+    '<button type="button" onclick="toggleWoundShowAll()">'+(S.woundShowAll?'Due only':'Show all')+'</button>'+
+    (total!==undefined?'<span class="caremeta">'+(due||0)+' due · '+total+' total</span>':"")+'</div>';
 }
 function toggleWoundCompact(){
   S.woundCompact=!S.woundCompact;renderRounds();renderCal();save();
 }
+function toggleWoundShowAll(){
+  S.woundShowAll=!S.woundShowAll;renderRounds();renderCal();save();
+}
+function woundDueFilter(r){return S.woundShowAll||!woundHiddenUntilNext(r)}
 function woundSecAttr(k){return (woundSecOpen[k]?' open':'')+' ontoggle="woundSecToggle(\''+k+'\',this.open)"'}
 function woundSecToggle(k,on){woundSecOpen[k]=!!on}
 function renderWoundRounds(list,scope){
-  const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
-  if(!items.length)return "";
-  autoScheduleWoundDateTasksFor(items,false);
+  const all=(list||[]).filter(woundRoundCandidate).slice().sort(woundSort);
+  if(!all.length)return "";
+  const items=all.filter(woundDueFilter);
+  autoScheduleWoundDateTasksFor(all,false);
   const k="wound-"+(scope||"main")+"-inpt";
-  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
-    items.map(r=>woundRow(r,false,scope)).join("")+
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+'/'+all.length+')</summary>'+woundControlsHtml(scope,all.length,items.length)+
+    (items.length?items.map(r=>woundRow(r,false,scope)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
     '</details>';
 }
 function woundPatientKey(r){
@@ -5606,32 +5620,36 @@ function woundPatientKey(r){
 }
 function renderRoundWoundList(list){
   const rows=[],seen={};
-  (list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).forEach(r=>{
+  (list||[]).filter(woundRoundCandidate).filter(woundDueFilter).forEach(r=>{
     const k=woundPatientKey(r);if(k)seen[k]=true;
     rows.push([r,false]);
   });
-  (S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).forEach(r=>{
+  (S.formerWounds||[]).filter(woundDueFilter).forEach(r=>{
     const k=woundPatientKey(r);
     if(k&&seen[k])return;
     if(k)seen[k]=true;
     rows.push([r,true]);
   });
-  if(!rows.length)return "";
-  const made=rows.reduce((n,[r,former])=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
+  const allRows=[],allSeen={};
+  (list||[]).filter(woundRoundCandidate).forEach(r=>{const k=woundPatientKey(r);if(k)allSeen[k]=true;allRows.push([r,false])});
+  (S.formerWounds||[]).forEach(r=>{const k=woundPatientKey(r);if(k&&allSeen[k])return;if(k)allSeen[k]=true;allRows.push([r,true])});
+  if(!allRows.length)return "";
+  const made=allRows.reduce((n,[r,former])=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
   if(made)autosave();
   rows.sort((a,b)=>woundSort(a[0],b[0]));
   const k="wound-round-all";
-  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+woundControlsHtml("round")+
-    rows.map(([r,former])=>woundRow(r,former)).join("")+
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+rows.length+'/'+allRows.length+')</summary>'+woundControlsHtml("round",allRows.length,rows.length)+
+    (rows.length?rows.map(([r,former])=>woundRow(r,former)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
     '</details>';
 }
 function renderFormerWounds(scope){
-  const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
-  if(!items.length)return "";
-  autoScheduleWoundDateTasksFor(items,true);
+  const all=(S.formerWounds||[]).slice().sort(woundSort);
+  if(!all.length)return "";
+  const items=all.filter(woundDueFilter);
+  autoScheduleWoundDateTasksFor(all,true);
   const k="wound-"+(scope||"main")+"-former";
-  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
-    items.map(r=>woundRow(r,true,scope)).join("")+
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+'/'+all.length+')</summary>'+woundControlsHtml(scope,all.length,items.length)+
+    (items.length?items.map(r=>woundRow(r,true,scope)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
     '</details>';
 }
 function woundSourceText(r){return [r.raw,r.label,roundProblemText(r)].filter(Boolean).join(" ")}
@@ -5935,6 +5953,7 @@ function syncLinkedSo(r){
     rr.soTBeforeNccu=r.soTBeforeNccu||rr.soTBeforeNccu||"";
     rr.so=Object.assign({},rr.so||{},r.so||{});
     rr.soPrev=Object.assign({},rr.soPrev||{},r.soPrev||{});
+    rr.soOneCount=Math.max(rr.soOneCount||1,r.soOneCount||1);
     copyLinkedSx(rr,r);
     rr.nccuSO=!!(rr.nccuSO||r.nccuSO);
     rr.updatedAt=now;
@@ -5946,6 +5965,7 @@ function syncLinkedSo(r){
       c.soTBeforeNccu=r.soTBeforeNccu||c.soTBeforeNccu||"";
       c.so=Object.assign({},c.so||{},r.so||{});
       c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+      c.soOneCount=Math.max(c.soOneCount||1,r.soOneCount||1);
       copyLinkedSx(c,r);
       c.nccuSO=!!(c.nccuSO||r.nccuSO);
       c.updatedAt=now;
@@ -6225,13 +6245,38 @@ function buildSOFields(){const r=findAny(soId);if(!r)return;
   const tmpl=normalizeSoTemplate(r);
   const one=tmpl.fields[0][0];
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
+  const fields=soTemplateFields(r);
   const extras=soOrderedExtras(r).map(b=>[b.k,soExtraPh(b.k)]);
   document.getElementById("sofields").innerHTML=
     soBoxTemplateMenuHtml(r)+
-    tmpl.fields.map(f=>soFieldHtml(r,f)).join("")+
+    fields.map(f=>soFieldHtml(r,f)).join("")+
     extras.map(f=>soFieldHtml(r,f)).join("")+
     soModalSuggestHtml(r);
   renderSOHints();
+}
+function soExtraOneLinerCount(r){
+  if(!r)return 0;
+  const keys=Object.keys((r&&r.so)||{});
+  const max=keys.reduce((m,k)=>{const x=String(k).match(/^One-liner\s+(\d+)$/i);return x?Math.max(m,Number(x[1])):m},1);
+  return Math.max(0,(r.soOneCount||max)-1);
+}
+function soExtraOneLinerFields(r){
+  return Array.from({length:soExtraOneLinerCount(r)},(_,i)=>["One-liner "+(i+2),"updated/alternate one-liner"]);
+}
+function soIsExtraOneLiner(k){return /^One-liner\s+\d+$/i.test(k||"")}
+function soTemplateFields(r){
+  const t=soTemplate(r);
+  const base=t.fields.slice();
+  return base.slice(0,1).concat(soExtraOneLinerFields(r),base.slice(1));
+}
+function soAddOneLiner(){
+  const r=findAny(soId);if(!r)return;
+  r.so=r.so||{};
+  r.soOneCount=soExtraOneLinerCount(r)+2;
+  const k="One-liner "+r.soOneCount;
+  r.so[k]="";
+  r.updatedAt=Date.now();syncLinkedSo(r);buildSOFields();renderNccu();flushAutosave();
+  setTimeout(()=>focusSOField(k),40);
 }
 function focusSOField(k){
   const el=document.querySelector('#sofields [data-so="'+cssEsc(k)+'"]');
@@ -6270,7 +6315,7 @@ function soFieldHtml(r,f){
   const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
   const head='<div class="nccuhead"><b>'+esc(k)+'</b>'+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
   const picks=soPickMenuHtml(k);
-  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld">'+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
+  if(/^One-liner(?:\s+\d+)?$/i.test(k)||r.soT==="nccu")return '<div class="fld">'+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
   return '<div class="fld">'+head+picks+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
 const SO_PICK_GROUPS=[
@@ -6376,7 +6421,11 @@ function soHighlight(s){
 }
 function soText(r){
   const t=soTemplate(r);
-  const lines=t.fields.map(f=>f[0]+": "+(soFieldValue(r,f[0])||"___"));
+  const lines=soTemplateFields(r).map(f=>{
+    const v=soFieldValue(r,f[0]);
+    if(soIsExtraOneLiner(f[0])&&!v)return "";
+    return f[0]+": "+(v||"___");
+  }).filter(Boolean);
   soOrderedExtras(r).forEach(b=>lines.push(b.k+": "+(soFieldValue(r,b.k)||"___")));
   return t.name+" sign-out — "+soLabel(r)+"\n"+lines.join("\n");
 }
@@ -6407,23 +6456,22 @@ function dismissSoSuggestFromModal(k){
 // Blanks are dropped rather than spoken as "___", so what is on screen is
 // exactly what you say.
 function soFilledPairs(r){
-  const t=soTemplate(r);
   const out=[];
-  t.fields.forEach(f=>{const v=soFieldValue(r,f[0]);if(v)out.push([f[0],v])});
+  soTemplateFields(r).forEach(f=>{const v=soFieldValue(r,f[0]);if(v)out.push([f[0],v])});
   soOrderedExtras(r).forEach(b=>{const v=soFieldValue(r,b.k);if(v)out.push([b.k,v])});
   return out;
 }
 function soGapCount(r){
-  const t=soTemplate(r);
   let n=0;
-  t.fields.forEach(f=>{if(!soFieldValue(r,f[0]))n++});
+  soTemplateFields(r).forEach(f=>{if(!soFieldValue(r,f[0])&&!soIsExtraOneLiner(f[0]))n++});
   soOrderedExtras(r).forEach(b=>{if(!soFieldValue(r,b.k))n++});
   return n;
 }
 function soSpeakText(r){
   const pairs=soFilledPairs(r);
-  const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
-  const body=pairs.filter(p=>p[0]!=="One-liner").map(p=>p[0]+": "+p[1]);
+  const liners=pairs.filter(p=>/^One-liner(?:\s+\d+)?$/i.test(p[0])).map(p=>p[1]);
+  const head=soLabel(r)+" — "+(liners.join(" · ")||roundProblemText(r)||r.prob||"");
+  const body=pairs.filter(p=>!/^One-liner(?:\s+\d+)?$/i.test(p[0])).map(p=>p[0]+": "+p[1]);
   return head+(body.length?"\n"+body.join("\n"):"");
 }
 function soPresentPatients(){
@@ -6784,7 +6832,7 @@ function soSuggestStripHtml(r){
       '<button type="button" class="ssx" title="Not relevant" onclick="event.stopPropagation();dismissSoSuggest(\''+r.id+'\',\''+esc(b.k)+'\')">×</button></span>').join("")+
     '</div>';
 }
-function soFieldsFor(r){return soTemplate(r).fields.map(f=>f[0])}
+function soFieldsFor(r){return soTemplateFields(r).map(f=>f[0])}
 function soExtraDef(k){return SO_EXTRA_BOXES.find(x=>x.k===k)}
 function soBoxFieldFor(r,opt){
   const fields=soFieldsFor(r);
@@ -6856,7 +6904,7 @@ function soBoxTemplateMenuHtml(r){
     const on=soBoardOptionalOn(r,opt);
     return '<button type="button" class="'+(on?'on':'')+'" onclick="toggleSoBoardBox(\''+r.id+'\',\''+opt.key+'\')">'+(on?'✓ ':'＋ ')+esc(opt.label)+'</button>';
   }).filter(Boolean).join("");
-  return btns?'<div class="chips soboxchips" style="margin:0 0 10px"><span class="ssl">Boxes:</span>'+btns+'<button type="button" onclick="soResetBoxOrder(\''+r.id+'\')">Suggested order</button></div>':"";
+  return btns?'<div class="chips soboxchips" style="margin:0 0 10px"><span class="ssl">Boxes:</span><button type="button" onclick="soAddOneLiner()">＋ One-liner</button>'+btns+'<button type="button" onclick="soResetBoxOrder(\''+r.id+'\')">Suggested order</button></div>':"";
 }
 function soAllBoardLabels(r){
   const fields=soFieldsFor(r),seen={},labels=[];
@@ -7379,7 +7427,7 @@ function sxText(r){return sxAssemble(r).map(l=>l.text).join("\n")}
 function sxHasContent(r){return sxAll(r).length>0}
 // ---- migration: pull an existing template sign-out into the new model once ----
 const SX_FIELD_ROLE=[
-  [/^one-?liner$/i,"context"],
+  [/^one-?liner(?:\s+\d+)?$/i,"context"],
   [/goal|target|parameter|bp goal|na goal|map goal/i,"goal"],
   [/pending|follow|open|to-?do|await/i,"loop"],
   [/plan|dispo|wean|transition|next|milestone/i,"transition"],
@@ -7392,14 +7440,14 @@ function sxRoleForField(label){
   return "state";
 }
 function sxTemplateLabels(r){
-  const tmpl=soTemplate(r).fields.map(f=>f[0]);
+  const tmpl=soTemplateFields(r).map(f=>f[0]);
   const extra=(typeof soOrderedExtras==="function"?soOrderedExtras(r):soExtraActive(r)).map(b=>b.k);
   return tmpl.concat(extra);
 }
 function sxFieldText(label,val){
   const v=String(val||"").trim();
   if(!v)return "";
-  return /^one-?liner$/i.test(label)?v:label+": "+v;
+  return /^one-?liner(?:\s+\d+)?$/i.test(label)?v:label+": "+v;
 }
 function sxSyncFromTemplate(r){
   if(!r)return 0;
@@ -7837,8 +7885,9 @@ function copyNccuSignout(){
   const pts=nccuPatients();
   const txt=pts.map(r=>{
     const tmpl=soTemplate(r);
-    const head=soLabel(r)+" — "+(((r.so||{})["One-liner"])||roundProblemText(r)||r.prob||"");
-    const detail=tmpl.fields.filter(f=>f[0]!=="One-liner").map(f=>f[0]+": "+(soPick(r,f[0])||"___")).join("\n");
+    const liners=soTemplateFields(r).filter(f=>/^One-liner(?:\s+\d+)?$/i.test(f[0])).map(f=>soPick(r,f[0])).filter(Boolean);
+    const head=soLabel(r)+" — "+(liners.join(" · ")||roundProblemText(r)||r.prob||"");
+    const detail=soTemplateFields(r).filter(f=>!/^One-liner(?:\s+\d+)?$/i.test(f[0])).map(f=>f[0]+": "+(soPick(r,f[0])||"___")).join("\n");
     const todos=nccuTodoArr(r);
     const todoTxt="To-Dos:"+(todos.length?"\n"+todos.map(t=>"  "+(effectivelyDone(r,t)?"[x] ":"[ ] ")+t.t+(t.dueISO&&!effectivelyDone(r,t)?" (due "+new Date(t.dueISO).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+")":"")).join("\n"):" none");
     const notes="Notes: "+((r.note||"").trim()||"___");
