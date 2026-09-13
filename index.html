@@ -739,7 +739,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.114 · 2026-09-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.116 · 2026-09-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1895,6 +1895,12 @@ const PROC_LIB=[
  {re:/\bhalo\b/i,name:"Halo",
   supplies:["Needles/syringes/marker/chlorapreps","Torque wrench (BB6 halo cart)","Caliper + crown + vest + pins (brace shop — text Tom)","Weights (OR)","Traction bed (call early / steal from ED)"],
   steps:["Consent (pin infxn, skull fx, CN6, failed reduction, progression) + text brace shop","Order bacitracin + lidocaine + valium q2 + dilaudid","Gather supplies + traction bed","Time-out","Apply vest → crown (pins: 2/3 eyebrow + mastoids; adults 8 lb head / 35 lb vest)","Traction: baseline XR → add weight → exam → re-XR","Re-torque 15 min / 24 h / 48 h / wk 1 / q3–4 wk","Procedure note + handoff + log"]},
+ {re:/\b(?:jp|blake|hemovac)\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\b(?:jp|blake|hemovac)\b/i,name:"JP drain pull",
+  supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  steps:["Order lidocaine","Tell nursing","Gather supplies","Pull JP drain","Sig note","Staffing thread","Tell NCCU","Update handoff"]},
+ {re:/\bevd\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\bevd\b/i,name:"EVD pull",
+  supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  steps:["Order lidocaine","Tell nursing","Gather supplies","Pull EVD","Sig note","Staffing thread","Tell NCCU","Update handoff"]},
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
   supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
@@ -3170,6 +3176,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
 }));
 // ---------- helpers ----------
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function jsq(s){return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n")}
 function cLevel(c){const t=domTotal(c);if(t!==null){return t<=5?1:t<=11?2:t<=23?3:4}return c.cQuick||null}
 function domTotal(c){if(!c.domains||!c.domains.some(d=>d!==null&&d!==undefined))return null;return c.domains.reduce((a,d)=>a+(d||0),0)}
 function cStr(c){const lv=cLevel(c);const t=domTotal(c);return lv?("C"+lv+(t!==null?" ("+t+")":"")):"C?"}
@@ -5487,9 +5494,16 @@ function chartCheckListRow(c){
     (open?'<div class="wounddetail">'+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
       stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
-      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
+      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
+}
+function chartCheckToRounds(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  boardToRounds(id);
+  c.closed=true;c.closedAt=Date.now();touch(c);
+  render();renderRounds();renderNccu();flushAutosave();
+  showToast("Moved chart check back to Rounds — "+(c.loc||"patient"));
 }
 function renderRoundArchive(items){
   if(!items||!items.length)return "";
@@ -5518,6 +5532,7 @@ function woundRoundCandidate(r){
 function addRoundWoundList(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  autoScheduleWoundDateTask(r,false);
   woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-inpt"]=true;
   renderRounds();renderCal();save();showToast("Added to wound check list");
 }
@@ -5537,6 +5552,7 @@ function roundRemoveAfterSend(r,msg){
 function roundAddWoundAndRemove(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  autoScheduleWoundDateTask(r,false);
   woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-former"]=true;
   roundRemoveAfterSend(r,"Moved to wound list — "+(r.label||""));
 }
@@ -5553,6 +5569,7 @@ function addStandaloneWoundCheck(){
   const r={id:"w"+uid(),raw:detail||"Wound / suture / staple / incision check",label:label,tags:["Wound"],team:teamFromText(label+" "+detail),attg:attgFromText(label+" "+detail),soT:"floor",so:{},seen:false,plan:"",steps:[],collapsed:true,woundListed:true,woundStandalone:true,woundOpen:false,woundChecks:{},woundLog:[],created:now,updatedAt:now};
   S.formerWounds=S.formerWounds||[];
   S.formerWounds.push(r);
+  autoScheduleWoundDateTask(r,true);
   woundRowOpen[r.id]=true;
   woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-former"]=true;
   renderRounds();renderCal();save();showToast("Added wound check — "+label);
@@ -5574,6 +5591,7 @@ function woundSecToggle(k,on){woundSecOpen[k]=!!on}
 function renderWoundRounds(list,scope){
   const items=(list||[]).filter(woundRoundCandidate).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
+  autoScheduleWoundDateTasksFor(items,false);
   const k="wound-"+(scope||"main")+"-inpt";
   return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Inpatient Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
     items.map(r=>woundRow(r,false,scope)).join("")+
@@ -5597,6 +5615,8 @@ function renderRoundWoundList(list){
     rows.push([r,true]);
   });
   if(!rows.length)return "";
+  const made=rows.reduce((n,[r,former])=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
+  if(made)autosave();
   rows.sort((a,b)=>woundSort(a[0],b[0]));
   const k="wound-round-all";
   return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+rows.length+')</summary>'+woundControlsHtml("round")+
@@ -5606,6 +5626,7 @@ function renderRoundWoundList(list){
 function renderFormerWounds(scope){
   const items=(S.formerWounds||[]).filter(r=>!woundHiddenUntilNext(r)).slice().sort(woundSort);
   if(!items.length)return "";
+  autoScheduleWoundDateTasksFor(items,true);
   const k="wound-"+(scope||"main")+"-former";
   return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Former / Standalone: Suture / Staples / Incision Checks ('+items.length+')</summary>'+woundControlsHtml(scope)+
     items.map(r=>woundRow(r,true,scope)).join("")+
@@ -5696,7 +5717,7 @@ function woundRow(r,former,scope){
     '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundMajorTasksHtml(r)+woundCheckBoxes(r,former)+woundDateControls(r,former,scope)+woundLogHtml(r,former)+'</div>':"")+
+    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundMajorTasksHtml(r)+woundCheckBoxes(r,former)+woundNoteHtml(r,former)+woundDateControls(r,former,scope)+woundLogHtml(r,former)+'</div>':"")+
     '</div>';
 }
 function toggleWoundOpen(id,former){
@@ -5719,6 +5740,7 @@ function woundEditSave(id,former,scope){
   r.attg=attgFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
   r.updatedAt=Date.now();WEDIT.delete(id);woundRowOpen[id]=false;
+  autoScheduleWoundDateTask(r,former);
   renderRounds();renderCal();flushAutosave();
   showToast("Wound line saved — "+(r.label||""));
 }
@@ -5770,18 +5792,33 @@ function woundCheckBoxes(r,former){
       '<label><input type="checkbox" '+(w[k]?"checked":"")+' onchange="toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+',this.checked)"><span>'+l+'</span></label>').join("")+
     '</span>';
 }
+function woundNoteHtml(r,former){
+  return '<textarea class="evta" id="wnote_'+r.id+'" placeholder="Wound notes… (saves as you type)" style="min-height:44px;margin-top:6px" oninput="woundNoteSave(\''+r.id+'\','+(former?'true':'false')+',this)" onblur="woundNoteSave(\''+r.id+'\','+(former?'true':'false')+',this)">'+esc(r.woundNote||"")+'</textarea>';
+}
+function woundNoteSave(id,former,el){
+  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+  const v=el.value.trim();
+  if(r.woundNote===v)return;
+  r.woundNote=v;r.updatedAt=Date.now();autosave();
+}
 function woundMajorTasksHtml(r){
-  return '<div class="woundtasks">'+roundChartHtml(r)+rStepsHtml(r)+'</div>';
+  return '<div class="woundtasks">'+rStepsHtml(r)+'</div>';
 }
 function toggleWoundCheck(id,k,former,on){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;r.updatedAt=Date.now();renderRounds();renderCal();save();
+  r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;
+  if(k==="seen"&&on)logWoundCheck(r);
+  r.updatedAt=Date.now();renderRounds();renderCal();save();
 }
-function addWoundCheck(id,former){
-  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+function logWoundCheck(r){
   const date=todayDateStr();
   r.woundChecks=r.woundChecks||{};r.woundChecks.seen=true;r.woundLog=r.woundLog||[];
   if(!r.woundLog.some(x=>x.date===date))r.woundLog.push({date:date,ts:Date.now()});
+  return date;
+}
+function addWoundCheck(id,former){
+  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+  const date=logWoundCheck(r);
   r.updatedAt=Date.now();
   renderRounds();renderCal();save();
   const d=new Date(date+"T12:00:00");showToast("Wound check added for "+(d.getMonth()+1)+"/"+d.getDate());
@@ -5792,6 +5829,28 @@ function snoozeWoundCheck(id,former,scope){
   if(!date){showToast("Pick the next wound-check date");return}
   r.woundNextDate=date;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
   renderRounds();renderCal();save();showToast("Next wound check "+date+" at 4 AM");
+}
+function woundDateISO(r){
+  const d=parseWoundDate(woundDateFromText(r));if(!d)return "";
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
+function autoScheduleWoundDateTask(r,former){
+  const date=woundDateISO(r);if(!date)return null;
+  const iso=date+"T04:00:00";
+  const loc=String(r.label||roundIdentityText(r)||"");
+  const prob=woundTargetTag(r)+" check / removal";
+  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&c.snoozeISO===iso&&((!former&&c.roundId===r.id)||String(c.loc||"")===loc));
+  if(exists)return null;
+  const t=blankC();t.type="WOUND";t.loc=loc;t.prob=prob;t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=[roundProblemText(r),r.woundNote].filter(Boolean).join(" · ");t.updatedAt=Date.now();
+  S.consults.push(t);
+  if(!r.woundNextDate)r.woundNextDate=date;
+  return t;
+}
+function autoScheduleWoundDateTasksFor(items,former){
+  const made=(items||[]).reduce((n,r)=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
+  if(made)autosave();
+  return made;
 }
 function woundCheckToBoard(id,former){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
@@ -6207,8 +6266,48 @@ function soFieldHtml(r,f){
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
   const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
   const head='<div class="nccuhead"><b>'+esc(k)+'</b>'+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
-  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld">'+head+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
-  return '<div class="fld">'+head+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
+  const picks=soPickMenuHtml(k);
+  if(k==="One-liner"||r.soT==="nccu")return '<div class="fld">'+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
+  return '<div class="fld">'+head+picks+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
+}
+const SO_PICK_GROUPS=[
+  {re:/abx|antibiotic|micro|id|infection|cultures?|prophylaxis|daily meds|meds of consequence/i,items:[
+    ["Ancef","Ancef periop"],
+    ["Vanc","vancomycin"],
+    ["Cefepime","cefepime"],
+    ["CTX","ceftriaxone"],
+    ["Zosyn","zosyn"],
+    ["Bactrim","bactrim"],
+    ["ID","ID following"],
+    ["Cx","cultures pending"]
+  ]},
+  {re:/steroid|dex|endo|daily meds|meds of consequence|a\/p neuro|active problems/i,items:[
+    ["Dex","dex taper"],
+    ["Dex 4q6","dex 4q6 + PPI/ISS"],
+    ["Off dex","off steroids"],
+    ["Hydrocort","hydrocortisone"],
+    ["PPI/ISS","PPI + ISS while on steroids"]
+  ]},
+  {re:/seizure|asm|keppra|daily meds|prophylaxis|a\/p neuro|meds of consequence/i,items:[
+    ["Keppra","Keppra 500 BID"],
+    ["ASM x7d","ASM x7d postop"],
+    ["No ASM","no ASM"]
+  ]}
+];
+function soPickMenuHtml(k){
+  const items=[];
+  SO_PICK_GROUPS.forEach(g=>{if(g.re.test(k||""))g.items.forEach(it=>{if(!items.some(x=>x[0]===it[0]))items.push(it)})});
+  if(!items.length)return "";
+  return '<div class="qbtns sopicks">'+items.map(([l,t])=>
+    '<button type="button" onclick="soInsertPick(\''+jsq(k)+'\',\''+jsq(t)+'\')">'+esc(l)+'</button>').join("")+'</div>';
+}
+function soInsertPick(k,text){
+  const el=document.querySelector('#sofields [data-so="'+cssEsc(k)+'"]');if(!el)return;
+  const cur=String(el.value||"").trim();
+  const add=String(text||"").trim();if(!add)return;
+  if(new RegExp("\\b"+escRe(add)+"\\b","i").test(cur)){el.focus();return}
+  el.value=cur?(cur.replace(/[.;,]\s*$/,"")+"; "+add):add;
+  soSave(el,true);renderSOHints();el.focus();
 }
 function soIsExamField(k){return /\bexam\b|motor|baseline/i.test(k||"")}
 function soIsTrendField(k){return /\b(?:labs?|na|sodium|i\/?os?|output|evd|icp|drain|vitals?|bp|sbp|map|tcd|vent|di watch|endocrine|renal|micro|csf|cultures?|drips?|imag(?:e|es|ing)?|ct|cth|mri|scan|size|thickness|mls|weight|glucose|nihss)\b/i.test(k||"")}
@@ -6753,6 +6852,14 @@ function sxGuessRole(t,isFirst){
   // an if/then plan transfers differently from everything else
   if(/\bif\b[^]*?(?:→|->|then\b|,\s*(?:then\s*)?[a-z])/i.test(s))return "contingency";
   if(/^(?:f\/?u|follow|recheck|re-check|check|obtain|get|call|page|order|trend|clarify|ensure|confirm|repeat|send|ask|await|chase)\w*\b/i.test(s))return "loop";
+  // the problem representation wins before any change/goal wording is weighed
+  if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s))return "context";
+  if(isFirst){
+    const demo=/\b\d{1,3}\s*[MF]\b|\byo\b|\byear[- ]old\b/i.test(s);
+    const setting=/\bat\s+\d|(?:^|[^A-Za-z])\d+\s*[-–—]\s*\d|[<>≥≤]|\bq\d/i.test(s);
+    const exam=/^\s*(?:ble|lle|rle|bue|lue|rue|na|icp|sbp|map|cpp|inr|plt|wbc|hgb|tmax|gcs|uop|cr)\b/i.test(s);
+    if(!exam&&(demo||(SX_CONDITIONS.some(c=>c.re.test(s))&&!setting)))return "context";
+  }
   // an exam description is the patient's state even when it reads like a limit
   if(/^(?:exam|neuro exam|pupils?|motor|gcs|neuro|bue|ble|rue|rle|lue|lle|intact|aox|awake|alert|sedated|intubated)\b/i.test(s)
      &&!/(?:→|->)/.test(s))return "state";
@@ -6768,13 +6875,6 @@ function sxGuessRole(t,isFirst){
   if(!stable&&/\b(?:new|newly|wors|improv|increas|decreas|resolv|since|chang|spike|extubat|clamp|remov|complet|clear|develop|onset)\w*\b/i.test(s))return "delta";
   // a bare problem representation is the context line — but being first is not
   // enough on its own, or the first number typed becomes the one-liner
-  if(/\bs\/p\b|^\s*(?:pod|hd|pbd)\s*\d|new consult|^consult(?:ed)? for\b/i.test(s))return "context";
-  if(isFirst){
-    const demo=/\b\d{1,3}\s*[MF]\b|\byo\b|\byear[- ]old\b/i.test(s);
-    const setting=/\bat\s+\d|(?:^|[^A-Za-z])\d+\s*[-–—]\s*\d|[<>≥≤]|\bq\d/i.test(s);
-    const exam=/^\s*(?:ble|lle|rle|bue|lue|rue|na|icp|sbp|map|cpp|inr|plt|wbc|hgb|tmax|gcs|uop|cr)\b/i.test(s);
-    if(!exam&&(demo||(SX_CONDITIONS.some(c=>c.re.test(s))&&!setting)))return "context";
-  }
   return "state";
 }
 function sxGuessSys(t){
@@ -6920,8 +7020,40 @@ const SX_CONDITIONS=[
   prompts:["Thickness + MLS","Acute vs chronic","Exam / baseline","Stability across scans","AC held since / restart date","Operative plan","Seizure ppx"]},
  {k:"evd",l:"EVD / hydrocephalus",re:/\bevd\b|ventriculostomy|hydroceph|\bivh\b|external ventricular/i,
   prompts:["EVD level + output/hr","ICP range + waveform","Ventricle size vs prior","Clamp trial stage","CSF studies / cultures","Wean plan + who decides","Escalation trigger"]},
- {k:"shunt",l:"VP shunt",re:/shunt|\bvps\b|\bvpl\b|valve|strata|programmable/i,
-  prompts:["Valve type + setting","How they failed before","Baseline exam + who knows it","Shunt series / CT vs which prior","Tap or interrogation result","Next step if no better"]},
+ // Hot order: why shunted → why concerned now → exam vs baseline → ventricles
+ // vs baseline → hardware/valve state → intervention + response → escalation.
+ // `sub` prompts lead when that phenotype is recognised.
+ {k:"shunt",l:"Shunt (VP/VA/VPl)",
+  re:/shunt|\bvps\b|\bvpl\b|\bva shunt\b|ventriculoatrial|ventriculopleural|valve|strata|certas|codman|hakim|programmable|pseudocyst|slit ventricle/i,
+  prompts:["Hydrocephalus etiology + shunt type/side","Why concerned now + time course","Exam vs baseline",
+    "Ventricles vs prior/baseline","Valve type + current setting","Shunt series: continuity / kink / disconnect",
+    "Intervention + response so far","CSF diversion state: functional · clamped · externalized",
+    "Next step / escalation contingency","Disposition / sign-off criteria"],
+  sub:[
+   {re:/underdrain|malfunction|obstruct|not working|failing|somnolen|lethargic|headache|vomit|\bn\/v\b/i,
+    not:/overdrain|positional|slit ventricle|hygroma|siphon|low.pressure/i,
+    prompts:["Sx + exam change","Ventricles vs baseline","Hardware continuity on series","Valve setting now",
+      "Tap or adjustment result","Revision contingency"]},
+   {re:/overdrain|hygroma|slit ventricle|siphon|positional (?:headache|ha)|low.pressure/i,
+    prompts:["Positional HA / exam","Small ventricles ± hygroma or SDH","Current valve setting",
+      "Raise resistance or other step","Repeat imaging + response"]},
+   {re:/infect|fever|febrile|culture|erythema|exposed|purulen|ventriculitis|externaliz/i,
+    prompts:["Wound / tract findings","CSF studies + cultures","Organism if known","Antibiotics + ID",
+      "Externalized vs removed","Culture clearance before internalization"]},
+   {re:/post-?op|\bpod\b|revision|replaced|s\/p (?:shunt|revision)|newly placed/i,
+    prompts:["Procedure + POD","Exam","Post-op imaging","Valve setting confirmed after MRI","Wound",
+      "Diet / mobility / pain","Discharge milestone"]},
+   {re:/abdomen|abdominal|pseudocyst|pleural|effusion|distal catheter|peritone/i,
+    prompts:["Abdominal or pleural symptoms","Pseudocyst / collection","Distal catheter position",
+      "Abdominal or chest imaging"]}],
+  checks:[
+   {scope:"patient",roles:["context","state","delta"],
+    re:/\bventricl\w*|caliber|\bslit\b|\bsetting\b|@\s*\d|\bcertas\b|\bstrata\b|\bhakim\b|\bcodman\b/i,
+    not:/baseline|prior|previous|\bvs\b|compared|unchanged|from \d|increased from|decreased from|stable|same as|→|->|\bwas\b|changed|adjusted/i,
+    msg:"Keep the comparator — ventricles, exam and valve setting need vs baseline / vs prior / changed from what"},
+   {roles:["context","state","delta"],
+    fn:t=>((String(t||"").match(/\b(?:19|20)\d{2}\b/g)||[]).length>=3)||((String(t||"").match(/revision/gi)||[]).length>=3),
+    msg:"Trim the shunt history — it earns airtime only when it explains the current hardware or the current decision"}]},
  {k:"pocrani",l:"Post-op cranial",re:/post-?op|\bpod\b|craniotomy|craniectomy|resection|s\/p crani/i,
   prompts:["Procedure + POD","Exam vs pre-op","Post-op imaging","Drain + output","Wound","BP / Na goal","Steroid + AED plan","Next milestone / dispo"]},
  {k:"tumor",l:"Brain tumor",re:/tumou?r|mass|glioma|gbm|meningioma|met(?:astas)?|lesion/i,
@@ -6997,6 +7129,16 @@ function sxResetCond(id){
     if(before)rr.sxCond=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
   },"Undo");
 }
+// a recognised sub-phenotype reorders the box rather than adding a new one
+function sxCondPrompts(c,txt){
+  const lead=[];
+  (c.sub||[]).forEach(sb=>{
+    if(!sb.re.test(txt))return;
+    if(sb.not&&sb.not.test(txt))return;
+    sb.prompts.forEach(p=>{if(lead.indexOf(p)<0)lead.push(p)});
+  });
+  return lead.concat(c.prompts.filter(p=>lead.indexOf(p)<0));
+}
 function sxPrompts(r){
   const used=sxAll(r).map(x=>x.t.toLowerCase());
   const dismissed=(r&&r.sxPromptOff)||{};
@@ -7006,7 +7148,8 @@ function sxPrompts(r){
     return !used.some(u=>u.indexOf(key)>=0);
   };
   // round-robin so a second or third condition is never crowded out
-  const queues=sxConditions(r).map(c=>c.prompts.filter(keep));
+  const txt=sxCondText(r);
+  const queues=sxConditions(r).map(c=>sxCondPrompts(c,txt).filter(keep));
   const out=[];
   for(let i=0;queues.some(q=>i<q.length);i++)
     queues.forEach(q=>{if(i<q.length&&out.indexOf(q[i])<0)out.push(q[i])});
@@ -7237,13 +7380,15 @@ function sxItemHtml(r,it){
 // `not`. It flags the specific line so the fix is obvious.
 function sxChecks(r){
   const out=[];
-  // the context line states the indication, not a finding — never flag it
-  const lines=sxAll(r).filter(l=>l.role==="state"||l.role==="delta");
+  // findings by default — the context line states the indication, not a finding
+  const all=sxAll(r);
   sxConditions(r).forEach(c=>(c.checks||[]).forEach(chk=>{
-    const hits=lines.filter(l=>chk.re.test(l.t)&&!chk.not.test(l.t));
+    const roles=chk.roles||["state","delta"];
+    const lines=all.filter(l=>roles.indexOf(l.role)>=0);
+    const hits=lines.filter(l=>chk.fn?chk.fn(l.t):(chk.re.test(l.t)&&!chk.not.test(l.t)));
     if(!hits.length)return;
     // a patient-scope check is satisfied if any line anywhere resolves it
-    if(chk.scope==="patient"&&lines.some(l=>chk.not.test(l.t)))return;
+    if(chk.scope==="patient"&&chk.not&&lines.some(l=>chk.not.test(l.t)))return;
     out.push({msg:chk.msg,lines:hits.map(h=>h.t)});
   }));
   return out;
