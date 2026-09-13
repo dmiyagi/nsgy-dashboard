@@ -741,7 +741,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.119 · 2026-09-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.121 · 2026-09-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3820,6 +3820,7 @@ function renderCal(){
   const el=document.getElementById("calcards");if(!el)return;
   const cw=document.getElementById("calwounds");
   if(cw)cw.innerHTML=renderWoundRounds((S.rounds||[]).filter(matchSearch),"cal")+renderFormerWounds("cal");
+  autoScheduleRoundDateTasksFor(S.rounds||[]);
   const items=S.consults.filter(c=>boardVisible(c)&&!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
   const byDay={};
   items.forEach(c=>{
@@ -5438,6 +5439,7 @@ function renderRounds(){
   const visible=S.rounds.filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp);
   const archived=visible.filter(roundArchived).slice().sort((a,b)=>(a.archiveUntil||0)-(b.archiveUntil||0));
   const list=visible.filter(r=>!roundArchived(r)).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
+  autoScheduleRoundDateTasksFor(visible);
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
   const mainHtml=list.length?list.map(r=>{
     if(REDIT.has(r.id)){
@@ -5652,24 +5654,53 @@ function renderFormerWounds(scope){
     (items.length?items.map(r=>woundRow(r,true,scope)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
     '</details>';
 }
-function woundSourceText(r){return [r.raw,r.label,roundProblemText(r)].filter(Boolean).join(" ")}
+function woundSourceText(r){return [r.raw,r.label,roundProblemText(r),r.so&&r.so.POD,r.so&&r.so["One-liner"]].filter(Boolean).join(" ")}
 function woundTargetTag(r){
   const s=woundSourceText(r);
   if(/\b(?:staples?|staple\s*remov(?:al|e)|remove\s*staples?)\b/i.test(s))return "Staples";
   if(/\b(?:sutures?|stitches?|nylons?|prolenes?|suture\s*remov(?:al|e)|remove\s*sutures?)\b/i.test(s))return "Sutures";
-  if(/\b(?:dssg|dressings?|remove\s*dressings?|rm\s*dssg)\b/i.test(s))return "Dressing";
+  if(/\b(?:dssg|drssg|dressings?|remove\s*dressings?|rm\s*dssg)\b/i.test(s))return "Dressing";
   if(/\b(?:incision|wound)\b/i.test(s))return "Incision";
   if(/\bdrain\s*(?:site|stitch|suture)?\b/i.test(s))return "Drain site";
   return "Wound";
 }
 function woundDateFromText(r){
   const s=woundSourceText(r);
-  const near="(?:staples?|sutures?|stitches?|nylons?|prolenes?|dssg|dressings?|incision|wound|remove|removal|rm|out)";
+  const near="(?:staples?|sutures?|stitches?|nylons?|prolenes?|dssg|drssg|dressings?|incision|wound|remove|removal|rm|out)";
   const date="(\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?)";
   const a=s.match(new RegExp("\\b"+near+"\\b[^\\n]{0,24}\\b"+date+"\\b","i"));
   if(a)return a[1];
   const b=s.match(new RegExp("\\b"+date+"\\b[^\\n]{0,24}\\b"+near+"\\b","i"));
+  if(b)return b[1];
+  return woundPodDateFromText(s);
+}
+function woundPodFromText(s){
+  const wound="(?:dssg|drssg|dressings?|dressing|rm\\s*dssg|remove\\s*dressings?)";
+  const a=String(s||"").match(new RegExp("\\b"+wound+"\\b[^\\n]{0,30}\\bPOD\\s*#?\\s*(\\d{1,2})\\b","i"));
+  if(a)return Number(a[1]);
+  const b=String(s||"").match(new RegExp("\\bPOD\\s*#?\\s*(\\d{1,2})\\b[^\\n]{0,30}\\b"+wound+"\\b","i"));
+  return b?Number(b[1]):null;
+}
+function woundSurgeryDateFromText(s){
+  s=String(s||"");
+  const date="(\\d{1,2}[\\/.-]\\d{1,2}(?:[\\/.-]\\d{2,4})?)";
+  const op="(?:s\\/p|status\\s+post|post-?op|OR\\s+date|procedure\\s+date|surgery|op(?:eration)?|crani(?:otomy|ectomy)?|lami(?:nectomy)?|fusion|decompression|resection|washout|biopsy|shunt|EVD|SEPS|TSSH|TLIF|ACDF|emboliz(?:ation|ed)|embo)";
+  const a=s.match(new RegExp("\\b"+op+"\\b[^\\n]{0,70}\\b"+date+"\\b","i"));
+  if(a)return a[1];
+  const b=s.match(new RegExp("\\b"+date+"\\b[^\\n]{0,70}\\b"+op+"\\b","i"));
   return b?b[1]:"";
+}
+function isoFromDateObj(d){
+  const p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+function woundPodDateFromText(s){
+  const pod=woundPodFromText(s);
+  if(pod==null)return "";
+  const base=parseWoundDate(woundSurgeryDateFromText(s));
+  if(!base)return "";
+  const d=new Date(base.getFullYear(),base.getMonth(),base.getDate()+pod,12);
+  return isoFromDateObj(d);
 }
 function parseWoundDate(s){
   if(!s)return null;
@@ -5854,6 +5885,47 @@ function woundDateISO(r){
   const d=parseWoundDate(woundDateFromText(r));if(!d)return "";
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
   return y+"-"+m+"-"+day;
+}
+function roundDateSourceText(r){
+  return [r&&r.raw,r&&r.label,r&&r.plan,r&&r.planDraft,r&&r.note,(r&&r.steps||[]).map(s=>s.t).join(" ")].filter(Boolean).join(" ");
+}
+function roundDateISOFromParts(mm,dd,yy){
+  mm=Number(mm);dd=Number(dd);
+  if(!mm||!dd||mm>12||dd>31)return "";
+  let y=yy?Number(yy):new Date().getFullYear();
+  if(yy&&y<100)y+=2000;
+  const d=new Date(y,mm-1,dd,12);
+  if(d.getMonth()!==mm-1||d.getDate()!==dd)return "";
+  const today=parseWoundDate(todayDateStr());
+  if(d<today)return "";
+  return isoFromDateObj(d);
+}
+function roundDateExcerpt(s,i){
+  return String(s||"").slice(Math.max(0,i-34),i+46).replace(/\s+/g," ").trim();
+}
+function roundCalendarDates(r){
+  const s=roundDateSourceText(r),out=[],seen={};
+  s.replace(/\b(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?\b/g,(m,mm,dd,yy,idx)=>{
+    const iso=roundDateISOFromParts(mm,dd,yy);
+    if(!iso||seen[iso])return m;
+    seen[iso]=true;out.push({iso:iso,raw:m,excerpt:roundDateExcerpt(s,idx)});
+    return m;
+  });
+  return out;
+}
+function autoScheduleRoundDateTask(r,d){
+  if(!r||!d||!d.iso)return null;
+  const iso=d.iso+"T06:00:00",loc=String(r.label||roundIdentityText(r)||"");
+  const sameDay=(S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&String(c.snoozeISO||"").slice(0,10)===d.iso&&(c.autoRoundDate||c.type==="WOUND"));
+  if(sameDay)return null;
+  const t=blankC();t.type="CHART";t.loc=loc;t.prob="Rounds date: "+(d.excerpt||d.raw);t.roundId=r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.autoRoundDate=true;t.note=roundProblemText(r);t.updatedAt=Date.now();
+  S.consults.push(t);
+  return t;
+}
+function autoScheduleRoundDateTasksFor(items){
+  const made=(items||[]).reduce((n,r)=>n+roundCalendarDates(r).reduce((m,d)=>m+(autoScheduleRoundDateTask(r,d)?1:0),0),0);
+  if(made)autosave();
+  return made;
 }
 function autoScheduleWoundDateTask(r,former){
   const date=woundDateISO(r);if(!date)return null;
