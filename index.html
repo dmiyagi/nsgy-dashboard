@@ -775,7 +775,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.149 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.150 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1908,16 +1908,28 @@ function addQuickProcSteps(c){
 const PROC_LIB=[
  {re:/evd\s*flush|flush(?:ing)?\s+(?:the\s+)?evd/i,name:"Flush EVD",
   supplies:["2 sterile flushes","Extra sterile flushes","Sterile gloves","Extra sterile gloves","Alcohol wipes","Steri-strips","Extra nylon suture","Clave if no access port (post-OR EVD)"],
-  steps:["Gather supplies — 2 flushes, gloves, alcohol wipes","Tell nursing / floor","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Write sig event note","Write sig note"]},
+ steps:["Gather supplies — 2 flushes, gloves, alcohol wipes","Tell nursing / floor","Flush distally first, then proximally only if needed","Tell nurse volume flushed distally","Write sig event note","Write sig note"]},
+ {re:/\bevd\b.{0,24}(?:tap|draw|sample|csf|culture)|(?:tap|draw|sample).{0,24}\bevd\b/i,name:"EVD tap",
+ supplies:["Sterile gloves","Alcohol wipes / chloraprep","Empty syringe","CSF tubes","Labels from nurse","Biohazard bag"],
+  steps:["Tell nurse/team","Gather sterile supplies + CSF labels","Scrub EVD sampling port","Draw CSF sample","Send CSF studies/cultures","Sig note","Update handoff"]},
+ {re:/\bevd\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\bevd\b/i,name:"EVD pull",
+  supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  steps:["Order lidocaine","Tell nursing","Gather supplies","Pull EVD","Sig note","Staffing thread","Tell NCCU","Update handoff"]},
  {re:/\bevd\b|ventriculostomy/i,name:"EVD (adult)",dvt:true,
   supplies:["Cranial access kit","EVD tower","Sterile flushes","Extra sterile flushes","Steri-strips","Extra nylon suture","Extra sterile gloves","Razor + blade","Chucks","Thickie (cerebroflow) catheter if bloody","Bactiseal catheter if infection concern","Restraints ordered"],
   steps:["Consent + CONFIRM LATERALITY","Check coags + DVT ppx held","Order meds (versed 2 / fentanyl 100 / ancef 2g or clinda 300) + lidocaine + EVD order + post CTH","Time-out with nurse + confirm laterality AGAIN","Do proc (12 & 3 landmarks, aim ipsilateral canthus, hard pass 7 / soft 8)","Procedure note + significant event note","Update handoff","Drag to procedure list + log (ACGME)"]},
- {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds",
+ {re:/intrathecal|\btpa\b.{0,20}(evd|ventric)|(?:evd|ventric).{0,20}\btpa\b|it (tpa|abx|baclofen|cardene|nicardipine|meds?|medication)/i,name:"EVD intrathecal meds / TPA",
   supplies:["Empty syringe","Saline flushes","Extra sterile flushes","Sterile gloves","Extra sterile gloves","Alcohol pads","Steri-strips"],
   steps:["Ask nurse for med at bedside (TPA: order 'late please' intraventricular)","Consent + significant event note","Time-out","Clean port, draw back, give med + saline, clamp 1h","Tell nurse to unclamp in 1h","Write sig note"]},
  {re:/\bbolt\b|licox|icp monitor/i,name:"Bolt / Licox",dvt:true,
   supplies:["Cranial access kit","Bolt kit ×2 (wires break) or CereLink ICP sensor kit if Licox","Codman monitor box + cord (+ Integra PbtO2 box if Licox)","Chloraprep ×3","Chucks","Sterile gown + gloves + drape","Nylon + monocryl","Stapler","Xeroform + ruler + skin marker","Steri strips","Syringe + 18/22g + spinal needle + flushes","Razor w/ batteries"],
   steps:["Consent (bolt ± EVD, all indicated procedures)","Order versed 5 / fentanyl 200 / lidocaine / ancef ×1 + post-bolt CT","Gather supplies + set up box","Time-out (coags, DVT ppx, abx, post scan)","Do proc (mark 12 & 3, vertical incision, stylet to confirm patent, zero + record reference #)","Procedure note + update handoff + log"]},
+ {re:/(?:re-?program|program|dial|adjust|check).{0,30}(?:shunt|valve|certas|strata|codman|hakim)|(?:shunt|valve|certas|strata|codman|hakim).{0,30}(?:re-?program|program|dial|setting|adjust|check)/i,name:"Shunt reprogram / dial check",
+  supplies:["Programmer / magnet for valve type","Valve setting reference","Skull XR order if needed","Documentation template"],
+  steps:["Confirm valve type + intended setting","Dial / check valve setting","Order skull XR if protocol or setting uncertain","Document old/new setting","Update handoff"]},
+ {re:/baclofen pump|intrathecal baclofen|pump (?:check|interrogat|reprogram|program|refill|alarm)/i,name:"Baclofen pump check",
+  supplies:["Pump programmer","Current dose/refill records","Medication list","Alarm/refill date documentation"],
+  steps:["Verify current dose + refill/alarm history","Interrogate pump","Document dose, reservoir, alarm/refill date, and any change","Update handoff"]},
  {re:/shunt tap/i,name:"Shunt tap",dvt:true,
   supplies:["Chloraprep ×3 (iodine at WICU — clean off after)","Butterfly needle (scalp)","18g needle (CSF tube)","Syringe (10cc adult, MAX 5cc WICU)","CSF tube (empty, no preservative)","Sterile gloves","Chucks","Labels printed by nurse"],
   steps:["Gather supplies + ask nurse to print labels","Tap","Send CSF labeled (initials/date/time) in biohazard bag","Log procedure"]},
@@ -1934,8 +1946,11 @@ const PROC_LIB=[
   supplies:["23g or butterfly needle","CSF tubes ×2","Needles ×2","10cc syringes ×2","Gloves","Chlorhexidine","Ultrasound machine","Culture swab","Marking pen","Chucks"],
   steps:["Order 'wound cx'","Find collection on ultrasound","Sterilize + sterile gloves","Aspirate like drawing CSF","Send + document"]},
  {re:/lumbar puncture|\blp\b/i,name:"Lumbar puncture",dvt:true,
-  supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile popsicle stick","Chucks","Tape","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
+ supplies:["LP kit (equipment room)","Gloves + mask + gown + extra drape","Chloraprep ×3","Sterile popsicle stick","Chucks","Tape","Sterile flush ×2","18/22g needle + empty syringe","Fluffs"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + pulse ox + nasal cannula; meds at bedside in increments","Time-out (L4/5 iliac crest)","Do proc — opening pressure ± 4 tubes if xanthochromia","Send pre-labeled tubes w/ CSF stickers","Procedure note + update handoff + log"]},
+ {re:/\b(?:ld|lumbar drain)\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\b(?:ld|lumbar drain)\b/i,name:"LD pull",
+  supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
+  steps:["Order lidocaine","Tell nursing","Gather supplies","Pull LD","Sig note","Staffing thread","Update handoff"]},
  {re:/lumbar drain|\bld\b(?! ?kit)/i,name:"Lumbar drain",dvt:true,
   supplies:["LP kit + LD kit (cabinet)","Gloves + mask + gown + extra drape","EVD tower","Popsicle stick","Tape","Chloroprep ×3, chucks, flushes ×2, 18/22g, empty syringe, sterile marker","Fluffs + giant tegaderm + suture kit + nylon","Steri-strips","Extra nylon suture"],
   steps:["CONSENT","Check coags + DVT ppx held","Order dilaudid + lidocaine + CSF studies","Time-out","Do proc — 3 points of fixation, connect to flushed drain","Procedure note + update handoff + log"]},
@@ -1945,9 +1960,6 @@ const PROC_LIB=[
  {re:/\b(?:jp|blake|hemovac)\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\b(?:jp|blake|hemovac)\b/i,name:"JP drain pull",
   supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Order lidocaine","Tell nursing","Gather supplies","Pull JP drain","Sig note","Staffing thread","Tell NCCU","Update handoff"]},
- {re:/\bevd\b.{0,20}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,20}\bevd\b/i,name:"EVD pull",
-  supplies:["Lidocaine","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
-  steps:["Order lidocaine","Tell nursing","Gather supplies","Pull EVD","Sig note","Staffing thread","Tell NCCU","Update handoff"]},
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
   supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
@@ -2853,7 +2865,8 @@ function renderSmartHints(){
   const hints=[];
   const box=(title,body,btns)=>'<details class="smartbox"><summary><span><b>'+title+'</b></span>'+(btns||"")+'</summary>'+(body?'<div class="smartbody">'+body+'</div>':"")+'</details>';
   if(F.type==="CONSENT")hints.push(box("Suggested attending list",esc(consentAttendingsFor(txt)),'<span class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add</button></span>'));
-  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/medication · Flush EVD · shunt tap · shuntogram · shunt dial · pump interrogation",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT Cardene\';renderFlags()">IT Cardene</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT medication\';renderFlags()">IT med</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'Flush EVD\';renderFlags()">Flush EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt tap\';renderFlags()">Shunt tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shuntogram\';renderFlags()">Shuntogram</button></span>'));
+  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/TPA · Flush/tap EVD · remove staples · shunt dial/check · baclofen pump check",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT TPA\';renderFlags()">TPA</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD tap\';renderFlags()">EVD tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'Flush EVD\';renderFlags()">Flush EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove staples\';renderFlags()">Staples</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt dial check\';renderFlags()">Shunt dial</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'baclofen pump check\';renderFlags()">Pump</button></span>'));
+  if(F.type==="PROC")hints.push(box("Floor proc presets","EVD · Bolt/Licox · LD · LP · SEPS · drain/EVD/LD pull · remove dssg/staples/sutures",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'place EVD\';renderFlags()">EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'bolt\';renderFlags()">Bolt</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'lumbar drain\';renderFlags()">LD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LP\';renderFlags()">LP</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'SEPS\';renderFlags()">SEPS</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'drain pull\';renderFlags()">Drain pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD pull\';renderFlags()">EVD pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LD pull\';renderFlags()">LD pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove dssg\';renderFlags()">Dssg</button></span>'));
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push(box("Admit plan detected","Add H&P and admission-order reminders.",'<span class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P</button></span>'));
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
@@ -6507,7 +6520,7 @@ function roundExamNote(r){
 function tiedTypeForRoundTodo(t){
   const s=String(t||"");
   if(/\b(?:call|page|text|contact|notify|reach)\b/i.test(s)||/\b(?:mri|ct|cta|ctv|x-?ray|xr|ultrasound|us)\b/i.test(s))return "COMM";
-  if(/\b(?:dial|pump interrogat|pump refill|pump reprogram|shuntogram|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(s))return "PCON";
+  if(/\b(?:remove staples?|staple removal|evd tap|tap evd|evd (?:csf|sample|culture|draw)|dial|re-?program|valve (?:setting|check)|shunt (?:dial|setting|program|re-?program|check)|pump (?:check|interrogat|refill|reprogram)|baclofen pump|shuntogram|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen)|\btpa\b)\b/i.test(s))return "PCON";
   if(procMatch(s)||/\b(?:evd|bolt|licox|seps|lumbar drain|\bld\b|shunt tap|shuntogram|reservoir tap|fontanelle tap|remove drain|pull drain|dc drain|d\/c drain|remove dssg|rm dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(s))return "PROC";
   return null;
 }
@@ -9290,7 +9303,7 @@ function renderCapture(){
   capActions=[];
   const consultParse=parseCaptureConsult(text);
   const pathAbbrev=knownPathAbbrev(text);
-  const quickProcText=/\b(?:evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen))\b/i.test(text);
+  const quickProcText=/\b(?:remove staples?|staple removal|evd tap|tap evd|evd (?:csf|sample|culture|draw)|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen)|\btpa\b|baclofen pump|pump (?:check|interrogat|refill|reprogram)|shunt (?:dial|setting|program|re-?program|check)|valve (?:setting|check)|re-?program.{0,20}(?:shunt|valve))\b/i.test(text);
   const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(text);
   if(text.length<4&&!pathAbbrev&&!knownProcCue){el.innerHTML="";return}
   const bed=consultParse.bed||extractBed(text);
@@ -9307,7 +9320,7 @@ function renderCapture(){
   const chartCue=/chart[- ]?check/i.test(text);
   const pocCue=/\bpoc\b|post-?op check/i.test(text);
   const dcCue=/\bdischarge\b|\bdc\b(?!\w)/i.test(text);
-  const pconCue=quickProcText||/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|tap)|shuntogram)\b/i.test(text);
+  const pconCue=quickProcText||/\b(dial|re-?program|interrogat\w*|pump (check|refill|interrogation)|valve (setting|check)|shunt (dial|setting|program|check)|shuntogram)\b/i.test(text);
   const kit=procMatch(text);
   const verbStart=/^(remove|pull|place|replace|change|flush|tap|drain|suture|stitch|staple|inject|do|perform|take out|d\/?c)\b/i.test(text);
   const procKeywordCue=knownProcCue||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap)\b/i.test(text);
