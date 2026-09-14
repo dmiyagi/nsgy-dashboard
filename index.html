@@ -531,6 +531,7 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sxrow.stale .sxtext{border-style:dashed;color:var(--mut)}
 .sxrole{flex:0 0 auto;min-width:74px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
   padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font)}
+select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxrow.r-context .sxrole{border-color:var(--acc);color:var(--acc)}
 .sxrow.r-delta   .sxrole{border-color:var(--e1);color:var(--e1)}
 .sxrow.r-goal    .sxrole{border-color:var(--teal);color:var(--teal)}
@@ -771,7 +772,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.143 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.145 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -7459,6 +7460,7 @@ const SX_ROLES=[
   {k:"contingency",l:"If → then",  hint:"if X → do Y",                 pre:"",        ord:8}
 ];
 const SX_ROLE=Object.fromEntries(SX_ROLES.map(r=>[r.k,r]));
+const sxOrderHold={};
 // Systems organise; they never force sections. Neuro is dominant and unlabelled.
 const SX_SYSTEMS=[["neuro","Neuro"],["cv","CV"],["pulm","Pulm"],["heme","Heme"],["id","ID"],
   ["gu","GU/Renal"],["gi","GI/Nutrition"],["endo","Endo"],["msk","MSK/Trauma"],["rehab","Rehab/Dispo"]];
@@ -7559,12 +7561,32 @@ function sxAddFromInput(inputId,patientId){
   },"Undo");
 }
 function sxFind(r,itemId){return sxList(r).find(x=>x.id===itemId)}
+function sxDefaultOrderedItems(r){
+  const items=sxAll(r);
+  return SX_ROLES.map(ro=>items.filter(x=>x.role===ro.k)).reduce((a,b)=>a.concat(b),[]);
+}
+function sxOrderedItems(r){
+  const items=sxAll(r);
+  const hold=sxOrderHold[r.id]||[];
+  if(!hold.length)return sxDefaultOrderedItems(r);
+  const seen={};
+  const byId=Object.fromEntries(items.map(x=>[x.id,x]));
+  const ordered=hold.map(id=>byId[id]).filter(Boolean);
+  ordered.forEach(x=>{seen[x.id]=true});
+  return ordered.concat(sxDefaultOrderedItems(r).filter(x=>!seen[x.id]));
+}
+function sxHoldOrder(r){
+  if(!r)return;
+  sxOrderHold[r.id]=sxOrderedItems(r).map(x=>x.id);
+}
 function sxSetRole(id,itemId,role){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  sxHoldOrder(r);
   it.role=role;r.updatedAt=Date.now();renderNccu();flushAutosave();
 }
 function sxCycleRole(id,itemId){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
+  sxHoldOrder(r);
   const i=SX_ROLES.findIndex(x=>x.k===it.role);
   it.role=SX_ROLES[(i+1)%SX_ROLES.length].k;
   r.updatedAt=Date.now();renderNccu();flushAutosave();
@@ -7969,6 +7991,11 @@ function sxRoleChipsHtml(id,it){
   return SX_ROLES.map(ro=>'<button type="button" class="'+(it.role===ro.k?"on":"")+'" title="'+esc(ro.hint)+'" '+
     'onclick="event.stopPropagation();sxSetRole(\''+id+'\',\''+it.id+'\',\''+ro.k+'\')">'+esc(ro.l)+'</button>').join("");
 }
+function sxRoleSelectHtml(id,it){
+  return '<select class="sxrole" title="Choose line type" onclick="event.stopPropagation()" onchange="event.stopPropagation();sxSetRole(\''+id+'\',\''+it.id+'\',this.value)">'+
+    SX_ROLES.map(ro=>'<option value="'+ro.k+'" '+(it.role===ro.k?"selected":"")+'>'+esc(ro.l)+'</option>').join("")+
+  '</select>';
+}
 function sxItemHtml(r,it){
   const stale=!it.derived&&it.day!==todayStr()&&it.keptOn!==todayStr();
   const fresh=sxIsNew(r,it);
@@ -7986,8 +8013,7 @@ function sxItemHtml(r,it){
     '</div>';
   }
   return '<div class="sxrow r-'+it.role+(it.done?" done":"")+(stale?" stale":"")+(fresh?" fresh":"")+'" data-sxid="'+it.id+'">'+
-    '<button type="button" class="sxrole" title="'+esc(SX_ROLE[it.role].hint)+' — tap to change" '+
-      'onclick="event.stopPropagation();sxCycleRole(\''+r.id+'\',\''+it.id+'\')">'+esc(SX_ROLE[it.role].l)+'</button>'+
+    sxRoleSelectHtml(r.id,it)+
     (it.role==="loop"?'<input type="checkbox" class="sxdone" '+(it.done?"checked":"")+' title="close this loop" onchange="event.stopPropagation();sxToggleDone(\''+r.id+'\',\''+it.id+'\')">':"")+
     '<input class="sxtext" value="'+esc(it.t)+'" oninput="sxEdit(\''+r.id+'\',\''+it.id+'\',this)" onclick="event.stopPropagation()">'+
     (it.sys&&it.sys!=="neuro"?'<span class="sxsys">'+esc(SX_SYS[it.sys]||it.sys)+'</span>':"")+
@@ -8061,8 +8087,7 @@ function sxRecompressHtml(r){
     '<button type="button" onclick="event.stopPropagation();sxDropStale(\''+r.id+'\')">Drop all</button></div>';
 }
 function sxListHtml(r){
-  const items=sxAll(r);
-  const ordered=SX_ROLES.map(ro=>items.filter(x=>x.role===ro.k)).reduce((a,b)=>a.concat(b),[]);
+  const ordered=sxOrderedItems(r);
   return ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
     :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>';
 }
