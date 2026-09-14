@@ -771,7 +771,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.137 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.141 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -910,6 +910,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     </div>
     <div class="toolgrp">
       <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
+      <button class="btn sec sm" onclick="purgeChartChecks()">− Purge chart checks</button>
     </div>
   </div>
   <div class="bulkexport">
@@ -1561,6 +1562,7 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
       <button class="btn sec" id="soToRoundsBtn" onclick="soToRounds()">→ Rounds sign-out</button>
       <button class="btn sec" id="soBoardBtn" onclick="soToggleBoard()">→ SO Board</button>
       <button class="btn sec" onclick="soToStateSignout()">→ Update state</button>
+      <button class="btn sec" onclick="saveSO()">Save SO</button>
       <button class="btn" onclick="copySO()">⧉ Copy sign-out</button>
     </div>
   </div>
@@ -3888,6 +3890,7 @@ function renderCal(){
   const cw=document.getElementById("calwounds");
   if(cw)cw.innerHTML=renderWoundRounds((S.rounds||[]).filter(matchSearch),"cal")+renderFormerWounds("cal");
   autoScheduleRoundDateTasksFor(S.rounds||[]);
+  autoScheduleBoardDateTasksFor(S.consults||[]);
   const items=S.consults.filter(c=>boardVisible(c)&&!c.closed&&(c.snoozeISO||c.deadlineISO)&&matchSearch(c));
   const byDay={};
   items.forEach(c=>{
@@ -3979,8 +3982,17 @@ function compactEditButton(c){
   return '<button class="rdone" onclick="event.stopPropagation();openForm(\''+c.id+'\')">Edit</button>';
 }
 function soButtonAttrs(c){
+  if(c&&c.nccuSO)return ' style="border-color:var(--e3);color:var(--e3)"';
   if(soComplete(c))return ' style="border-color:var(--ok);color:var(--ok)"';
   return soStarted(c)?' style="border-color:var(--e2);color:var(--e2)"':"";
+}
+function boardMarkSO(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  c.nccuSO=true;
+  if(!c.soT)c.soT=detectTmpl([c.prob,c.loc,c.note].filter(Boolean).join(" "))||"floor";
+  touch(c);syncLinkedSo(c);
+  render();renderRounds();renderNccu();flushAutosave();
+  showToast("Added to SO board — "+soLabel(c));
 }
 function typeBadgeHtml(c,compact){
   if(!c||!c.type||c.type==="CONSULT"||!TYPES[c.type])return "";
@@ -4017,7 +4029,7 @@ function rowCard(c,dl,isTask){
     compactClearOverdueButton(c)+
     (!allDone?compactAdd15Button(c):"")+
     (allDone?compactTimerOffButton(c):"")+
-    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>':"")+
+    (isChart?'<button class="rdone" onclick="event.stopPropagation();togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button class="rdone" onclick="event.stopPropagation();boardMarkSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>':"")+
     compactEditButton(c)+
     '<span class="car">▸</span></div>'+
    wfChips(c,true)+
@@ -4096,7 +4108,7 @@ function card(c){
     const dcwf=wfChips(c,false);
     const isChart=c.type==="CHART";
     const worryBadge=(isChart&&c.worry)?'<span class="bg warn">! 2–3×/day</span>':"";
-    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'):"";
+    const chartBtns=isChart?('<button onclick="togWorry(\''+c.id+'\')" '+(c.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button><button onclick="boardMarkSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'):"";
     return '<div class="card hastrash E'+c.E+reflowFadeClass(c)+'" data-id="'+c.id+'" onclick="rowTap(event,\''+c.id+'\')"'+(isChart&&c.worry?' style="border-left-color:var(--e3)"':"")+'>'+trashBtn(c.id,"consult")+
      '<div class="badges">'+typeBadgeHtml(c)+
        (isChart?"":'<span class="bg e'+c.E+'">E'+c.E+'</span>')+
@@ -4275,11 +4287,12 @@ function reopen(id){const c=S.consults.find(x=>x.id===id);if(c){c.closed=false;c
 function del(id,skipConfirm){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(!skipConfirm&&!confirm("Delete permanently?"))return;
+  const sup=suppressAutoBoardDateTask(c);
   trashPush("consult",c);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.consults=S.consults.filter(x=>x.id!==id);
   render();renderRounds();
-  showToast("Deleted "+(c.loc||c.prob||"item"),()=>restoreConsult(c));
+  showToast("Deleted "+(c.loc||c.prob||"item"),()=>{unsuppressAutoBoardDateTask(sup);restoreConsult(c)});
 }
 // device-local so it never bloats the gist; the undo toast covers the moment,
 // this covers "I swiped something an hour ago and only just noticed"
@@ -5626,20 +5639,49 @@ function chartCheckContextHtml(c,due){
 }
 function deleteChartCheck(id){
   const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
-  const dateKey=String(c.snoozeISO||"").slice(0,10);
-  const rr=c.autoRoundDate&&c.roundId?(S.rounds||[]).find(r=>r.id===c.roundId):null;
-  if(rr&&dateKey){
-    rr.suppressedRoundDates=rr.suppressedRoundDates||{};
-    rr.suppressedRoundDates[dateKey]=Date.now();
-    rr.updatedAt=Date.now();
-  }
+  const sup=suppressAutoChartCheck(c);
   trashPush("consult",c);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.consults=S.consults.filter(x=>x.id!==id);
   render();renderRounds();renderCal();flushAutosave();
   showToast("Deleted chart check — "+(c.loc||"patient"),()=>{
-    if(rr&&dateKey&&rr.suppressedRoundDates)delete rr.suppressedRoundDates[dateKey];
+    unsuppressAutoChartCheck(sup);
     restoreConsult(c);
+  },"Undo");
+}
+function suppressAutoChartCheck(c){
+  const dateKey=String(c&&c.snoozeISO||"").slice(0,10);
+  const rr=c&&c.autoRoundDate&&c.roundId?(S.rounds||[]).find(r=>r.id===c.roundId):null;
+  if(rr&&dateKey){
+    rr.suppressedRoundDates=rr.suppressedRoundDates||{};
+    rr.suppressedRoundDates[dateKey]=Date.now();
+    rr.updatedAt=Date.now();
+    return {roundId:rr.id,dateKey:dateKey};
+  }
+  return null;
+}
+function unsuppressAutoChartCheck(sup){
+  if(!sup)return;
+  const rr=(S.rounds||[]).find(r=>r.id===sup.roundId);
+  if(rr&&rr.suppressedRoundDates){
+    delete rr.suppressedRoundDates[sup.dateKey];
+    rr.updatedAt=Date.now();
+  }
+}
+function purgeChartChecks(){
+  const items=(S.consults||[]).filter(c=>!c.closed&&c.type==="CHART");
+  if(!items.length){showToast("No chart checks to purge");return}
+  if(!confirm("Purge all "+items.length+" chart check"+(items.length===1?"":"s")+"?"))return;
+  const ts=Date.now(),ids={};
+  const sups=items.map(suppressAutoChartCheck);
+  S.tomb=S.tomb||{};
+  items.forEach(c=>{ids[c.id]=true;S.tomb[c.id]=ts;trashPush("consult",c)});
+  S.consults=(S.consults||[]).filter(c=>!ids[c.id]);
+  render();renderRounds();renderCal();flushAutosave();
+  showToast("Purged "+items.length+" chart check"+(items.length===1?"":"s"),()=>{
+    sups.forEach(unsuppressAutoChartCheck);
+    items.forEach(c=>{if(S.tomb)delete S.tomb[c.id];if(!S.consults.some(x=>x.id===c.id))S.consults.push(c)});
+    render();renderRounds();renderCal();flushAutosave();
   },"Undo");
 }
 function chartCheckToRounds(id){
@@ -6177,6 +6219,57 @@ function autoScheduleRoundDateTasksFor(items){
   if(made)autosave();
   return made;
 }
+function boardDateSourceText(c){
+  return [c&&c.loc,c&&c.prob,c&&c.state,c&&c.action,c&&c.note,(c&&c.steps||[]).map(s=>s.t).join(" "),(c&&c.tasks||[]).map(t=>t.t).join(" ")].filter(Boolean).join(" · ");
+}
+function boardDatedRemovalTasks(c){
+  const s=boardDateSourceText(c),out=[],seen={};
+  const cue="(?:remove\\s+|rm\\s+|pull\\s+|take\\s+out\\s+|d\\/c\\s+|dc\\s+)?(?:staples?|stapls?|sutures?|stitches?|nylons?|prolenes?|dssg|drssg|dressings?)";
+  const date="(\\d{1,2})[\\/.-](\\d{1,2})(?:[\\/.-](\\d{2,4}))?";
+  const re=new RegExp("\\b("+cue+")\\b(?:\\s*(?:out|remove|removal|change|take\\s*down|down|off|due|on|date|at|:|-)?\\s*){0,4}[^\\n;,.]{0,36}?\\(?\\b"+date+"\\b\\)?","ig");
+  s.replace(re,(m,cueTxt,mm,dd,yy,idx)=>{
+    const iso=roundDateISOFromParts(mm,dd,yy);
+    if(!iso)return m;
+    const cueClean=String(cueTxt||"").toLowerCase();
+    const label=/stap/i.test(cueClean)?"remove staples":(/nylon|prolene|suture|stitch/i.test(cueClean)?"remove sutures":"remove dressing");
+    const key=iso+"|"+label;
+    if(!seen[key]){seen[key]=true;out.push({iso:iso,label:label,raw:m,excerpt:roundDateExcerpt(s,idx)})}
+    return m;
+  });
+  return out;
+}
+function boardAutoDateKey(d){return d&&d.iso&&d.label?(d.iso+"|"+String(d.label).toLowerCase()):""}
+function autoScheduleBoardDateTask(c,d){
+  if(!c||c.closed||c.autoBoardDate||c.autoRoundDate||c.type==="WOUND"||c.type==="CHART"||!d||!d.iso||!d.label)return null;
+  const key=boardAutoDateKey(d);
+  if(c.autoDatedOff&&c.autoDatedOff[key])return null;
+  const iso=d.iso+"T06:00:00";
+  const exists=(S.consults||[]).some(x=>!x.closed&&x.autoBoardDate&&x.sourceId===c.id&&String(x.snoozeISO||"").slice(0,10)===d.iso&&String(x.prob||"").trim().toLowerCase()===String(d.label||"").toLowerCase());
+  if(exists)return null;
+  const t=blankC();t.type="PROC";t.loc=c.loc||"";t.prob=d.label;t.sourceId=c.id;t.roundId=c.roundId||null;t.owner=c.owner||"me";t.team=c.team||"";t.attg=c.attg||"";t.snoozeISO=iso;t.autoBoardDate=true;t.autoDateKey=key;t.dateContext=d.excerpt||d.raw;t.note=boardDateSourceText(c);t.updatedAt=Date.now();
+  applyTypeDefaults(t,"PROC",{fresh:true});
+  S.consults.push(t);
+  return t;
+}
+function autoScheduleBoardDateTasksFor(items){
+  const made=(items||[]).filter(c=>boardVisible(c)&&!c.closed&&!c.autoBoardDate).reduce((n,c)=>n+boardDatedRemovalTasks(c).reduce((m,d)=>m+(autoScheduleBoardDateTask(c,d)?1:0),0),0);
+  if(made)autosave();
+  return made;
+}
+function suppressAutoBoardDateTask(c){
+  if(!c||!c.autoBoardDate||!c.sourceId||!c.autoDateKey)return null;
+  const src=(S.consults||[]).find(x=>x.id===c.sourceId);
+  if(!src)return null;
+  src.autoDatedOff=src.autoDatedOff||{};
+  src.autoDatedOff[c.autoDateKey]=Date.now();
+  touch(src);
+  return {sourceId:src.id,key:c.autoDateKey};
+}
+function unsuppressAutoBoardDateTask(sup){
+  if(!sup)return;
+  const src=(S.consults||[]).find(x=>x.id===sup.sourceId);
+  if(src&&src.autoDatedOff){delete src.autoDatedOff[sup.key];touch(src)}
+}
 function autoScheduleWoundDateTask(r,former){
   const date=woundDateISO(r);if(!date)return null;
   const iso=date+"T04:00:00";
@@ -6699,6 +6792,14 @@ function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.s
   syncLinkedSo(r);renderSOHints();
   if(quiet){if(changed)autosave()}
   else{flushAutosave();render();renderNccu()}}}
+function saveSO(){
+  const r=findAny(soId);if(!r)return;
+  document.querySelectorAll("#sofields .soinput").forEach(el=>soSave(el,true));
+  r.updatedAt=Date.now();
+  syncLinkedSo(r);
+  renderSOHints();render();renderRounds();renderNccu();flushAutosave();
+  showToast("SO saved — "+soLabel(r));
+}
 function soToStateSignout(){
   const r=findAny(soId);if(!r)return;
   const n=sxSyncFromTemplate(r);
