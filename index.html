@@ -674,10 +674,11 @@ ul.reachlist .rx{color:var(--mut);font-size:11px}
 .chk.on{color:var(--ok);text-decoration:line-through}
 .chk.on .bx{border-color:var(--ok);color:var(--ok);background:#123527}
 /* consent alert */
-.consentbar{background:#33122a;border:1px solid #ff85c0;border-left:4px solid #ff85c0;color:#ffb3d8;border-radius:var(--rad);padding:9px 12px;font-size:12.5px;margin-bottom:10px;display:none}
+.consentbar{position:relative;background:#33122a;border:1px solid #ff85c0;border-left:4px solid #ff85c0;color:#ffb3d8;border-radius:var(--rad);padding:9px 42px 9px 12px;font-size:12.5px;margin-bottom:10px;display:none}
 .consentbar.show{display:block}
 .consentbar b{color:#ff85c0}
 .consentbar button{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;border:1px solid #ff85c0;background:transparent;color:#ff85c0;cursor:pointer;font-family:var(--font);margin-left:6px}
+.consentbar button.consentx{position:absolute;right:8px;top:8px;width:26px;height:26px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
 .bg.consent{background:#33122a;color:#ff85c0;border:1px solid #ff85c0}
 .sovals{font-size:11.5px;color:var(--mut);background:var(--card2);border-left:3px solid var(--teal);border-radius:6px;padding:5px 8px;margin:5px 0;white-space:pre-wrap}
 .sovals.warn{border-left-color:var(--e2);color:var(--e2);background:#2a1e10}
@@ -770,7 +771,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.136 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.137 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3837,11 +3838,21 @@ function opBound(c){
   return hasMissingConsentCue(c);
 }
 function needsConsent(c){return opBound(c)&&!hasConsentTask(c)}
+let consentBarDismissedKey="";
+function consentBarKey(list){return list.map(c=>c.id).sort().join("|")}
+function dismissConsentBar(){
+  const list=(S.consults||[]).filter(c=>!c.closed&&needsConsent(c));
+  consentBarDismissedKey=consentBarKey(list);
+  renderConsentBar();
+}
 function renderConsentBar(){
   const el=document.getElementById("consentbar");if(!el)return;
   const list=(S.consults||[]).filter(c=>!c.closed&&needsConsent(c));
   if(!list.length){el.classList.remove("show");el.innerHTML="";return}
-  el.innerHTML='<b>✎ Consent not on the board</b> for '+list.length+' patient'+(list.length>1?"s":"")+' heading to the OR:<br>'+
+  const key=consentBarKey(list);
+  if(consentBarDismissedKey===key){el.classList.remove("show");el.innerHTML="";return}
+  el.innerHTML='<button class="consentx" title="Dismiss" aria-label="Dismiss consent warning" onclick="dismissConsentBar()">✕</button>'+
+    '<b>✎ Consent not on the board</b> for '+list.length+' patient'+(list.length>1?"s":"")+' heading to the OR:<br>'+
     list.map(c=>'<span style="display:inline-block;margin-top:5px">'+esc(c.loc||c.prob||"(unlabeled)")+
       '<button onclick="makeConsentFor(\''+c.id+'\')">＋ Consent</button></span>').join(" ");
   el.classList.add("show");
@@ -5615,11 +5626,21 @@ function chartCheckContextHtml(c,due){
 }
 function deleteChartCheck(id){
   const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
+  const dateKey=String(c.snoozeISO||"").slice(0,10);
+  const rr=c.autoRoundDate&&c.roundId?(S.rounds||[]).find(r=>r.id===c.roundId):null;
+  if(rr&&dateKey){
+    rr.suppressedRoundDates=rr.suppressedRoundDates||{};
+    rr.suppressedRoundDates[dateKey]=Date.now();
+    rr.updatedAt=Date.now();
+  }
   trashPush("consult",c);
   S.tomb=S.tomb||{};S.tomb[id]=Date.now();
   S.consults=S.consults.filter(x=>x.id!==id);
   render();renderRounds();renderCal();flushAutosave();
-  showToast("Deleted chart check — "+(c.loc||"patient"),()=>restoreConsult(c),"Undo");
+  showToast("Deleted chart check — "+(c.loc||"patient"),()=>{
+    if(rr&&dateKey&&rr.suppressedRoundDates)delete rr.suppressedRoundDates[dateKey];
+    restoreConsult(c);
+  },"Undo");
 }
 function chartCheckToRounds(id){
   const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
@@ -6143,6 +6164,7 @@ function roundCalendarDates(r){
 }
 function autoScheduleRoundDateTask(r,d){
   if(!r||!d||!d.iso)return null;
+  if(r.suppressedRoundDates&&r.suppressedRoundDates[d.iso])return null;
   const iso=d.iso+"T06:00:00",loc=String(r.label||roundIdentityText(r)||"");
   const sameDay=(S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&String(c.snoozeISO||"").slice(0,10)===d.iso&&(c.autoRoundDate||c.type==="WOUND"));
   if(sameDay)return null;
