@@ -197,6 +197,13 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .capin::placeholder{color:var(--mut);font-size:13px}
 .capin-hero{font-size:18px;font-weight:600;padding:18px 16px;border-width:2.5px;box-shadow:0 6px 22px rgba(90,162,255,.28)}
 .capin-hero::placeholder{font-size:16px;font-weight:400}
+.roundentry{display:grid;grid-template-columns:minmax(0,1fr) 172px;gap:10px;align-items:stretch;margin-bottom:10px}
+.roundentry .evta{margin-bottom:0}
+.roundentrytools{display:flex;flex-direction:column;gap:8px}
+.roundentrytools .btn{width:100%;min-height:42px}
+.roundtoolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.roundtoolbar .toolgrp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+@media(max-width:620px){.roundentry{grid-template-columns:1fr}.roundentrytools{display:grid;grid-template-columns:1fr 1fr}.roundentrytools .btn:first-child{grid-column:1/-1}.roundtoolbar{gap:6px}.roundtoolbar .toolgrp{gap:5px}}
 .caprow{display:flex;gap:9px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;color:var(--text);font-family:var(--font);font-size:13.5px;cursor:pointer}
 .caprow.primary{border-color:var(--acc);background:#12283f}
 .caprow .ci{font-size:18px}
@@ -745,7 +752,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.123 · 2026-09-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.124 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -859,23 +866,32 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <textarea id="dropbox" class="evta" style="min-height:110px;width:100%;margin-bottom:8px" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
+  <div class="roundentry">
+    <textarea id="dropbox" class="evta" style="min-height:110px;width:100%" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
 B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 	Call MRI
 	Pre-op labs"></textarea>
-  <div class="rowflex">
-    <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
+    <div class="roundentrytools" aria-label="Rounds input actions">
+      <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
+      <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Chart check</button>
+      <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
+    </div>
+  </div>
+  <div class="roundtoolbar" aria-label="Rounds tools">
     <span class="hpill" id="roundcount">0 patients</span>
-    <button class="btn sec sm" onclick="copyRounds()">Copy rounds list</button>
-    <button class="btn sec sm" onclick="clearSeen()" title="Start a new day: clears every check and any manual archives">Reset seen ✓ (AM)</button>
-    <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
-    <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
-    <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
-    <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
-    <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
-    <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Chart check</button>
-    <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
-    <button class="btn sec sm" onclick="purgeRounds()">− Purge list</button>
+    <div class="toolgrp">
+      <button class="btn sec sm" onclick="copyRounds()">Copy list</button>
+      <button class="btn sec sm" onclick="clearSeen()" title="Start a new day: clears every checkmark/dot and any manual archives">Reset ✓</button>
+    </div>
+    <div class="toolgrp">
+      <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
+      <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
+      <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
+      <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
+    </div>
+    <div class="toolgrp">
+      <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
+    </div>
   </div>
   <div class="bulkexport">
     <span style="font-size:12px;color:var(--mut)">Export all creates one linked chart-check card per patient.</span>
