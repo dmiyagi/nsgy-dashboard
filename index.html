@@ -770,7 +770,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.134 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.135 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3387,11 +3387,11 @@ function setBoardType(k){
 }
 function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function setBoardSort(k){boardSortMode=k||"bubble";render()}
-function boardVisible(c){return !!(c&&c.type!=="CHART")}
+function boardVisible(c){return !!(c&&c.type!=="CHART"&&c.type!=="WOUND")}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
-  const keys=["CONSULT","COMM","PROC","PCON","POC","CONSENT","ADMIT","BOOK","WOUND","DC"].filter(k=>TYPES[k]);
+  const keys=["CONSULT","COMM","PROC","PCON","POC","CONSENT","ADMIT","BOOK","DC"].filter(k=>TYPES[k]);
   if(boardTypeFilter!=="ALL"&&!TYPES[boardTypeFilter])boardTypeFilter="ALL";
   const typeOpts=['<option value="ALL" '+(boardTypeFilter==="ALL"?"selected":"")+'>All '+list.length+'</option>'].concat(keys.map(k=>
     '<option value="'+k+'" '+(boardTypeFilter===k?"selected":"")+'>'+TYPES[k].i+' '+TYPES[k].l+' '+(counts[k]||0)+'</option>')).join("");
@@ -5992,7 +5992,6 @@ function woundDateControls(r,former,scope){
     '<button class="rdone" onclick="addWoundCheck(\''+r.id+'\','+(former?'true':'false')+')">Log check</button>'+
     hiddenDateInputHtml(r.id,kind,r.woundNextDate||"","snoozeWoundCheck('"+r.id+"',"+(former?'true':'false')+",'"+esc(scope||"")+"')")+
     '<button class="rdone" onclick="openWoundNextPicker(\''+r.id+'\',\''+esc(scope||"")+'\')">Next check'+(r.woundNextDate?' '+esc(r.woundNextDate):'')+'</button>'+
-    (r.woundNextDate?'<button class="rdone" onclick="woundCheckToBoard(\''+r.id+'\','+(former?'true':'false')+')">Board on date</button>':"")+
     '<button class="rdone" onclick="woundProcToBoard(\''+r.id+'\','+(former?'true':'false')+',\'PCON\')">Quick proc</button>'+
     '<button class="rdone" onclick="woundProcToBoard(\''+r.id+'\','+(former?'true':'false')+',\'PROC\')">Floor proc</button>'+
     '</span>';
