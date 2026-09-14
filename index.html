@@ -771,7 +771,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.141 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.143 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6538,7 +6538,8 @@ function syncBoardTodoToRounds(c){
   const lines=[wasDone(c,c.action)?"":c.action].concat((c.tasks||[]).filter(t=>!effectivelyDone(c,t)).map(t=>t.t)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
   lines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});n++}});
-  if(n)r.updatedAt=Date.now();
+  const flagged=flagTodosForSignout(r,lines);
+  if(n||flagged)r.updatedAt=Date.now();
   return n;
 }
 function syncBoardDoneToRounds(c,text,done){
@@ -6579,6 +6580,21 @@ function addTiedRoundTasks(r,lines){
   });
   return n;
 }
+function todoShouldFlagSignout(t){
+  const s=String(t||"");
+  if(!s.trim())return false;
+  return /\b(?:f\/?u|follow|recheck|re-check|check|trend|repeat|confirm|clarify|ensure|await|pending|call|page|text|update|ask|tell|notify|order|obtain|get|send|chase|mri|cth?|cta|ctv|xr|x-?ray|labs?|na|cbc|coags?|culture|csf|abx|antibiotic|fever|infection|exam|neuro|evd|drain|jp|bolt|icp|or\b|book|consent|family|dispo|handoff|note|nccu|icu)\b/i.test(s);
+}
+function flagTodosForSignout(r,lines){
+  if(!r||(r.nccuSO&&r.soCcResp))return false;
+  const should=(lines||[]).some(todoShouldFlagSignout);
+  if(!should)return false;
+  r.nccuSO=true;
+  r.soCcResp=true;
+  if(!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "))||"floor";
+  syncLinkedSo(r);
+  return true;
+}
 function syncRoundTodosToBoard(r,lines){
   const todoLines=(lines||roundOpenTodos(r)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
@@ -6589,6 +6605,7 @@ function syncRoundTodosToBoard(r,lines){
     todoLines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
     if(n)touch(c);
   });
+  if(flagTodosForSignout(r,todoLines))r.updatedAt=Date.now();
   return n;
 }
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -8248,7 +8265,7 @@ function nccuCompactTodoHtml(r){
   const nx=nccuNextTodo(r);
   const list=nccuTodoArr(r);
   const open=list.filter(t=>!effectivelyDone(r,t)).length;
-  if(!nx)return '<div class="nccunext none"><span class="ract">'+(list.length?"All to-dos done":"No to-dos")+'</span></div>';
+  if(!nx)return "";
   return '<div class="nccunext">'+
     '<button class="rdone" onclick="event.stopPropagation();nccuTodoToggle(\''+r.id+'\','+nx.i+')">✓ done</button>'+
     '<span class="ract">'+negHtml(nx.t.t)+'</span>'+
@@ -8274,7 +8291,7 @@ function nccuCardHtml(r){
   const compact=nccuIsCompact(r);
   const dx=roundPrimaryDxTag(r);
   const body=compact
-    ? (sxQuickAddHtml(r,"c")+sxPreviewHtml(r)+nccuCompactTodoHtml(r))
+    ? nccuCompactTodoHtml(r)
     : (sxCardHtml(r)+sxPreviewHtml(r)+nccuNoteHtml(r));
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
@@ -8290,11 +8307,12 @@ function nccuCardHtml(r){
       return sxHasContent(r)?'<span class="bg gapbadge done" title="ready to read">✓ ready</span>':"";
     })()+
     (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
-    '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
+    '<div class="cardbtns" style="margin-top:6px"><button onclick="toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button>'+
+    (compact?'<button onclick="openSO(\''+r.id+'\')">Template fields</button>':"")+'</div>'+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
-    '<div class="cardbtns"><button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button>'+
-    '<button onclick="openSO(\''+r.id+'\')">Template fields</button></div></div>';
+    (compact?"":'<div class="cardbtns"><button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button>'+
+    '<button onclick="openSO(\''+r.id+'\')">Template fields</button></div>')+'</div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
 function nccuRemove(id){
