@@ -775,7 +775,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.148 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.149 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3046,6 +3046,7 @@ function migrate(d){
     if(c.type==="CHART"&&/wound|suture|staple|incision/i.test([c.prob,c.note].filter(Boolean).join(" ")))c.type="WOUND";
     if(!Array.isArray(c.tasks))c.tasks=[];
     if(!Array.isArray(c.steps))c.steps=[];
+    if(c.type==="WOUND"&&c.roundId&&!c.autoWoundDate){c.autoWoundDate=true;c.sourceId=c.roundId}
     c.doneKeys=Array.isArray(c.doneKeys)?c.doneKeys:[];
     (c.steps||[]).concat(c.tasks||[]).forEach(t=>{if(t&&t.done)rememberDone(c,t.t,true)});
     if(c.type==="DC")normalizeDcPrep(c);
@@ -5897,7 +5898,10 @@ function renderFormerWounds(scope){
     '</details>';
 }
 function woundOneLiner(r){return String((r&&r.woundOne)||roundProblemText(r)||"").trim()}
-function woundSourceText(r){return [r.raw,r.label,r.woundOne,roundProblemText(r),r.so&&r.so.POD,r.so&&r.so["One-liner"]].filter(Boolean).join(" ")}
+function woundSourceText(r){
+  if(r&&r.woundOne!==undefined)return [r.woundOne,r.label,r.so&&r.so.POD].filter(Boolean).join(" ");
+  return [r&&r.raw,r&&r.label,roundProblemText(r),r&&r.so&&r.so.POD,r&&r.so&&r.so["One-liner"]].filter(Boolean).join(" ");
+}
 function woundTargetTag(r){
   const s=woundSourceText(r);
   if(/\b(?:staples?|staple\s*remov(?:al|e)|remove\s*staples?)\b/i.test(s))return "Staples";
@@ -6042,11 +6046,12 @@ function woundEditSave(id,former,scope){
   const lab=document.getElementById("we_lab_"+id),one=document.getElementById("we_one_"+id),raw=document.getElementById("we_raw_"+id);
   if(lab&&lab.value.trim())r.label=lab.value.trim();
   if(one)r.woundOne=one.value.trim();
-  if(raw&&raw.value.trim())r.raw=raw.value.trim();
+  if(raw)r.raw=raw.value.trim();
   r.team=teamFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.attg=attgFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.woundOne,r.label].filter(Boolean).join(" "))));
   r.updatedAt=Date.now();WEDIT.delete(id);woundRowOpen[id]=false;
+  pruneWoundDateTasks(r,former);
   autoScheduleWoundDateTask(r,former);
   renderRounds();renderCal();flushAutosave();
   showToast("Wound one-liner saved — "+(r.label||""));
@@ -6280,12 +6285,30 @@ function autoScheduleWoundDateTask(r,former){
   const iso=date+"T04:00:00";
   const loc=String(r.label||roundIdentityText(r)||"");
   const prob=woundTargetTag(r)+" check / removal";
-  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&c.snoozeISO===iso&&((!former&&c.roundId===r.id)||String(c.loc||"")===loc));
+  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&c.snoozeISO===iso&&((c.autoWoundDate&&c.sourceId===r.id)||(!former&&c.roundId===r.id)||String(c.loc||"")===loc));
   if(exists)return null;
-  const t=blankC();t.type="WOUND";t.loc=loc;t.prob=prob;t.roundId=former?null:r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=[roundProblemText(r),r.woundNote].filter(Boolean).join(" · ");t.updatedAt=Date.now();
+  const t=blankC();t.type="WOUND";t.loc=loc;t.prob=prob;t.roundId=former?null:r.id;t.sourceId=r.id;t.autoWoundDate=true;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=[woundOneLiner(r),r.woundNote].filter(Boolean).join(" · ");t.updatedAt=Date.now();
   S.consults.push(t);
   if(!r.woundNextDate)r.woundNextDate=date;
   return t;
+}
+function pruneWoundDateTasks(r,former){
+  if(!r)return 0;
+  const date=woundDateISO(r),loc=String(r.label||roundIdentityText(r)||"");
+  let n=0;
+  (S.consults||[]).forEach(c=>{
+    if(c.closed||c.type!=="WOUND")return;
+    const mine=(c.autoWoundDate&&c.sourceId===r.id)||(!former&&c.roundId===r.id&&c.autoWoundDate)||(former&&c.autoWoundDate&&String(c.loc||"")===loc);
+    if(!mine)return;
+    const cdate=String(c.snoozeISO||"").slice(0,10);
+    if(!date||cdate!==date){
+      c.closed=true;c.closedAt=new Date().toISOString();touch(c);n++;
+    }else{
+      c.loc=loc;c.prob=woundTargetTag(r)+" check / removal";c.note=[woundOneLiner(r),r.woundNote].filter(Boolean).join(" · ");touch(c);
+    }
+  });
+  if(r.woundNextDate&&date&&r.woundNextDate!==date)r.woundNextDate=date;
+  return n;
 }
 function autoScheduleWoundDateTasksFor(items,former){
   const made=(items||[]).reduce((n,r)=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
@@ -6303,7 +6326,7 @@ function woundCheckToBoard(id,former){
   S.consults.push(t);render();renderRounds();save();showToast("Board task scheduled "+r.woundNextDate);
 }
 function woundProcText(r){
-  const detail=roundProblemText(r);
+  const detail=woundOneLiner(r)||roundProblemText(r);
   if(/staples?/i.test(detail))return "remove staples";
   if(/sutures?|stitches?|prolenes?|nylons?/i.test(detail))return "remove sutures";
   if(/dssg|dress/i.test(detail))return "remove dssg";
