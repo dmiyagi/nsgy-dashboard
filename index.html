@@ -315,6 +315,10 @@ button.rdone.finaldone{background:#123527}
 .chartdot.amseen.on{border-color:#1f8f5a;background:#1f8f5a;box-shadow:0 0 0 1px rgba(31,143,90,.18)}
 .wounddots .chartdot{cursor:pointer}
 .crow .chartdots{flex:0 0 auto}
+.datechip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--e1);background:#33280e;color:#ffe987;border-radius:999px;font-size:10.5px;font-weight:900;padding:2px 8px;white-space:nowrap}
+.datechip.due{border-color:var(--e3);background:#32131a;color:#ffccd5}
+.chartctx{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:5px;font-size:11.5px;color:var(--mut)}
+.chartdel{border-color:var(--e3)!important;color:var(--e3)!important}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 @media(max-width:520px){.bulkexport{flex-wrap:wrap}.bulkexport .sortbtns{margin-left:0!important;width:100%;display:flex}.bulkexport .sortbtns button{flex:1;padding:6px 4px;font-size:10.5px}}
@@ -438,6 +442,8 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .woundrow .cprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
 .woundrow .cprob mark{background:rgba(242,211,75,.18);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:900}
 .woundrow .car{color:var(--mut);font-size:12px;flex:0 0 auto}
+.woundseen{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);color:var(--mut);background:transparent;border-radius:8px;font-weight:900;font-size:15px;padding:0;cursor:pointer;font-family:var(--font);line-height:1}
+.woundseen.on{border-color:var(--ok);color:var(--ok);background:#123527}
 .woundroom{font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);white-space:nowrap;flex:0 0 auto}
 .woundroom:hover{border-color:var(--acc);color:var(--acc)}
 .wdates{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
@@ -763,7 +769,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.128 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.130 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5537,25 +5543,66 @@ function renderRoundChartCheckList(){
     '</details>';
 }
 function chartCheckListRow(c){
-  const dl=fmtDL(nextDue(c));
+  const due=nextDue(c);
+  const dl=fmtDL(due);
   const open=!c.collapsed;
   const wf=wfChips(c,false);
   const worry=c.worry?'<span class="bg warn">! 2–3×/day</span>':"";
+  const title=chartCheckTitle(c);
+  const ctx=chartCheckContextHtml(c,due);
   return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
     '<button class="webtrash wtrash" title="Remove chart check" aria-label="Remove chart check" onclick="event.stopPropagation();deleteChartCheck(\''+c.id+'\')">✕</button>'+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
       typeBadgeHtml(c,true)+
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+      (due?chartDueChip(due):"")+
       worry+
       '<span class="rwho">'+esc(c.loc||"")+'</span>'+
-      '<span class="rprob">'+esc(c.prob||c.action||"")+'</span>'+
+      '<span class="rprob">'+esc(title)+'</span>'+
+      '<button class="rdone chartdel" title="Delete chart check" onclick="event.stopPropagation();deleteChartCheck(\''+c.id+'\')">✕</button>'+
       '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
     (open?'<div class="wounddetail">'+
+      ctx+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
       stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
-      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
+      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button><button class="chartdel" onclick="deleteChartCheck(\''+c.id+'\')">Delete</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
+}
+function stripRoundsDateText(s){
+  return String(s||"").replace(/^Rounds date:\s*/i,"").trim();
+}
+function chartCheckTitle(c){
+  if(!c)return "";
+  if(c.autoRoundDate||/^\s*Rounds date:/i.test(c.prob||"")){
+    const n=String(c.note||"").trim();
+    if(n)return n;
+    const rr=c.roundId&&(S.rounds||[]).find(r=>r.id===c.roundId);
+    if(rr)return roundProblemText(rr);
+    return stripRoundsDateText(c.prob)||c.action||"Chart check";
+  }
+  return c.prob||c.action||"Chart check";
+}
+function chartCheckDateText(c){
+  if(!c)return "";
+  return c.dateContext||(/^\s*Rounds date:/i.test(c.prob||"")?stripRoundsDateText(c.prob):"");
+}
+function dateChipStateFromISO(iso){
+  if(!iso)return "";
+  const d=new Date(iso),today=new Date();
+  const dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  const tt=new Date(today.getFullYear(),today.getMonth(),today.getDate()).getTime();
+  return dd<tt?" due":(dd===tt?" today":"");
+}
+function chartDueChip(iso){
+  const dt=new Date(iso),txt=dt.toLocaleDateString([],{month:"numeric",day:"numeric"})+" "+dt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  return '<span class="datechip'+dateChipStateFromISO(iso)+'">'+clockIcon()+esc(txt)+'</span>';
+}
+function chartCheckContextHtml(c,due){
+  const parts=[],dt=chartCheckDateText(c);
+  if(dt)parts.push('<span class="datechip'+(due?dateChipStateFromISO(due):"")+'">date: '+esc(dt)+'</span>');
+  if(c.autoRoundDate)parts.push('<span>auto-created from rounds date scan</span>');
+  return parts.length?'<div class="chartctx">'+parts.join("")+'</div>':"";
 }
 function deleteChartCheck(id){
   const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
@@ -5818,6 +5865,10 @@ function woundDotsHtml(r,former){
       '<span class="chartdot '+(w[k]?"on":"")+'" role="button" aria-label="'+esc(l)+'" title="'+esc(l)+'" onclick="event.stopPropagation();toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+','+(!w[k])+")\"></span>").join("")+
     '</span>';
 }
+function woundSeenBoxHtml(r,former){
+  const on=!!(r&&r.woundChecks&&r.woundChecks.seen);
+  return '<button class="woundseen '+(on?'on':'')+'" title="'+(on?'Undo wound seen':'Mark wound seen')+'" aria-label="'+(on?'Undo wound seen':'Mark wound seen')+'" onclick="event.stopPropagation();toggleWoundCheck(\''+r.id+'\',\'seen\','+(former?'true':'false')+','+(!on)+')">'+(on?'✓':'')+'</button>';
+}
 const WEDIT=new Set();
 function findWoundRecord(id,former){
   return former?(S.formerWounds||[]).find(x=>x.id===id):(S.rounds||[]).find(x=>x.id===id);
@@ -5841,6 +5892,7 @@ function woundRow(r,former,scope){
   const remove='<button class="webtrash wtrash" title="Remove wound check" aria-label="Remove wound check" onclick="event.stopPropagation();'+(former?'removeFormerWound':'removeWoundCheck')+'(\''+r.id+'\')">✕</button>';
   return '<div class="card woundcard hastrash" data-id="'+r.id+'">'+remove+
     '<div class="calrow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
+    woundSeenBoxHtml(r,former)+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
     '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
     '<span class="rtags">'+woundDotsHtml(r,former)+b.tags+'</span>'+
@@ -6030,7 +6082,7 @@ function autoScheduleRoundDateTask(r,d){
   const iso=d.iso+"T06:00:00",loc=String(r.label||roundIdentityText(r)||"");
   const sameDay=(S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&String(c.snoozeISO||"").slice(0,10)===d.iso&&(c.autoRoundDate||c.type==="WOUND"));
   if(sameDay)return null;
-  const t=blankC();t.type="CHART";t.loc=loc;t.prob="Rounds date: "+(d.excerpt||d.raw);t.roundId=r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.autoRoundDate=true;t.note=roundProblemText(r);t.updatedAt=Date.now();
+  const t=blankC();t.type="CHART";t.loc=loc;t.prob=roundProblemText(r)||"Chart check";t.roundId=r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.autoRoundDate=true;t.dateContext=d.excerpt||d.raw;t.note=roundProblemText(r);t.updatedAt=Date.now();
   S.consults.push(t);
   return t;
 }
