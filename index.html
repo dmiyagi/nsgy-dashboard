@@ -775,7 +775,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.146 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.147 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -7931,24 +7931,78 @@ function sxJoinSentences(items){
   });
   return out;
 }
+function sxStripFieldLabel(t){
+  let s=String(t||"").trim();
+  const m=s.match(/^([^:]{2,42}):\s*(.+)$/);
+  if(!m)return s;
+  const label=m[1].trim(),val=m[2].trim();
+  if(/^one-?liner(?:\s+\d+)?$/i.test(label))return val;
+  if(/^(?:active problems?|events?|last 24 hrs?|overnight events?)$/i.test(label))return val;
+  return label+" "+val;
+}
+function sxClause(t){
+  return sxStripFieldLabel(t).replace(/\s+/g," ").replace(/[.;]\s*$/,"").trim();
+}
+function sxSentence(parts){
+  const out=(parts||[]).map(sxClause).filter(Boolean);
+  return out.length?sxPeriod(out.join("; ")):"";
+}
+function sxSystemOrder(){
+  return ["neuro","pulm","cv","heme","id","gu","gi","endo","msk","rehab"];
+}
+function sxThreadLabel(sys){
+  return sys&&sys!=="neuro"?(SX_SYS[sys]||sys)+": ":"";
+}
+function sxItemsBySys(items){
+  const by={};
+  (items||[]).forEach(it=>{
+    const k=it.sys||"neuro";
+    (by[k]=by[k]||[]).push(it);
+  });
+  return by;
+}
+function sxManagementThreads(r){
+  const core=sxAll(r).filter(x=>["state","delta","goal","constraint"].includes(x.role));
+  const by=sxItemsBySys(core),out=[];
+  sxSystemOrder().forEach(sys=>{
+    const items=by[sys]||[];
+    if(!items.length)return;
+    const states=items.filter(x=>x.role==="state");
+    const deltas=items.filter(x=>x.role==="delta");
+    const goals=items.filter(x=>x.role==="goal");
+    const constraints=items.filter(x=>x.role==="constraint");
+    const chunks=[];
+    states.forEach(x=>chunks.push(sxClause(x.t)));
+    deltas.forEach(x=>chunks.push(sxClause(x.t)));
+    goals.forEach(x=>chunks.push(sxClause(x.t)));
+    constraints.forEach(x=>chunks.push(sxClause(x.t)));
+    if(chunks.length)out.push({cls:sys==="neuro"?"state":"thread",text:sxThreadLabel(sys)+sxPeriod(chunks.join("; "))});
+  });
+  Object.keys(by).filter(k=>sxSystemOrder().indexOf(k)<0).forEach(sys=>{
+    const txt=sxSentence(by[sys].map(x=>x.t));
+    if(txt)out.push({cls:"thread",text:sxThreadLabel(sys)+txt});
+  });
+  return out;
+}
+function sxActionLine(r){
+  const loops=sxByRole(r,"loop").filter(x=>!x.done).map(x=>x.t);
+  const transitions=sxByRole(r,"transition").map(x=>x.t);
+  const cont=sxByRole(r,"contingency").map(x=>x.t);
+  const parts=[];
+  if(loops.length)parts.push("Follow "+loops.map(sxClause).join("; "));
+  if(transitions.length)parts.push(transitions.map(sxClause).join("; "));
+  if(cont.length)parts.push(cont.map(sxClause).join("; "));
+  return sxSentence(parts);
+}
 // Returns [{cls, text}] so the same assembly drives the screen and the clipboard
 function sxAssemble(r){
   const lines=[];
-  const ctx=sxByRole(r,"context").map(x=>x.t).join("; ");
+  const ctx=sxByRole(r,"context").map(x=>sxClause(x.t)).join("; ");
   const head=soLabel(r)+(ctx?" — "+ctx:"");
   lines.push({cls:"head",text:head});
-  sxJoinSentences(sxByRole(r,"state")).forEach(t=>lines.push({cls:"state",text:t}));
-  const d=sxByRole(r,"delta");
-  if(d.length)lines.push({cls:"delta",text:"Δ "+sxPeriod(d.map(x=>x.t).join("; "))});
-  const g=sxByRole(r,"goal");
-  if(g.length)lines.push({cls:"goal",text:"Goals: "+sxPeriod(g.map(x=>x.t).join("; "))});
-  const c=sxByRole(r,"constraint");
-  if(c.length)lines.push({cls:"constraint",text:"Held: "+sxPeriod(c.map(x=>x.t).join("; "))});
-  const loops=sxByRole(r,"loop").filter(x=>!x.done);
-  if(loops.length)lines.push({cls:"loop",text:"To do: "+sxPeriod(loops.map(x=>x.t).join("; "))});
-  const tr=sxByRole(r,"transition");
-  if(tr.length)lines.push({cls:"transition",text:"Next: "+sxPeriod(tr.map(x=>x.t).join("; "))});
-  sxByRole(r,"contingency").forEach(x=>lines.push({cls:"contingency",text:sxPeriod(x.t)}));
+  sxManagementThreads(r).forEach(l=>lines.push(l));
+  const action=sxActionLine(r);
+  if(action)lines.push({cls:"loop",text:action});
   return lines;
 }
 function sxText(r){return sxAssemble(r).map(l=>l.text).join("\n")}
