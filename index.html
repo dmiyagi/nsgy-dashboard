@@ -351,7 +351,7 @@ button.rdone.finaldone{background:#123527}
 .nccusec.reportsec .nccufield{border-left:2px solid var(--acc)}
 .nccufield{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-height:54px;cursor:pointer}
 .nccufield.dragging{opacity:.55;border-color:var(--acc)}
-.nccufield .draghint{float:right;color:var(--mut);font-size:10px;text-transform:none;letter-spacing:0}
+.nccufield .draghint,.fld .draghint{float:right;color:var(--mut);font-size:10px;text-transform:none;letter-spacing:0}
 .nccufield b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.45px;color:var(--mut);margin-bottom:4px}
 .nccuhead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .nccuhead b{margin-bottom:0;flex:1;min-width:0}
@@ -522,6 +522,9 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 .sosuggest.inmodal{margin-top:10px}
 .soboxadd{margin:0 0 8px}
 .soboxadd summary{font-size:11.5px;padding:5px 10px}
+.fld.dragging{opacity:.55;border-color:var(--acc)}
+.fld .boxtools{float:right;display:inline-flex;gap:3px;margin-left:6px}
+.fld .boxtools button{font-size:10px;line-height:1;padding:2px 5px}
 /* ---- sign-out as captured facts ---- */
 .sxbody{margin-top:8px}
 .sxlist{display:flex;flex-direction:column;gap:2px}
@@ -772,7 +775,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.145 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.146 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6744,10 +6747,15 @@ function soFieldHtml(r,f){
   const k=f[0],v=soFieldValue(r,k);
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
   const prev='<div class="soprev '+(soIsTrendField(k)?"trend":"")+'" data-soprev="'+esc(k)+'"></div>';
-  const head='<div class="nccuhead"><b>'+esc(k)+'</b>'+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
+  const order='<span class="boxtools">'+
+    '<button type="button" title="Move up" onclick="event.stopPropagation();soShiftModalBox(\''+r.id+'\',\''+jsq(k)+'\',-1)">↑</button>'+
+    '<button type="button" title="Move down" onclick="event.stopPropagation();soShiftModalBox(\''+r.id+'\',\''+jsq(k)+'\',1)">↓</button>'+
+  '</span>';
+  const head='<div class="nccuhead"><b>'+esc(k)+'<span class="draghint">drag</span></b>'+order+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
   const picks=soPickMenuHtml(k);
-  if(/^One-liner(?:\s+\d+)?$/i.test(k)||r.soT==="nccu")return '<div class="fld">'+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
-  return '<div class="fld">'+head+picks+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
+  const shellOpen='<div class="fld" draggable="true" ondragstart="soBoxDragStart(event,\''+r.id+'\',\''+jsq(k)+'\')" ondragend="soBoxDragEnd(event)" ondragover="event.preventDefault()" ondrop="soModalBoxDrop(event,\''+r.id+'\',\''+jsq(k)+'\')">';
+  if(/^One-liner(?:\s+\d+)?$/i.test(k)||r.soT==="nccu")return shellOpen+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
+  return shellOpen+head+picks+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
 const SO_PICK_GROUPS=[
   {re:/abx|antibiotic|micro|id|infection|cultures?|prophylaxis|daily meds|meds of consequence/i,items:[
@@ -7380,24 +7388,27 @@ function soAllBoardLabels(r){
   return soApplyCustomOrder(r,soSuggestedSort(labels));
 }
 function soModalFields(r){
-  const defs={};
-  soTemplateFields(r).forEach(f=>defs[f[0]]=f);
-  soExtraActive(r).forEach(b=>defs[b.k]=[b.k,soExtraPh(b.k)]);
-  const labels=soApplyCustomOrder(r,soSuggestedSort(Object.keys(defs)));
+  const defs=soModalLabelDefs(r);
+  const labels=soModalLabels(r);
   return labels.map(k=>defs[k]);
 }
 function soResetBoxOrder(id){
   const r=findAny(id);if(!r)return;
-  delete r.soBoxOrder;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  delete r.soBoxOrder;r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
-function soMoveBox(id,from,to){
-  const r=findAny(id);if(!r||!from||!to||from===to)return;
-  const labels=soAllBoardLabels(r);
+function soMoveBoxWithin(r,from,to,labels){
+  if(!r||!from||!to||from===to)return false;
   const arr=(r.soBoxOrder&&r.soBoxOrder.length?r.soBoxOrder.slice():labels.slice()).filter(x=>labels.includes(x));
   labels.forEach(x=>{if(!arr.includes(x))arr.push(x)});
   const i=arr.indexOf(from),j=arr.indexOf(to);if(i<0||j<0)return;
   arr.splice(j,0,arr.splice(i,1)[0]);
-  r.soBoxOrder=arr;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.soBoxOrder=arr;
+  return true;
+}
+function soMoveBox(id,from,to){
+  const r=findAny(id);if(!r)return;
+  if(!soMoveBoxWithin(r,from,to,soAllBoardLabels(r)))return;
+  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxDragStart(ev,id,label){
   ev.stopPropagation();
@@ -7410,6 +7421,29 @@ function soBoxDrop(ev,id,label){
   ev.preventDefault();ev.stopPropagation();
   const from=ev.dataTransfer.getData("text/plain");
   soMoveBox(id,from,label);
+}
+function soModalLabelDefs(r){
+  const defs={};
+  soTemplateFields(r).forEach(f=>defs[f[0]]=f);
+  soExtraActive(r).forEach(b=>defs[b.k]=[b.k,soExtraPh(b.k)]);
+  return defs;
+}
+function soModalLabels(r){return soApplyCustomOrder(r,soSuggestedSort(Object.keys(soModalLabelDefs(r))))}
+function soMoveModalBox(id,from,to){
+  const r=findAny(id);if(!r)return;
+  if(!soMoveBoxWithin(r,from,to,soModalLabels(r)))return;
+  r.updatedAt=Date.now();buildSOFields();renderNccu();flushAutosave();
+}
+function soShiftModalBox(id,label,dir){
+  const r=findAny(id);if(!r)return;
+  const labels=soModalLabels(r),i=labels.indexOf(label),j=i+dir;
+  if(i<0||j<0||j>=labels.length)return;
+  soMoveModalBox(id,label,labels[j]);
+}
+function soModalBoxDrop(ev,id,label){
+  ev.preventDefault();ev.stopPropagation();
+  const from=ev.dataTransfer.getData("text/plain");
+  soMoveModalBox(id,from,label);
 }
 function soLabelIsTemplateField(r,label){return soFieldsFor(r).includes(label)}
 function soLabelIsOptional(r,label){
