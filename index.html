@@ -775,7 +775,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.147 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.148 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3992,11 +3992,12 @@ function soButtonAttrs(c){
 }
 function boardMarkSO(id){
   const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
-  c.nccuSO=true;
+  c.nccuSO=!c.nccuSO;
+  if(!c.nccuSO)c.soCcResp=false;
   if(!c.soT)c.soT=detectTmpl([c.prob,c.loc,c.note].filter(Boolean).join(" "))||"floor";
   touch(c);syncLinkedSo(c);
   render();renderRounds();renderNccu();flushAutosave();
-  showToast("Added to SO board — "+soLabel(c));
+  showToast((c.nccuSO?"Added to":"Removed from")+" SO board — "+soLabel(c));
 }
 function typeBadgeHtml(c,compact){
   if(!c||!c.type||c.type==="CONSULT"||!TYPES[c.type])return "";
@@ -5602,7 +5603,7 @@ function chartCheckListRow(c){
       ctx+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
       stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
-      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
+      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="boardMarkSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
 }
@@ -6368,30 +6369,36 @@ function syncLinkedSo(r){
   const now=Date.now();
   if(r.type==="CHART"&&r.roundId){
     const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(!rr)return;
-    rr.soT=r.soT||rr.soT||"floor";
-    rr.soTBeforeNccu=r.soTBeforeNccu||rr.soTBeforeNccu||"";
-    rr.so=Object.assign({},rr.so||{},r.so||{});
-    rr.soPrev=Object.assign({},rr.soPrev||{},r.soPrev||{});
-    rr.soOneCount=Math.max(rr.soOneCount||1,r.soOneCount||1);
-    copyLinkedSx(rr,r);
-    rr.nccuSO=!!(rr.nccuSO||r.nccuSO);
+    copyLinkedSoState(rr,r);
+    rr.nccuSO=!!r.nccuSO;
+    rr.soCcResp=!!r.soCcResp;
     rr.updatedAt=now;
     return;
   }
   if((S.rounds||[]).some(x=>x.id===r.id)){
     (S.consults||[]).filter(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id).forEach(c=>{
-      c.soT=r.soT||c.soT||"floor";
-      c.soTBeforeNccu=r.soTBeforeNccu||c.soTBeforeNccu||"";
-      c.so=Object.assign({},c.so||{},r.so||{});
-      c.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
-      c.soOneCount=Math.max(c.soOneCount||1,r.soOneCount||1);
-      copyLinkedSx(c,r);
-      c.nccuSO=!!(c.nccuSO||r.nccuSO);
+      copyLinkedSoState(c,r);
+      c.nccuSO=!!r.nccuSO;
+      c.soCcResp=!!r.soCcResp;
       c.updatedAt=now;
     });
   }
 }
 function cloneSx(sx){return Array.isArray(sx)?sx.map(x=>Object.assign({},x)):[]}
+function clonePlain(x){return x&&typeof x==="object"?JSON.parse(JSON.stringify(x)):x}
+function copyLinkedSoState(dst,src){
+  if(!dst||!src)return;
+  dst.soT=src.soT||dst.soT||"floor";
+  dst.soTBeforeNccu=src.soTBeforeNccu||dst.soTBeforeNccu||"";
+  dst.so=Object.assign({},dst.so||{},src.so||{});
+  dst.soPrev=Object.assign({},dst.soPrev||{},src.soPrev||{});
+  dst.soOneCount=Math.max(dst.soOneCount||1,src.soOneCount||1);
+  dst.soCcResp=!!src.soCcResp;
+  ["soBoardOn","soExtra","soSuggestOff","soBoxOrder","soBig","soSnap","soSnapDay","sxCond","sxHide","sxPromptOff","sxChecksOff","nccuCompact"].forEach(k=>{
+    if(src[k]!==undefined)dst[k]=clonePlain(src[k]);
+  });
+  copyLinkedSx(dst,src);
+}
 function copyLinkedSx(dst,src){
   if(!dst||!src||!Array.isArray(src.sx))return;
   dst.sx=cloneSx(src.sx);
@@ -6415,13 +6422,12 @@ function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){
 }}
 function roundMarkSO(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  if(!r.soCcResp||!r.nccuSO){
-    r.soCcResp=true;r.nccuSO=true;
-    if(!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
-    r.updatedAt=Date.now();syncLinkedSo(r);
-    renderRounds();renderNccu();flushAutosave();
-  }
-  openSO(id);
+  r.soCcResp=!r.soCcResp;
+  r.nccuSO=!!r.soCcResp;
+  if(r.nccuSO&&!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
+  r.updatedAt=Date.now();syncLinkedSo(r);
+  renderRounds();renderNccu();flushAutosave();
+  showToast(r.soCcResp?("Added to SO board — "+soLabel(r)):("Removed from SO board — "+soLabel(r)));
 }
 function clearSeen(){
   const before=S.rounds.map(r=>({id:r.id,seen:!!r.seen,checks:Object.assign({},r.chartChecks||{}),until:r.archiveUntil}));
@@ -6675,7 +6681,7 @@ function buildSOChips(){const r=findAny(soId);if(!r)return;
   normalizeSoTemplate(r);
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
-  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();save()});}
+  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();flushAutosave()});}
 function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
   const tmpl=normalizeSoTemplate(r);
@@ -7264,19 +7270,19 @@ function toggleSoExtra(id,k){
   const on=!soExtraOn(r,k);
   r.soExtra[k]=on;
   if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[k];soPlaceNewBox(r,k)}
-  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
   showToast(on?("Added "+k):("Removed "+k),()=>{
     const rr=findAny(id);if(!rr)return;
-    rr.soExtra[k]=!on;rr.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+    rr.soExtra[k]=!on;rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();if(soId===id)buildSOFields();flushAutosave();
   },"Undo");
 }
 function dismissSoSuggest(id,k){
   const r=findAny(id);if(!r)return;
   r.soSuggestOff=r.soSuggestOff||{};r.soSuggestOff[k]=true;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Hidden — "+k,()=>{
     const rr=findAny(id);if(!rr)return;
-    delete rr.soSuggestOff[k];rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    delete rr.soSuggestOff[k];rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 // one compact strip; it disappears entirely when there is nothing to suggest
@@ -7362,7 +7368,7 @@ function toggleSoBoardBox(id,key){
     if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[opt.extra]}
   }
   if(on)soPlaceNewBox(r,soBoxFieldFor(r,opt));
-  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxTemplateMenuHtml(r){
   const btns=SO_OPTIONAL_BOXES.map(opt=>{
@@ -7394,7 +7400,7 @@ function soModalFields(r){
 }
 function soResetBoxOrder(id){
   const r=findAny(id);if(!r)return;
-  delete r.soBoxOrder;r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+  delete r.soBoxOrder;r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soMoveBoxWithin(r,from,to,labels){
   if(!r||!from||!to||from===to)return false;
@@ -7408,7 +7414,7 @@ function soMoveBoxWithin(r,from,to,labels){
 function soMoveBox(id,from,to){
   const r=findAny(id);if(!r)return;
   if(!soMoveBoxWithin(r,from,to,soAllBoardLabels(r)))return;
-  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxDragStart(ev,id,label){
   ev.stopPropagation();
@@ -7432,7 +7438,7 @@ function soModalLabels(r){return soApplyCustomOrder(r,soSuggestedSort(Object.key
 function soMoveModalBox(id,from,to){
   const r=findAny(id);if(!r)return;
   if(!soMoveBoxWithin(r,from,to,soModalLabels(r)))return;
-  r.updatedAt=Date.now();buildSOFields();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);buildSOFields();renderNccu();flushAutosave();
 }
 function soShiftModalBox(id,label,dir){
   const r=findAny(id);if(!r)return;
@@ -7459,13 +7465,13 @@ function soRemoveBoardLabel(id,label){
   });
   if(soExtraDef(label)){r.soExtra=r.soExtra||{};r.soExtra[label]=false}
   r.soBoxOrder=(r.soBoxOrder||[]).filter(x=>x!==label);
-  r.updatedAt=Date.now();renderNccu();if(soId===id)buildSOFields();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxBig(r,label){return !!(r&&r.soBig&&r.soBig[label])}
 function toggleSoBoxBig(id,label){
   const r=findAny(id);if(!r)return;
   r.soBig=r.soBig||{};r.soBig[label]=!r.soBig[label];
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
 }
 function soBoardBoxHtml(r,label,extra){
   const val=soPick(r,label)||"___";
@@ -7616,33 +7622,33 @@ function sxHoldOrder(r){
 function sxSetRole(id,itemId,role){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
   sxHoldOrder(r);
-  it.role=role;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  it.role=role;r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
 }
 function sxCycleRole(id,itemId){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
   sxHoldOrder(r);
   const i=SX_ROLES.findIndex(x=>x.k===it.role);
   it.role=SX_ROLES[(i+1)%SX_ROLES.length].k;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast(SX_ROLE[it.role].l);
 }
 function sxToggleDone(id,itemId){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
   it.done=!it.done;it.closedAt=it.done?Date.now():null;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
 }
 function sxRemove(id,itemId,silent){
   const r=findAny(id);if(!r)return;
   const list=sxList(r),i=list.findIndex(x=>x.id===itemId);if(i<0)return;
   const [gone]=list.splice(i,1);
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
-  if(!silent)showToast("Removed",()=>{const rr=findAny(id);if(rr){sxList(rr).splice(i,0,gone);rr.updatedAt=Date.now();renderNccu();flushAutosave()}},"Undo");
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
+  if(!silent)showToast("Removed",()=>{const rr=findAny(id);if(rr){sxList(rr).splice(i,0,gone);rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave()}},"Undo");
 }
 function sxEdit(id,itemId,el){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
   const v=String(el.value||"").trim();
   if(it.t===v)return;
-  it.t=v;r.updatedAt=Date.now();autosave();
+  it.t=v;r.updatedAt=Date.now();syncLinkedSo(r);autosave();
 }
 // ---- recompress: yesterday's facts must re-earn their place ----
 function sxStale(r){
@@ -7657,7 +7663,7 @@ function sxKeep(id,itemId){
   const r=findAny(id);if(!r)return;const it=sxFind(r,itemId);if(!it)return;
   it.keptOn=todayStr();
   if(it.role==="delta")it.role="state"; // it is background now, not news
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
 }
 function sxKeepAll(id){
   const r=findAny(id);if(!r)return;
@@ -7665,11 +7671,11 @@ function sxKeepAll(id){
   if(!stale.length){showToast("Nothing to recompress");return}
   const before=stale.map(x=>({id:x.id,role:x.role,keptOn:x.keptOn}));
   stale.forEach(x=>{x.keptOn=todayStr();if(x.role==="delta")x.role="state"});
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Kept "+stale.length+" — deltas demoted to state",()=>{
     const rr=findAny(id);if(!rr)return;
     before.forEach(b=>{const it=sxFind(rr,b.id);if(it){it.role=b.role;it.keptOn=b.keptOn}});
-    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 function sxDropStale(id){
@@ -7678,10 +7684,10 @@ function sxDropStale(id){
   if(!stale.length){showToast("Nothing to drop");return}
   const ids=stale.map(x=>x.id),copy=stale.map(x=>JSON.parse(JSON.stringify(x)));
   r.sx=sxList(r).filter(x=>ids.indexOf(x.id)<0);
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Dropped "+copy.length,()=>{
     const rr=findAny(id);if(!rr)return;
-    rr.sx=sxList(rr).concat(copy);rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    rr.sx=sxList(rr).concat(copy);rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 // ---- condition boxes: a relevance prior, never an output template ----
@@ -7787,7 +7793,7 @@ function sxToggleCond(id,k){
   const cur=(Array.isArray(r.sxCond)?r.sxCond:sxAutoConditions(r)).slice();
   const i=cur.indexOf(k);
   if(i>=0)cur.splice(i,1);else cur.push(k);
-  r.sxCond=cur;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.sxCond=cur;r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   const c=SX_CONDITIONS.find(x=>x.k===k);
   showToast((i>=0?"Removed ":"Added ")+(c?c.l:k));
 }
@@ -7799,10 +7805,10 @@ function sxAddCondFromSelect(id,el){
 function sxResetCond(id){
   const r=findAny(id);if(!r)return;
   const before=r.sxCond;
-  delete r.sxCond;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  delete r.sxCond;r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Back to auto-detect",()=>{
     const rr=findAny(id);if(!rr)return;
-    if(before)rr.sxCond=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    if(before)rr.sxCond=before;rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 // a recognised sub-phenotype reorders the box rather than adding a new one
@@ -7838,8 +7844,8 @@ function sxUsePrompt(id,p){
 function sxDismissPrompt(id,p){
   const r=findAny(id);if(!r)return;
   r.sxPromptOff=r.sxPromptOff||{};r.sxPromptOff[p]=true;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
-  showToast("Hidden",()=>{const rr=findAny(id);if(rr){delete rr.sxPromptOff[p];rr.updatedAt=Date.now();renderNccu();flushAutosave()}},"Undo");
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
+  showToast("Hidden",()=>{const rr=findAny(id);if(rr){delete rr.sxPromptOff[p];rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave()}},"Undo");
 }
 // ---- live entries: rounds data appears in the sign-out without retyping ----
 // Rounds and the SO board are the same record, so the exam and open to-dos are
@@ -7880,20 +7886,20 @@ function sxPin(id,key){
   const d=sxDerived(r).find(x=>x.id===key);if(!d)return;
   sxList(r).push({id:uid(),t:d.t,role:d.role,sys:d.sys,ts:Date.now(),day:todayStr(),done:false});
   r.sxHide=r.sxHide||{};r.sxHide[key]=true;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Pinned — edits here no longer follow Rounds",()=>{
     const rr=findAny(id);if(!rr)return;
     rr.sx=sxList(rr).filter(x=>x.t!==d.t);delete rr.sxHide[key];
-    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 function sxHideDerived(id,key){
   const r=findAny(id);if(!r)return;
   r.sxHide=r.sxHide||{};r.sxHide[key]=true;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Hidden from sign-out",()=>{
     const rr=findAny(id);if(!rr)return;
-    delete rr.sxHide[key];rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    delete rr.sxHide[key];rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 // closing a live to-do closes the real one on Rounds
@@ -7910,7 +7916,7 @@ function sxCloseDerivedTodo(id,idx){
   },"Undo");
 }
 // ---- freshness: what has landed since you last read the sign-out ----
-function sxMarkRead(r){if(r){r.sxReadAt=sxNow();r.updatedAt=Date.now()}}
+function sxMarkRead(r){if(r){r.sxReadAt=sxNow();r.updatedAt=Date.now();syncLinkedSo(r)}}
 function sxIsNew(r,it){
   const seen=r&&r.sxReadAt;
   return !!(seen&&it.ts&&it.ts>seen);
@@ -8138,10 +8144,10 @@ function sxChecksHtml(r){
 }
 function sxMuteChecks(id){
   const r=findAny(id);if(!r)return;
-  r.sxChecksOff=true;r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.sxChecksOff=true;r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
   showToast("Checks off for "+soLabel(r),()=>{
     const rr=findAny(id);if(!rr)return;
-    delete rr.sxChecksOff;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+    delete rr.sxChecksOff;rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 function sxCondPickerHtml(r){
@@ -8471,7 +8477,7 @@ function nccuIsCompact(r){return nccuViewOf(r)==="compact"}
 // the toolbar is "set them all", so it clears any per-card overrides
 function setNccuCompact(compact){
   nccuCompact=!!compact;
-  nccuPatients().forEach(r=>{if(r.nccuView||r.nccuCompact){delete r.nccuView;delete r.nccuCompact;r.updatedAt=Date.now()}});
+  nccuPatients().forEach(r=>{if(r.nccuView||r.nccuCompact){delete r.nccuView;delete r.nccuCompact;r.updatedAt=Date.now();syncLinkedSo(r)}});
   renderNccu();flushAutosave();
 }
 function toggleOneNccuCompact(id){
@@ -8480,7 +8486,7 @@ function toggleOneNccuCompact(id){
   delete r.nccuCompact;
   // falling back in step with the toolbar keeps the override from going stale
   if((next==="compact")===nccuCompact)delete r.nccuView;else r.nccuView=next;
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
 }
 function copyNccuSignout(){
   const pts=nccuPatients();
