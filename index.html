@@ -770,7 +770,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.133 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.134 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3923,7 +3923,8 @@ function render(){
 }
 function colBtn(c){return '<button class="colbtn" onclick="togCollapse(\''+c.id+'\')">▴ collapse</button>'}
 function trashBtn(id,kind){
-  return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+(kind==="round"?'delRound':'del')+'(\''+id+'\')">⌫</button>';
+  const fn=kind==="round"?"delRound":(kind==="chart"?"deleteChartCheck":"del");
+  return '<button class="webtrash" title="Delete" aria-label="Delete" onclick="event.stopPropagation();'+fn+'(\''+id+'\')">⌫</button>';
 }
 function compactPending(c){
   if(c.action&&!wasDone(c,c.action)&&!stepTextOpen(c,c.action))return {kind:"action",t:c.action};
@@ -5560,7 +5561,7 @@ function chartCheckListRow(c){
   const title=chartCheckTitle(c);
   const ctx=chartCheckContextHtml(c,due);
   return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
-    '<button class="webtrash wtrash" title="Remove chart check" aria-label="Remove chart check" onclick="event.stopPropagation();deleteChartCheck(\''+c.id+'\')">✕</button>'+
+    trashBtn(c.id,"chart")+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
       typeBadgeHtml(c,true)+
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
@@ -5568,13 +5569,12 @@ function chartCheckListRow(c){
       worry+
       '<span class="rwho">'+esc(c.loc||"")+'</span>'+
       '<span class="rprob">'+esc(title)+'</span>'+
-      '<button class="rdone chartdel" title="Delete chart check" onclick="event.stopPropagation();deleteChartCheck(\''+c.id+'\')">✕</button>'+
       '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
     (open?'<div class="wounddetail">'+
       ctx+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
       stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
-      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button><button class="chartdel" onclick="deleteChartCheck(\''+c.id+'\')">Delete</button>'+closeDoneButton(c,false)+'</div>'+
+      '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
 }
