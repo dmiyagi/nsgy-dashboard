@@ -770,7 +770,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.135 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.136 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -891,8 +891,8 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 	Pre-op labs"></textarea>
     <div class="roundentrytools" aria-label="Rounds input actions">
       <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
-      <button class="btn sec sm" onclick="openForm(null,false,'CHART')">＋ Chart check</button>
-      <button class="btn sec sm" onclick="addStandaloneWoundCheck()">＋ Wound check</button>
+      <button class="btn sec sm" onclick="addChartChecksFromRoundsInput()">＋ Chart check</button>
+      <button class="btn sec sm" onclick="addWoundChecksFromRoundsInput()">＋ Wound check</button>
     </div>
   </div>
   <div class="roundtoolbar" aria-label="Rounds tools">
@@ -5684,18 +5684,65 @@ function roundAddChartAndRemove(id){
   const res=roundChartCardFor(r);
   roundRemoveAfterSend(r,(res&&res.isNew?"Chart check created — ":"Chart check refreshed — ")+(r.label||""));
 }
-function addStandaloneWoundCheck(){
-  const label=(prompt("Patient / room for wound check?","")||"").trim();
-  if(!label)return;
-  const detail=(prompt("Wound / staple / suture note?","Wound / suture / staple / incision check")||"").trim();
+function roundsInputBlocks(){
+  const el=document.getElementById("dropbox");
+  const txt=el?el.value:"";
+  return parseBlocks(txt).filter(b=>b&&String(b.main||"").trim());
+}
+function clearRoundsInput(){
+  const el=document.getElementById("dropbox");if(el)el.value="";
+}
+function standaloneWoundRecord(main,subs){
+  const raw=String(main||"").trim();
+  const label=roundLabel(raw);
+  const detail=[raw].concat(subs||[]).filter(Boolean).join(" · ")||"Wound / suture / staple / incision check";
   const now=Date.now();
-  const r={id:"w"+uid(),raw:detail||"Wound / suture / staple / incision check",label:label,tags:["Wound"],team:teamFromText(label+" "+detail),attg:attgFromText(label+" "+detail),soT:"floor",so:{},seen:false,plan:"",steps:[],collapsed:true,woundListed:true,woundStandalone:true,woundOpen:false,woundChecks:{},woundLog:[],created:now,updatedAt:now};
+  return {id:"w"+uid(),raw:detail,label:label,tags:normalizeRoundTags(["Wound"].concat(roundTags(detail))),team:teamFromText(detail),attg:attgFromText(detail),soT:detectTmpl(detail)||"floor",so:{},seen:false,plan:"",steps:(subs||[]).map(t=>({t:t,done:false})),collapsed:true,woundListed:true,woundStandalone:true,woundOpen:false,woundChecks:{},woundLog:[],created:now,updatedAt:now};
+}
+function addStandaloneWoundCheck(){
+  addWoundChecksFromRoundsInput();
+}
+function addWoundChecksFromRoundsInput(){
+  const blocks=roundsInputBlocks();
+  if(!blocks.length){showToast("Type or paste patient line(s) first");return}
   S.formerWounds=S.formerWounds||[];
-  S.formerWounds.push(r);
-  autoScheduleWoundDateTask(r,true);
-  woundRowOpen[r.id]=true;
+  let n=0;
+  blocks.forEach(b=>{
+    const r=standaloneWoundRecord(b.main,b.subs);
+    S.formerWounds.push(r);
+    autoScheduleWoundDateTask(r,true);
+    woundRowOpen[r.id]=true;
+    n++;
+  });
+  clearRoundsInput();
   woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-former"]=true;
-  renderRounds();renderCal();save();showToast("Added wound check — "+label);
+  renderRounds();renderCal();save();showToast("Added "+n+" wound check"+(n===1?"":"s"));
+}
+function addChartChecksFromRoundsInput(){
+  const blocks=roundsInputBlocks();
+  if(!blocks.length){showToast("Type or paste patient line(s) first");return}
+  let made=0,refreshed=0;
+  blocks.forEach(b=>{
+    const label=roundLabel(b.main);
+    let r=findRoundLike(label,b.main);
+    const temp=!r;
+    if(!r){
+      r={id:"r"+uid(),raw:b.main,label:label,tags:normalizeRoundTags(roundTags(b.main)),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:(b.subs||[]).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()};
+      S.rounds.push(r);
+    }else{
+      if(b.main&&!String(r.raw||"").includes(b.main))r.raw=[r.raw,b.main].filter(Boolean).join(" · ");
+      r.steps=r.steps||[];
+      (b.subs||[]).forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===String(t||"").toLowerCase()))r.steps.push({t:t,done:false})});
+      r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags(b.main)));
+      r.team=r.team||teamFromText(b.main);r.attg=r.attg||attgFromText(b.main);r.updatedAt=Date.now();
+    }
+    const res=roundChartCardFor(r);
+    if(res&&res.isNew)made++;else refreshed++;
+    if(temp)S.rounds=S.rounds.filter(x=>x.id!==r.id);
+  });
+  clearRoundsInput();
+  render();renderRounds();renderNccu();save();
+  showToast(made?("Created "+made+" chart check"+(made===1?"":"s")+(refreshed?" · refreshed "+refreshed:"")):"Chart check"+(refreshed===1?"":"s")+" refreshed");
 }
 function woundSortKey(r){
   return [roundRoom(r)||"ZZZ",roundPatient3(r)||"",roundIdentityText(r)||r.label||"",roundProblemText(r)||""].join(" ").toLowerCase();
