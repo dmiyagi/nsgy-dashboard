@@ -461,6 +461,7 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .woundedit{display:grid;grid-template-columns:minmax(120px,240px) 1fr;gap:7px;margin-bottom:7px}
 .woundedit input,.woundedit textarea{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
 .woundedit textarea{min-height:42px;resize:vertical}
+.woundedit .wide{grid-column:1/-1}
 .woundcompact .woundrow{padding:7px 10px;gap:6px}
 .woundcompact .woundrow .rwho{font-size:13px}
 .woundcompact .woundrow .cprob{font-size:12.5px}
@@ -769,7 +770,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.130 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.133 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4063,6 +4064,14 @@ function undoLastDone(id){
 function stepTextOpen(c,t){return !!(t&&(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.t===t))}
 function sameDL(a,b){return !!(a&&b&&Math.abs(Date.parse(a)-Date.parse(b))<30000)}
 function roundsPushButton(c){return '<button onclick="boardToRounds(\''+c.id+'\')">'+(c.roundId?'✓ Rounds':'＋ Rounds')+'</button>'}
+function boardLinkedRound(c){return c&&c.roundId?(S.rounds||[]).find(r=>r.id===c.roundId):null}
+function boardHasChart(c){return !!(c&&(c.type==="CHART"||(c.roundId&&(S.consults||[]).some(x=>!x.closed&&x.type==="CHART"&&x.roundId===c.roundId))))}
+function boardListButtons(c){
+  const r=boardLinkedRound(c);
+  return roundsPushButton(c)+
+    '<button onclick="boardToWoundList(\''+c.id+'\')">'+(r&&r.woundListed?'✓ Wound':'＋ Wound')+'</button>'+
+    '<button onclick="boardToChartCheck(\''+c.id+'\')">'+(boardHasChart(c)?'✓ Chart':'▤ Chart')+'</button>';
+}
 function card(c){
   const dl=fmtDL(nextDue(c));
   const rdl=reviewDL(c),rOver=reviewOverdue(c);
@@ -4090,7 +4099,7 @@ function card(c){
      checksHtml(c)+
      dcwf+
      soValsHtml(c)+
-     '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button>'+roundsPushButton(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
+     '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="openForm(\''+c.id+'\')">Edit</button>'+boardListButtons(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+chartBtns+closeDoneButton(c,false)+'</div></div>';
   }
   const w3warn=(c.W===3&&c.E<2)?'<span class="bg w3">W3 needs E review</span>':"";
   const evi=(c.evq||[]).some(e=>e.impact==="up")?'<span class="impbadge up">EVID↑</span>':(c.evq||[]).some(e=>e.impact==="down")?'<span class="impbadge dn">EVID↓</span>':"";
@@ -4110,7 +4119,7 @@ function card(c){
    checksHtml(c)+
    evSection(c)+
    wf+
-   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button>'+roundsPushButton(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button>'+closeDoneButton(c,false)+'</div>'+
+   '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button>'+boardListButtons(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button>'+closeDoneButton(c,false)+'</div>'+
   '</div>';
 }
 // ---------- evidence workspace ----------
@@ -5772,7 +5781,8 @@ function renderFormerWounds(scope){
     (items.length?items.map(r=>woundRow(r,true,scope)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
     '</details>';
 }
-function woundSourceText(r){return [r.raw,r.label,roundProblemText(r),r.so&&r.so.POD,r.so&&r.so["One-liner"]].filter(Boolean).join(" ")}
+function woundOneLiner(r){return String((r&&r.woundOne)||roundProblemText(r)||"").trim()}
+function woundSourceText(r){return [r.raw,r.label,r.woundOne,roundProblemText(r),r.so&&r.so.POD,r.so&&r.so["One-liner"]].filter(Boolean).join(" ")}
 function woundTargetTag(r){
   const s=woundSourceText(r);
   if(/\b(?:staples?|staple\s*remov(?:al|e)|remove\s*staples?)\b/i.test(s))return "Staples";
@@ -5840,7 +5850,7 @@ function woundDateState(s){
 }
 function escRe(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
 function woundProblemHtml(r){
-  const txt=roundProblemText(r).slice(0,130),d=woundDateFromText(r),html=esc(txt);
+  const txt=woundOneLiner(r).slice(0,130),d=woundDateFromText(r),html=esc(txt);
   return d?html.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):html;
 }
 function woundRowBadges(r,former,latest,kind,compact){
@@ -5851,12 +5861,7 @@ function woundRowBadges(r,former,latest,kind,compact){
     showTarget?'<span class="bg wtarget">'+esc(target)+'</span>':"",
     attg?'<span class="bg mod">'+esc(attg)+'</span>':""
   ].filter(Boolean).join("");
-  const dates=[
-    (!compact&&r.woundNextDate)?'<span class="wdate next'+woundDateState(r.woundNextDate)+'">next '+esc(r.woundNextDate)+'</span>':"",
-    removeDate?'<span class="wdate remove'+woundDateState(removeDate)+'">remove '+esc(removeDate)+'</span>':"",
-    (!compact&&latest)?'<span class="wdate done">seen '+esc(latest.date)+'</span>':""
-  ].filter(Boolean).join("");
-  return {tags:tags,dates:dates};
+  return {tags:tags,dates:""};
 }
 function woundDotsHtml(r,former){
   const w=r.woundChecks||{};
@@ -5876,11 +5881,13 @@ function findWoundRecord(id,former){
 function woundEditHtml(r,former,scope){
   const editing=WEDIT.has(r.id);
   const label=roundIdentityText(r)||r.label||"";
-  const raw=roundProblemText(r)||r.raw||"";
+  const one=woundOneLiner(r);
+  const raw=r.raw||roundProblemText(r)||"";
   if(!editing)return '<div class="woundtop"><span><b>'+esc(label)+'</b>'+(raw?' · '+woundProblemHtml(r):"")+'</span><button class="rdone" onclick="event.stopPropagation();woundEditStart(\''+r.id+'\','+(former?'true':'false')+')">Edit</button></div>';
   return '<div class="woundedit">'+
     '<input type="text" id="we_lab_'+r.id+'" value="'+esc(r.label||label)+'" placeholder="Room patient team">'+
-    '<textarea id="we_raw_'+r.id+'" placeholder="Wound / staples / sutures / date">'+esc(r.raw||raw)+'</textarea>'+
+    '<input type="text" id="we_one_'+r.id+'" value="'+esc(one)+'" placeholder="Display one-liner">'+
+    '<textarea class="wide" id="we_raw_'+r.id+'" placeholder="Source/details for dates, staples, sutures, dressing">'+esc(raw)+'</textarea>'+
     '</div><div class="qbtns" style="margin-bottom:7px"><button type="button" onclick="woundEditSave(\''+r.id+'\','+(former?'true':'false')+',\''+esc(scope||"")+'\')">Save</button><button type="button" onclick="woundEditCancel(\''+r.id+'\','+(former?'true':'false')+')">Cancel</button></div>';
 }
 function woundRow(r,former,scope){
@@ -5898,9 +5905,10 @@ function woundRow(r,former,scope){
     '<span class="rtags">'+woundDotsHtml(r,former)+b.tags+'</span>'+
     '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
+    '<button class="woundroom" title="Edit one-liner" onclick="event.stopPropagation();woundEditStart(\''+r.id+'\','+(former?'true':'false')+')">Line</button>'+
     '<button class="woundroom" title="Change room" onclick="event.stopPropagation();changeWoundRoom(\''+r.id+'\','+(former?'true':'false')+')">Room</button>'+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
-    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundMajorTasksHtml(r)+woundCheckBoxes(r,former)+woundNoteHtml(r,former)+woundDateControls(r,former,scope)+woundLogHtml(r,former)+'</div>':"")+
+    (open?'<div class="wounddetail">'+woundEditHtml(r,former,scope)+woundDateSummaryHtml(r,latest)+woundMajorTasksHtml(r)+woundCheckBoxes(r,former)+woundNoteHtml(r,former)+woundDateControls(r,former,scope)+woundLogHtml(r,former)+'</div>':"")+
     '</div>';
 }
 function toggleWoundOpen(id,former){
@@ -5916,16 +5924,17 @@ function woundEditCancel(id,former){
 }
 function woundEditSave(id,former,scope){
   const r=findWoundRecord(id,former);if(!r)return;
-  const lab=document.getElementById("we_lab_"+id),raw=document.getElementById("we_raw_"+id);
+  const lab=document.getElementById("we_lab_"+id),one=document.getElementById("we_one_"+id),raw=document.getElementById("we_raw_"+id);
   if(lab&&lab.value.trim())r.label=lab.value.trim();
+  if(one)r.woundOne=one.value.trim();
   if(raw&&raw.value.trim())r.raw=raw.value.trim();
   r.team=teamFromText([r.label,r.raw].filter(Boolean).join(" "));
   r.attg=attgFromText([r.label,r.raw].filter(Boolean).join(" "));
-  r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))));
+  r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.woundOne,r.label].filter(Boolean).join(" "))));
   r.updatedAt=Date.now();WEDIT.delete(id);woundRowOpen[id]=false;
   autoScheduleWoundDateTask(r,former);
   renderRounds();renderCal();flushAutosave();
-  showToast("Wound line saved — "+(r.label||""));
+  showToast("Wound one-liner saved — "+(r.label||""));
 }
 function replaceRoomTokenInText(s,oldRoom,newRoom){
   s=String(s||"").trim();
@@ -5987,6 +5996,15 @@ function woundDateControls(r,former,scope){
     '<button class="rdone" onclick="woundProcToBoard(\''+r.id+'\','+(former?'true':'false')+',\'PCON\')">Quick proc</button>'+
     '<button class="rdone" onclick="woundProcToBoard(\''+r.id+'\','+(former?'true':'false')+',\'PROC\')">Floor proc</button>'+
     '</span>';
+}
+function woundDateSummaryHtml(r,latest){
+  const removeDate=woundDateFromText(r);
+  const dates=[
+    r.woundNextDate?'<span class="wdate next'+woundDateState(r.woundNextDate)+'">next '+esc(r.woundNextDate)+'</span>':"",
+    removeDate?'<span class="wdate remove'+woundDateState(removeDate)+'">remove '+esc(removeDate)+'</span>':"",
+    latest?'<span class="wdate done">seen '+esc(latest.date)+'</span>':""
+  ].filter(Boolean).join("");
+  return dates?'<div class="wdates" style="justify-content:flex-start;margin-bottom:7px">'+dates+'</div>':"";
 }
 function openWoundNextPicker(id,scope){
   const el=document.getElementById("wn"+(scope||"")+"_"+id);if(!el)return;
@@ -9632,8 +9650,8 @@ function linkToRounds(c){
   if(r)c.roundId=r.id;
   return c;
 }
-function boardToRounds(id){
-  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+function boardToRoundRecord(c){
+  if(!c)return null;
   const raw=[c.loc,c.prob,c.state,c.action,c.note].filter(Boolean).join(" · ");
   const label=roundLabel([c.loc,patientLast3(c)].filter(Boolean).join(" "))||roundLabel(raw)||c.loc||"Rounds";
   let r=c.roundId?(S.rounds||[]).find(x=>x.id===c.roundId):null;
@@ -9662,9 +9680,44 @@ function boardToRounds(id){
     r.updatedAt=now;
   }
   c.roundId=r.id;touch(c);
+  return {r:r,created:created};
+}
+function boardToRounds(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  const res=boardToRoundRecord(c);if(!res)return;
+  const r=res.r,created=res.created;
   const synced=syncBoardTodoToRounds(c);
   render();renderRounds();renderNccu();flushAutosave();
   showToast((created?"Added to Rounds":"Updated Rounds")+" — "+(r.label||c.loc||"patient")+(synced?" · "+synced+" to-do"+(synced>1?"s":""):""));
+}
+function boardToWoundList(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  const res=boardToRoundRecord(c);if(!res)return;
+  const r=res.r;
+  const synced=syncBoardTodoToRounds(c);
+  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};
+  if(!r.woundOne&&c.prob)r.woundOne=c.prob;
+  r.updatedAt=Date.now();
+  autoScheduleWoundDateTask(r,false);
+  woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-inpt"]=true;
+  render();renderRounds();renderCal();renderNccu();flushAutosave();
+  showToast((res.created?"Added patient + wound list":"Added to wound list")+" — "+(r.label||c.loc||"patient")+(synced?" · "+synced+" to-do"+(synced>1?"s":""):""));
+}
+function boardToChartCheck(id){
+  const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
+  const res=boardToRoundRecord(c);if(!res)return;
+  const r=res.r;
+  const synced=syncBoardTodoToRounds(c);
+  let msg="";
+  if(c.type==="CHART"){
+    c.roundId=r.id;c.loc=c.loc||r.label;c.prob=c.prob||roundProblemText(r);c.E=0;touch(c);
+    msg="Linked chart check";
+  }else{
+    const out=roundChartCardFor(r);
+    msg=out&&out.isNew?"Chart check created":"Chart check refreshed";
+  }
+  render();renderRounds();renderNccu();flushAutosave();
+  showToast(msg+" — "+(r.label||c.loc||"patient")+(synced?" · "+synced+" to-do"+(synced>1?"s":""):""));
 }
 function roundChartCardFor(r){
   if(!r)return null;
