@@ -31,6 +31,8 @@ header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;t
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
 .gsearch{flex:1 1 220px;max-width:340px;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px}
 .gsearch::placeholder{color:var(--mut)}
+.savebtn{background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:12px;font-weight:800;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.savebtn:active{border-color:var(--acc);color:var(--acc)}
 .hpill{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--line)}
 .hpill.e3{color:var(--e3)} .hpill.e2{color:var(--e2)} .hpill.e1{color:var(--e1)} .hpill.e0{color:var(--mut)}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:60;display:flex;background:#101827;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
@@ -54,7 +56,8 @@ section.view.active{display:block}
   header{align-items:center;gap:8px}
   .gsearch{order:3;flex:1 0 100%;max-width:none}
   .hpills{order:4;margin-left:0}
-  #syncdot{order:5;margin-left:auto}
+  #saveNow{order:5;margin-left:auto}
+  #syncdot{order:6;margin-left:0}
   /* status is the colour alone: green synced, red unsynced, grey never paired */
   #syncdot{width:30px;height:30px;padding:0;border:none;background:transparent;border-radius:50%;position:relative;flex:0 0 auto;cursor:pointer;font-size:0;line-height:0;-webkit-tap-highlight-color:transparent}
   #syncdot::after{content:"";position:absolute;inset:9px;border-radius:50%;background:#4a5872;box-shadow:0 0 0 1px rgba(255,255,255,.10)}
@@ -303,6 +306,7 @@ button.rdone.finaldone{background:#123527}
 .chartdot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent;display:inline-block}
 .chartdot.on{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.18)}
 .chartdot.amseen.on{border-color:#1f8f5a;background:#1f8f5a;box-shadow:0 0 0 1px rgba(31,143,90,.18)}
+.wounddots .chartdot{cursor:pointer}
 .crow .chartdots{flex:0 0 auto}
 .bulkexport{display:flex;gap:6px;align-items:center;margin-bottom:8px}
 .bulkexport select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;padding:6px 8px}
@@ -741,10 +745,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.121 · 2026-09-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.123 · 2026-09-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
+  <button id="saveNow" class="savebtn" onclick="manualSaveNow()" title="Flush pending edits and sync now if connected">Save</button>
   <button id="syncdot" class="none" onclick="openSync()" aria-label="Sync status"></button>
 </header>
 
@@ -3005,7 +3010,13 @@ function migrate(d){
     (c.steps||[]).concat(c.tasks||[]).forEach(t=>{if(t&&t.done)rememberDone(c,t.t,true)});
     if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="ADMIT")normalizeAdmitPrep(c);
-    if(c.type==="CHART")c.E=0;              // chart check is always a background task
+    if(c.type==="CHART"){
+      c.E=0;                                // chart check is always a background task
+      c.wf=c.wf||{};
+      if(c.wf.seen&&!c.wf.ccam)c.wf.ccam=c.wf.seen;
+      if(c.wf.cc1&&!c.wf.ccam)c.wf.ccam=c.wf.cc1;
+      if(c.wf.cc4&&!c.wf.ccpm)c.wf.ccpm=c.wf.cc4;
+    }
     if((!c.type||c.type==="CONSULT")&&!c.timersOff&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];r.doneKeys=Array.isArray(r.doneKeys)?r.doneKeys:[];(r.steps||[]).forEach(t=>{if(t&&t.done)rememberDone(r,t.t,true)});if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
@@ -3059,6 +3070,18 @@ document.addEventListener("pointerdown",e=>{
 let autosaveT=null;
 function autosave(){clearTimeout(autosaveT);autosaveT=setTimeout(()=>{autosaveT=null;save()},400)}
 function flushAutosave(){if(autosaveT){clearTimeout(autosaveT);autosaveT=null}save()}
+function manualSaveNow(){
+  if(autosaveT){clearTimeout(autosaveT);autosaveT=null}
+  const j=JSON.stringify(S);
+  lastSaved=j;localStorage.setItem(LS,j);
+  const cfg=syncCfg();
+  if(cfg.token&&cfg.gist){
+    markSyncDirty();setDot();showToast("Saved locally — syncing now");
+    doSync(false);
+  }else{
+    showToast("Saved on this device");
+  }
+}
 // a re-render replaces innerHTML, which used to blow away the field being typed
 // in; snapshot the caret first and put it back afterwards
 let _fsnap=null;
@@ -3530,7 +3553,7 @@ const TYPE_WF={
  PROC:[["staff","Tell nursing/team"],["dvt","Hold DVT ppx"],["consent","Consent"],["supplies","Gather supplies"],["meds","Order meds"],["doproc","Do proc"],["doc","Procedure note"],["handoff","Update handoff"],["proclist","Add to proc list + log"]],
  PCON:[["done","Done"],["doc","Sig note"],["handoff","Update handoff"]],
  POC:[["seen","Seen patient"],["attg","Updated attending"],["note","Note"]],
- CHART:[["seen","AM Seen"],["cc1","Chart check 1 pm"],["cc4","Chart check 4 pm"]],
+ CHART:[["ccam","Chart check AM"],["ccpm","Chart check PM"]],
  BOOK:[["name","Name/laterality"],["consent","Consent"],["labs","Hold DVT + labs/NPO"],["docs","H&P/rH&P + pre-op"],["or","OR notified"],["__close","Done"]],
  ADMIT:[["meds","Meds list"],["medrec","Med rec"],["hp","H&P"],["orders","Admit orders"],["__close","Done"]],
  COMM:[["attempted","Attempted"],["__close","Done"]],
@@ -3578,14 +3601,14 @@ function chartNextDueMin(c){
     if(!wf.wseen3)return 16*60;
     return null;
   }
-  return !wf.cc1?13*60:(!wf.cc4?16*60:null);
+  return !wf.ccam?8*60:(!wf.ccpm?16*60:null);
 }
 function isWorkflowMilestone(c,k){
   const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
   const map={
     CONSULT:new Set(["seen","staffedC","staffedA","commplan"]),
     PROC:new Set(["staff","dvt","consent","doproc","handoff"]),
-    CHART:new Set(["wseen1","wseen2","wseen3"]),
+    CHART:new Set(["wseen1","wseen2","wseen3","ccam","ccpm"]),
     BOOK:new Set(["consent","docs","or"]),
     PCON:new Set(["done","handoff"]),
     POC:new Set(["seen","attg"]),
@@ -5015,14 +5038,13 @@ function rStepsHtml(r){
 // null = triggered by the morning reset rather than a clock time.
 // 29*60 puts the 5 am chart on the day after the cycle started.
 const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60]];
-const ROUND_CHECKS_24=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60],["pmseen","PM seen",18*60],["pm9","9p chart",21*60],["amchart","5a chart",29*60]];
+const ROUND_CHECKS_24=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60],["pmseen","PM seen",18*60],["pm9","9p chart",21*60],["midnight","12a chart",24*60],["amchart","5a chart",29*60]];
 function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
 function hasActiveChartCheck(r){
   return !!(r&&r.id&&(S.consults||[]).some(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id));
 }
 function roundChecksFor(r){
-  const checks=roundChecks();
-  return hasActiveChartCheck(r)?checks.filter(([k])=>k!=="am"):checks;
+  return roundChecks();
 }
 function roundChartHtml(r){
   r.chartChecks=r.chartChecks||{};
@@ -5136,7 +5158,7 @@ function toggleRound24(){
   S.round24=!S.round24;
   S.round24At=Date.now();
   renderRounds();flushAutosave();
-  showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p chart · 5a chart":"Day view — AM seen · 1p · 4p");
+  showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p · 12a · 5a":"Day view — AM seen · 1p · 4p");
 }
 function toggleRoundChart(id,k){
   const r=roundWorkRecord(id);if(!r)return;
@@ -5494,7 +5516,7 @@ function chartCheckListRow(c){
   const wf=wfChips(c,false);
   const worry=c.worry?'<span class="bg warn">! 2–3×/day</span>':"";
   return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
-    '<button class="webtrash wtrash" title="Remove chart check" aria-label="Remove chart check" onclick="event.stopPropagation();del(\''+c.id+'\',true)">✕</button>'+
+    '<button class="webtrash wtrash" title="Remove chart check" aria-label="Remove chart check" onclick="event.stopPropagation();deleteChartCheck(\''+c.id+'\')">✕</button>'+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
       typeBadgeHtml(c,true)+
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
@@ -5508,6 +5530,14 @@ function chartCheckListRow(c){
       '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="openSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
+}
+function deleteChartCheck(id){
+  const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
+  trashPush("consult",c);
+  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  S.consults=S.consults.filter(x=>x.id!==id);
+  render();renderRounds();renderCal();flushAutosave();
+  showToast("Deleted chart check — "+(c.loc||"patient"),()=>restoreConsult(c),"Undo");
 }
 function chartCheckToRounds(id){
   const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
@@ -5740,6 +5770,13 @@ function woundRowBadges(r,former,latest,kind){
   ].filter(Boolean).join("");
   return {tags:tags,dates:dates};
 }
+function woundDotsHtml(r,former){
+  const w=r.woundChecks||{};
+  return '<span class="chartdots wounddots" title="seen / staffing thread / note">'+
+    [["seen","seen"],["thread","staffing thread"],["note","note"]].map(([k,l])=>
+      '<span class="chartdot '+(w[k]?"on":"")+'" role="button" aria-label="'+esc(l)+'" title="'+esc(l)+'" onclick="event.stopPropagation();toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+','+(!w[k])+")\"></span>").join("")+
+    '</span>';
+}
 const WEDIT=new Set();
 function findWoundRecord(id,former){
   return former?(S.formerWounds||[]).find(x=>x.id===id):(S.rounds||[]).find(x=>x.id===id);
@@ -5764,7 +5801,7 @@ function woundRow(r,former,scope){
     '<div class="calrow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
     '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
-    '<span class="rtags">'+b.tags+'</span>'+
+    '<span class="rtags">'+woundDotsHtml(r,former)+b.tags+'</span>'+
     '<span class="cprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
