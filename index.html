@@ -790,7 +790,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.155 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.156 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6061,9 +6061,13 @@ function woundDotsHtml(r,former){
       '<span class="chartdot '+(w[k]?"on":"")+'" role="button" aria-label="'+esc(l)+'" title="'+esc(l)+'" onclick="event.stopPropagation();toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+','+(!w[k])+")\"></span>").join("")+
     '</span>';
 }
+const WOUND_CHECK_ORDER=[["seen","seen"],["thread","staffing thread"],["note","note"]];
 function woundSeenBoxHtml(r,former){
-  const on=!!(r&&r.woundChecks&&r.woundChecks.seen);
-  return '<button class="woundseen '+(on?'on':'')+'" title="'+(on?'Undo wound seen':'Mark wound seen')+'" aria-label="'+(on?'Undo wound seen':'Mark wound seen')+'" onclick="event.stopPropagation();toggleWoundCheck(\''+r.id+'\',\'seen\','+(former?'true':'false')+','+(!on)+')">'+(on?'✓':'')+'</button>';
+  const w=(r&&r.woundChecks)||{};
+  const nx=WOUND_CHECK_ORDER.find(([k])=>!w[k]);
+  const on=!nx;
+  const title=nx?("Mark "+nx[1]+" done"):"All wound checks done — undo last";
+  return '<button class="woundseen '+(on?'on':'')+'" title="'+esc(title)+'" aria-label="'+esc(title)+'" onclick="event.stopPropagation();woundCheckAdvance(\''+r.id+'\','+(former?'true':'false')+')">'+(on?'✓':'')+'</button>';
 }
 const WEDIT=new Set();
 function findWoundRecord(id,former){
@@ -6212,7 +6216,7 @@ function woundLogHtml(r,former){
 function woundCheckBoxes(r,former){
   const w=r.woundChecks||{};
   return '<span class="woundchecks">'+
-    [["seen","seen"],["thread","staffing thread"],["note","note"]].map(([k,l])=>
+    WOUND_CHECK_ORDER.map(([k,l])=>
       '<label><input type="checkbox" '+(w[k]?"checked":"")+' onchange="toggleWoundCheck(\''+r.id+'\',\''+k+'\','+(former?'true':'false')+',this.checked)"><span>'+l+'</span></label>').join("")+
     '</span>';
 }
@@ -6232,6 +6236,23 @@ function toggleWoundCheck(id,k,former,on){
   const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundChecks=r.woundChecks||{};r.woundChecks[k]=!!on;
   if(k==="seen"&&on)logWoundCheck(r);
+  r.updatedAt=Date.now();renderRounds();renderCal();save();
+}
+function woundCheckAdvance(id,former){
+  const r=former?(S.formerWounds||[]).find(x=>x.id===id):S.rounds.find(x=>x.id===id);if(!r)return;
+  r.woundChecks=r.woundChecks||{};
+  const nx=WOUND_CHECK_ORDER.find(([k])=>!r.woundChecks[k]);
+  if(nx){
+    r.woundChecks[nx[0]]=true;
+    if(nx[0]==="seen")logWoundCheck(r);
+    showToast("Wound "+nx[1]+" checked — "+(r.label||roundIdentityText(r)||""));
+  }else{
+    const last=WOUND_CHECK_ORDER.slice().reverse().find(([k])=>r.woundChecks[k]);
+    if(last){
+      r.woundChecks[last[0]]=false;
+      showToast("Wound "+last[1]+" unchecked — "+(r.label||roundIdentityText(r)||""));
+    }
+  }
   r.updatedAt=Date.now();renderRounds();renderCal();save();
 }
 function logWoundCheck(r){
