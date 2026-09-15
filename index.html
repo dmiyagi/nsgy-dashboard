@@ -313,6 +313,11 @@ button.rdone.finaldone{background:#123527}
 .chartdot{width:9px;height:9px;border-radius:50%;border:1px solid var(--line);background:transparent;display:inline-block}
 .chartdot.on{border-color:var(--ok);background:var(--ok);box-shadow:0 0 0 1px rgba(63,214,143,.18)}
 .chartdot.amseen.on{border-color:#1f8f5a;background:#1f8f5a;box-shadow:0 0 0 1px rgba(31,143,90,.18)}
+.chartdotbtn{border:0;background:transparent;padding:2px;cursor:pointer;line-height:0}
+.chartdotbtn .chartdot{pointer-events:none}
+.chartmini{display:inline-flex;gap:5px;align-items:center;flex:0 0 auto}
+.chartmini button{font-size:10.5px;font-weight:900;border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:999px;padding:2px 7px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+.chartmini button.on{border-color:var(--ok);color:var(--ok)}
 .wounddots .chartdot{cursor:pointer}
 .crow .chartdots{flex:0 0 auto}
 .datechip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--e1);background:#33280e;color:#ffe987;border-radius:999px;font-size:10.5px;font-weight:900;padding:2px 8px;white-space:nowrap}
@@ -785,7 +790,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.152 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.155 · 2026-09-14</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3037,10 +3042,25 @@ function applySugg(i){const s=curSugg[i];if(!s)return;F._manual=true;
 function useSuggAction(i){const s=curSugg[i];if(s&&s.action)document.getElementById("f_action").value=s.action}
 function useSuggTrig(i){const s=curSugg[i];if(s&&s.trig)document.getElementById("f_trig").value=s.trig}
 const CLOSE_ITEMS=["Primary team assigned or patient dispo complete","All documentation has been completed and signed","If signing off or discharged, CoC updated","If surgical patient, added to wound check list","Consult note pended"];
+const CLOSE_NOTE_IDX=CLOSE_ITEMS.findIndex(x=>/consult note pended/i.test(x));
 function closeItemKey(t){return String(t||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()}
 function closeItemIdxForTask(t){
   const k=closeItemKey(t);
   return CLOSE_ITEMS.findIndex(x=>closeItemKey(x)===k);
+}
+function syncPendNoteChecklistState(c,on){
+  if(!c||CLOSE_NOTE_IDX<0)return;
+  c.wf=c.wf||{};
+  c.wf.note=!!on;
+  c.closeChecks=c.closeChecks||{};
+  c.closeChecks[CLOSE_NOTE_IDX]=!!on;
+  (c.tasks||[]).forEach(t=>{
+    if((Number.isInteger(t.closeIdx)&&t.closeIdx===CLOSE_NOTE_IDX)||closeItemKey(t.t)===closeItemKey(CLOSE_ITEMS[CLOSE_NOTE_IDX])){
+      t.done=!!on;
+      t.dueISO=on?null:t.dueISO;
+      rememberDone(c,t.t,on);
+    }
+  });
 }
 function syncCloseTaskState(c,task){
   if(!c||!task)return;
@@ -3048,6 +3068,7 @@ function syncCloseTaskState(c,task){
   if(i<0)return;
   c.closeChecks=c.closeChecks||{};
   c.closeChecks[i]=!!task.done;
+  if(i===CLOSE_NOTE_IDX)syncPendNoteChecklistState(c,task.done);
 }
 const BLOCKS=[
  {id:"pre",s:"05:45",e:"06:00",t:"Pre-signout",tasks:["Print lists — 4–6 copies, printer RIBB70308PTR1, service NEUROSURGERY, sort by room/bed, single-sided, break the glass on confidential charts first","Bring 2 lists to ICU sign-out room; leave the rest in the workroom, no staples","Add pre-op patients to master list (AFTER printing)","Print OR list ×2 (sort by room; skip Miriam single-digit ORs; include Hasbro blue/green/orange); on-call attendings under it; highlight your post-ops","Update whiteboard: date, OR#, attending initials, last name, case, post-op destination (APPs track POCs off this)","Message NCCU chat the incoming pre-ops (Incomings / Maybe format)"]},
@@ -3976,6 +3997,8 @@ function compactPending(c){
   }
   const ti=(c.tasks||[]).findIndex(t=>!effectivelyDone(c,t));
   if(ti>=0)return {kind:"task",i:ti,t:c.tasks[ti].t};
+  const wf=openWorkflowKeys(c)[0];
+  if(wf)return {kind:"wf",k:wf.k,t:wf.l};
   return null;
 }
 function compactDoneText(c){
@@ -4089,8 +4112,9 @@ function doneAction(id){
 function rowDone(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   const p=compactPending(c);
-  if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   if(!p)return;
+  if(p.kind==="wf"){togWf(id,p.k);return}
+  if(c.type==="CONSULT"&&!requireConsultGate(c))return;
   if(p.kind==="action"){doneAction(id);return}
   if(p.kind==="step"&&c.steps&&c.steps[p.i]){
     c.lastDone=c.steps[p.i].t;setWorkDone(c,c.steps[p.i],true);
@@ -4233,8 +4257,7 @@ function consultWfPrereqMissing(c,k){
   const req={
     staffedC:[["list","List"],["handoff","Handoff"],["seen","Seen"]],
     staffedA:[["staffedC","Staffed-Chief"]],
-    commplan:[["staffedA","Staffed-Attg"]],
-    note:[["commplan","Comm'd Plan"]]
+    commplan:[["staffedA","Staffed-Attg"]]
   }[k]||[];
   return req.filter(([rk])=>!wf[rk]).map(([,l])=>l);
 }
@@ -4245,12 +4268,11 @@ function consultWfLabel(k){
 function clearConsultWfAfter(c,k){
   if(!c||c.type!=="CONSULT"||!c.wf)return;
   const downstream={
-    list:["seen","staffedC","staffedA","commplan","note"],
-    handoff:["seen","staffedC","staffedA","commplan","note"],
-    seen:["staffedC","staffedA","commplan","note"],
-    staffedC:["staffedA","commplan","note"],
-    staffedA:["commplan","note"],
-    commplan:["note"]
+    list:["seen","staffedC","staffedA","commplan"],
+    handoff:["seen","staffedC","staffedA","commplan"],
+    seen:["staffedC","staffedA","commplan"],
+    staffedC:["staffedA","commplan"],
+    staffedA:["commplan"]
   }[k]||[];
   downstream.forEach(x=>{c.wf[x]=false});
 }
@@ -4300,6 +4322,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
       if(miss.length){setPin(c.id);showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
+    if(c.type==="CONSULT"&&k==="note")syncPendNoteChecklistState(c,next);
     if(c.type==="CONSULT"&&next){
       const sm=consultMilestoneSnoozeMin(k);
       if(sm!==null)setReviewClockForMin(c,sm);
@@ -4307,6 +4330,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
     if(c.type==="CONSULT"&&next&&k==="commplan")clearNoteTimersAfterCommPlan(c);
   }
   touch(c);
+  save();
   const missingGate=c.type==="CONSULT"?consultGateMissing(c):[];
   scheduleBoardReflow(c.id);
   if(missingGate.length&&!(c.wf&&c.wf.seen)){setPin(c.id);render();return}
@@ -4726,6 +4750,7 @@ function startClose(id){
 function hideClose(){document.getElementById("ovClose").classList.remove("show");closingId=null}
 function closeCheckToggle(i,on){
   const c=S.consults.find(x=>x.id===closingId);if(!c)return;
+  if(i===CLOSE_NOTE_IDX)syncPendNoteChecklistState(c,on);
   c.closeChecks=c.closeChecks||{};c.closeChecks[i]=!!on;touch(c);save();
 }
 function uncheckedCloseItems(){
@@ -5605,6 +5630,28 @@ function renderRoundChartCheckList(){
     items.map(chartCheckListRow).join("")+
     '</details>';
 }
+function chartCheckRound(c){return c&&c.roundId?(S.rounds||[]).find(r=>r.id===c.roundId):null}
+function chartCheckIdentityHtml(c){
+  const r=chartCheckRound(c);
+  if(r)return roundIdentityBadges(r);
+  const loc=c.loc||"",team=cleanTeam(c.team)||teamFromText([c.loc,c.prob,c.note].filter(Boolean).join(" ")),attg=cleanAttg(c.attg)||attgFromText([c.loc,c.prob,c.note].filter(Boolean).join(" ")),pt=last3FromText([c.loc,c.prob,c.note].filter(Boolean).join(" "));
+  return (loc?'<span class="bg t">'+esc(loc)+'</span>':"")+
+    (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
+    (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
+    (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
+}
+function chartCheckDotsHtml(c){
+  const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
+  if(!set.length)return "";
+  return '<span class="chartdots" title="'+set.map(x=>x[1]).join(" / ")+'">'+set.map(([k,l])=>
+    '<button type="button" class="chartdotbtn" title="'+esc(l)+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')"><span class="chartdot '+(k==="ccam"||k==="wseen1"?"amseen ":"")+(c.wf&&c.wf[k]?"on":"")+'"></span></button>'
+  ).join("")+'</span>';
+}
+function chartCheckMiniButtons(c){
+  const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
+  if(!set.length)return "";
+  return '<span class="chartmini">'+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
+}
 function chartCheckListRow(c){
   const due=nextDue(c);
   const dl=fmtDL(due);
@@ -5616,12 +5663,14 @@ function chartCheckListRow(c){
   return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
     trashBtn(c.id,"chart")+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
+      chartCheckDotsHtml(c)+
+      chartCheckIdentityHtml(c)+
       typeBadgeHtml(c,true)+
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
       (due?chartDueChip(due):"")+
       worry+
-      '<span class="rwho">'+esc(c.loc||"")+'</span>'+
       '<span class="rprob">'+esc(title)+'</span>'+
+      chartCheckMiniButtons(c)+
       '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
     (open?'<div class="wounddetail">'+
       ctx+
