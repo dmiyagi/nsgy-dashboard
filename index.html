@@ -790,7 +790,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.156 · 2026-09-14</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.157 · 2026-09-16</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1098,6 +1098,16 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <details class="ref"><summary>ICH score calculator</summary><div class="rb">
 <p class="note">Original ICH Score components: GCS, age, ICH volume, intraventricular hemorrhage, and infratentorial origin. Mortality estimates below are from the original 2001 cohort and should not drive goals-of-care decisions by themselves.<a class="cite" href="https://pubmed.ncbi.nlm.nih.gov/11283388/" target="_blank">[8]</a></p>
 <div id="ref_ich"></div>
+</div></details>
+
+<details class="ref"><summary>Spetzler-Martin AVM grade</summary><div class="rb">
+<p class="note">AVM operative-risk language. Use as a communication aid with angio/anatomic review and attending judgment.</p>
+<ul>
+<li><b>Size:</b> &lt;3 cm = 1, 3-6 cm = 2, &gt;6 cm = 3.</li>
+<li><b>Eloquence:</b> non-eloquent = 0, eloquent cortex/critical structure = 1.</li>
+<li><b>Venous drainage:</b> superficial only = 0, any deep drainage = 1.</li>
+<li><b>Total:</b> Spetzler-Martin grade I-V = size + eloquence + drainage.</li>
+</ul>
 </div></details>
 
 <details class="ref"><summary>Carotid / aneurysm consult checks</summary><div class="rb">
@@ -3051,7 +3061,8 @@ function closeItemIdxForTask(t){
 function syncPendNoteChecklistState(c,on){
   if(!c||CLOSE_NOTE_IDX<0)return;
   c.wf=c.wf||{};
-  c.wf.note=!!on;
+  c.wf.pendnote=!!on;
+  if("note" in c.wf)delete c.wf.note;
   c.closeChecks=c.closeChecks||{};
   c.closeChecks[CLOSE_NOTE_IDX]=!!on;
   (c.tasks||[]).forEach(t=>{
@@ -3092,6 +3103,7 @@ function migrate(d){
     if(!Array.isArray(c.steps))c.steps=[];
     if(c.type==="WOUND"&&c.roundId&&!c.autoWoundDate){c.autoWoundDate=true;c.sourceId=c.roundId}
     c.doneKeys=Array.isArray(c.doneKeys)?c.doneKeys:[];
+    if(c.type==="CONSULT"&&c.wf&&c.wf.note&&!c.wf.pendnote){c.wf.pendnote=c.wf.note;delete c.wf.note}
     (c.steps||[]).concat(c.tasks||[]).forEach(t=>{if(t&&t.done)rememberDone(c,t.t,true)});
     if(c.type==="DC")normalizeDcPrep(c);
     if(c.type==="ADMIT")normalizeAdmitPrep(c);
@@ -3631,7 +3643,7 @@ function reflowQueue(){
   if(next)setPin(next.id);
   return next||null;
 }
-const WF_ITEMS=[["list","List"],["handoff","Handoff"],["note","Pend note"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"]];
+const WF_ITEMS=[["list","List"],["handoff","Handoff"],["pendnote","Pend note"],["seen","Seen"],["staffedC","Staffed-Chief"],["staffedA","Staffed-Attg"],["commplan","Comm'd Plan"]];
 const DC_WF=[["medrec","Med rec"],["coc","CoC/f-u"],["summ","DC summary"],["order","DC order"]];
 const TYPE_WF={
  CONSULT:WF_ITEMS,
@@ -3646,6 +3658,7 @@ const TYPE_WF={
 };
 function workflowSet(c){
   const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
+  if(type==="CONSULT"&&c&&c.wf&&c.wf.note&&!c.wf.pendnote){c.wf.pendnote=c.wf.note;delete c.wf.note}
   let set=TYPE_WF[type]||[];
   if(type==="CHART"&&c.worry){
     set=[["wseen1","Seen 1"],["wseen2","Seen 2"],["wseen3","Seen 3"]].concat(set.filter(([k])=>k!=="seen"));
@@ -4322,7 +4335,7 @@ function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.w
       if(miss.length){setPin(c.id);showToast("Before "+consultWfLabel(k)+": complete "+miss.join(" + "));render();return}
     }else clearConsultWfAfter(c,k);
     c.wf[k]=next;
-    if(c.type==="CONSULT"&&k==="note")syncPendNoteChecklistState(c,next);
+    if(c.type==="CONSULT"&&k==="pendnote")syncPendNoteChecklistState(c,next);
     if(c.type==="CONSULT"&&next){
       const sm=consultMilestoneSnoozeMin(k);
       if(sm!==null)setReviewClockForMin(c,sm);
@@ -4694,9 +4707,17 @@ function saveForm(){
   }
   ensureCareMeta(F);
   const stepLines=document.getElementById("f_steps").value.split("\n").map(s=>s.trim()).filter(Boolean);
-  F.steps=stepLines.map(t=>(F.steps||[]).find(s=>s.t===t)||{t:t,done:false});
+  F.steps=stepLines.map(t=>{
+    const hit=(F.steps||[]).find(s=>s.t===t);
+    if(!hit)rememberDone(F,t,false);
+    return hit||{t:t,done:false};
+  });
   const taskLines=document.getElementById("f_tasks").value.split("\n").map(s=>s.trim()).filter(Boolean);
-  F.tasks=taskLines.map(t=>(F.tasks||[]).find(s=>s.t===t)||{t:t,done:false});
+  F.tasks=taskLines.map(t=>{
+    const hit=(F.tasks||[]).find(s=>s.t===t);
+    if(!hit)rememberDone(F,t,false);
+    return hit||{t:t,done:false};
+  });
   if(F.type==="DC")normalizeDcPrep(F);
   if(F.type==="ADMIT")normalizeAdmitPrep(F);
   ensureInfectionChecklistOnCard(F,[F.prob,F.state,F.action,F.note].filter(Boolean).join(" "));
@@ -5675,10 +5696,29 @@ function chartCheckListRow(c){
     (open?'<div class="wounddetail">'+
       ctx+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
-      stepsHtml(c)+checksHtml(c)+wf+soValsHtml(c)+
+      chartCheckNoteHtml(c)+stepsHtml(c)+checksHtml(c)+chartCheckTodoAddHtml(c)+wf+soValsHtml(c)+
       '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="boardMarkSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
+}
+function chartCheckNoteHtml(c){
+  return '<textarea class="evta" id="ccnote_'+c.id+'" placeholder="Chart-check notes… (saves as you type)" style="min-height:42px;margin-top:6px" oninput="chartCheckNoteSave(\''+c.id+'\',this)" onblur="chartCheckNoteSave(\''+c.id+'\',this)">'+esc(c.note||"")+'</textarea>';
+}
+function chartCheckTodoAddHtml(c){
+  return '<div class="nccutodoadd" style="margin-top:6px"><input type="text" id="cctodo_'+c.id+'" placeholder="Add chart-check to-do…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();chartCheckTodoAdd(\''+c.id+'\')}"><button onclick="chartCheckTodoAdd(\''+c.id+'\')">＋</button></div>';
+}
+function chartCheckNoteSave(id,el){
+  const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
+  const v=el.value.trim();
+  if(c.note===v)return;
+  c.note=v;touch(c);autosave();
+}
+function chartCheckTodoAdd(id){
+  const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART"),el=document.getElementById("cctodo_"+id);if(!c||!el)return;
+  const t=el.value.trim();if(!t)return;
+  c.tasks=c.tasks||[];
+  if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){rememberDone(c,t,false);c.tasks.push({t:t,done:false})}
+  el.value="";touch(c);renderRounds();renderCal();save();
 }
 function stripRoundsDateText(s){
   return String(s||"").replace(/^Rounds date:\s*/i,"").trim();
@@ -6663,9 +6703,8 @@ function syncBoardTodoToRounds(c){
   r.steps=r.steps||[];
   const lines=[wasDone(c,c.action)?"":c.action].concat((c.tasks||[]).filter(t=>!effectivelyDone(c,t)).map(t=>t.t)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
-  lines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false});n++}});
-  const flagged=flagTodosForSignout(r,lines);
-  if(n||flagged)r.updatedAt=Date.now();
+  lines.forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){rememberDone(r,t,false);r.steps.push({t:t,done:false});n++}});
+  if(n)r.updatedAt=Date.now();
   return n;
 }
 function syncBoardDoneToRounds(c,text,done){
@@ -6728,10 +6767,9 @@ function syncRoundTodosToBoard(r,lines){
   (S.consults||[]).filter(c=>!c.closed&&((c.roundId&&c.roundId===r.id)||patientKey(c)===rk)).forEach(c=>{
     c.roundId=r.id;
     c.tasks=c.tasks||[];
-    todoLines.forEach(t=>{if(wasDone(r,t)||wasDone(c,t))return;if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){c.tasks.push({t:t,done:false});n++}});
+    todoLines.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){rememberDone(c,t,false);c.tasks.push({t:t,done:false});n++}});
     if(n)touch(c);
   });
-  if(flagTodosForSignout(r,todoLines))r.updatedAt=Date.now();
   return n;
 }
 function roundToBoard(id,type){const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -9326,6 +9364,23 @@ function capBooking(text,match){
 function capOE(text){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";askOE(text)}
 function capRounds(){document.querySelector('nav button[data-view="rounds"]').click()}
 function capBookingTab(){document.getElementById("cap").value="";document.getElementById("capsugg").innerHTML="";document.querySelector('nav button[data-view="booking"]').click()}
+const SCORE_SHORTCUTS=[
+  {re:/\bgcs\b|glasgow/i,label:"GCS",ref:"GCS calculator",tmpl:"GCS E__ V__ M__ = __"},
+  {re:/hunt.?hess|\bhh\b/i,label:"Hunt-Hess",ref:"Hunt-Hess score",tmpl:"Hunt-Hess __"},
+  {re:/modified fisher|mfish|mFisher|\bmf\b/i,label:"Modified Fisher",ref:"Hunt-Hess score",tmpl:"modified Fisher __"},
+  {re:/ich score|\bichs\b/i,label:"ICH Score",ref:"ICH Score",tmpl:"ICH score __"},
+  {re:/spetzler|spetzler.?martin|\bsm\b.*(?:avm|grade)|avm grade/i,label:"Spetzler-Martin",ref:"Spetzler-Martin",tmpl:"Spetzler-Martin: size __ + eloquence __ + venous drainage __ = SM __"}
+];
+function scoreShortcutsFor(t){return SCORE_SHORTCUTS.filter(x=>x.re.test(String(t||"")))}
+function openScoreReference(term){
+  document.querySelector('nav button[data-view="ref"]').click();
+  setTimeout(()=>{
+    const ds=Array.from(document.querySelectorAll("#view-ref details"));
+    const hit=ds.find(d=>String((d.querySelector("summary")||{}).textContent||"").toLowerCase().includes(String(term||"").toLowerCase()));
+    if(hit){hit.open=true;hit.scrollIntoView({block:"start",behavior:"smooth"})}
+    else showToast("Reference opened — "+term);
+  },50);
+}
 function runCap(i){const a=capActions[i];if(a)a.fn()}
 // ---- capture from anywhere: type the bed, the line lands on that sign-out ----
 // Strips the patient reference out so the captured line reads cleanly.
@@ -9393,7 +9448,7 @@ function renderCapture(){
   const pathAbbrev=knownPathAbbrev(text);
   const quickProcText=/\b(?:remove staples?|staple removal|evd tap|tap evd|evd (?:csf|sample|culture|draw)|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen)|\btpa\b|baclofen pump|pump (?:check|interrogat|refill|reprogram)|shunt (?:dial|setting|program|re-?program|check)|valve (?:setting|check)|re-?program.{0,20}(?:shunt|valve))\b/i.test(text);
   const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(text);
-  if(text.length<4&&!pathAbbrev&&!knownProcCue){el.innerHTML="";return}
+  if(text.length<4&&!pathAbbrev&&!knownProcCue&&!scoreShortcutsFor(text).length){el.innerHTML="";return}
   const bed=consultParse.bed||extractBed(text);
   const rmatch=findRoundsMatch(text,bed);
   const pmatch=findPatientMatch(text,bed);
@@ -9433,6 +9488,10 @@ function renderCapture(){
     return (r&&r.nccuSO)?r:null;
   })();
   const add=(cls,ico,main,sub,fn)=>{capActions.push({fn:fn});rows.push('<button class="caprow '+cls+'" onclick="runCap('+(capActions.length-1)+')"><span class="ci">'+ico+'</span><span class="ct"><b>'+main+'</b>'+(sub?'<span class="csub">'+sub+'</span>':"")+'</span></button>')};
+  scoreShortcutsFor(text).forEach(sc=>{
+    add("","◎","Open "+sc.label+" score",sc.ref,()=>openScoreReference(sc.ref));
+    add("","⧉","Copy "+sc.label+" template",sc.tmpl,()=>{toClip(sc.tmpl);showToast(sc.label+" template copied")});
+  });
   if(soTarget&&!bookCue&&!isCall){
     const line=sxStripRef(text,soTarget);
     const role=sxGuessRole(line,!sxByRole(soTarget,"context").length);
