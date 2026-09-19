@@ -790,7 +790,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.157 · 2026-09-16</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.159 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -929,7 +929,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     </div>
     <div class="toolgrp">
       <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
-      <button class="btn sec sm" onclick="purgeChartChecks()">− Purge chart checks</button>
+      <button class="btn sec sm" onclick="purgeChartChecks()">Clear chart checks</button>
     </div>
   </div>
   <div class="bulkexport">
@@ -3467,6 +3467,7 @@ function renderTypeFilters(list){
   })).join("");
   const sortOpts=[
     ["bubble","Priority"],
+    ["recent","Recency"],
     ["room","Room"],
     ["last3","Patient"]
   ].map(([k,l])=>'<option value="'+k+'" '+(boardSortMode===k?"selected":"")+'>'+l+'</option>').join("");
@@ -3620,7 +3621,12 @@ function sortCs(a,b){
 function boardSearchText(c){return [c.loc,c.prob,c.state,c.action,c.note].filter(Boolean).join(" ")}
 function boardRoomKey(c){return roundBedFromText(boardSearchText(c))||String(c.loc||"").toUpperCase()}
 function boardLast3Key(c){return (last3FromText(boardSearchText(c))||last3FromText(c.loc)||String(c.loc||"")).toUpperCase()}
+function boardRecency(c){return c&&Number(c.updatedAt||c.created||0)||0}
 function boardSort(a,b){
+  if(boardSortMode==="recent"){
+    const c=boardRecency(b)-boardRecency(a);
+    return c||sortCs(a,b);
+  }
   if(boardSortMode==="room"){
     const ar=boardRoomKey(a),br=boardRoomKey(b);
     const c=String(ar).localeCompare(String(br),undefined,{numeric:true});
@@ -5648,6 +5654,7 @@ function renderRoundChartCheckList(){
   if(!items.length)return "";
   const k="chart-round-all";
   return '<details class="closedsec"'+woundSecAttr(k)+'><summary>Chart Checks ('+items.length+')</summary>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
     items.map(chartCheckListRow).join("")+
     '</details>';
 }
