@@ -238,6 +238,7 @@ button.tbtn.set{border-color:var(--e2);color:var(--e2)}
 .crow{display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:nowrap;overflow:hidden;cursor:pointer}
 .crow .rwho{font-weight:700;white-space:nowrap;font-size:13.5px}
 .crow .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:36px;font-size:13px}
+.keyterm{background:rgba(242,211,75,.22);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:900}
 .crow .ract{color:var(--text);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
 .crow .ract.doneitem{color:var(--ok);text-decoration:line-through}
 .crow .rdl{font-size:11px;white-space:nowrap;flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:2px 6px}
@@ -790,7 +791,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.160 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.161 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3298,6 +3299,10 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
 }));
 // ---------- helpers ----------
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function oneLinerKeyHtml(t){
+  const terms="dressing|dressings|drssg|dssg|staple|staples|nylon|nylons|suture|sutures";
+  return esc(t).replace(new RegExp("\\b("+terms+")\\b","gi"),'<mark class="keyterm">$1</mark>');
+}
 function jsq(s){return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n")}
 function cLevel(c){const t=domTotal(c);if(t!==null){return t<=5?1:t<=11?2:t<=23?3:4}return c.cQuick||null}
 function domTotal(c){if(!c.domains||!c.domains.some(d=>d!==null&&d!==undefined))return null;return c.domains.reduce((a,d)=>a+(d||0),0)}
@@ -5586,7 +5591,7 @@ function roundRowCard(r){
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (tags?'<span class="rtags">'+tags+'</span>':"")+
-    '<span class="rprob">'+esc(roundProblemText(r))+'</span>'+
+    '<span class="rprob">'+oneLinerKeyHtml(roundProblemText(r))+'</span>'+
     (nx?roundStepBox(r,nxi)+'<span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
     '<span class="car">▸</span></div></div>';
 }
@@ -5625,7 +5630,7 @@ function renderRounds(){
     const nccu=r.nccuSO?'<span class="bg warn">SO</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
-     '<div class="state" style="color:#c8d3e4">'+esc(roundProblemText(r))+'</div>'+
+     '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
      rStepsHtml(r)+
      roundChartHtml(r)+
@@ -5697,7 +5702,7 @@ function chartCheckListRow(c){
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
       (due?chartDueChip(due):"")+
       worry+
-      '<span class="rprob">'+esc(title)+'</span>'+
+      '<span class="rprob">'+oneLinerKeyHtml(title)+'</span>'+
       chartCheckMiniButtons(c)+
       '<span class="car">'+(open?"▾":"▸")+'</span></div>'+
     (open?'<div class="wounddetail">'+
@@ -6088,7 +6093,8 @@ function woundDateState(s){
 function escRe(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
 function woundProblemHtml(r){
   const txt=woundOneLiner(r).slice(0,130),d=woundDateFromText(r),html=esc(txt);
-  return d?html.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):html;
+  const keyed=html.replace(/\b(dressing|dressings|drssg|dssg|staple|staples|nylon|nylons|suture|sutures)\b/gi,'<mark class="keyterm">$1</mark>');
+  return d?keyed.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):keyed;
 }
 function woundRowBadges(r,former,latest,kind,compact){
   const team=roundTeam(r),attg=roundAttg(r),target=woundTargetTag(r),removeDate=woundDateFromText(r);
