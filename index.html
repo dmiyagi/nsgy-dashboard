@@ -792,7 +792,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.163 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.164 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3301,7 +3301,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
 // ---------- helpers ----------
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function oneLinerKeyHtml(t){
-  const terms="dressing|dressings|drssg|dssg|staple|staples|nylon|nylons|suture|sutures";
+  const terms="dressing|dressings|drssg|dssg|staple|staples|nylon|nylons|suture|sutures|JP|drain|drains|EVD";
   return esc(t).replace(new RegExp("\\b("+terms+")\\b","gi"),'<mark class="keyterm">$1</mark>');
 }
 function jsq(s){return String(s||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g,"\\n")}
@@ -6098,8 +6098,7 @@ function woundDateState(s){
 }
 function escRe(s){return String(s||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
 function woundProblemHtml(r){
-  const txt=woundOneLiner(r).slice(0,130),d=woundDateFromText(r),html=esc(txt);
-  const keyed=html.replace(/\b(dressing|dressings|drssg|dssg|staple|staples|nylon|nylons|suture|sutures)\b/gi,'<mark class="keyterm">$1</mark>');
+  const txt=woundOneLiner(r).slice(0,130),d=woundDateFromText(r),keyed=oneLinerKeyHtml(txt);
   return d?keyed.replace(new RegExp("\\b"+escRe(esc(d))+"\\b","g"),'<mark>'+esc(d)+'</mark>'):keyed;
 }
 function woundRowBadges(r,former,latest,kind,compact){

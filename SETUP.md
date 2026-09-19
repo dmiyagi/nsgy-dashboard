@@ -136,6 +136,7 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 - **Rounds wound-keyword highlights (v0.0.161 · 2026-09-19):** Rounds, Chart Check, and Wound Check one-liners now visually highlight dressing/dssg/drssg, staples, nylons, and sutures without changing saved or copied text.
 - **Rounds pending to-do indicator (v0.0.162 · 2026-09-19):** Rounds cards now show a small amber status dot whenever that patient has unfinished to-dos, in both compact and expanded views.
 - **Rounds manual to-do state (v0.0.163 · 2026-09-19):** New to-dos typed into a Rounds card now always start unchecked, even if the same text had previously been completed, so clicking away no longer auto-checks them.
+- **Rounds device/drain highlights (v0.0.164 · 2026-09-19):** One-liners now also highlight JP, drain/drains, and EVD alongside wound-material cues.
 - **Wound checks** can be taken off the list from the row (**✕ Remove from wound list**) or via the card's Wound list button, both undoable.
 - Any task card (consent, comm, proc…) with nothing outstanding now shows its **Done** button.
 - **Rounds rounds-schedule:** ticking a check only fills the dot and keeps the patient visible on the list. **Reset seen ✓ (AM)** clears every check and any manual archives for a new day. Archived patients, if any, sit in their own collapsible section showing when each comes back; tap a row (or **↩ Bring all back**) to pull one forward early. Day view keeps the 3-stage version (AM seen · 1 pm · 4 pm). Rounds always open compact after a reload.
