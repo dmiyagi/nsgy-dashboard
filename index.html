@@ -790,7 +790,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.159 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.160 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4361,7 +4361,7 @@ function del(id,skipConfirm){
   if(!skipConfirm&&!confirm("Delete permanently?"))return;
   const sup=suppressAutoBoardDateTask(c);
   trashPush("consult",c);
-  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  tombSet(id);
   S.consults=S.consults.filter(x=>x.id!==id);
   render();renderRounds();
   showToast("Deleted "+(c.loc||c.prob||"item"),()=>{unsuppressAutoBoardDateTask(sup);restoreConsult(c)});
@@ -4423,10 +4423,10 @@ function copyAll(){const act=S.consults.filter(c=>boardVisible(c)&&!c.closed).so
 function toClip(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>{},()=>fallbackCopy(t))}else fallbackCopy(t)}
 function fallbackCopy(t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy")}catch(e){}document.body.removeChild(ta)}
 function wipe(){if(confirm("Wipe visible Board consults and checkboxes? Future snoozed tasks stay scheduled. (If sync is on, the wipe propagates to your other devices too.)")){
-  const now=Date.now();S.tomb=S.tomb||{};
+  const now=tombStamp();
   const keep=[];const drop=[];
   (S.consults||[]).forEach(c=>{((!boardVisible(c)||isSnoozed(c))?keep:drop).push(c)});
-  drop.forEach(c=>S.tomb[c.id]=now);
+  drop.forEach(c=>tombSet(c.id,now));
   S.consults=keep;S.day={date:"",checks:{}};
   save();render();renderBlocks();doSync(true);
 }}
@@ -5766,7 +5766,7 @@ function deleteChartCheck(id){
   const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c)return;
   const sup=suppressAutoChartCheck(c);
   trashPush("consult",c);
-  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  tombSet(id);
   S.consults=S.consults.filter(x=>x.id!==id);
   render();renderRounds();renderCal();flushAutosave();
   showToast("Deleted chart check — "+(c.loc||"patient"),()=>{
@@ -5797,10 +5797,9 @@ function purgeChartChecks(){
   const items=(S.consults||[]).filter(c=>!c.closed&&c.type==="CHART");
   if(!items.length){showToast("No chart checks to purge");return}
   if(!confirm("Purge all "+items.length+" chart check"+(items.length===1?"":"s")+"?"))return;
-  const ts=Date.now(),ids={};
+  const ts=tombStamp(),ids={};
   const sups=items.map(suppressAutoChartCheck);
-  S.tomb=S.tomb||{};
-  items.forEach(c=>{ids[c.id]=true;S.tomb[c.id]=ts;trashPush("consult",c)});
+  items.forEach(c=>{ids[c.id]=true;tombSet(c.id,ts);trashPush("consult",c)});
   S.consults=(S.consults||[]).filter(c=>!ids[c.id]);
   render();renderRounds();renderCal();flushAutosave();
   showToast("Purged "+items.length+" chart check"+(items.length===1?"":"s"),()=>{
@@ -5849,12 +5848,12 @@ function addRoundWoundList(id){
 }
 function roundRemoveAfterSend(r,msg){
   if(!r)return;
-  const ts=Date.now();
+  const now=Date.now(),ts=tombStamp();
   trashPush("round",r);
-  S.tomb=S.tomb||{};S.tomb[r.id]=ts;
+  tombSet(r.id,ts);
   if(r.woundListed){
     S.formerWounds=S.formerWounds||[];
-    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:ts+1}));
+    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:now+1}));
   }
   S.rounds=(S.rounds||[]).filter(x=>x.id!==r.id);
   renderRounds();render();renderCal();flushAutosave();
@@ -6494,7 +6493,7 @@ function removeWoundLog(id,date,former){
 }
 function removeFormerWound(id){
   const r=(S.formerWounds||[]).find(x=>x.id===id);
-  S.tomb=S.tomb||{};S.tomb[id]=Date.now();
+  tombSet(id);
   S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);
   renderRounds();renderCal();flushAutosave();
   showToast("Removed from former wound checks"+(r?" — "+(r.label||""):""),()=>{
@@ -6571,8 +6570,8 @@ function copyLinkedSx(dst,src){
 function togWorry(id){const r=findAny(id);if(r){r.worry=!r.worry;r.updatedAt=Date.now();renderRounds();render();save()}}
 function purgeRounds(){
   if(!confirm("Purge the ENTIRE rounds list? (Propagates to synced devices.)"))return;
-  const now=Date.now();S.tomb=S.tomb||{};
-  S.rounds.forEach(r=>S.tomb[r.id]=now);
+  const now=tombStamp();
+  S.rounds.forEach(r=>tombSet(r.id,now));
   S.rounds=[];renderRounds();save();doSync(true);
 }
 function togSoCcResp(id){const r=S.rounds.find(x=>x.id===id);if(r){
@@ -6611,12 +6610,12 @@ function clearSeen(){
 }
 function delRound(id){
   const r=S.rounds.find(x=>x.id===id);
-  const ts=Date.now();
+  const now=Date.now(),ts=tombStamp();
   if(r)trashPush("round",r);
-  S.tomb=S.tomb||{};S.tomb[id]=ts;
+  tombSet(id,ts);
   if(r&&woundRoundCandidate(r)){
     S.formerWounds=S.formerWounds||[];
-    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:ts+1}));
+    if(!S.formerWounds.some(x=>x.id===r.id))S.formerWounds.push(Object.assign({},r,{updatedAt:now+1}));
   }
   S.rounds=S.rounds.filter(x=>x.id!==id);renderRounds();render();save();
   if(r)showToast("Removed "+r.label+" from rounds",()=>restoreRound(r));
@@ -9697,6 +9696,15 @@ async function fetchGistFile(f){
 }
 function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
+const DELETE_TOMBSTONE_MS=7*24*3600*1000;
+function tombStamp(){return Date.now()+DELETE_TOMBSTONE_MS}
+function tombSet(id,ts){
+  if(!id)return 0;
+  S.tomb=S.tomb||{};
+  const v=ts||tombStamp();
+  S.tomb[id]=Math.max(S.tomb[id]||0,v);
+  return S.tomb[id];
+}
 function mergeDoneList(a,b){
   const seen={};
   [a,b].forEach(o=>{
