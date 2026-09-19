@@ -239,6 +239,7 @@ button.tbtn.set{border-color:var(--e2);color:var(--e2)}
 .crow .rwho{font-weight:700;white-space:nowrap;font-size:13.5px}
 .crow .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:36px;font-size:13px}
 .keyterm{background:rgba(242,211,75,.22);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:900}
+.todoind{width:9px;height:9px;border-radius:50%;border:1px solid var(--e2);background:var(--e2);box-shadow:0 0 0 2px rgba(255,161,62,.12);display:inline-block;flex:0 0 auto}
 .crow .ract{color:var(--text);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
 .crow .ract.doneitem{color:var(--ok);text-decoration:line-through}
 .crow .rdl{font-size:11px;white-space:nowrap;flex:0 0 auto;background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:2px 6px}
@@ -791,7 +792,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.161 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.162 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5260,6 +5261,10 @@ function roundStageBox(r){
 function roundStepBox(r,i){
   return '<button class="rcheck" title="Mark to-do done" aria-label="Mark to-do done" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+i+')">✓</button>';
 }
+function roundTodoIndicator(r){
+  const n=(r&&r.steps||[]).filter(s=>!effectivelyDone(r,s)).length;
+  return n?'<span class="todoind" title="'+n+' pending to-do'+(n===1?"":"s")+'" aria-label="'+n+' pending to-do'+(n===1?"":"s")+'"></span>':"";
+}
 function roundCheckAdvance(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const nx=roundNextCheck(r);if(!nx)return;
@@ -5586,6 +5591,7 @@ function roundRowCard(r){
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     roundStageBox(r)+
     chartDotsHtml(r)+
+    roundTodoIndicator(r)+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
     (r.worry?'<span class="bg warn">!</span>':"")+
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
@@ -5629,7 +5635,7 @@ function renderRounds(){
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
     const nccu=r.nccuSO?'<span class="bg warn">SO</span>':"";
     return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
-     '<div class="badges">'+roundIdentityBadges(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
+     '<div class="badges">'+roundIdentityBadges(r)+roundTodoIndicator(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
      rStepsHtml(r)+
