@@ -792,7 +792,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.162 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.163 · 2026-09-19</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6640,7 +6640,13 @@ function planSave(id,el){const r=S.rounds.find(x=>x.id===id);if(r){
   const lines=todoLinesFromPlan(el.value);
   r.steps=r.steps||[];
   const added=[];
-  lines.forEach(t=>{if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){r.steps.push({t:t,done:false,ts:sxNow()});added.push(t)}});
+  lines.forEach(t=>{
+    if(!r.steps.some(s=>s.t.toLowerCase()===t.toLowerCase())){
+      rememberDone(r,t,false);
+      r.steps.push({t:t,done:false,ts:sxNow()});
+      added.push(t);
+    }
+  });
   r.plan=lines.join(" · ");
   r.planDraft="";el.value="";
   const synced=syncRoundTodosToBoard(r,added);
