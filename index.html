@@ -737,6 +737,11 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .qbtns button.on{border-color:var(--acc);color:var(--acc)}
 .qbtns input.timecustom{display:none;max-width:210px;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 8px}
 .qbtns input.timecustom.show{display:inline-block}
+.exambuilder{display:grid;grid-template-columns:repeat(4,minmax(92px,1fr));gap:6px;margin:6px 0 8px}
+.exambuilder label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:900;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.exambuilder select,.exambuilder input{min-width:0;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;font-weight:700;padding:6px 7px}
+.exambuilder .wide{grid-column:span 2}
+@media(max-width:700px){.exambuilder{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.exambuilder select,.exambuilder input{font-size:13px;padding:7px 8px}.exambuilder .wide{grid-column:span 2}}
 .dom{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;background:var(--card2)}
 .dom .dn{font-size:12.5px;font-weight:700;margin-bottom:5px}
 .dom .db{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
@@ -792,7 +797,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.164 · 2026-09-19</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.165 · 2026-09-20</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5335,6 +5340,84 @@ function setRStepDL(id,i,min){
   r.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
 }
+function examPickHtml(id,k,label,opts,val,wide){
+  const change=k==="mode"?"roundExamModeChange('"+id+"')":"roundExamBuildApply('"+id+"',false)";
+  return '<label class="'+(wide?'wide':'')+'">'+label+'<select id="ex_'+k+'_'+id+'" onchange="'+change+'">'+
+    opts.map(o=>Array.isArray(o)?o:[o,o]).map(o=>'<option value="'+esc(o[0])+'" '+(String(val||"")===String(o[0])?"selected":"")+'>'+esc(o[1])+'</option>').join("")+
+    '</select></label>';
+}
+function examInputHtml(id,k,label,val,ph,wide){
+  return '<label class="'+(wide?'wide':'')+'">'+label+'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)"></label>';
+}
+function examStructFromText(t){
+  const s=String(t||""), out={mode:"basic",ox:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",spu:"",spl:"",extra:""};
+  const ox=s.match(/\b(?:A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox="Ox"+ox[1];
+  if(/\bPERRV\b/i.test(s))out.pup="PERRV";
+  else if(/\bPERRL\b/i.test(s))out.pup="PERRL";
+  else if(/\bR\s*[>]\s*L\b|\bL\s*[<]\s*R\b/i.test(s))out.pup=/baseline/i.test(s)?"R > L baseline":"R > L";
+  else if(/\bL\s*[>]\s*R\b|\bR\s*[<]\s*L\b/i.test(s))out.pup=/baseline/i.test(s)?"L > R baseline":"L > R";
+  const valAfter=k=>{const m=s.match(new RegExp("\\b"+k+"\\b\\s*:?\\s*([^,;\\n]+)","i"));return m?m[1].trim():""};
+  out.bue=valAfter("BUE");out.ble=valAfter("BLE");
+  out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
+  if(out.rue||out.lue||out.rle||out.lle)out.mode="four";
+  if(/\b(?:delt|deltoid|bi|tri|we|ff|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
+    out.mode="spine";
+    const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
+    out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
+    out.spl=(lines.find(x=>/\b(?:IP|quad|ta|ehl|gastroc|BLE)\b/i.test(x))||out.ble||"");
+  }
+  return out;
+}
+function roundExamBuilderHtml(r,cur){
+  const v=examStructFromText(cur), id=r.id;
+  v.mode=r.examMode||v.mode||"basic";
+  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","baseline","NT"];
+  const ox=["","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
+  const pupils=["","PERRL","PERRV","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
+  const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
+  return '<div class="exambuilder">'+
+    examPickHtml(id,"mode","Mode",mode,v.mode)+
+    examPickHtml(id,"ox","Orient",ox,v.ox)+
+    examPickHtml(id,"pup","Pupils",pupils,v.pup)+
+    (v.mode==="four"?
+      examPickHtml(id,"rue","RUE",scores,v.rue)+examPickHtml(id,"lue","LUE",scores,v.lue)+examPickHtml(id,"rle","RLE",scores,v.rle)+examPickHtml(id,"lle","LLE",scores,v.lle):
+     v.mode==="spine"?
+      examInputHtml(id,"spu","Upper motor",v.spu,"D/B/T/WE/FF/IO 5/5",true)+examInputHtml(id,"spl","Lower motor",v.spl,"IP/Q/TA/EHL/G 5/5",true):
+      examPickHtml(id,"bue","BUE",scores,v.bue)+examPickHtml(id,"ble","BLE",scores,v.ble))+
+    examInputHtml(id,"extra","Extra","", "no drift, SILT, baseline ___", true)+
+    '</div>';
+}
+function exVal(id,k){const el=document.getElementById("ex_"+k+"_"+id);return el?el.value.trim():""}
+function roundExamModeChange(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const el=document.getElementById("rexam_"+id),m=document.getElementById("ex_mode_"+id);
+  if(el)r.exam=el.value.trim();
+  if(m)r.examMode=m.value||"basic";
+  r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
+}
+function roundExamBuildApply(id,explicit){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const mode=exVal(id,"mode")||"basic", lines=[];
+  r.examMode=mode;
+  const ox=exVal(id,"ox"),pup=exVal(id,"pup"),extra=exVal(id,"extra");
+  if(ox)lines.push(ox);
+  if(pup)lines.push(pup);
+  if(mode==="four"){
+    [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
+  }else if(mode==="spine"){
+    const u=exVal(id,"spu"),l=exVal(id,"spl");
+    if(u)lines.push("BUE: "+u);
+    if(l)lines.push("BLE: "+l);
+  }else{
+    const bue=exVal(id,"bue"),ble=exVal(id,"ble");
+    if(bue)lines.push("BUE "+bue);
+    if(ble)lines.push("BLE "+ble);
+  }
+  if(extra)lines.push(extra);
+  const text=lines.join(", ");
+  const el=document.getElementById("rexam_"+id);if(el){el.value=text;roundExamInput(id,el)}
+  if(explicit)roundExamSave(id,el,true);
+}
 function roundExamHtml(r){
   const prev=roundPrevExamText(r);
   // undefined means "never filled in" and gets seeded from the last exam;
@@ -5343,6 +5426,8 @@ function roundExamHtml(r){
   const nHist=(r.examHist||[]).length;
   const hasAny=!!String(cur||"").trim()||nHist>0;
   return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
+    roundExamBuilderHtml(r,cur)+
+    '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
     '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
