@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.177 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.178 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5373,8 +5373,14 @@ function examDefaultFields(mode){
   return base.concat(["bue","ble","drift","sens","comment","extra"]);
 }
 function examAllFieldKeys(){return ["ox","eye","pup","corneal","cough","cmd","mod","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
+function examFieldKeysForMode(mode){
+  const all=examAllFieldKeys();
+  if(mode==="spine")return all.filter(k=>!["bue","ble","rue","lue","rle","lle"].includes(k));
+  if(mode==="four")return all.filter(k=>!["bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
+  return all.filter(k=>!["bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
+}
 function examVisibleFields(r,mode,defs){
-  const allowed=Object.keys(defs||{});
+  const allowed=Object.keys(defs||{}).filter(k=>examFieldKeysForMode(mode).includes(k));
   let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
   fields=fields.filter(k=>allowed.includes(k)).filter((k,i,a)=>a.indexOf(k)===i);
   return fields.length?fields:examDefaultFields(mode).filter(k=>allowed.includes(k));
@@ -5382,14 +5388,14 @@ function examVisibleFields(r,mode,defs){
 function roundExamAddField(id){
   const r=S.rounds.find(x=>x.id===id),sel=document.getElementById("ex_add_"+id);if(!r||!sel||!sel.value)return;
   const mode=exVal(id,"mode")||r.examMode||"basic";
-  const fields=examVisibleFields(r,mode,Object.fromEntries(examAllFieldKeys().map(k=>[k,1])));
+  const fields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1])));
   if(!fields.includes(sel.value))fields.push(sel.value);
   r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function roundExamDropField(id,k){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const mode=exVal(id,"mode")||r.examMode||"basic";
-  r.examFields=examVisibleFields(r,mode,Object.fromEntries(examAllFieldKeys().map(k=>[k,1]))).filter(x=>x!==k);
+  r.examFields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1]))).filter(x=>x!==k);
   r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function examStructFromText(t){
@@ -5495,7 +5501,7 @@ function roundExamBuilderHtml(r,cur){
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
   const labels={ox:"Orient",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",cough:"Cough",corneal:"Corneals",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE spine",lueSp:"LUE spine",rleSp:"RLE spine",lleSp:"LLE spine",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",drift:"Drift",sens:"Sensation",comment:"Comment",extra:"Extra"};
-  const all=Object.keys(defs);
+  const all=Object.keys(defs).filter(k=>examFieldKeysForMode(v.mode).includes(k));
   const fields=examVisibleFields(r,v.mode,defs);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
   const addHtml='<div class="examquick"><select id="ex_add_'+id+'" style="max-width:220px"><option value="">+ add field...</option>'+addOpts+'</select><button type="button" onclick="roundExamAddField(\''+id+'\')">Add</button></div>';
@@ -5523,7 +5529,7 @@ function roundExamQuick(id,kind){
   }else if(kind==="intubated"){
     const r=S.rounds.find(x=>x.id===id);
     if(r){
-      const fields=examVisibleFields(r,mode,Object.fromEntries(examAllFieldKeys().map(k=>[k,1])));
+      const fields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1])));
       ["mod","pup","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
       r.examFields=fields;r.examFieldsCustom=true;
       const el=document.getElementById("rexam_"+id);
@@ -5599,7 +5605,6 @@ function roundExamBuildApply(id,explicit){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
     [["BUE","bueSp",6],["BLE","bleSp",5],["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
-    [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([lbl,k])=>{const v=exVal(id,k);if(v)lines.push(lbl+" "+v)});
     const u=spineUpperMotorText(id),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
     if(u&&!exVal(id,"bueSp"))lines.push("BUE: "+u+(uc?" ("+uc+")":""));
     if(l&&!exVal(id,"bleSp"))lines.push("BLE: "+l+(lc?" ("+lc+")":""));
@@ -5628,8 +5633,9 @@ function roundExamParseIntoFields(id){
   const v=examStructFromText(text);
   if(v.mode&&v.mode!=="basic")r.examMode=v.mode;
   const mode=r.examMode||v.mode||"basic";
-  const fields=examVisibleFields(r,mode,Object.fromEntries(examAllFieldKeys().map(k=>[k,1])));
-  examAllFieldKeys().forEach(k=>{if(v[k]&&!fields.includes(k))fields.push(k)});
+  const modeKeys=examFieldKeysForMode(mode);
+  const fields=examVisibleFields(r,mode,Object.fromEntries(modeKeys.map(k=>[k,1])));
+  modeKeys.forEach(k=>{if(v[k]&&!fields.includes(k))fields.push(k)});
   if(v.mod&&/intubated/i.test(v.mod))["cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
   r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
 }
