@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.178 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.179 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5587,7 +5587,7 @@ function examCarryoverText(current,lines){
     const n=ch.toLowerCase().replace(/\s+/g," ").trim();
     if(existing.some(e=>e===n||e.includes(n)||n.includes(e)))return false;
     return !examStructuredChunk(ch);
-  }).join("\t");
+  }).join("\n");
 }
 function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5620,7 +5620,7 @@ function roundExamBuildApply(id,explicit){
   const oldEl=document.getElementById("rexam_"+id);
   const carry=extra?"":examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines);
   if(carry)lines.push(carry);
-  const text=lines.join("\t");
+  const text=lines.join("\n");
   const el=document.getElementById("rexam_"+id);if(el){el.value=text;roundExamInput(id,el)}
   if(explicit)roundExamSave(id,el,true);
 }
