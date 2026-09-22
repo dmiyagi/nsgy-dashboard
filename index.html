@@ -120,8 +120,8 @@ section.view.active{display:block}
 .webtrash{display:block;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
-.card.floorcard{background:linear-gradient(90deg,rgba(90,167,255,.10),rgba(25,37,55,.55) 42%,var(--card) 100%);border-color:#31527d}
-.bg.floor{border-color:#5aa7ff;color:#8fc1ff;background:rgba(90,167,255,.10)}
+.card.floorcard{background:linear-gradient(90deg,rgba(130,207,255,.16),rgba(29,44,64,.70) 42%,var(--card) 100%);border-color:#3f6b92}
+.bg.floor{border-color:#82cfff;color:#b8e4ff;background:rgba(130,207,255,.14)}
 .floorsec{border-top:1px solid #31527d;margin-top:12px;padding-top:4px}
 .floorsec>summary{color:#8fc1ff!important;font-weight:800}
 .calrow.hastrash{position:relative;padding-right:46px}
@@ -806,7 +806,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.172 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.173 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5703,13 +5703,7 @@ function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(
 function roundAttgKey(r){return [roundAttg(r)||"ZZZ",roundTeam(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundRoom(r){return roundBedFromText(r.label)||roundBedFromText(r.raw)||String(r.label||"").split(/\s+/)[0]||""}
 function roundIsFloor(r){
-  if(r&&r.floorManual)return !!r.isFloor;
-  const txt=[r&&r.label,r&&r.raw,(r&&r.tags||[]).join(" ")].filter(Boolean).join(" ");
-  if(/\bfloor\b|\bNSGY\s*floor\b/i.test(txt))return true;
-  const room=String(roundRoom(r)||"").toUpperCase().replace(/\s+/g,"");
-  if(!room)return false;
-  if(/^(ED|OR|PACU|NACU|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|WICU|NICU|ISC|MICW|MICS)/.test(room))return false;
-  return /^[A-Z]?\d{2,4}[A-Z]?$/.test(room)||/^[A-Z]\d{2,4}[A-Z]?$/.test(room);
+  return !!(r&&r.isFloor);
 }
 function roundPatient3(r){
   const room=roundRoom(r);
