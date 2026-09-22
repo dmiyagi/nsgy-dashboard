@@ -120,6 +120,9 @@ section.view.active{display:block}
 .webtrash{display:block;position:absolute;right:10px;top:9px;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:800;line-height:1}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
+.card.floorcard{background:linear-gradient(90deg,rgba(90,167,255,.10),rgba(25,37,55,.55) 42%,var(--card) 100%);border-color:#31527d}
+.floorsec{border-top:1px solid #31527d;margin-top:12px;padding-top:4px}
+.floorsec>summary{color:#8fc1ff!important;font-weight:800}
 .calrow.hastrash{position:relative;padding-right:46px}
 .empty{color:var(--mut);text-align:center;padding:30px 10px;font-size:14px}
 details.closedsec{margin-top:16px}
@@ -802,7 +805,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.167 · 2026-09-21</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.170 · 2026-09-21</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -938,6 +941,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
       <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
       <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
       <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
+      <button class="btn sec sm" id="floorGroupBtn" onclick="toggleFloorGroup()">Floors</button>
     </div>
     <div class="toolgrp">
       <button class="btn sec sm" onclick="exportRoundsToSel()">⇉ Export chart checks</button>
@@ -5355,8 +5359,16 @@ function examInputHtml(id,k,label,val,ph,wide){
   return '<label class="'+(wide?'wide':'')+'">'+label+'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)"></label>';
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox="Ox"+ox[1];
+  if(/\beyes?\s+open\s+to\s+voice\b|\bEO\s*voice\b/i.test(s))out.eye="eyes open to voice";
+  else if(/\beyes?\s+open\s+to\s+stim\b|\bEO\s*stim\b/i.test(s))out.eye="eyes open to stim";
+  else if(/\beyes?\s+open\b|\bEO\b/i.test(s))out.eye="eyes open";
+  else if(/\beyes?\s+closed\b|\bEC\b/i.test(s))out.eye="eyes closed";
+  if(/\bFC\b.*\bwiggle toes\b|\bfollows? commands?\b.*\bwiggle toes\b/i.test(s))out.cmd="FC wiggle toes";
+  else if(/\bFC\b.*\bsqueeze hands\b|\bfollows? commands?\b.*\bsqueeze hands\b/i.test(s))out.cmd="FC squeeze hands";
+  else if(/\bFC\b|\bfollows? commands?\b/i.test(s))out.cmd="follows commands";
+  else if(/\bnot following\b|\bdoes not follow\b/i.test(s))out.cmd="not following commands";
   if(/\bPERRV\b/i.test(s))out.pup="PERRV";
   else if(/\bPERRL\b/i.test(s))out.pup="PERRL";
   else if(/\bR\s*[>]\s*L\b|\bL\s*[<]\s*R\b/i.test(s))out.pup=/baseline/i.test(s)?"R > L baseline":"R > L";
@@ -5377,13 +5389,20 @@ function examStructFromText(t){
   else if(/\bLUE\s*(?:\+|with)?\s*drift\b/i.test(s))out.drift="LUE + drift";
   if(/\bSILT\b/i.test(s))out.sens="SILT";
   else if(/\b(?:decreased|reduced)\s+sensation\b/i.test(s))out.sens="decreased sensation";
+  if(/\bintubated\b/i.test(s))out.mod="intubated";
+  else if(/\bsedated\b/i.test(s))out.mod="sedated";
+  else if(/\baphasic\b|\baphasia\b/i.test(s))out.mod="aphasic";
+  else if(/\bpain[- ]limited\b/i.test(s))out.mod="pain-limited";
   return out;
 }
 function roundExamBuilderHtml(r,cur){
   const v=examStructFromText(cur), id=r.id;
   v.mode=r.examMode||v.mode||"basic";
-  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","baseline","NT"];
+  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","withdraws","localizes","baseline","NT"];
   const ox=["","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
+  const eyes=["","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
+  const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
+  const mods=["","intubated","sedated","intubated + sedated","aphasic","confused","pain-limited","hard of hearing","baseline deficit"];
   const pupils=["","PERRL","PERRV","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
   const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
@@ -5391,6 +5410,9 @@ function roundExamBuilderHtml(r,cur){
   return '<div class="exambuilder">'+
     examPickHtml(id,"mode","Mode",mode,v.mode)+
     examPickHtml(id,"ox","Orient",ox,v.ox)+
+    examPickHtml(id,"eye","Eyes",eyes,v.eye)+
+    examPickHtml(id,"cmd","Commands",cmds,v.cmd)+
+    examPickHtml(id,"mod","Modifier",mods,v.mod)+
     examPickHtml(id,"pup","Pupils",pupils,v.pup)+
     '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">all 5/5 + no drift</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button></div>'+
     (v.mode==="four"?
@@ -5417,7 +5439,7 @@ function roundExamModeChange(id){
 function roundExamQuick(id,kind){
   const mode=exVal(id,"mode")||"basic";
   if(kind==="clear"){
-    ["ox","pup","bue","ble","rue","lue","rle","lle","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
+    ["ox","eye","cmd","mod","pup","bue","ble","rue","lue","rle","lle","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
   }else if(kind==="baseline"){
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
     else if(mode==="spine"){exSet(id,"spu","baseline");exSet(id,"spl","baseline")}
@@ -5435,8 +5457,11 @@ function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const mode=exVal(id,"mode")||"basic", lines=[];
   r.examMode=mode;
-  const ox=exVal(id,"ox"),pup=exVal(id,"pup"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
+  const ox=exVal(id,"ox"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
   if(ox)lines.push(ox);
+  if(eye)lines.push(eye);
+  if(cmd)lines.push(cmd);
+  if(mod)lines.push(mod);
   if(pup)lines.push(pup);
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
@@ -5631,6 +5656,7 @@ const REDIT=new Set();
 let soCcOnly=false;
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
+function toggleFloorGroup(){S.roundGroupFloor=!S.roundGroupFloor;renderRounds();save()}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
   const checks=roundChecksFor(r);
@@ -5652,6 +5678,14 @@ function roundAttg(r){return cleanAttg(r.attg)||attgFromText([r.team,r.raw,r.lab
 function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundAttgKey(r){return [roundAttg(r)||"ZZZ",roundTeam(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundRoom(r){return roundBedFromText(r.label)||roundBedFromText(r.raw)||String(r.label||"").split(/\s+/)[0]||""}
+function roundIsFloor(r){
+  const txt=[r&&r.label,r&&r.raw,(r&&r.tags||[]).join(" ")].filter(Boolean).join(" ");
+  if(/\bfloor\b|\bNSGY\s*floor\b/i.test(txt))return true;
+  const room=String(roundRoom(r)||"").toUpperCase().replace(/\s+/g,"");
+  if(!room)return false;
+  if(/^(ED|OR|PACU|NACU|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|WICU|NICU|ISC|MICW|MICS)/.test(room))return false;
+  return /^[A-Z]?\d{2,4}[A-Z]?$/.test(room)||/^[A-Z]\d{2,4}[A-Z]?$/.test(room);
+}
 function roundPatient3(r){
   const room=roundRoom(r);
   const fromLabel=String(r.label||"").replace(room,"").trim();
@@ -5711,7 +5745,7 @@ function roundRowCard(r){
     otherTags,
     r.nccuSO?'<span class="bg warn">SO</span>':""
   ].filter(Boolean).join("");
-  return '<div class="card crowwrap hastrash" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':'var(--acc)')+'">'+trashBtn(r.id,"round")+
+  return '<div class="card crowwrap hastrash'+(roundIsFloor(r)?' floorcard':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     roundStageBox(r)+
     chartDotsHtml(r)+
@@ -5731,6 +5765,7 @@ function renderRounds(){
   const sb=document.getElementById("rsort");
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
+  const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
   const key=r=>r.worry?0:1;
   const cmp=(S.roundSort==="initials")
@@ -5745,9 +5780,9 @@ function renderRounds(){
   const list=visible.filter(r=>!roundArchived(r)).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
   autoScheduleRoundDateTasksFor(visible);
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
-  const mainHtml=list.length?list.map(r=>{
+  const renderRoundList=arr=>arr.map(r=>{
     if(REDIT.has(r.id)){
-      return '<div class="card" style="border-left-color:var(--e1)">'+
+      return '<div class="card'+(roundIsFloor(r)?' floorcard':'')+'" style="border-left-color:'+(roundIsFloor(r)?'#5aa7ff':'var(--e1)')+'">'+
        '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(roundEditVal(r,"label"))+'" oninput="roundEditInput(\''+r.id+'\')"></div>'+
        '<div class="fld"><label>Details</label><textarea id="re_raw_'+r.id+'" style="min-height:70px" oninput="roundEditInput(\''+r.id+'\')">'+esc(roundEditVal(r,"raw"))+'</textarea></div>'+
        '<div class="fld"><label>Tags (comma-separated)</label><input type="text" id="re_tags_'+r.id+'" value="'+esc(roundEditVal(r,"tags"))+'" placeholder="AC, Drain, Sutures" oninput="roundEditInput(\''+r.id+'\')"></div>'+
@@ -5758,7 +5793,7 @@ function renderRounds(){
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
     const nccu=r.nccuSO?'<span class="bg warn">SO</span>':"";
-    return '<div class="card hastrash'+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
+    return '<div class="card hastrash'+(roundIsFloor(r)?' floorcard':'')+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)')))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+roundTodoIndicator(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
@@ -5781,7 +5816,15 @@ function renderRounds(){
        '<input type="date" id="sd_'+r.id+'" value="'+esc((roundSendSel[r.id]||{}).date||"")+'" onchange="roundSendDate(\''+r.id+'\',this.value)" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:4px 6px">'+
        '<button onclick="roundSend(\''+r.id+'\')">→ Send</button></div>'+
      '</div>';
-  }).join(""):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
+  }).join("");
+  let mainHtml="";
+  if(list.length&&S.roundGroupFloor){
+    const floors=list.filter(roundIsFloor),other=list.filter(r=>!roundIsFloor(r));
+    mainHtml=(other.length?renderRoundList(other):'<div class="empty" style="padding:14px 10px">No ICU/ED/other patients in this view.</div>')+
+      (floors.length?'<details class="closedsec floorsec" open><summary>Floor patients ('+floors.length+')</summary>'+renderRoundList(floors)+'</details>':"");
+  }else{
+    mainHtml=list.length?renderRoundList(list):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
+  }
   el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundChartCheckList()+renderRoundWoundList(list)+trashHtml("round");
 }
 function renderRoundChartCheckList(){
