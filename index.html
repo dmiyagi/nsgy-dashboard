@@ -121,6 +121,7 @@ section.view.active{display:block}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
 .card.floorcard{background:linear-gradient(90deg,rgba(90,167,255,.10),rgba(25,37,55,.55) 42%,var(--card) 100%);border-color:#31527d}
+.bg.floor{border-color:#5aa7ff;color:#8fc1ff;background:rgba(90,167,255,.10)}
 .floorsec{border-top:1px solid #31527d;margin-top:12px;padding-top:4px}
 .floorsec>summary{color:#8fc1ff!important;font-weight:800}
 .calrow.hastrash{position:relative;padding-right:46px}
@@ -805,7 +806,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.170 · 2026-09-21</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.172 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5359,7 +5360,7 @@ function examInputHtml(id,k,label,val,ph,wide){
   return '<label class="'+(wide?'wide':'')+'">'+label+'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)"></label>';
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox="Ox"+ox[1];
   if(/\beyes?\s+open\s+to\s+voice\b|\bEO\s*voice\b/i.test(s))out.eye="eyes open to voice";
   else if(/\beyes?\s+open\s+to\s+stim\b|\bEO\s*stim\b/i.test(s))out.eye="eyes open to stim";
@@ -5377,11 +5378,18 @@ function examStructFromText(t){
   out.bue=valAfter("BUE");out.ble=valAfter("BLE");
   out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
   if(out.rue||out.lue||out.rle||out.lle)out.mode="four";
-  if(/\b(?:delt|deltoid|bi|tri|we|ff|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
+  if(/\b(?:delt|deltoid|bi|tri|we|ff|fa|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
     out.mode="spine";
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
     out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
     out.spl=(lines.find(x=>/\b(?:IP|quad|ta|ehl|gastroc|BLE)\b/i.test(x))||out.ble||"");
+    const scorePat="(5\\/5|4\\/5|3\\/5|2\\/5|1\\/5|0\\/5|antigravity|withdraws|localizes|baseline|NT)";
+    const allUpper=s.match(new RegExp("\\b(?:D\\/?B\\/?T\\/?WE\\/?FF\\/?(?:FA|IO)|Delt\\/?Bi\\/?Tri\\/?WE\\/?FF\\/?FA)\\s*"+scorePat+"\\b","i"));
+    if(allUpper){["delt","bi","tri","we","ff","fa"].forEach(k=>out[k]=allUpper[1])}
+    [["delt","(?:delt|deltoid|D)"],["bi","(?:bi|biceps|B)"],["tri","(?:tri|triceps|T)"],["we","WE"],["ff","FF"],["fa","(?:FA|IO)"]].forEach(([k,pat])=>{
+      const m=s.match(new RegExp("\\b"+pat+"\\b\\s*:?\\s*"+scorePat+"\\b","i"));
+      if(m)out[k]=m[1];
+    });
   }
   if(/\b(?:no drift|without drift)\b/i.test(s))out.drift="no drift";
   else if(/\bBUE\s*(?:\+|with)?\s*drift\b/i.test(s))out.drift="BUE + drift";
@@ -5418,8 +5426,9 @@ function roundExamBuilderHtml(r,cur){
     (v.mode==="four"?
       examPickHtml(id,"rue","RUE",scores,v.rue)+examPickHtml(id,"lue","LUE",scores,v.lue)+examPickHtml(id,"rle","RLE",scores,v.rle)+examPickHtml(id,"lle","LLE",scores,v.lle):
      v.mode==="spine"?
-      '<div class="examref"><b>Spine motor order:</b> Upper D/B/T/WE/FF/IO · Lower IP/quad/AT/EHL/gastroc</div>'+
-      examInputHtml(id,"spu","Upper motor",v.spu,"D/B/T/WE/FF/IO 5/5",true)+examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true)+
+      '<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc</div>'+
+      examPickHtml(id,"delt","Delt",scores,v.delt)+examPickHtml(id,"bi","Bi",scores,v.bi)+examPickHtml(id,"tri","Tri",scores,v.tri)+examPickHtml(id,"we","WE",scores,v.we)+examPickHtml(id,"ff","FF",scores,v.ff)+examPickHtml(id,"fa","FA",scores,v.fa)+
+      examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true)+
       examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true)+examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true):
       examPickHtml(id,"bue","BUE",scores,v.bue)+examPickHtml(id,"ble","BLE",scores,v.ble))+
     examPickHtml(id,"drift","Drift",drift,v.drift,true)+examPickHtml(id,"sens","Sensation",sens,v.sens,true)+
@@ -5439,19 +5448,27 @@ function roundExamModeChange(id){
 function roundExamQuick(id,kind){
   const mode=exVal(id,"mode")||"basic";
   if(kind==="clear"){
-    ["ox","eye","cmd","mod","pup","bue","ble","rue","lue","rle","lle","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
+    ["ox","eye","cmd","mod","pup","bue","ble","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
   }else if(kind==="baseline"){
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
-    else if(mode==="spine"){exSet(id,"spu","baseline");exSet(id,"spl","baseline")}
+    else if(mode==="spine"){["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"baseline"));exSet(id,"spl","baseline")}
     else{exSet(id,"bue","baseline");exSet(id,"ble","baseline")}
     exSet(id,"comment","at baseline");
   }else{
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"5/5"));
-    else if(mode==="spine"){exSet(id,"spu","D/B/T/WE/FF/IO 5/5");exSet(id,"spl","IP/quad/AT/EHL/gastroc 5/5")}
+    else if(mode==="spine"){["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"5/5"));exSet(id,"spl","IP/quad/AT/EHL/gastroc 5/5")}
     else{exSet(id,"bue","5/5");exSet(id,"ble","5/5")}
     exSet(id,"drift","no drift");
   }
   roundExamBuildApply(id,false);
+}
+function spineUpperMotorText(id){
+  const pairs=[["delt","Delt"],["bi","Bi"],["tri","Tri"],["we","WE"],["ff","FF"],["fa","FA"]];
+  const picked=pairs.map(([k,l])=>[l,exVal(id,k)]).filter(x=>x[1]);
+  if(!picked.length)return "";
+  const vals=[...new Set(picked.map(x=>x[1]))];
+  if(picked.length===pairs.length&&vals.length===1)return "Delt/Bi/Tri/WE/FF/FA "+vals[0];
+  return picked.map(([l,v])=>l+" "+v).join(", ");
 }
 function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5466,7 +5483,7 @@ function roundExamBuildApply(id,explicit){
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
-    const u=exVal(id,"spu"),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
+    const u=spineUpperMotorText(id),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
     if(u)lines.push("BUE: "+u+(uc?" ("+uc+")":""));
     if(l)lines.push("BLE: "+l+(lc?" ("+lc+")":""));
   }else{
@@ -5657,6 +5674,13 @@ let soCcOnly=false;
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function toggleFloorGroup(){S.roundGroupFloor=!S.roundGroupFloor;renderRounds();save()}
+function toggleRoundFloor(id){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  r.isFloor=roundIsFloor(r)?false:true;
+  r.floorManual=true;
+  r.updatedAt=Date.now();
+  renderRounds();save();
+}
 function chartDotsHtml(r){
   const cc=r.chartChecks||{};
   const checks=roundChecksFor(r);
@@ -5679,6 +5703,7 @@ function roundTeamKey(r){return [roundTeam(r)||"ZZZ",roundAttg(r)||"ZZZ",String(
 function roundAttgKey(r){return [roundAttg(r)||"ZZZ",roundTeam(r)||"ZZZ",String(r.label||"")].join(" ")}
 function roundRoom(r){return roundBedFromText(r.label)||roundBedFromText(r.raw)||String(r.label||"").split(/\s+/)[0]||""}
 function roundIsFloor(r){
+  if(r&&r.floorManual)return !!r.isFloor;
   const txt=[r&&r.label,r&&r.raw,(r&&r.tags||[]).join(" ")].filter(Boolean).join(" ");
   if(/\bfloor\b|\bNSGY\s*floor\b/i.test(txt))return true;
   const room=String(roundRoom(r)||"").toUpperCase().replace(/\s+/g,"");
@@ -5709,7 +5734,8 @@ function roundIdentityBadges(r){
   return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+'">'+esc(room)+'</span>':"")+
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
-    (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
+    (attg?'<span class="bg mod">'+esc(attg)+'</span>':"")+
+    (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"");
 }
 function stripRoundAttgParens(s,r){
   const attg=roundAttg(r);
@@ -5742,6 +5768,7 @@ function roundRowCard(r){
     team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"",
     dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"",
     roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
+    roundIsFloor(r)?'<span class="bg floor">Floor</span>':"",
     otherTags,
     r.nccuSO?'<span class="bg warn">SO</span>':""
   ].filter(Boolean).join("");
@@ -5807,6 +5834,7 @@ function renderRounds(){
      '<div class="qbtns" style="margin:5px 0 0"><button type="button" onpointerdown="event.preventDefault()" onclick="roundNoteSave(\''+r.id+'\',document.getElementById(\'rnote_'+r.id+'\'),true)">Save notes</button></div>'+
      '<div class="cardbtns">'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
+      '<button onclick="toggleRoundFloor(\''+r.id+'\')" '+(roundIsFloor(r)?'style="border-color:#5aa7ff;color:#8fc1ff"':"")+'>Floor</button>'+
       '<button onclick="roundEdit(\''+r.id+'\')">✎ Edit</button>'+
       '<button onclick="roundMarkSO(\''+r.id+'\')" '+(r.soCcResp?'style="border-color:var(--e3);color:var(--e3)"':"")+'>SO</button>'+
       '<button onclick="roundAddWoundAndRemove(\''+r.id+'\')">＋ Wound list</button>'+
