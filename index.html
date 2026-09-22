@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.175 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.176 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5367,12 +5367,12 @@ function examInputHtml(id,k,label,val,ph,wide,removable){
   return examFieldWrap(id,k,label,'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)">',wide,removable);
 }
 function examDefaultFields(mode){
-  const base=["ox","eye","cmd","mod","pup"];
+  const base=["ox","eye","pup","corneal","cough","cmd","mod"];
   if(mode==="four")return base.concat(["rue","lue","rle","lle","drift","sens","comment","extra"]);
   if(mode==="spine")return base.concat(["rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]);
   return base.concat(["bue","ble","drift","sens","comment","extra"]);
 }
-function examAllFieldKeys(){return ["ox","eye","cmd","mod","pup","cough","corneal","bue","ble","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
+function examAllFieldKeys(){return ["ox","eye","pup","corneal","cough","cmd","mod","bue","ble","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
 function examVisibleFields(r,mode,defs){
   const allowed=Object.keys(defs||{});
   let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
@@ -5553,11 +5553,11 @@ function examStructuredChunk(s){
 }
 function examCarryoverText(current,lines){
   const existing=(lines||[]).map(x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim()).filter(Boolean);
-  return String(current||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).filter(ch=>{
+  return String(current||"").split(/[\t,;\n]+/).map(x=>x.trim()).filter(Boolean).filter(ch=>{
     const n=ch.toLowerCase().replace(/\s+/g," ").trim();
     if(existing.some(e=>e===n||e.includes(n)||n.includes(e)))return false;
     return !examStructuredChunk(ch);
-  }).join(", ");
+  }).join("\t");
 }
 function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -5566,11 +5566,11 @@ function roundExamBuildApply(id,explicit){
   const ox=exVal(id,"ox"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
   if(ox)lines.push(ox);
   if(eye)lines.push(eye);
+  if(pup)lines.push(pup);
+  if(corneal)lines.push(corneal);
+  if(cough)lines.push(cough);
   if(cmd)lines.push(cmd);
   if(mod)lines.push(mod);
-  if(pup)lines.push(pup);
-  if(cough)lines.push(cough);
-  if(corneal)lines.push(corneal);
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
@@ -5590,7 +5590,7 @@ function roundExamBuildApply(id,explicit){
   const oldEl=document.getElementById("rexam_"+id);
   const carry=extra?"":examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines);
   if(carry)lines.push(carry);
-  const text=lines.join(", ");
+  const text=lines.join("\t");
   const el=document.getElementById("rexam_"+id);if(el){el.value=text;roundExamInput(id,el)}
   if(explicit)roundExamSave(id,el,true);
 }
