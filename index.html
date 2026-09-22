@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.176 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.177 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5369,10 +5369,10 @@ function examInputHtml(id,k,label,val,ph,wide,removable){
 function examDefaultFields(mode){
   const base=["ox","eye","pup","corneal","cough","cmd","mod"];
   if(mode==="four")return base.concat(["rue","lue","rle","lle","drift","sens","comment","extra"]);
-  if(mode==="spine")return base.concat(["rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]);
+  if(mode==="spine")return base.concat(["bueSp","bleSp","drift","sens","comment","extra"]);
   return base.concat(["bue","ble","drift","sens","comment","extra"]);
 }
-function examAllFieldKeys(){return ["ox","eye","pup","corneal","cough","cmd","mod","bue","ble","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
+function examAllFieldKeys(){return ["ox","eye","pup","corneal","cough","cmd","mod","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
 function examVisibleFields(r,mode,defs){
   const allowed=Object.keys(defs||{});
   let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
@@ -5393,7 +5393,7 @@ function roundExamDropField(id,k){
   r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",cough:"",corneal:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",cough:"",corneal:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox="Ox"+ox[1];
   if(/\beyes?\s+open\s+to\s+voice\b|\bEO\s*voice\b/i.test(s))out.eye="eyes open to voice";
   else if(/\beyes?\s+open\s+to\s+stim\b|\bEO\s*stim\b/i.test(s))out.eye="eyes open to stim";
@@ -5413,11 +5413,15 @@ function examStructFromText(t){
   else if(/\b(?:bilateral|both)\s+corneals?\b|\bcorneals?\s+(?:bilateral|both|present)\b/i.test(s))out.corneal="bilateral corneals";
   else if(/\bR\s+corneal\b|\bright\s+corneal\b|\bcorneal\s+R\b/i.test(s))out.corneal="R corneal";
   else if(/\bL\s+corneal\b|\bleft\s+corneal\b|\bcorneal\s+L\b/i.test(s))out.corneal="L corneal";
-  const valAfter=k=>{const m=s.match(new RegExp("\\b"+k+"\\b\\s*:?\\s*([^,;\\n]+)","i"));return m?m[1].trim():""};
+  const valAfter=k=>{const m=s.match(new RegExp("\\b"+k+"\\b\\s*:?\\s*([^\\t,;\\n]+)","i"));return m?m[1].trim():""};
   out.bue=valAfter("BUE");out.ble=valAfter("BLE");
   out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
+  [["bueSp","BUE"],["bleSp","BLE"],["rueSp","RUE"],["lueSp","LUE"],["rleSp","RLE"],["lleSp","LLE"]].forEach(([k,l])=>{
+    const m=s.match(new RegExp("\\b"+l+"\\b\\s*:?\\s*((?:[0-5]|NT|UTA)(?:\\s*/\\s*(?:[0-5]|NT|UTA)){2,7})","i"));
+    if(m)out[k]=m[1].replace(/\s+/g,"");
+  });
   if(out.rue||out.lue||out.rle||out.lle)out.mode="four";
-  if(/\b(?:delt|deltoid|bi|tri|we|ff|fa|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
+  if(out.bueSp||out.bleSp||out.rueSp||out.lueSp||out.rleSp||out.lleSp||/\b(?:delt|deltoid|bi|tri|we|ff|fa|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
     out.mode="spine";
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
     out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
@@ -5466,6 +5470,12 @@ function roundExamBuilderHtml(r,cur){
     corneal:()=>examPickHtml(id,"corneal","Corneals",corneal,v.corneal,false,true),
     bue:()=>examPickHtml(id,"bue","BUE",scores,v.bue,false,true),
     ble:()=>examPickHtml(id,"ble","BLE",scores,v.ble,false,true),
+    bueSp:()=>examInputHtml(id,"bueSp","BUE spine",v.bueSp,"5/5/5/5/5/5",true,true),
+    bleSp:()=>examInputHtml(id,"bleSp","BLE spine",v.bleSp,"5/5/5/5/5",true,true),
+    rueSp:()=>examInputHtml(id,"rueSp","RUE spine",v.rueSp,"5/5/5/5/5/5",true,true),
+    lueSp:()=>examInputHtml(id,"lueSp","LUE spine",v.lueSp,"5/5/5/5/5/5",true,true),
+    rleSp:()=>examInputHtml(id,"rleSp","RLE spine",v.rleSp,"5/5/5/5/5",true,true),
+    lleSp:()=>examInputHtml(id,"lleSp","LLE spine",v.lleSp,"5/5/5/5/5",true,true),
     rue:()=>examPickHtml(id,"rue","RUE",scores,v.rue,false,true),
     lue:()=>examPickHtml(id,"lue","LUE",scores,v.lue,false,true),
     rle:()=>examPickHtml(id,"rle","RLE",scores,v.rle,false,true),
@@ -5484,7 +5494,7 @@ function roundExamBuilderHtml(r,cur){
     comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
-  const labels={ox:"Orient",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",cough:"Cough",corneal:"Corneals",bue:"BUE",ble:"BLE",rue:"RUE",lue:"LUE",rle:"RLE",lle:"LLE",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",drift:"Drift",sens:"Sensation",comment:"Comment",extra:"Extra"};
+  const labels={ox:"Orient",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",cough:"Cough",corneal:"Corneals",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE spine",lueSp:"LUE spine",rleSp:"RLE spine",lleSp:"LLE spine",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",drift:"Drift",sens:"Sensation",comment:"Comment",extra:"Extra"};
   const all=Object.keys(defs);
   const fields=examVisibleFields(r,v.mode,defs);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
@@ -5492,7 +5502,7 @@ function roundExamBuilderHtml(r,cur){
   return '<div class="exambuilder">'+
     examPickHtml(id,"mode","Mode",mode,v.mode)+
     '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intubated\')">intubated exam</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">all 5/5 + no drift</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button><button type="button" onclick="roundExamParseIntoFields(\''+id+'\')">parse into fields</button></div>'+
-    (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc</div>':"")+
+    (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc. Use BUE/BLE when symmetric; add RUE/LUE/RLE/LLE when side-specific.</div>':"")+
     fields.map(k=>defs[k]?defs[k]():"").join("")+
     addHtml+
     '</div>';
@@ -5509,7 +5519,7 @@ function roundExamModeChange(id){
 function roundExamQuick(id,kind){
   const mode=exVal(id,"mode")||"basic";
   if(kind==="clear"){
-    ["ox","eye","cmd","mod","pup","cough","corneal","bue","ble","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
+    ["ox","eye","cmd","mod","pup","cough","corneal","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
   }else if(kind==="intubated"){
     const r=S.rounds.find(x=>x.id===id);
     if(r){
@@ -5524,12 +5534,12 @@ function roundExamQuick(id,kind){
     }
   }else if(kind==="baseline"){
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
-    else if(mode==="spine"){["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"baseline"));exSet(id,"spl","baseline")}
+    else if(mode==="spine"){exSet(id,"bueSp","baseline");exSet(id,"bleSp","baseline");["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"baseline"));exSet(id,"spl","")}
     else{exSet(id,"bue","baseline");exSet(id,"ble","baseline")}
     exSet(id,"comment","at baseline");
   }else{
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"5/5"));
-    else if(mode==="spine"){["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"5/5"));exSet(id,"spl","IP/quad/AT/EHL/gastroc 5/5")}
+    else if(mode==="spine"){exSet(id,"bueSp","5/5/5/5/5/5");exSet(id,"bleSp","5/5/5/5/5");["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"5/5"));exSet(id,"spl","")}
     else{exSet(id,"bue","5/5");exSet(id,"ble","5/5")}
     exSet(id,"drift","no drift");
   }
@@ -5540,8 +5550,22 @@ function spineUpperMotorText(id){
   const picked=pairs.map(([k,l])=>[l,exVal(id,k)]).filter(x=>x[1]);
   if(!picked.length)return "";
   const vals=[...new Set(picked.map(x=>x[1]))];
-  if(picked.length===pairs.length&&vals.length===1)return "Delt/Bi/Tri/WE/FF/FA "+vals[0];
+  if(picked.length===pairs.length&&vals.length===1)return spineCompactScore(vals[0],6);
+  if(picked.length===pairs.length&&picked.every(x=>/^([0-5])\/5$/.test(x[1])))return picked.map(x=>x[1].split("/")[0]).join("/");
   return picked.map(([l,v])=>l+" "+v).join(", ");
+}
+function spineCompactScore(v,n){
+  const s=String(v||"").trim();
+  const m=s.match(/^([0-5])\/5$/);
+  if(m)return Array(n).fill(m[1]).join("/");
+  return s;
+}
+function spineGroupLine(id,label,key,n){
+  let v=exVal(id,key);
+  if(!v)return "";
+  v=v.replace(/\s+/g,"");
+  if(/^([0-5])\/5$/.test(v))v=spineCompactScore(v,n);
+  return label+": "+v;
 }
 function examStructuredChunk(s){
   const x=String(s||"").trim();
@@ -5574,10 +5598,11 @@ function roundExamBuildApply(id,explicit){
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
+    [["BUE","bueSp",6],["BLE","bleSp",5],["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([lbl,k])=>{const v=exVal(id,k);if(v)lines.push(lbl+" "+v)});
     const u=spineUpperMotorText(id),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
-    if(u)lines.push("BUE: "+u+(uc?" ("+uc+")":""));
-    if(l)lines.push("BLE: "+l+(lc?" ("+lc+")":""));
+    if(u&&!exVal(id,"bueSp"))lines.push("BUE: "+u+(uc?" ("+uc+")":""));
+    if(l&&!exVal(id,"bleSp"))lines.push("BLE: "+l+(lc?" ("+lc+")":""));
   }else{
     const bue=exVal(id,"bue"),ble=exVal(id,"ble");
     if(bue)lines.push("BUE "+bue);
