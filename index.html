@@ -746,6 +746,10 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .exambuilder select,.exambuilder input{min-width:0;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12.5px;font-weight:700;padding:6px 7px}
 .exambuilder .wide{grid-column:span 2}
 .exambuilder .full{grid-column:1/-1}
+.examfield{position:relative;min-width:0}
+.examfield.xable label{padding-right:24px}
+.examfield .xf{position:absolute;right:4px;top:2px;width:20px;height:20px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--mut);font:900 13px/1 var(--font);cursor:pointer}
+.examfield .xf:hover{border-color:var(--e3);color:var(--e3)}
 .examref{grid-column:1/-1;border:1px solid var(--line);background:var(--card2);border-radius:8px;color:var(--mut);font-size:11.5px;font-weight:800;line-height:1.35;padding:6px 8px}
 .examref b{color:var(--text)}
 .examquick{grid-column:1/-1;display:flex;gap:5px;flex-wrap:wrap}
@@ -806,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.173 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.174 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5350,14 +5354,42 @@ function setRStepDL(id,i,min){
   r.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
 }
-function examPickHtml(id,k,label,opts,val,wide){
-  const change=k==="mode"?"roundExamModeChange('"+id+"')":"roundExamBuildApply('"+id+"',false)";
-  return '<label class="'+(wide?'wide':'')+'">'+label+'<select id="ex_'+k+'_'+id+'" onchange="'+change+'">'+
-    opts.map(o=>Array.isArray(o)?o:[o,o]).map(o=>'<option value="'+esc(o[0])+'" '+(String(val||"")===String(o[0])?"selected":"")+'>'+esc(o[1])+'</option>').join("")+
-    '</select></label>';
+function examFieldWrap(id,k,label,inner,wide,removable){
+  return '<div class="examfield '+(wide?'wide ':'')+(removable?'xable':'')+'"><label>'+label+inner+'</label>'+(removable?'<button type="button" class="xf" title="Hide this field" onclick="roundExamDropField(\''+id+'\',\''+k+'\')">×</button>':"")+'</div>';
 }
-function examInputHtml(id,k,label,val,ph,wide){
-  return '<label class="'+(wide?'wide':'')+'">'+label+'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)"></label>';
+function examPickHtml(id,k,label,opts,val,wide,removable){
+  const change=k==="mode"?"roundExamModeChange('"+id+"')":"roundExamBuildApply('"+id+"',false)";
+  return examFieldWrap(id,k,label,'<select id="ex_'+k+'_'+id+'" onchange="'+change+'">'+
+    opts.map(o=>Array.isArray(o)?o:[o,o]).map(o=>'<option value="'+esc(o[0])+'" '+(String(val||"")===String(o[0])?"selected":"")+'>'+esc(o[1])+'</option>').join("")+
+    '</select>',wide,removable);
+}
+function examInputHtml(id,k,label,val,ph,wide,removable){
+  return examFieldWrap(id,k,label,'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)">',wide,removable);
+}
+function examDefaultFields(mode){
+  const base=["ox","eye","cmd","mod","pup"];
+  if(mode==="four")return base.concat(["rue","lue","rle","lle","drift","sens","comment","extra"]);
+  if(mode==="spine")return base.concat(["rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]);
+  return base.concat(["bue","ble","drift","sens","comment","extra"]);
+}
+function examVisibleFields(r,mode,defs){
+  const allowed=Object.keys(defs||{});
+  let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
+  fields=fields.filter(k=>allowed.includes(k)).filter((k,i,a)=>a.indexOf(k)===i);
+  return fields.length?fields:examDefaultFields(mode).filter(k=>allowed.includes(k));
+}
+function roundExamAddField(id){
+  const r=S.rounds.find(x=>x.id===id),sel=document.getElementById("ex_add_"+id);if(!r||!sel||!sel.value)return;
+  const mode=exVal(id,"mode")||r.examMode||"basic";
+  const fields=examVisibleFields(r,mode,{ox:1,eye:1,cmd:1,mod:1,pup:1,bue:1,ble:1,rue:1,lue:1,rle:1,lle:1,delt:1,bi:1,tri:1,we:1,ff:1,fa:1,spl:1,ucmt:1,lcmt:1,drift:1,sens:1,comment:1,extra:1});
+  if(!fields.includes(sel.value))fields.push(sel.value);
+  r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
+}
+function roundExamDropField(id,k){
+  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const mode=exVal(id,"mode")||r.examMode||"basic";
+  r.examFields=examVisibleFields(r,mode,{ox:1,eye:1,cmd:1,mod:1,pup:1,bue:1,ble:1,rue:1,lue:1,rle:1,lle:1,delt:1,bi:1,tri:1,we:1,ff:1,fa:1,spl:1,ucmt:1,lcmt:1,drift:1,sens:1,comment:1,extra:1}).filter(x=>x!==k);
+  r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function examStructFromText(t){
   const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",bue:"",ble:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
@@ -5383,7 +5415,7 @@ function examStructFromText(t){
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
     out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
     out.spl=(lines.find(x=>/\b(?:IP|quad|ta|ehl|gastroc|BLE)\b/i.test(x))||out.ble||"");
-    const scorePat="(5\\/5|4\\/5|3\\/5|2\\/5|1\\/5|0\\/5|antigravity|withdraws|localizes|baseline|NT)";
+    const scorePat="(5\\/5|4\\/5|3\\/5|2\\/5|1\\/5|0\\/5|antigravity|TF|extensor|withdraws?|localizes?|baseline|NT)";
     const allUpper=s.match(new RegExp("\\b(?:D\\/?B\\/?T\\/?WE\\/?FF\\/?(?:FA|IO)|Delt\\/?Bi\\/?Tri\\/?WE\\/?FF\\/?FA)\\s*"+scorePat+"\\b","i"));
     if(allUpper){["delt","bi","tri","we","ff","fa"].forEach(k=>out[k]=allUpper[1])}
     [["delt","(?:delt|deltoid|D)"],["bi","(?:bi|biceps|B)"],["tri","(?:tri|triceps|T)"],["we","WE"],["ff","FF"],["fa","(?:FA|IO)"]].forEach(([k,pat])=>{
@@ -5406,7 +5438,7 @@ function examStructFromText(t){
 function roundExamBuilderHtml(r,cur){
   const v=examStructFromText(cur), id=r.id;
   v.mode=r.examMode||v.mode||"basic";
-  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","withdraws","localizes","baseline","NT"];
+  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","TF","extensor","withdraw","localize","withdraws","localizes","baseline","NT"];
   const ox=["","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
   const eyes=["","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
   const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
@@ -5415,25 +5447,43 @@ function roundExamBuilderHtml(r,cur){
   const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
   const sens=["","SILT","decreased sensation","sensory level","baseline numbness","UTA sensation"];
+  const defs={
+    ox:()=>examPickHtml(id,"ox","Orient",ox,v.ox,false,true),
+    eye:()=>examPickHtml(id,"eye","Eyes",eyes,v.eye,false,true),
+    cmd:()=>examPickHtml(id,"cmd","Commands",cmds,v.cmd,false,true),
+    mod:()=>examPickHtml(id,"mod","Modifier",mods,v.mod,false,true),
+    pup:()=>examPickHtml(id,"pup","Pupils",pupils,v.pup,false,true),
+    bue:()=>examPickHtml(id,"bue","BUE",scores,v.bue,false,true),
+    ble:()=>examPickHtml(id,"ble","BLE",scores,v.ble,false,true),
+    rue:()=>examPickHtml(id,"rue","RUE",scores,v.rue,false,true),
+    lue:()=>examPickHtml(id,"lue","LUE",scores,v.lue,false,true),
+    rle:()=>examPickHtml(id,"rle","RLE",scores,v.rle,false,true),
+    lle:()=>examPickHtml(id,"lle","LLE",scores,v.lle,false,true),
+    delt:()=>examPickHtml(id,"delt","Delt",scores,v.delt,false,true),
+    bi:()=>examPickHtml(id,"bi","Bi",scores,v.bi,false,true),
+    tri:()=>examPickHtml(id,"tri","Tri",scores,v.tri,false,true),
+    we:()=>examPickHtml(id,"we","WE",scores,v.we,false,true),
+    ff:()=>examPickHtml(id,"ff","FF",scores,v.ff,false,true),
+    fa:()=>examPickHtml(id,"fa","FA",scores,v.fa,false,true),
+    spl:()=>examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true,true),
+    ucmt:()=>examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true,true),
+    lcmt:()=>examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true,true),
+    drift:()=>examPickHtml(id,"drift","Drift",drift,v.drift,true,true),
+    sens:()=>examPickHtml(id,"sens","Sensation",sens,v.sens,true,true),
+    comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
+    extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
+  };
+  const labels={ox:"Orient",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",bue:"BUE",ble:"BLE",rue:"RUE",lue:"LUE",rle:"RLE",lle:"LLE",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",drift:"Drift",sens:"Sensation",comment:"Comment",extra:"Extra"};
+  const all=Object.keys(defs);
+  const fields=examVisibleFields(r,v.mode,defs);
+  const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
+  const addHtml='<div class="examquick"><select id="ex_add_'+id+'" style="max-width:220px"><option value="">+ add field...</option>'+addOpts+'</select><button type="button" onclick="roundExamAddField(\''+id+'\')">Add</button></div>';
   return '<div class="exambuilder">'+
     examPickHtml(id,"mode","Mode",mode,v.mode)+
-    examPickHtml(id,"ox","Orient",ox,v.ox)+
-    examPickHtml(id,"eye","Eyes",eyes,v.eye)+
-    examPickHtml(id,"cmd","Commands",cmds,v.cmd)+
-    examPickHtml(id,"mod","Modifier",mods,v.mod)+
-    examPickHtml(id,"pup","Pupils",pupils,v.pup)+
     '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">all 5/5 + no drift</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button></div>'+
-    (v.mode==="four"?
-      examPickHtml(id,"rue","RUE",scores,v.rue)+examPickHtml(id,"lue","LUE",scores,v.lue)+examPickHtml(id,"rle","RLE",scores,v.rle)+examPickHtml(id,"lle","LLE",scores,v.lle):
-     v.mode==="spine"?
-      '<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc</div>'+
-      examPickHtml(id,"delt","Delt",scores,v.delt)+examPickHtml(id,"bi","Bi",scores,v.bi)+examPickHtml(id,"tri","Tri",scores,v.tri)+examPickHtml(id,"we","WE",scores,v.we)+examPickHtml(id,"ff","FF",scores,v.ff)+examPickHtml(id,"fa","FA",scores,v.fa)+
-      examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true)+
-      examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true)+examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true):
-      examPickHtml(id,"bue","BUE",scores,v.bue)+examPickHtml(id,"ble","BLE",scores,v.ble))+
-    examPickHtml(id,"drift","Drift",drift,v.drift,true)+examPickHtml(id,"sens","Sensation",sens,v.sens,true)+
-    examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true)+
-    examInputHtml(id,"extra","Extra","", "other exam details", true)+
+    (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc</div>':"")+
+    fields.map(k=>defs[k]?defs[k]():"").join("")+
+    addHtml+
     '</div>';
 }
 function exVal(id,k){const el=document.getElementById("ex_"+k+"_"+id);return el?el.value.trim():""}
@@ -5442,7 +5492,7 @@ function roundExamModeChange(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id),m=document.getElementById("ex_mode_"+id);
   if(el)r.exam=el.value.trim();
-  if(m)r.examMode=m.value||"basic";
+  if(m){r.examMode=m.value||"basic";r.examFields=examDefaultFields(r.examMode);r.examFieldsCustom=false}
   r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
 }
 function roundExamQuick(id,kind){
@@ -5483,6 +5533,7 @@ function roundExamBuildApply(id,explicit){
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
+    [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([lbl,k])=>{const v=exVal(id,k);if(v)lines.push(lbl+" "+v)});
     const u=spineUpperMotorText(id),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
     if(u)lines.push("BUE: "+u+(uc?" ("+uc+")":""));
     if(l)lines.push("BLE: "+l+(lc?" ("+lc+")":""));
