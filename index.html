@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.180 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.181 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5354,6 +5354,14 @@ function setRStepDL(id,i,min){
   r.steps[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
   openRStepTimer=null;r.updatedAt=Date.now();renderRounds();save();
 }
+const EX_MENTAL_OPTS=["","awake, alert, age-appropriate interaction; consolable","awake, alert, interactive; irritable but consolable","awake, alert, minimally interactive","sleepy but arousable","drowsy, requires repeated stimulation","irritable and difficult to console","inconsolable","lethargic","not arousable","limited assessment due to age","limited assessment due to sedation"];
+const EX_SKIN_OPTS=["","Warm well perfused","Incision clean dry and intact"];
+const EX_FACE_OPTS=["","Face symmetric","Face asymmetric","facial droop"];
+const EX_GAZE_OPTS=["","gaze conjugate, tracks appropriately","gaze conjugate","tracks appropriately","gaze dysconjugate","does not track"];
+const EX_FONTANELLE_OPTS=["","soft and flat","full","bulging","sunken"];
+const EX_SUTURE_OPTS=["","approximated","splayed","overriding"];
+const EX_MOVES_OPTS=["","Moves all extremities spontaneously and symmetrically","Moves all extremities spontaneously","Moves all extremities symmetrically","Asymmetric spontaneous movement"];
+const EX_REFLEX_OPTS=["","- hoffmans","- clonus","- hoffmans, - clonus","+ hoffmans","+ clonus","+ hoffmans, + clonus","no hoffmans or clonus"];
 function examFieldWrap(id,k,label,inner,wide,removable){
   return '<div class="examfield '+(wide?'wide ':'')+(removable?'xable':'')+'"><label>'+label+inner+'</label>'+(removable?'<button type="button" class="xf" title="Hide this field" onclick="roundExamDropField(\''+id+'\',\''+k+'\')">×</button>':"")+'</div>';
 }
@@ -5367,12 +5375,12 @@ function examInputHtml(id,k,label,val,ph,wide,removable){
   return examFieldWrap(id,k,label,'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)">',wide,removable);
 }
 function examDefaultFields(mode){
-  const base=["ox","eye","pup","corneal","cough","cmd","mod"];
-  if(mode==="four")return base.concat(["rue","lue","rle","lle","drift","sens","comment","extra"]);
-  if(mode==="spine")return base.concat(["bueSp","bleSp","drift","sens","comment","extra"]);
-  return base.concat(["bue","ble","drift","sens","comment","extra"]);
+  const base=["ox","eye","pup","gaze","corneal","cough","cmd","mod"];
+  if(mode==="four")return base.concat(["face","rue","lue","rle","lle","drift","sens","comment","extra"]);
+  if(mode==="spine")return base.concat(["bueSp","bleSp","reflex","drift","sens","comment","extra"]);
+  return base.concat(["face","bue","ble","drift","sens","comment","extra"]);
 }
-function examAllFieldKeys(){return ["ox","eye","pup","corneal","cough","cmd","mod","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","drift","sens","comment","extra"]}
+function examAllFieldKeys(){return ["ox","mental","eye","pup","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
 function examFieldKeysForMode(mode){
   const all=examAllFieldKeys();
   if(mode==="spine")return all.filter(k=>!["bue","ble","rue","lue","rle","lle"].includes(k));
@@ -5399,12 +5407,14 @@ function roundExamDropField(id,k){
   r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",eye:"",cmd:"",mod:"",pup:"",cough:"",corneal:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",drift:"",sens:"",comment:"",ucmt:"",lcmt:"",extra:""};
-  const ox=s.match(/\b(?:A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox="Ox"+ox[1];
-  if(/\beyes?\s+open\s+to\s+voice\b|\bEO\s*voice\b/i.test(s))out.eye="eyes open to voice";
-  else if(/\beyes?\s+open\s+to\s+stim\b|\bEO\s*stim\b/i.test(s))out.eye="eyes open to stim";
+  const s=String(t||""), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const ox=s.match(/\b(?:A\+O|A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox=/A\+O/i.test(ox[0])?"A+Ox"+ox[1]:"Ox"+ox[1];
+  EX_MENTAL_OPTS.slice(1).forEach(o=>{if(!out.mental&&s.toLowerCase().includes(o.toLowerCase()))out.mental=o});
+  if(/\beyes?\s+open\s+spontaneously\b|\bopen spontaneously\b/i.test(s))out.eye="open spontaneously";
+  else if(/\beyes?\s+open\s+to\s+voice\b|\bopen to voice\b|\bEO\s*voice\b/i.test(s))out.eye="open to voice";
+  else if(/\beyes?\s+open\s+to\s+stim(?:ulation)?\b|\bopen to stim(?:ulation)?\b|\bEO\s*stim\b/i.test(s))out.eye="open to stimulation";
   else if(/\beyes?\s+open\b|\bEO\b/i.test(s))out.eye="eyes open";
-  else if(/\beyes?\s+closed\b|\bEC\b/i.test(s))out.eye="eyes closed";
+  else if(/\beyes?\s+closed\b|\bclosed\b|\bEC\b/i.test(s))out.eye="closed";
   if(/\bFC\b.*\bwiggle toes\b|\bfollows? commands?\b.*\bwiggle toes\b/i.test(s))out.cmd="FC wiggle toes";
   else if(/\bFC\b.*\bsqueeze hands\b|\bfollows? commands?\b.*\bsqueeze hands\b/i.test(s))out.cmd="FC squeeze hands";
   else if(/\bFC\b|\bfollows? commands?\b/i.test(s))out.cmd="follows commands";
@@ -5413,12 +5423,26 @@ function examStructFromText(t){
   else if(/\bPERRL\b/i.test(s))out.pup="PERRL";
   else if(/\bR\s*[>]\s*L\b|\bL\s*[<]\s*R\b/i.test(s))out.pup=/baseline/i.test(s)?"R > L baseline":"R > L";
   else if(/\bL\s*[>]\s*R\b|\bR\s*[<]\s*L\b/i.test(s))out.pup=/baseline/i.test(s)?"L > R baseline":"L > R";
-  if(/\b(?:no|absent|-)\s*cough\b|\bcough\s*(?:absent|-)\b/i.test(s))out.cough="- cough";
-  else if(/\b(?:\+|present|intact)\s*cough\b|\bcough\s*(?:present|\+|intact)\b|\bcough\b/i.test(s))out.cough="+ cough";
-  if(/\b(?:no|absent|-)\s*(?:corneal|corneals)\b|\b(?:corneal|corneals)\s*(?:absent|-)\b/i.test(s))out.corneal="no corneals";
-  else if(/\b(?:bilateral|both)\s+corneals?\b|\bcorneals?\s+(?:bilateral|both|present)\b/i.test(s))out.corneal="bilateral corneals";
-  else if(/\bR\s+corneal\b|\bright\s+corneal\b|\bcorneal\s+R\b/i.test(s))out.corneal="R corneal";
-  else if(/\bL\s+corneal\b|\bleft\s+corneal\b|\bcorneal\s+L\b/i.test(s))out.corneal="L corneal";
+  if(/\bgaze conjugate\b.*\btracks appropriately\b|\btracks appropriately\b.*\bgaze conjugate\b/i.test(s))out.gaze="gaze conjugate, tracks appropriately";
+  else if(/\bgaze conjugate\b/i.test(s))out.gaze="gaze conjugate";
+  else if(/\btracks appropriately\b/i.test(s))out.gaze="tracks appropriately";
+  else if(/\bgaze dysconjugate\b/i.test(s))out.gaze="gaze dysconjugate";
+  if(/\b(?:no|absent|-)\s*cough\b|\bcough\s*(?:absent|-)\b|\bAbsent cough reflex\b/i.test(s))out.cough="Absent cough reflex";
+  else if(/\b(?:\+|present|intact)\s*cough\b|\bcough\s*(?:present|\+|intact)\b|\bPresent cough reflex\b|\bcough\b/i.test(s))out.cough="Present cough reflex";
+  if(/\bAbsent corneal reflex bilaterally\b|\b(?:no|absent|-)\s*(?:corneal|corneals)\b|\b(?:corneal|corneals)\s*(?:absent|-)\b/i.test(s))out.corneal="Absent corneal reflex bilaterally";
+  else if(/\bPresent left corneal reflex only\b|\bL\s+corneal\b|\bleft\s+corneal\b|\bcorneal\s+L\b/i.test(s))out.corneal="Present left corneal reflex only";
+  else if(/\bPresent right corneal reflex only\b|\bR\s+corneal\b|\bright\s+corneal\b|\bcorneal\s+R\b/i.test(s))out.corneal="Present right corneal reflex only";
+  else if(/\bPresent corneal reflex bilaterally\b|\b(?:bilateral|both)\s+corneals?\b|\bcorneals?\s+(?:bilateral|both|present)\b/i.test(s))out.corneal="Present corneal reflex bilaterally";
+  if(/\bface symmetric\b/i.test(s))out.face="Face symmetric";
+  else if(/\bface asymmetric\b|\bfacial droop\b/i.test(s))out.face=/facial droop/i.test(s)?"facial droop":"Face asymmetric";
+  if(/\bWarm well perfused\b/i.test(s))out.skin="Warm well perfused";
+  else if(/\bIncision clean dry and intact\b|\bincision CDI\b|\bCDI incision\b/i.test(s))out.skin="Incision clean dry and intact";
+  const af=s.match(/\banterior fontanelle\s*:?\s*(soft and flat|full|bulging|sunken)\b/i);if(af)out.fontanelle=af[1].toLowerCase();
+  const sut=s.match(/\bsutures\s*:?\s*(approximated|splayed|overriding)\b/i);if(sut)out.sutures=sut[1].toLowerCase();
+  const hc=s.match(/\bHead circumference\s*:?\s*([0-9.]+)\s*cm\b/i);if(hc)out.hc=hc[1];
+  if(/\bMoves all extremities spontaneously and symmetrically\b/i.test(s))out.moves="Moves all extremities spontaneously and symmetrically";
+  else if(/\bMoves all extremities spontaneously\b/i.test(s))out.moves="Moves all extremities spontaneously";
+  else if(/\bMoves all extremities symmetrically\b/i.test(s))out.moves="Moves all extremities symmetrically";
   const valAfter=k=>{const m=s.match(new RegExp("\\b"+k+"\\b\\s*:?\\s*([^\\t,;\\n]+)","i"));return m?m[1].trim():""};
   out.bue=valAfter("BUE");out.ble=valAfter("BLE");
   out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
@@ -5446,6 +5470,12 @@ function examStructFromText(t){
   else if(/\bLUE\s*(?:\+|with)?\s*drift\b/i.test(s))out.drift="LUE + drift";
   if(/\bSILT\b/i.test(s))out.sens="SILT";
   else if(/\b(?:decreased|reduced)\s+sensation\b/i.test(s))out.sens="decreased sensation";
+  if(/\b-\s*hoffmans?\b/i.test(s)&&/\b-\s*clonus\b/i.test(s))out.reflex="- hoffmans, - clonus";
+  else if(/\+\s*hoffmans?\b/i.test(s)&&/\+\s*clonus\b/i.test(s))out.reflex="+ hoffmans, + clonus";
+  else if(/\b-\s*hoffmans?\b/i.test(s))out.reflex="- hoffmans";
+  else if(/\b-\s*clonus\b/i.test(s))out.reflex="- clonus";
+  else if(/\+\s*hoffmans?\b/i.test(s))out.reflex="+ hoffmans";
+  else if(/\+\s*clonus\b/i.test(s))out.reflex="+ clonus";
   if(/\bintubated\b/i.test(s))out.mod="intubated";
   else if(/\bsedated\b/i.test(s))out.mod="sedated";
   else if(/\baphasic\b|\baphasia\b/i.test(s))out.mod="aphasic";
@@ -5456,24 +5486,28 @@ function roundExamBuilderHtml(r,cur){
   const v=examStructFromText(cur), id=r.id;
   v.mode=r.examMode||v.mode||"basic";
   const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","TF","extensor","withdraw","localize","withdraws","localizes","baseline","NT"];
-  const ox=["","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
-  const eyes=["","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
+  const ox=["","A+Ox3","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
+  const eyes=["","open spontaneously","open to voice","open to stimulation","closed","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
   const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
   const mods=["","intubated","sedated","intubated + sedated","aphasic","confused","pain-limited","hard of hearing","baseline deficit"];
   const pupils=["","PERRL","PERRV","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
-  const cough=["","+ cough","- cough","cough present","cough absent","UTA cough"];
-  const corneal=["","bilateral corneals","R corneal","L corneal","no corneals","corneals UTA"];
+  const cough=["","Present cough reflex","Absent cough reflex","+ cough","- cough","cough present","cough absent","UTA cough"];
+  const corneal=["","Present corneal reflex bilaterally","Absent corneal reflex bilaterally","Present left corneal reflex only","Present right corneal reflex only","bilateral corneals","R corneal","L corneal","no corneals","corneals UTA"];
   const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
   const sens=["","SILT","decreased sensation","sensory level","baseline numbness","UTA sensation"];
   const defs={
     ox:()=>examPickHtml(id,"ox","Orient",ox,v.ox,false,true),
+    mental:()=>examPickHtml(id,"mental","Mental status",EX_MENTAL_OPTS,v.mental,true,true),
     eye:()=>examPickHtml(id,"eye","Eyes",eyes,v.eye,false,true),
     cmd:()=>examPickHtml(id,"cmd","Commands",cmds,v.cmd,false,true),
     mod:()=>examPickHtml(id,"mod","Modifier",mods,v.mod,false,true),
     pup:()=>examPickHtml(id,"pup","Pupils",pupils,v.pup,false,true),
+    gaze:()=>examPickHtml(id,"gaze","Gaze/track",EX_GAZE_OPTS,v.gaze,true,true),
     cough:()=>examPickHtml(id,"cough","Cough",cough,v.cough,false,true),
     corneal:()=>examPickHtml(id,"corneal","Corneals",corneal,v.corneal,false,true),
+    face:()=>examPickHtml(id,"face","Face",EX_FACE_OPTS,v.face,false,true),
+    skin:()=>examPickHtml(id,"skin","Skin",EX_SKIN_OPTS,v.skin,true,true),
     bue:()=>examPickHtml(id,"bue","BUE",scores,v.bue,false,true),
     ble:()=>examPickHtml(id,"ble","BLE",scores,v.ble,false,true),
     bueSp:()=>examInputHtml(id,"bueSp","BUE spine",v.bueSp,"5/5/5/5/5/5",true,true),
@@ -5495,12 +5529,17 @@ function roundExamBuilderHtml(r,cur){
     spl:()=>examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true,true),
     ucmt:()=>examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true,true),
     lcmt:()=>examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true,true),
+    reflex:()=>examPickHtml(id,"reflex","Reflexes",EX_REFLEX_OPTS,v.reflex,true,true),
     drift:()=>examPickHtml(id,"drift","Drift",drift,v.drift,true,true),
     sens:()=>examPickHtml(id,"sens","Sensation",sens,v.sens,true,true),
+    fontanelle:()=>examPickHtml(id,"fontanelle","Fontanelle",EX_FONTANELLE_OPTS,v.fontanelle,false,true),
+    sutures:()=>examPickHtml(id,"sutures","Sutures",EX_SUTURE_OPTS,v.sutures,false,true),
+    hc:()=>examInputHtml(id,"hc","Head circ",v.hc,"cm",false,true),
+    moves:()=>examPickHtml(id,"moves","Spontaneous movement",EX_MOVES_OPTS,v.moves,true,true),
     comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
-  const labels={ox:"Orient",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",cough:"Cough",corneal:"Corneals",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE spine",lueSp:"LUE spine",rleSp:"RLE spine",lleSp:"LLE spine",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",drift:"Drift",sens:"Sensation",comment:"Comment",extra:"Extra"};
+  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE spine",lueSp:"LUE spine",rleSp:"RLE spine",lleSp:"LLE spine",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
   const all=Object.keys(defs).filter(k=>examFieldKeysForMode(v.mode).includes(k));
   const fields=examVisibleFields(r,v.mode,defs);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
@@ -5525,17 +5564,17 @@ function roundExamModeChange(id){
 function roundExamQuick(id,kind){
   const mode=exVal(id,"mode")||"basic";
   if(kind==="clear"){
-    ["ox","eye","cmd","mod","pup","cough","corneal","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spu","spl","ucmt","lcmt","drift","sens","comment","extra"].forEach(k=>exSet(id,k,""));
+    examAllFieldKeys().concat(["spu"]).forEach(k=>exSet(id,k,""));
   }else if(kind==="intubated"){
     const r=S.rounds.find(x=>x.id===id);
     if(r){
       const fields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1])));
-      ["mod","pup","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
+      ["mod","eye","pup","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
       r.examFields=fields;r.examFieldsCustom=true;
       const el=document.getElementById("rexam_"+id);
       const cur=(el?el.value:String(r.exam||"")).trim();
-      const add=["intubated","+ cough","bilateral corneals"].filter(t=>!new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(cur));
-      r.exam=[cur].concat(add).filter(Boolean).join(cur?", ":"");
+      const add=["Intubated","Eyes closed","PERRL","Present cough reflex","Present corneal reflex bilaterally"].filter(t=>!new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(cur));
+      r.exam=[cur].concat(add).filter(Boolean).join(cur?"\n":"");
       r.examAt=sxNow();r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();return;
     }
   }else if(kind==="baseline"){
@@ -5576,7 +5615,9 @@ function spineGroupLine(id,label,key,n){
 function examStructuredChunk(s){
   const x=String(s||"").trim();
   if(!x)return true;
-  if(/\b(?:Ox\d|AOx\d|eyes?|EO|EC|FC|follows?|commands?|PERRL|PERRV|pupil|R\s*[<>]\s*L|L\s*[<>]\s*R|cough|corneal|BUE|BLE|RUE|LUE|RLE|LLE|Delt|Bi|Tri|WE|FF|FA|IP|quad|EHL|gastroc|drift|SILT|sensation|intubated|sedated|aphasic|confused|pain[- ]limited)\b/i.test(x)){
+  const xl=x.toLowerCase();
+  if(EX_MENTAL_OPTS.concat(EX_MOVES_OPTS).some(o=>o&&xl===o.toLowerCase()))return true;
+  if(/\b(?:A\+Ox\d|Ox\d|AOx\d|mental status|eyes?|EO|EC|FC|follows?|commands?|PERRL|PERRV|pupil|gaze|tracks|face|corneal|cough|skin|fontanelle|sutures|head circumference|moves all extremities|R\s*[<>]\s*L|L\s*[<>]\s*R|BUE|BLE|RUE|LUE|RLE|LLE|Delt|Bi|Tri|WE|FF|FA|IP|quad|EHL|gastroc|hoffmans?|clonus|drift|SILT|sensation|intubated|sedated|aphasic|confused|pain[- ]limited)\b/i.test(x)){
     return x.length<48;
   }
   return false;
@@ -5593,12 +5634,19 @@ function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const mode=exVal(id,"mode")||"basic", lines=[];
   r.examMode=mode;
-  const ox=exVal(id,"ox"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
+  const ox=exVal(id,"ox"),mental=exVal(id,"mental"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),gaze=exVal(id,"gaze"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),face=exVal(id,"face"),skin=exVal(id,"skin"),reflex=exVal(id,"reflex"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),fontanelle=exVal(id,"fontanelle"),sutures=exVal(id,"sutures"),hc=exVal(id,"hc"),moves=exVal(id,"moves"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
   if(ox)lines.push(ox);
+  if(mental)lines.push("Mental status/behavior: "+mental);
   if(eye)lines.push(eye);
   if(pup)lines.push(pup);
+  if(gaze)lines.push(gaze);
   if(corneal)lines.push(corneal);
   if(cough)lines.push(cough);
+  if(face)lines.push(face);
+  if(fontanelle)lines.push("Anterior fontanelle "+fontanelle);
+  if(sutures)lines.push("Sutures "+sutures);
+  if(hc)lines.push("Head circumference: "+hc.replace(/\s*cm$/i,"")+" cm");
+  if(moves)lines.push(moves);
   if(cmd)lines.push(cmd);
   if(mod)lines.push(mod);
   if(mode==="four"){
@@ -5613,8 +5661,10 @@ function roundExamBuildApply(id,explicit){
     if(bue)lines.push("BUE "+bue);
     if(ble)lines.push("BLE "+ble);
   }
+  if(reflex)lines.push(reflex);
   if(drift)lines.push(drift);
   if(sens)lines.push(sens);
+  if(skin)lines.push("Skin: "+skin);
   if(comment)lines.push(comment);
   if(extra)lines.push(extra);
   const oldEl=document.getElementById("rexam_"+id);
@@ -5636,7 +5686,7 @@ function roundExamParseIntoFields(id){
   const modeKeys=examFieldKeysForMode(mode);
   const fields=examVisibleFields(r,mode,Object.fromEntries(modeKeys.map(k=>[k,1])));
   modeKeys.forEach(k=>{if(v[k]&&!fields.includes(k))fields.push(k)});
-  if(v.mod&&/intubated/i.test(v.mod))["cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
+  if(v.mod&&/intubated/i.test(v.mod))["eye","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
   r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
 }
 function roundExamPaste(id,el){
