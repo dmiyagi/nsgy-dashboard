@@ -810,7 +810,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.179 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.180 · 2026-09-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5931,7 +5931,6 @@ function renderRounds(){
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
   const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
-  const key=r=>r.worry?0:1;
   const cmp=(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
     :(S.roundSort==="team")
@@ -5941,7 +5940,7 @@ function renderRounds(){
       :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
   const visible=S.rounds.filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp);
   const archived=visible.filter(roundArchived).slice().sort((a,b)=>(a.archiveUntil||0)-(b.archiveUntil||0));
-  const list=visible.filter(r=>!roundArchived(r)).slice().sort((a,b)=>(key(a)!==key(b))?key(a)-key(b):cmp(a,b));
+  const list=visible.filter(r=>!roundArchived(r)).slice().sort(cmp);
   autoScheduleRoundDateTasksFor(visible);
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
   const renderRoundList=arr=>arr.map(r=>{
