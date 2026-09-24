@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.184 · 2026-09-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.185 · 2026-09-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5424,6 +5424,10 @@ function examVisibleFields(r,mode,defs){
   const allowed=Object.keys(defs||{}).filter(k=>examFieldKeysForMode(mode).includes(k));
   let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
   fields=fields.filter(k=>allowed.includes(k)).filter((k,i,a)=>a.indexOf(k)===i);
+  if(mode==="spine"){
+    const order=["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
+    fields=fields.slice().sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  }
   return fields.length?fields:examDefaultFields(mode).filter(k=>allowed.includes(k));
 }
 function roundExamAddField(id){
@@ -5487,6 +5491,19 @@ function examStructFromText(t){
   if(out.bueSp||out.bleSp||out.rueSp||out.lueSp||out.rleSp||out.lleSp||/\b(?:delt|deltoid|bi|tri|we|ff|fa|io|ip|quad|ta|ehl|gastroc|spine)\b/i.test(s)){
     out.mode="spine";
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
+    let spineSection="";
+    const spineRowPat=/^([RL])\s+((?:[0-5]|NT|UTA|baseline|pain[- ]limited)(?:\s*\/\s*(?:[0-5]|NT|UTA|baseline|pain[- ]limited)){4,5})\b/i;
+    lines.forEach(line=>{
+      if(/\bDelt\b.*\bbi\b.*\btri\b.*\bwe\b.*\bff\b.*\bfa\b/i.test(line)){spineSection="upper";return}
+      if(/\bIp\b.*\bquad\b.*\bat\b.*\behl\b.*\bgastroc\b/i.test(line)){spineSection="lower";return}
+      const m=line.match(spineRowPat);if(!m)return;
+      const val=m[2].replace(/\s+/g,"");
+      if(spineSection==="upper"){
+        if(/^R$/i.test(m[1]))out.rueSp=val;else out.lueSp=val;
+      }else if(spineSection==="lower"){
+        if(/^R$/i.test(m[1]))out.rleSp=val;else out.lleSp=val;
+      }
+    });
     out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
     out.spl=(lines.find(x=>/\b(?:IP|quad|ta|ehl|gastroc|BLE)\b/i.test(x))||out.ble||"");
     const scorePat="(5\\/5|4\\/5|3\\/5|2\\/5|1\\/5|0\\/5|antigravity|TF|extensor|withdraws?|localizes?|baseline|NT)";
