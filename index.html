@@ -752,7 +752,7 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .examfield .xf:hover{border-color:var(--e3);color:var(--e3)}
 .spinelimbgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
 .spinelimbcell{display:flex;flex-direction:column;gap:3px;font-size:9px!important;letter-spacing:.2px!important}
-.spinelimbcell select{padding:5px 3px!important;text-align:center}
+.spinelimbcell input{padding:5px 3px!important;text-align:center}
 .spinewarn{grid-column:1/-1;border:1px solid var(--warn);border-radius:8px;background:rgba(255,204,77,.08);color:var(--warn);font-size:11.5px;font-weight:800;padding:7px 9px}
 .examref{grid-column:1/-1;border:1px solid var(--line);background:var(--card2);border-radius:8px;color:var(--mut);font-size:11.5px;font-weight:800;line-height:1.35;padding:6px 8px}
 .examref b{color:var(--text)}
@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.183 · 2026-09-23</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.184 · 2026-09-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5389,13 +5389,13 @@ function spineMotorParts(v,n){
   return Array(n).fill("");
 }
 function examSpineMotorHtml(id,k,label,val,n,labels,removable){
-  const opts=["","5","4","3","2","1","0","NT","UTA","baseline"];
+  const opts=["5","4","3","2","1","0","5/5","4/5","3/5","2/5","1/5","0/5","NT","UTA","baseline","pain-limited"];
   const parts=spineMotorParts(val,n);
+  const listId="ex_"+k+"_opts_"+id;
+  const dl='<datalist id="'+listId+'">'+opts.map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</datalist>';
   const cells=labels.map((lab,i)=>
-    '<span class="spinelimbcell">'+esc(lab)+'<select id="ex_'+k+'_'+i+'_'+id+'" onchange="spineLimbApply(\''+id+'\',\''+k+'\','+n+')">'+
-      opts.map(o=>'<option value="'+esc(o)+'" '+(String(parts[i]||"")===o?"selected":"")+'>'+esc(o)+'</option>').join("")+
-    '</select></span>').join("");
-  return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'"><div class="spinelimbgrid">'+cells+'</div>',true,removable);
+    '<span class="spinelimbcell">'+esc(lab)+'<input type="text" inputmode="decimal" list="'+listId+'" id="ex_'+k+'_'+i+'_'+id+'" value="'+esc(parts[i]||"")+'" placeholder="5" oninput="spineLimbApply(\''+id+'\',\''+k+'\','+n+')"></span>').join("");
+  return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'">'+dl+'<div class="spinelimbgrid">'+cells+'</div>',true,removable);
 }
 function spineLimbApply(id,k,n){
   const vals=[];
