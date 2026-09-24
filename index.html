@@ -750,11 +750,15 @@ details.axisinfo .ai .wb{display:block;background:#2a1e10;border:1px solid #6b4b
 .examfield.xable label{padding-right:24px}
 .examfield .xf{position:absolute;right:4px;top:2px;width:20px;height:20px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--mut);font:900 13px/1 var(--font);cursor:pointer}
 .examfield .xf:hover{border-color:var(--e3);color:var(--e3)}
+.spinelimbgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.spinelimbcell{display:flex;flex-direction:column;gap:3px;font-size:9px!important;letter-spacing:.2px!important}
+.spinelimbcell select{padding:5px 3px!important;text-align:center}
+.spinewarn{grid-column:1/-1;border:1px solid var(--warn);border-radius:8px;background:rgba(255,204,77,.08);color:var(--warn);font-size:11.5px;font-weight:800;padding:7px 9px}
 .examref{grid-column:1/-1;border:1px solid var(--line);background:var(--card2);border-radius:8px;color:var(--mut);font-size:11.5px;font-weight:800;line-height:1.35;padding:6px 8px}
 .examref b{color:var(--text)}
 .examquick{grid-column:1/-1;display:flex;gap:5px;flex-wrap:wrap}
 .examquick button{font-size:10.5px;font-weight:800;padding:4px 8px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--acc);cursor:pointer;font-family:var(--font)}
-@media(max-width:700px){.exambuilder{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.exambuilder select,.exambuilder input{font-size:13px;padding:7px 8px}.exambuilder .wide{grid-column:span 2}}
+@media(max-width:700px){.exambuilder{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.exambuilder select,.exambuilder input{font-size:13px;padding:7px 8px}.exambuilder .wide{grid-column:span 2}.spinelimbgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .dom{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;background:var(--card2)}
 .dom .dn{font-size:12.5px;font-weight:700;margin-bottom:5px}
 .dom .db{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
@@ -810,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.181 · 2026-09-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.183 · 2026-09-23</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5374,16 +5378,45 @@ function examPickHtml(id,k,label,opts,val,wide,removable){
 function examInputHtml(id,k,label,val,ph,wide,removable){
   return examFieldWrap(id,k,label,'<input type="text" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'" placeholder="'+esc(ph||"")+'" oninput="roundExamBuildApply(\''+id+'\',false)">',wide,removable);
 }
+function spineMotorParts(v,n){
+  const s=String(v||"").trim().replace(/\s+/g,"");
+  if(!s)return Array(n).fill("");
+  const m=s.match(/^([0-5])\/5$/);
+  if(m)return Array(n).fill(m[1]);
+  const parts=s.split("/");
+  if(parts.length===n)return parts;
+  if(parts.length===1)return Array(n).fill(parts[0]);
+  return Array(n).fill("");
+}
+function examSpineMotorHtml(id,k,label,val,n,labels,removable){
+  const opts=["","5","4","3","2","1","0","NT","UTA","baseline"];
+  const parts=spineMotorParts(val,n);
+  const cells=labels.map((lab,i)=>
+    '<span class="spinelimbcell">'+esc(lab)+'<select id="ex_'+k+'_'+i+'_'+id+'" onchange="spineLimbApply(\''+id+'\',\''+k+'\','+n+')">'+
+      opts.map(o=>'<option value="'+esc(o)+'" '+(String(parts[i]||"")===o?"selected":"")+'>'+esc(o)+'</option>').join("")+
+    '</select></span>').join("");
+  return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'"><div class="spinelimbgrid">'+cells+'</div>',true,removable);
+}
+function spineLimbApply(id,k,n){
+  const vals=[];
+  for(let i=0;i<n;i++){
+    const el=document.getElementById("ex_"+k+"_"+i+"_"+id);
+    vals.push(el?el.value.trim():"");
+  }
+  const hidden=document.getElementById("ex_"+k+"_"+id);
+  if(hidden)hidden.value=vals.some(Boolean)?vals.map(v=>v||"_").join("/"):"";
+  roundExamBuildApply(id,false);
+}
 function examDefaultFields(mode){
   const base=["ox","eye","pup","gaze","corneal","cough","cmd","mod"];
   if(mode==="four")return base.concat(["face","rue","lue","rle","lle","drift","sens","comment","extra"]);
-  if(mode==="spine")return base.concat(["bueSp","bleSp","reflex","drift","sens","comment","extra"]);
+  if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
   return base.concat(["face","bue","ble","drift","sens","comment","extra"]);
 }
-function examAllFieldKeys(){return ["ox","mental","eye","pup","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
+function examAllFieldKeys(){return ["ox","mental","eye","pup","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
 function examFieldKeysForMode(mode){
   const all=examAllFieldKeys();
-  if(mode==="spine")return all.filter(k=>!["bue","ble","rue","lue","rle","lle"].includes(k));
+  if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
   if(mode==="four")return all.filter(k=>!["bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
   return all.filter(k=>!["bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
 }
@@ -5407,7 +5440,7 @@ function roundExamDropField(id,k){
   r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||""), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",dre:"",rueSens:"",lueSens:"",rleSens:"",lleSens:"",dermSens:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A\+O|A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox=/A\+O/i.test(ox[0])?"A+Ox"+ox[1]:"Ox"+ox[1];
   EX_MENTAL_OPTS.slice(1).forEach(o=>{if(!out.mental&&s.toLowerCase().includes(o.toLowerCase()))out.mental=o});
   if(/\beyes?\s+open\s+spontaneously\b|\bopen spontaneously\b/i.test(s))out.eye="open spontaneously";
@@ -5470,6 +5503,16 @@ function examStructFromText(t){
   else if(/\bLUE\s*(?:\+|with)?\s*drift\b/i.test(s))out.drift="LUE + drift";
   if(/\bSILT\b/i.test(s))out.sens="SILT";
   else if(/\b(?:decreased|reduced)\s+sensation\b/i.test(s))out.sens="decreased sensation";
+  const dre=s.match(/\bDRE\b\s*:?\s*([^,;\n]+)/i);
+  if(dre)out.dre=dre[1].trim();
+  else if(/\b(?:rectal tone|DRE)\b.{0,20}\b(?:intact|present|\+)\b/i.test(s))out.dre="+ DRE";
+  else if(/\b(?:rectal tone|DRE)\b.{0,20}\b(?:decreased|absent|-)\b/i.test(s))out.dre="- DRE";
+  [["rueSens","RUE"],["lueSens","LUE"],["rleSens","RLE"],["lleSens","LLE"]].forEach(([k,l])=>{
+    const m=s.match(new RegExp("\\b"+l+"\\b.{0,18}\\b(?:sens|sensation|SILT)\\b\\s*:?\\s*([^,;\\n]+)?","i"));
+    if(m)out[k]=(m[1]||"+").trim();
+  });
+  const derm=s.match(/\b(?:dermatome|sensory level|sensation)\b\s*:?\s*([^;\n]+)/i);
+  if(derm&&!/^decreased sensation$/i.test(out.sens))out.dermSens=derm[1].trim();
   if(/\b-\s*hoffmans?\b/i.test(s)&&/\b-\s*clonus\b/i.test(s))out.reflex="- hoffmans, - clonus";
   else if(/\+\s*hoffmans?\b/i.test(s)&&/\+\s*clonus\b/i.test(s))out.reflex="+ hoffmans, + clonus";
   else if(/\b-\s*hoffmans?\b/i.test(s))out.reflex="- hoffmans";
@@ -5486,6 +5529,7 @@ function roundExamBuilderHtml(r,cur){
   const v=examStructFromText(cur), id=r.id;
   v.mode=r.examMode||v.mode||"basic";
   const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","TF","extensor","withdraw","localize","withdraws","localizes","baseline","NT"];
+  const neuroScores=scores.concat(["wiggles toes"]);
   const ox=["","A+Ox3","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
   const eyes=["","open spontaneously","open to voice","open to stimulation","closed","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
   const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
@@ -5496,6 +5540,9 @@ function roundExamBuilderHtml(r,cur){
   const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
   const sens=["","SILT","decreased sensation","sensory level","baseline numbness","UTA sensation"];
+  const spineSens=["","+ sensation","- sensation","SILT","decreased","numbness","paresthesias","baseline","UTA"];
+  const dre=["","+ DRE","- DRE","DRE intact","DRE decreased","DRE absent","DRE deferred","DRE not indicated"];
+  const upperLabs=["Delt","Bi","Tri","WE","FF","FA"], lowerLabs=["IP","Quad","AT","EHL","Gastroc"];
   const defs={
     ox:()=>examPickHtml(id,"ox","Orient",ox,v.ox,false,true),
     mental:()=>examPickHtml(id,"mental","Mental status",EX_MENTAL_OPTS,v.mental,true,true),
@@ -5508,18 +5555,18 @@ function roundExamBuilderHtml(r,cur){
     corneal:()=>examPickHtml(id,"corneal","Corneals",corneal,v.corneal,false,true),
     face:()=>examPickHtml(id,"face","Face",EX_FACE_OPTS,v.face,false,true),
     skin:()=>examPickHtml(id,"skin","Skin",EX_SKIN_OPTS,v.skin,true,true),
-    bue:()=>examPickHtml(id,"bue","BUE",scores,v.bue,false,true),
-    ble:()=>examPickHtml(id,"ble","BLE",scores,v.ble,false,true),
+    bue:()=>examPickHtml(id,"bue","BUE",neuroScores,v.bue,false,true),
+    ble:()=>examPickHtml(id,"ble","BLE",neuroScores,v.ble,false,true),
     bueSp:()=>examInputHtml(id,"bueSp","BUE spine",v.bueSp,"5/5/5/5/5/5",true,true),
     bleSp:()=>examInputHtml(id,"bleSp","BLE spine",v.bleSp,"5/5/5/5/5",true,true),
-    rueSp:()=>examInputHtml(id,"rueSp","RUE spine",v.rueSp,"5/5/5/5/5/5",true,true),
-    lueSp:()=>examInputHtml(id,"lueSp","LUE spine",v.lueSp,"5/5/5/5/5/5",true,true),
-    rleSp:()=>examInputHtml(id,"rleSp","RLE spine",v.rleSp,"5/5/5/5/5",true,true),
-    lleSp:()=>examInputHtml(id,"lleSp","LLE spine",v.lleSp,"5/5/5/5/5",true,true),
-    rue:()=>examPickHtml(id,"rue","RUE",scores,v.rue,false,true),
-    lue:()=>examPickHtml(id,"lue","LUE",scores,v.lue,false,true),
-    rle:()=>examPickHtml(id,"rle","RLE",scores,v.rle,false,true),
-    lle:()=>examPickHtml(id,"lle","LLE",scores,v.lle,false,true),
+    rueSp:()=>examSpineMotorHtml(id,"rueSp","RUE",v.rueSp,6,upperLabs,true),
+    lueSp:()=>examSpineMotorHtml(id,"lueSp","LUE",v.lueSp,6,upperLabs,true),
+    rleSp:()=>examSpineMotorHtml(id,"rleSp","RLE",v.rleSp,5,lowerLabs,true),
+    lleSp:()=>examSpineMotorHtml(id,"lleSp","LLE",v.lleSp,5,lowerLabs,true),
+    rue:()=>examPickHtml(id,"rue","RUE",neuroScores,v.rue,false,true),
+    lue:()=>examPickHtml(id,"lue","LUE",neuroScores,v.lue,false,true),
+    rle:()=>examPickHtml(id,"rle","RLE",neuroScores,v.rle,false,true),
+    lle:()=>examPickHtml(id,"lle","LLE",neuroScores,v.lle,false,true),
     delt:()=>examPickHtml(id,"delt","Delt",scores,v.delt,false,true),
     bi:()=>examPickHtml(id,"bi","Bi",scores,v.bi,false,true),
     tri:()=>examPickHtml(id,"tri","Tri",scores,v.tri,false,true),
@@ -5530,6 +5577,12 @@ function roundExamBuilderHtml(r,cur){
     ucmt:()=>examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true,true),
     lcmt:()=>examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true,true),
     reflex:()=>examPickHtml(id,"reflex","Reflexes",EX_REFLEX_OPTS,v.reflex,true,true),
+    dre:()=>examPickHtml(id,"dre","DRE",dre,v.dre,true,true),
+    rueSens:()=>examPickHtml(id,"rueSens","RUE sensation",spineSens,v.rueSens,false,true),
+    lueSens:()=>examPickHtml(id,"lueSens","LUE sensation",spineSens,v.lueSens,false,true),
+    rleSens:()=>examPickHtml(id,"rleSens","RLE sensation",spineSens,v.rleSens,false,true),
+    lleSens:()=>examPickHtml(id,"lleSens","LLE sensation",spineSens,v.lleSens,false,true),
+    dermSens:()=>examInputHtml(id,"dermSens","Dermatome / level",v.dermSens,"C6, T10 sensory level, saddle anesthesia",true,true),
     drift:()=>examPickHtml(id,"drift","Drift",drift,v.drift,true,true),
     sens:()=>examPickHtml(id,"sens","Sensation",sens,v.sens,true,true),
     fontanelle:()=>examPickHtml(id,"fontanelle","Fontanelle",EX_FONTANELLE_OPTS,v.fontanelle,false,true),
@@ -5539,7 +5592,7 @@ function roundExamBuilderHtml(r,cur){
     comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
-  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE spine",lueSp:"LUE spine",rleSp:"RLE spine",lleSp:"LLE spine",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
+  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE motor",lueSp:"LUE motor",rleSp:"RLE motor",lleSp:"LLE motor",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",dre:"DRE",rueSens:"RUE sensation",lueSens:"LUE sensation",rleSens:"RLE sensation",lleSens:"LLE sensation",dermSens:"Dermatome / level",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
   const all=Object.keys(defs).filter(k=>examFieldKeysForMode(v.mode).includes(k));
   const fields=examVisibleFields(r,v.mode,defs);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
@@ -5547,13 +5600,24 @@ function roundExamBuilderHtml(r,cur){
   return '<div class="exambuilder">'+
     examPickHtml(id,"mode","Mode",mode,v.mode)+
     '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intubated\')">intubated exam</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">all 5/5 + no drift</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button><button type="button" onclick="roundExamParseIntoFields(\''+id+'\')">parse into fields</button></div>'+
-    (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> Upper Delt/Bi/Tri/WE/FF/FA · Lower IP/quad/AT/EHL/gastroc. Use BUE/BLE when symmetric; add RUE/LUE/RLE/LLE when side-specific.</div>':"")+
+    (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> RUE/LUE Delt/Bi/Tri/WE/FF/FA · RLE/LLE IP/Quad/AT/EHL/Gastroc.</div>'+spineExamWarningHtml(id):"")+
     fields.map(k=>defs[k]?defs[k]():"").join("")+
     addHtml+
     '</div>';
 }
 function exVal(id,k){const el=document.getElementById("ex_"+k+"_"+id);return el?el.value.trim():""}
 function exSet(id,k,v){const el=document.getElementById("ex_"+k+"_"+id);if(el)el.value=v||""}
+function exSetSpineLimb(id,k,v,n){
+  exSet(id,k,v);
+  const parts=spineMotorParts(v,n);
+  for(let i=0;i<n;i++){
+    const el=document.getElementById("ex_"+k+"_"+i+"_"+id);
+    if(el)el.value=parts[i]||"";
+  }
+}
+function spineExamWarningHtml(id){
+  return '<div class="spinewarn">Spine exam flag: include side-specific motor, sensation by limb or dermatome, and DRE/rectal tone when relevant.</div>';
+}
 function roundExamModeChange(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id),m=document.getElementById("ex_mode_"+id);
@@ -5579,12 +5643,12 @@ function roundExamQuick(id,kind){
     }
   }else if(kind==="baseline"){
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
-    else if(mode==="spine"){exSet(id,"bueSp","baseline");exSet(id,"bleSp","baseline");["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"baseline"));exSet(id,"spl","")}
+    else if(mode==="spine"){exSetSpineLimb(id,"rueSp","baseline",6);exSetSpineLimb(id,"lueSp","baseline",6);exSetSpineLimb(id,"rleSp","baseline",5);exSetSpineLimb(id,"lleSp","baseline",5);["rueSens","lueSens","rleSens","lleSens"].forEach(k=>exSet(id,k,"baseline"))}
     else{exSet(id,"bue","baseline");exSet(id,"ble","baseline")}
     exSet(id,"comment","at baseline");
   }else{
     if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"5/5"));
-    else if(mode==="spine"){exSet(id,"bueSp","5/5/5/5/5/5");exSet(id,"bleSp","5/5/5/5/5");["delt","bi","tri","we","ff","fa"].forEach(k=>exSet(id,k,"5/5"));exSet(id,"spl","")}
+    else if(mode==="spine"){exSetSpineLimb(id,"rueSp","5/5/5/5/5/5",6);exSetSpineLimb(id,"lueSp","5/5/5/5/5/5",6);exSetSpineLimb(id,"rleSp","5/5/5/5/5",5);exSetSpineLimb(id,"lleSp","5/5/5/5/5",5);["rueSens","lueSens","rleSens","lleSens"].forEach(k=>exSet(id,k,"+ sensation"))}
     else{exSet(id,"bue","5/5");exSet(id,"ble","5/5")}
     exSet(id,"drift","no drift");
   }
@@ -5617,7 +5681,7 @@ function examStructuredChunk(s){
   if(!x)return true;
   const xl=x.toLowerCase();
   if(EX_MENTAL_OPTS.concat(EX_MOVES_OPTS).some(o=>o&&xl===o.toLowerCase()))return true;
-  if(/\b(?:A\+Ox\d|Ox\d|AOx\d|mental status|eyes?|EO|EC|FC|follows?|commands?|PERRL|PERRV|pupil|gaze|tracks|face|corneal|cough|skin|fontanelle|sutures|head circumference|moves all extremities|R\s*[<>]\s*L|L\s*[<>]\s*R|BUE|BLE|RUE|LUE|RLE|LLE|Delt|Bi|Tri|WE|FF|FA|IP|quad|EHL|gastroc|hoffmans?|clonus|drift|SILT|sensation|intubated|sedated|aphasic|confused|pain[- ]limited)\b/i.test(x)){
+  if(/\b(?:A\+Ox\d|Ox\d|AOx\d|mental status|eyes?|EO|EC|FC|follows?|commands?|PERRL|PERRV|pupil|gaze|tracks|face|corneal|cough|skin|fontanelle|sutures|head circumference|moves all extremities|R\s*[<>]\s*L|L\s*[<>]\s*R|BUE|BLE|RUE|LUE|RLE|LLE|Delt|Bi|Tri|WE|FF|FA|IP|quad|EHL|gastroc|hoffmans?|clonus|DRE|rectal tone|drift|SILT|sensation|intubated|sedated|aphasic|confused|pain[- ]limited)\b/i.test(x)){
     return x.length<48;
   }
   return false;
@@ -5634,7 +5698,7 @@ function roundExamBuildApply(id,explicit){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const mode=exVal(id,"mode")||"basic", lines=[];
   r.examMode=mode;
-  const ox=exVal(id,"ox"),mental=exVal(id,"mental"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),gaze=exVal(id,"gaze"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),face=exVal(id,"face"),skin=exVal(id,"skin"),reflex=exVal(id,"reflex"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),fontanelle=exVal(id,"fontanelle"),sutures=exVal(id,"sutures"),hc=exVal(id,"hc"),moves=exVal(id,"moves"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
+  const ox=exVal(id,"ox"),mental=exVal(id,"mental"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),gaze=exVal(id,"gaze"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),face=exVal(id,"face"),skin=exVal(id,"skin"),reflex=exVal(id,"reflex"),dre=exVal(id,"dre"),rueSens=exVal(id,"rueSens"),lueSens=exVal(id,"lueSens"),rleSens=exVal(id,"rleSens"),lleSens=exVal(id,"lleSens"),dermSens=exVal(id,"dermSens"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),fontanelle=exVal(id,"fontanelle"),sutures=exVal(id,"sutures"),hc=exVal(id,"hc"),moves=exVal(id,"moves"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
   if(ox)lines.push(ox);
   if(mental)lines.push("Mental status/behavior: "+mental);
   if(eye)lines.push(eye);
@@ -5652,10 +5716,10 @@ function roundExamBuildApply(id,explicit){
   if(mode==="four"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
-    [["BUE","bueSp",6],["BLE","bleSp",5],["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
-    const u=spineUpperMotorText(id),l=exVal(id,"spl"),uc=exVal(id,"ucmt"),lc=exVal(id,"lcmt");
-    if(u&&!exVal(id,"bueSp"))lines.push("BUE: "+u+(uc?" ("+uc+")":""));
-    if(l&&!exVal(id,"bleSp"))lines.push("BLE: "+l+(lc?" ("+lc+")":""));
+    [["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
+    if(dre)lines.push("DRE: "+dre);
+    const sl=[["RUE",rueSens],["LUE",lueSens],["RLE",rleSens],["LLE",lleSens]].filter(x=>x[1]).map(x=>x[0]+" "+x[1]);
+    if(sl.length||dermSens)lines.push("Sensation: "+sl.concat(dermSens?[dermSens]:[]).join("; "));
   }else{
     const bue=exVal(id,"bue"),ble=exVal(id,"ble");
     if(bue)lines.push("BUE "+bue);
@@ -9121,30 +9185,13 @@ const TC_CNS_EXAM=[
  "SILT"
 ].join("\n");
 const TC_SPINE_EXAM=[
- "Spine:",
- "***",
- "Delt - Deltoid: shoulder abduction (C5)",
- "Bi - Biceps: elbow flexion (C6)",
- "Tri - Triceps: elbow extension (C7)",
- "WE - Wrist extensors: wrist extension (C7, C8)",
- "FF - Finger flexors: finger flexion/grip (C8)",
- "FA - Finger abductors: spread fingers apart against resistance (T1)",
- "***",
- "Delt/bi/tri/we/ff/fa",
- "R 5/5/5/5/5/5",
- "L 5/5/5/5/5/5",
- "no hoffmans",
- "***",
- "IP - Iliopsoas: hip flexion against resistance (L2-L4)",
- "Quad - Quadriceps: Quadriceps:knee extension against resistance (L2-L4)",
- "AT - Anterior tibialis: ankle dorsiflexion against resistance (L5)",
- "EHL - Extensor hallucis longus: great-toe extension against resistance (L5)",
- "Gastroc - Gastrocnemius: ankle plantarflexion against resistance; alternatively, single-leg toe raises when ambulatory (S1)",
- "***",
- "Ip/quad/at/ehl/gastroc",
- "R 5/5/5/5/5",
- "L 5/5/5/5/5",
- "no clonus"
+ "Spine motor order: RUE/LUE Delt/Bi/Tri/WE/FF/FA; RLE/LLE IP/Quad/AT/EHL/Gastroc",
+ "RUE: 5/5/5/5/5/5",
+ "LUE: 5/5/5/5/5/5",
+ "RLE: 5/5/5/5/5",
+ "LLE: 5/5/5/5/5",
+ "Sensation: RUE +; LUE +; RLE +; LLE +; dermatome/level ___",
+ "DRE: ___"
 ].join("\n");
 const TC_BABY_EXAM=[
  "Skin: ***",
@@ -9214,6 +9261,12 @@ function tcExtract(text){
   const wbc=text.match(/wbc\s*:?[\s=]*([\d.]+)/i);if(wbc)labs.push("WBC "+wbc[1]);
   if(/inr pending/i.test(text)&&!inr)labs.push("[INR pending]");
   out.labs=labs.join(", ");
+  if(meds.length){
+    const last=text.match(/\b(?:last dose|last took|taken)\s*:?[\s-]*([^.;\n]+)/i);
+    out.acap=meds.join("/")+(last?" last dose "+last[1].trim():" — last dose ___");
+  }else if(/\b(?:no|not on|denies)\s+(?:AC|AP|anticoag|antiplatelet|blood thinners?|asa|aspirin|plavix)\b/i.test(text)){
+    out.acap="No AC/AP";
+  }
   // title from playbook + measurements
   const sugns=SUGG.filter(s=>suggMatch(s,text)).map(s=>s.n);
   const m=parseMeas(text);
@@ -9262,6 +9315,7 @@ const TC_SECTIONS=[
   {k:"img",  label:"Imaging",tag:"input"},
   {k:"labs", label:"Vitals/Labs",tag:"input"},
   {k:"exam", label:"Exam",tag:"textarea",h:96},
+  {k:"acap", label:"AC/AP",tag:"input"},
   {k:"plan", label:"Plan",tag:"textarea",h:80}
 ];
 // nothing is pre-filled; each section offers its own suggestion on request
@@ -9269,6 +9323,7 @@ function tcSuggestFor(p,k){
   const src=[tcSrcText(p),tcGet(p,"title"),tcGet(p,"hpi"),tcGet(p,"img")].filter(Boolean).join(" ");
   if(k==="exam")return tcSuggestedExam(src);
   if(k==="labs")return tcMergeCsv(tcGet(p,"labs"),tcRelevantLabs(src));
+  if(k==="acap")return tcExtract(src).acap||"AC/AP: none known / last dose ___";
   const o=tcExtract(tcSrcText(p)||src);
   if(k==="img")return o.img||"[modality w/ finding vs prior]";
   if(k==="plan"){
@@ -9332,6 +9387,7 @@ function tcParseInto(p){
   tcSet(p,"exam",o.exam||tcSuggestedExam(src));
   tcSet(p,"img",o.img||"[modality w/ finding vs prior]");
   tcSet(p,"labs",tcMergeCsv(o.labs,tcRelevantLabs(src)));
+  tcSet(p,"acap",o.acap||"");
   tcSet(p,"plan",o.plan||"");
   return true;
 }
@@ -9342,9 +9398,10 @@ function tcFormatFor(p){
   const exam=mergeScoreLines(stripExamSmartLists(g("exam")),[completedGcsLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).join("\n");
+  const acap=tidy(g("acap"));
   const estVol=ichEstimatedVolLine(p);
   const img=[tidy(g("img"))].concat(estVol&&!/estimated\s+vol/i.test(g("img"))?[estVol]:[]).filter(Boolean).join("; ");
-  return [hpi,img,tidy(g("labs")),exam,plan].filter(Boolean).join("\n\n");
+  return [hpi,img,tidy(g("labs")),exam,acap,plan].filter(Boolean).join("\n\n");
 }
 function tcHasParts(p){return TC_PARTS.some(k=>String(tcGet(p,k)||"").trim())}
 function tcUseExamFor(p){
@@ -9459,8 +9516,8 @@ function tcParse(){tcParseAll("tc")}
 function renderTCFlags(){tcRenderFlags("tc")}
 function tcBuild(){tcRebuild("tc")}
 // ---- text consult embedded in the consult form ----
-const TC_PARTS=["title","hpi","exam","img","labs","plan"];
-const FTC=["src","title","hpi","exam","img","labs","plan"];
+const TC_PARTS=["title","hpi","exam","img","labs","acap","plan"];
+const FTC=["src","title","hpi","exam","img","labs","acap","plan"];
 let ftcOutDirty=false;
 // the form mount reuses the shared engine; these names remain as call-site aliases
 function ftcTouch(){tcStore("ftc")}
@@ -9472,7 +9529,7 @@ function ftcPullFromCard(){tcPull("ftc")}
 function ftcParse(){tcParseAll("ftc")}
 function ftcReadySection(lines,idx,re){
   if(idx<0)return "";
-  const heads=lines.map((l,i)=>({i:i,h:/^(Exam|Imaging|Labs\/Vitals|Labs|Vitals|Plan):/i.test(l.trim())})).filter(x=>x.h&&x.i>idx).map(x=>x.i);
+  const heads=lines.map((l,i)=>({i:i,h:/^(Exam|Imaging|Labs\/Vitals|Labs|Vitals|AC\/AP|Anticoagulation|Plan):/i.test(l.trim())})).filter(x=>x.h&&x.i>idx).map(x=>x.i);
   const end=heads.length?heads[0]:lines.length;
   const chunk=lines.slice(idx,end);
   chunk[0]=chunk[0].replace(re,"").trim();
@@ -9482,8 +9539,8 @@ function ftcApplyReadyToFields(){
   const out=tcEl("ftc","out");if(!out||!ftcOutDirty||!out.value.trim())return false;
   const lines=out.value.replace(/\r/g,"").split("\n");
   const find=re=>lines.findIndex(l=>re.test(l.trim()));
-  const examI=find(/^Exam:/i),imgI=find(/^Imaging:/i),labsI=find(/^(Labs\/Vitals|Labs|Vitals):/i),planI=find(/^Plan:/i);
-  const firstHead=[examI,imgI,labsI,planI].filter(i=>i>=0).sort((a,b)=>a-b)[0];
+  const examI=find(/^Exam:/i),imgI=find(/^Imaging:/i),labsI=find(/^(Labs\/Vitals|Labs|Vitals):/i),acapI=find(/^(AC\/AP|Anticoagulation):/i),planI=find(/^Plan:/i);
+  const firstHead=[examI,imgI,labsI,acapI,planI].filter(i=>i>=0).sort((a,b)=>a-b)[0];
   const intro=lines.slice(0,firstHead===undefined?lines.length:firstHead).map(s=>s.trim()).filter(Boolean);
   const set=(id,val)=>{const el=document.getElementById("ftc_"+id);if(el&&val)el.value=val};
   if(intro[0])set("title",intro[0]);
@@ -9491,6 +9548,7 @@ function ftcApplyReadyToFields(){
   set("exam",ftcReadySection(lines,examI,/^Exam:\s*/i));
   set("img",ftcReadySection(lines,imgI,/^Imaging:\s*/i).replace(/\n+/g," "));
   set("labs",ftcReadySection(lines,labsI,/^(Labs\/Vitals|Labs|Vitals):\s*/i).replace(/\n+/g,", "));
+  set("acap",ftcReadySection(lines,acapI,/^(AC\/AP|Anticoagulation):\s*/i).replace(/\n+/g," "));
   set("plan",ftcReadySection(lines,planI,/^Plan:\s*/i).split("\n").map(s=>s.replace(/^\s*[-–—•]\s*/,"").trim()).filter(Boolean).join("\n"));
   ftcOutDirty=false;tcRenderFlags("ftc");tcStore("ftc");renderSugg();renderFlags();
   return true;
