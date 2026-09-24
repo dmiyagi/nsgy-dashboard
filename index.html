@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.185 · 2026-09-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.186 · 2026-09-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5389,7 +5389,7 @@ function spineMotorParts(v,n){
   return Array(n).fill("");
 }
 function examSpineMotorHtml(id,k,label,val,n,labels,removable){
-  const opts=["5","4","3","2","1","0","5/5","4/5","3/5","2/5","1/5","0/5","NT","UTA","baseline","pain-limited"];
+  const opts=["5","4+","4","4-","3","2","1","0","5/5","4+/5","4/5","4-/5","3/5","2/5","1/5","0/5","NT","UTA","baseline","pain-limited"];
   const parts=spineMotorParts(val,n);
   const listId="ex_"+k+"_opts_"+id;
   const dl='<datalist id="'+listId+'">'+opts.map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</datalist>';
@@ -5484,7 +5484,7 @@ function examStructFromText(t){
   out.bue=valAfter("BUE");out.ble=valAfter("BLE");
   out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
   [["bueSp","BUE"],["bleSp","BLE"],["rueSp","RUE"],["lueSp","LUE"],["rleSp","RLE"],["lleSp","LLE"]].forEach(([k,l])=>{
-    const m=s.match(new RegExp("\\b"+l+"\\b\\s*:?\\s*((?:[0-5]|NT|UTA)(?:\\s*/\\s*(?:[0-5]|NT|UTA)){2,7})","i"));
+    const m=s.match(new RegExp("\\b"+l+"\\b\\s*:?\\s*((?:[0-5][+-]?|NT|UTA)(?:\\s*/\\s*(?:[0-5][+-]?|NT|UTA)){2,7})","i"));
     if(m)out[k]=m[1].replace(/\s+/g,"");
   });
   if(out.rue||out.lue||out.rle||out.lle)out.mode="four";
@@ -5492,7 +5492,7 @@ function examStructFromText(t){
     out.mode="spine";
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
     let spineSection="";
-    const spineRowPat=/^([RL])\s+((?:[0-5]|NT|UTA|baseline|pain[- ]limited)(?:\s*\/\s*(?:[0-5]|NT|UTA|baseline|pain[- ]limited)){4,5})\b/i;
+    const spineRowPat=/^([RL])\s+((?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited)(?:\s*\/\s*(?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited)){4,5})\b/i;
     lines.forEach(line=>{
       if(/\bDelt\b.*\bbi\b.*\btri\b.*\bwe\b.*\bff\b.*\bfa\b/i.test(line)){spineSection="upper";return}
       if(/\bIp\b.*\bquad\b.*\bat\b.*\behl\b.*\bgastroc\b/i.test(line)){spineSection="lower";return}
