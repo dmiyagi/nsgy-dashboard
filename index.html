@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.186 · 2026-09-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.187 · 2026-09-24</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5398,13 +5398,15 @@ function examSpineMotorHtml(id,k,label,val,n,labels,removable){
   return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'">'+dl+'<div class="spinelimbgrid">'+cells+'</div>',true,removable);
 }
 function spineLimbApply(id,k,n){
+  const hidden=document.getElementById("ex_"+k+"_"+id);
+  const prior=spineMotorParts(hidden?hidden.value:"",n);
   const vals=[];
   for(let i=0;i<n;i++){
     const el=document.getElementById("ex_"+k+"_"+i+"_"+id);
-    vals.push(el?el.value.trim():"");
+    const next=el?el.value.trim():"";
+    vals.push(next||prior[i]||"");
   }
-  const hidden=document.getElementById("ex_"+k+"_"+id);
-  if(hidden)hidden.value=vals.some(Boolean)?vals.map(v=>v||"_").join("/"):"";
+  if(hidden)hidden.value=vals.some(Boolean)?vals.join("/"):"";
   roundExamBuildApply(id,false);
 }
 function examDefaultFields(mode){
