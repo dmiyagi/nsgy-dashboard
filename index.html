@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.187 · 2026-09-24</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.189 · 2026-09-26</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1110,8 +1110,23 @@ Empuje los dedos de los pies hacia arriba / hacia abajo. · Mueve los dedos de l
 <div id="ref_ao"></div>
 </div></details>
 
+<details class="ref"><summary>TLICS calculator</summary><div class="rb">
+<p class="note">Thoracolumbar Injury Classification and Severity Score aid. Use for thoracic/lumbar fracture language and confirm with senior/local spine pathway.</p>
+<div id="ref_tlics"></div>
+</div></details>
+
+<details class="ref"><summary>SINS score calculator</summary><div class="rb">
+<p class="note">Spinal Instability Neoplastic Score aid for spinal tumor/metastatic lesions. Surgical consultation is recommended for scores of 7 or greater.</p>
+<div id="ref_sins"></div>
+</div></details>
+
+<details class="ref"><summary>PHASES score calculator</summary><div class="rb">
+<p class="note">5-year rupture-risk aid for unruptured intracranial aneurysms. Use as context, not as a standalone treatment decision.</p>
+<div id="ref_phases"></div>
+</div></details>
+
 <details class="ref"><summary>GCS calculator</summary><div class="rb">
-<p class="note">Use component scores to communicate the exam trend. If a component is not testable, record it as NT and avoid a summed total.<a class="cite" href="https://www.glasgowcomascale.org/" target="_blank">[7]</a></p>
+<p class="note">Use component scores to communicate the exam trend. If a component cannot be assessed, score that component as 1 and document why, for example intubated/no verbal response.<a class="cite" href="https://www.glasgowcomascale.org/" target="_blank">[7]</a></p>
 <div id="ref_gcs"></div>
 </div></details>
 
@@ -1487,6 +1502,9 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
     <div id="f_hh"></div>
     <div id="f_ich"></div>
     <div id="f_ao"></div>
+    <div id="f_tlics"></div>
+    <div id="f_sins"></div>
+    <div id="f_phases"></div>
     <div class="fld" id="fld_action" style="display:none"><label>To-do</label><input type="text" id="f_action" placeholder="Start with a verb…"></div>
     <div class="fld" id="fld_tasks"><label id="tasksLabel">To-Do (optional, one per line)</label><textarea id="f_tasks" placeholder="Type anything here…"></textarea></div>
     <div class="fld"><label>Notes</label><textarea id="f_note" placeholder="Type anything…"></textarea></div>
@@ -2388,6 +2406,31 @@ const AO_MODS=[
  ["M4","Vertebral artery injury concern"]
 ];
 const AO_STATE={form:{m:null,f:null,n:null,mx:null,bl:false},tc:{m:null,f:null,n:null,mx:null,bl:false},ftc:{m:null,f:null,n:null,mx:null,bl:false},ref:{m:null,f:null,n:null,mx:null,bl:false}};
+const TLICS_OPTS={
+  morph:[["0","No major morphology"],["1","Compression"],["2","Burst"],["3","Translation/rotation"],["4","Distraction"]],
+  plc:[["0","PLC intact"],["2","PLC indeterminate/suspected"],["3","PLC injured"]],
+  neuro:[["0","Intact"],["2","Nerve root"],["2c","Complete cord/conus"],["3","Incomplete cord/conus"],["3c","Cauda equina"]]
+};
+const TLICS_STATE={form:{},tc:{},ftc:{},ref:{}};
+const SINS_OPTS={
+  loc:[["0","Rigid S2-S5"],["1","Semirigid T3-T10"],["2","Mobile C3-C6 or L2-L4"],["3","Junctional O-C2, C7-T2, T11-L1, L5-S1"]],
+  pain:[["0","Painless"],["1","Non-mechanical occasional pain"],["3","Mechanical pain"]],
+  bone:[["0","Blastic"],["1","Mixed lytic/blastic"],["2","Lytic"]],
+  align:[["0","Normal alignment"],["2","De novo kyphosis/scoliosis"],["4","Subluxation/translation"]],
+  collapse:[["0","No collapse / none listed"],["1",">50% body involved, no collapse"],["2","<50% collapse"],["3",">50% collapse"]],
+  post:[["0","No posterolateral involvement"],["1","Unilateral"],["3","Bilateral"]]
+};
+const SINS_STATE={form:{},tc:{},ftc:{},ref:{}};
+const PHASES_OPTS={
+  pop:[["0","North American / European, non-Finnish"],["3","Japanese"],["5","Finnish"]],
+  htn:[["0","No hypertension"],["1","Hypertension"]],
+  age:[["0","Age <70"],["1","Age >=70"]],
+  size:[["0","<7.0 mm"],["3","7.0-9.9 mm"],["6","10.0-19.9 mm"],["10",">=20.0 mm"]],
+  sah:[["0","No earlier SAH from another aneurysm"],["1","Earlier SAH from another aneurysm"]],
+  site:[["0","ICA"],["2","MCA"],["4","ACA / PCom / posterior circulation"]]
+};
+const PHASES_STATE={form:{},tc:{},ftc:{},ref:{}};
+const PHASES_RISK={0:"0.4%",1:"0.4%",2:"0.4%",3:"0.7%",4:"0.9%",5:"1.3%",6:"1.7%",7:"2.4%",8:"3.2%",9:"4.3%",10:"5.3%",11:"7.2%"};
 const ICH_OPTS={
   gcs:[["0","GCS 13-15"],["1","GCS 5-12"],["2","GCS 3-4"]],
   age:[["0","Age <80"],["1","Age >=80"]],
@@ -2399,19 +2442,21 @@ const ICH_STATE={form:{},tc:{},ftc:{},ref:{}};
 const ICH_MORT={0:"0%",1:"13%",2:"26%",3:"72%",4:"97%",5:"100%",6:"100%*"};
 function traumaScoreText(t){return /\b(?:trauma|tbi|fall|found down|mvc|mva|pedestrian|assault|head strike|head injury|sdh|subdural|edh|epidural|contusion|tSAH|traumatic\s+sah|skull fracture)\b/i.test(t||"")}
 function ichScoreText(t){return /\b(?:ich|iph|intracerebral|intraparenchymal|basal ganglia.{0,20}(?:bleed|hemorrhage)|lobar hemorrhage|thalamic hemorrhage|cerebellar hemorrhage|pontine hemorrhage)\b/i.test(t||"")}
+function thoracolumbarFxText(t){return /\b(?:thoracic|lumbar|thoracolumbar|T(?:[1-9]|1[0-2])|L[1-5]|T[ -]spine|L[ -]spine)\b/i.test(t||"")&&/\b(?:fx|fracture|burst|compression|chance|distraction|translation|sublux|facet|retropulsion|vertebral body)\b/i.test(t||"")}
+function spineTumorMassText(t){const s=t||"";return /\b(?:spine|spinal|vertebral|vertebra|cervical|thoracic|lumbar|sacral|C[1-7]|T(?:[1-9]|1[0-2])|L[1-5]|S[1-5])\b/i.test(s)&&/\b(?:tumou?r|mass|metast|mets|neoplasm|lesion|lytic|blastic|pathologic(?:al)? fracture)\b/i.test(s)}
+function phasesScoreText(t){return /\b(?:aneurysm|unruptured intracranial aneurysm|UIA|aComm?|a1|a2|mca|pcomm?|posterior communicating|basilar|ica terminus|ophthalmic|supraclinoid|cavernous ica)\b/i.test(t||"")}
 function gcsSummary(ns){
   const s=GCS_STATE[ns]||{};
   const parts=["e","v","m"].map(k=>s[k]).filter(Boolean);
   if(parts.length<3)return "Select E, V, and M";
   const hasNT=["e","v","m"].some(k=>s[k]==="NT");
-  if(hasNT)return "GCS E"+s.e+" V"+s.v+" M"+s.m+" (NT component; total not calculated)";
-  const total=["e","v","m"].reduce((a,k)=>a+Number(s[k]||0),0);
-  return "GCS E"+s.e+" V"+s.v+" M"+s.m+" = "+total;
+  const total=["e","v","m"].reduce((a,k)=>a+(s[k]==="NT"?1:Number(s[k]||0)),0);
+  return "GCS E"+s.e+" V"+s.v+" M"+s.m+" = "+total+(hasNT?" (NT scored 1)":"");
 }
 function gcsTotal(ns){
   const s=GCS_STATE[ns]||{};
-  if(["e","v","m"].some(k=>!s[k]||s[k]==="NT"))return null;
-  return ["e","v","m"].reduce((a,k)=>a+Number(s[k]||0),0);
+  if(["e","v","m"].some(k=>!s[k]))return null;
+  return ["e","v","m"].reduce((a,k)=>a+(s[k]==="NT"?1:Number(s[k]||0)),0);
 }
 function syncGcsToIch(ns){
   const t=gcsTotal(ns);if(t===null)return;
@@ -2434,19 +2479,34 @@ function completedAoLine(ns){
   const line=aoSummary(ns);
   return /^AO Spine /.test(line)?line:"";
 }
+function completedTlicsLine(ns){
+  const line=tlicsSummary(ns);
+  return /^TLICS \d/.test(line)?line:"";
+}
+function completedSinsLine(ns){
+  const line=sinsSummary(ns);
+  return /^SINS \d/.test(line)?line:"";
+}
+function completedPhasesLine(ns){
+  const line=phasesSummary(ns);
+  return /^PHASES \d/.test(line)?line:"";
+}
 function mergeScoreLines(text,lines){
   // strip only the lines this app generates — "GCS 14, 9mm L SDH, MLS 4mm" is
   // something the user typed and must survive
   const isGenerated=l=>/^\s*GCS\s+E\S+\s+V\S+\s+M\S+/i.test(l)
     ||/^\s*ICH score\s+\d/i.test(l)
     ||/^\s*Hunt-Hess\s+\d/i.test(l)
-    ||/^\s*AO Spine\s+\S/i.test(l);
+    ||/^\s*AO Spine\s+\S/i.test(l)
+    ||/^\s*TLICS\s+\d/i.test(l)
+    ||/^\s*SINS\s+\d/i.test(l)
+    ||/^\s*PHASES\s+\d/i.test(l);
   let out=String(text||"").split("\n").filter(l=>!isGenerated(l));
   lines.filter(Boolean).forEach(l=>{if(!out.some(x=>x.trim().toLowerCase()===l.toLowerCase()))out.unshift(l)});
   return out.filter(Boolean).join("\n");
 }
 function formScoreLines(){
-  return [completedGcsLine("form"),completedHhLine("form"),completedIchLine("form"),completedAoLine("form")].filter(Boolean);
+  return [completedGcsLine("form"),completedHhLine("form"),completedIchLine("form"),completedAoLine("form"),completedTlicsLine("form"),completedSinsLine("form"),completedPhasesLine("form")].filter(Boolean);
 }
 function formClinicalText(){
   return ["f_prob","f_state","f_action","f_note","ftc_title","ftc_hpi","ftc_exam","ftc_img","ftc_labs","ftc_plan"].map(i=>(document.getElementById(i)||{}).value||"").join(" ");
@@ -2468,9 +2528,12 @@ const SCORE_CLEAR={
   gcs:ns=>{GCS_STATE[ns]={};syncGcsToIch(ns);renderGcsContext(ns);renderIchContext(ns)},
   hh: ns=>{HH_STATE[ns]={};renderHhContext(ns)},
   ich:ns=>{ICH_STATE[ns]={};renderIchContext(ns)},
-  ao: ns=>{AO_STATE[ns]={};renderAoContext(ns)}
+  ao: ns=>{AO_STATE[ns]={};renderAoContext(ns)},
+  tlics:ns=>{TLICS_STATE[ns]={};renderTlicsContext(ns)},
+  sins:ns=>{SINS_STATE[ns]={};renderSinsContext(ns)},
+  phases:ns=>{PHASES_STATE[ns]={};renderPhasesContext(ns)}
 };
-const SCORE_SUMMARY={gcs:gcsSummary,hh:hhSummary,ich:ichSummary,ao:aoSummary};
+const SCORE_SUMMARY={gcs:gcsSummary,hh:hhSummary,ich:ichSummary,ao:aoSummary,tlics:tlicsSummary,sins:sinsSummary,phases:phasesSummary};
 function scoreClear(ns,kind){
   (SCORE_CLEAR[kind]||function(){})(ns);
   if(ns==="form")syncFormScoreFields();
@@ -2479,7 +2542,7 @@ function scoreClear(ns,kind){
 }
 function scoreCopy(ns,kind){
   const t=String((SCORE_SUMMARY[kind]||function(){return ""})(ns)||"").trim();
-  if(!t||/^(GCS|HH|ICH|AO)\b[^0-9A-Za-z]*$/.test(t)){showToast("Nothing selected yet");return}
+  if(!t||/^(GCS|HH|ICH|AO|TLICS|SINS|PHASES)\b[^0-9A-Za-z]*$/.test(t)){showToast("Nothing selected yet");return}
   toClip(t);showToast("Copied — "+t.slice(0,40));
 }
 function scoreBtns(ns,kind){
@@ -2492,9 +2555,9 @@ function renderGcsAid(ns,targetId,force){
   const show=force||traumaScoreText(txt)||ichScoreText(txt)||ichTrialText(txt);
   const s=GCS_STATE[ns]||{};
   const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+GCS_OPTS[k].map(o=>
-    '<button type="button" class="'+(s[k]===o[0]?"on":"")+'" onclick="setGcsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="NT"?"":"+"+o[0])+'</button>').join("")+'</div></div>';
+    '<button type="button" class="'+(s[k]===o[0]?"on":"")+'" onclick="setGcsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="NT"?"+1":"+"+o[0])+'</button>').join("")+'</div></div>';
   el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"gcs",show)+'><summary>GCS calculator</summary><div class="scorebody">'+
-    '<div class="note">Trauma/SDH aid. Record components; do not sum if any component is NT.</div>'+
+    '<div class="note">Trauma/SDH aid. If a component cannot be assessed, it still contributes 1 point; document why, e.g. intubated.</div>'+
     '<div class="gcsgrid">'+row("e","Best eye response")+row("v","Best verbal response")+row("m","Best motor response")+'</div>'+
     '<div class="gcsout"><b>'+gcsSummary(ns)+'</b>'+scoreBtns(ns,"gcs")+(ns==="ref"?"":'<button type="button" onclick="insertGcsExam(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to exam")+'</button>')+'</div></div></details>';
 }
@@ -2602,6 +2665,122 @@ function insertAoScore(ns){
   el.value=(cur?cur+" ":"")+line+".";
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
+function tlicsTotal(ns){
+  const s=TLICS_STATE[ns]||{};
+  if(["morph","plc","neuro"].some(k=>s[k]===undefined))return null;
+  return ["morph","plc","neuro"].reduce((a,k)=>a+Number(String(s[k]).replace(/[a-z]+$/i,"")||0),0);
+}
+function tlicsSummary(ns){
+  const t=tlicsTotal(ns);
+  if(t===null)return "Select TLICS fields";
+  return "TLICS "+t+" ("+(t<=3?"nonoperative range":(t===4?"indeterminate":"operative/surgical range"))+")";
+}
+function renderTlicsAid(ns,targetId,force){
+  const el=document.getElementById(targetId);if(!el)return;
+  const txt=scoreContextText(ns);
+  const show=force||thoracolumbarFxText(txt)||/\bTLICS\b/i.test(txt);
+  const s=TLICS_STATE[ns]||{};
+  const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+TLICS_OPTS[k].map(o=>
+    '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setTlicsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+String(o[0]).replace(/[a-z]+$/i,""))+'</button>').join("")+'</div></div>';
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"tlics",show)+'><summary>TLICS calculator</summary><div class="scorebody">'+
+    '<div class="note">Thoracolumbar fracture aid. TLICS <=3 often nonoperative, 4 indeterminate, >=5 operative/surgical range; confirm with senior/local pathway.</div>'+
+    '<div class="gcsgrid">'+row("morph","Morphology")+row("plc","Posterior ligamentous complex")+row("neuro","Neurologic status")+'</div>'+
+    '<div class="gcsout"><b>'+tlicsSummary(ns)+'</b>'+scoreBtns(ns,"tlics")+(ns==="ref"?"":'<button type="button" onclick="insertTlicsScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
+}
+function setTlicsPart(ns,k,v){TLICS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderTlicsContext(ns);if(ns==="ftc")renderFTCFlags()}
+function renderTlicsContext(ns){
+  if(ns==="form")renderTlicsAid("form","f_tlics",false);
+  else if(ns==="tc")renderTlicsAid("tc","tc_tlics",false);
+  else if(ns==="ftc")renderTlicsAid("ftc","ftc_tlics",false);
+  else renderTlicsAid("ref","ref_tlics",true);
+}
+function insertTlicsScore(ns){
+  const line=tlicsSummary(ns);
+  if(!/^TLICS \d/.test(line)){showToast("Select TLICS fields first");return}
+  const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value.replace(/\s*TLICS \d+[^\n.]*/i,"").trim();
+  el.value=(cur?cur+" ":"")+line+".";
+  if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
+function sinsTotal(ns){
+  const s=SINS_STATE[ns]||{};
+  if(["loc","pain","bone","align","collapse","post"].some(k=>s[k]===undefined))return null;
+  return ["loc","pain","bone","align","collapse","post"].reduce((a,k)=>a+Number(s[k]||0),0);
+}
+function sinsInterp(t){return t<=6?"stable":(t<=12?"potentially unstable":"unstable")}
+function sinsSummary(ns){
+  const t=sinsTotal(ns);
+  if(t===null)return "Select SINS fields";
+  return "SINS "+t+" ("+sinsInterp(t)+(t>=7?"; surgical consult recommended":"")+")";
+}
+function renderSinsAid(ns,targetId,force){
+  const el=document.getElementById(targetId);if(!el)return;
+  const txt=scoreContextText(ns);
+  const show=force||spineTumorMassText(txt)||/\bSINS\b/i.test(txt);
+  const s=SINS_STATE[ns]||{};
+  const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+SINS_OPTS[k].map(o=>
+    '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setSinsPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+o[0])+'</button>').join("")+'</div></div>';
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"sins",show)+'><summary>SINS score calculator</summary><div class="scorebody">'+
+    '<div class="note">Spinal Instability Neoplastic Score: 0-6 stable, 7-12 potentially unstable, 13-18 unstable. Surgical consultation recommended for score >=7.</div>'+
+    '<div class="gcsgrid">'+row("loc","Spine location")+row("pain","Mechanical pain")+row("bone","Bone lesion quality")+row("align","Alignment")+row("collapse","Vertebral body collapse")+row("post","Posterolateral involvement")+'</div>'+
+    '<div class="gcsout"><b>'+sinsSummary(ns)+'</b>'+scoreBtns(ns,"sins")+(ns==="ref"?"":'<button type="button" onclick="insertSinsScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
+}
+function setSinsPart(ns,k,v){SINS_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderSinsContext(ns);if(ns==="ftc")renderFTCFlags()}
+function renderSinsContext(ns){
+  if(ns==="form")renderSinsAid("form","f_sins",false);
+  else if(ns==="tc")renderSinsAid("tc","tc_sins",false);
+  else if(ns==="ftc")renderSinsAid("ftc","ftc_sins",false);
+  else renderSinsAid("ref","ref_sins",true);
+}
+function insertSinsScore(ns){
+  const line=sinsSummary(ns);
+  if(!/^SINS \d/.test(line)){showToast("Select SINS fields first");return}
+  const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value.replace(/\s*SINS \d+[^\n.]*/i,"").trim();
+  el.value=(cur?cur+" ":"")+line+".";
+  if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
+function phasesTotal(ns){
+  const s=PHASES_STATE[ns]||{};
+  if(["pop","htn","age","size","sah","site"].some(k=>s[k]===undefined))return null;
+  return ["pop","htn","age","size","sah","site"].reduce((a,k)=>a+Number(s[k]||0),0);
+}
+function phasesRisk(t){return t>=12?"17.8%":(PHASES_RISK[t]||"0.4%")}
+function phasesSummary(ns){
+  const t=phasesTotal(ns);
+  if(t===null)return "Select PHASES fields";
+  return "PHASES "+t+" (5-year rupture risk "+phasesRisk(t)+")";
+}
+function renderPhasesAid(ns,targetId,force){
+  const el=document.getElementById(targetId);if(!el)return;
+  const txt=scoreContextText(ns);
+  const show=force||phasesScoreText(txt)||/\bPHASES\b/i.test(txt);
+  const s=PHASES_STATE[ns]||{};
+  const row=(k,label)=>'<div class="gcsrow"><div class="glabel">'+label+'</div><div class="gcsopts">'+PHASES_OPTS[k].map(o=>
+    '<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setPhasesPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+' '+(o[0]==="0"?"0":"+"+o[0])+'</button>').join("")+'</div></div>';
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"phases",show)+'><summary>PHASES score calculator</summary><div class="scorebody">'+
+    '<div class="note">Unruptured intracranial aneurysm 5-year rupture-risk aid. Risk table: <=2 0.4%, 3 0.7%, 4 0.9%, 5 1.3%, 6 1.7%, 7 2.4%, 8 3.2%, 9 4.3%, 10 5.3%, 11 7.2%, >=12 17.8%.</div>'+
+    '<div class="gcsgrid">'+row("pop","Population")+row("htn","Hypertension")+row("age","Age")+row("size","Aneurysm size")+row("sah","Earlier SAH from another aneurysm")+row("site","Aneurysm site")+'</div>'+
+    '<div class="gcsout"><b>'+phasesSummary(ns)+'</b>'+scoreBtns(ns,"phases")+(ns==="ref"?"":'<button type="button" onclick="insertPhasesScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
+}
+function setPhasesPart(ns,k,v){PHASES_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderPhasesContext(ns);if(ns==="ftc")renderFTCFlags()}
+function renderPhasesContext(ns){
+  if(ns==="form")renderPhasesAid("form","f_phases",false);
+  else if(ns==="tc")renderPhasesAid("tc","tc_phases",false);
+  else if(ns==="ftc")renderPhasesAid("ftc","ftc_phases",false);
+  else renderPhasesAid("ref","ref_phases",true);
+}
+function insertPhasesScore(ns){
+  const line=phasesSummary(ns);
+  if(!/^PHASES \d/.test(line)){showToast("Select PHASES fields first");return}
+  const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
+  const el=document.getElementById(id);if(!el)return;
+  const cur=el.value.replace(/\s*PHASES \d+[^\n.]*/i,"").trim();
+  el.value=(cur?cur+" ":"")+line+".";
+  if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
+}
 function scoreContextText(ns){
   return ns==="tc"?tcFlagTextFor("tc"):(ns==="ftc"?tcFlagTextFor("ftc"):(ns==="form"?formClinicalText():"ICH"));
 }
@@ -2700,6 +2879,9 @@ function syncFormScoreFields(){
   HH_STATE.ftc=Object.assign({},HH_STATE.ftc||{},HH_STATE.form||{});
   copyScoreState("ich","form","ftc");
   AO_STATE.ftc=Object.assign({},AO_STATE.ftc||{},AO_STATE.form||{});
+  TLICS_STATE.ftc=Object.assign({},TLICS_STATE.ftc||{},TLICS_STATE.form||{});
+  SINS_STATE.ftc=Object.assign({},SINS_STATE.ftc||{},SINS_STATE.form||{});
+  PHASES_STATE.ftc=Object.assign({},PHASES_STATE.ftc||{},PHASES_STATE.form||{});
   renderFlags();
   renderFTCFlags();
 }
@@ -3038,11 +3220,14 @@ function planBoxHtml(txt){
 function renderSugg(){
   const el=document.getElementById("sugg");
   if(!F){if(el)el.innerHTML="";curSugg=[];curAlerts=[];return}
-  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich","f_ao"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
+  if(F&&F.type!=="CONSULT"){el.innerHTML="";["f_gcs","f_hh","f_ich","f_ao","f_tlics","f_sins","f_phases"].forEach(id=>{const g=document.getElementById(id);if(g)g.innerHTML=""});curSugg=[];curAlerts=[];return}
   renderGcsAid("form","f_gcs",false);
   renderHhAid("form","f_hh",false);
   renderIchAid("form","f_ich",false);
   renderAoAid("form","f_ao",false);
+  renderTlicsAid("form","f_tlics",false);
+  renderSinsAid("form","f_sins",false);
+  renderPhasesAid("form","f_phases",false);
   const txt=formClinicalText();
   if(txt.trim().length<3){el.innerHTML="";curSugg=[];curAlerts=[];return}
   curSugg=SUGG.filter(s=>suggMatch(s,txt)).slice(0,3);
@@ -3303,7 +3488,7 @@ function compactBoardForStartup(){
   (S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true});
   (S.rounds||[]).forEach(r=>{r.collapsed=true});
 }
-function renderAll(){render();renderRounds();renderNccu();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);filterRefs()}
+function renderAll(){render();renderRounds();renderNccu();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);renderTlicsAid("ref","ref_tlics",true);renderSinsAid("ref","ref_sins",true);renderPhasesAid("ref","ref_phases",true);filterRefs()}
 function filterRefs(){
   const q=globalSearch.trim().toLowerCase();
   document.querySelectorAll("#view-ref details.ref,#view-booking details.ref").forEach(d=>{
@@ -9379,7 +9564,7 @@ function tcBodyHtml(p){
     '<div class="rowflex"><button type="button" class="btn" onclick="tcParseAll(\''+p+'\')">⇣ Parse into pieces</button></div>'+
     '<details class="moredet" id="'+p+'det" open><summary>▾ 2 · Pieces — fill or fix anything</summary>'+
       head+
-      '<div id="'+p+'_flags"></div><div id="'+p+'_gcs"></div><div id="'+p+'_hh"></div><div id="'+p+'_ich"></div><div id="'+p+'_ao"></div>'+
+      '<div id="'+p+'_flags"></div><div id="'+p+'_gcs"></div><div id="'+p+'_hh"></div><div id="'+p+'_ich"></div><div id="'+p+'_ao"></div><div id="'+p+'_tlics"></div><div id="'+p+'_sins"></div><div id="'+p+'_phases"></div>'+
       rest+
     '</details>'+
     '<div class="fld"><label>3 · Ready to send</label><textarea id="'+p+'_out" style="min-height:150px;font-size:13.5px" placeholder="Stays empty until you ask for it — tap Suggest from card."></textarea>'+
@@ -9415,7 +9600,7 @@ function tcFormatFor(p){
   const g=k=>(tcGet(p,k)||"").trim();
   const tidy=s=>s.replace(/\s+/g," ").replace(/\s+([,.;:])/g,"$1").replace(/^\s*[-–—•~]\s*/,"").trim();
   const exam=mergeScoreLines(stripExamSmartLists(g("exam")),[completedGcsLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
-  const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
+  const hpi=mergeScoreLines(g("hpi"),[completedIchLine(p),completedHhLine(p),completedAoLine(p),completedTlicsLine(p),completedSinsLine(p),completedPhasesLine(p)]).split("\n").map(tidy).filter(Boolean).join("\n");
   const plan=g("plan").split("\n").map(tidy).filter(Boolean).join("\n");
   const acap=tidy(g("acap"));
   const estVol=ichEstimatedVolLine(p);
@@ -9439,7 +9624,7 @@ function tcFlagTextFor(p){
 }
 function tcRenderFlags(p){
   renderTextConsultFlags(p+"_flags",tcFlagTextFor(p));
-  renderGcsAid(p,p+"_gcs",false);renderHhAid(p,p+"_hh",false);renderIchAid(p,p+"_ich",false);renderAoAid(p,p+"_ao",false);
+  renderGcsAid(p,p+"_gcs",false);renderHhAid(p,p+"_hh",false);renderIchAid(p,p+"_ich",false);renderAoAid(p,p+"_ao",false);renderTlicsAid(p,p+"_tlics",false);renderSinsAid(p,p+"_sins",false);renderPhasesAid(p,p+"_phases",false);
 }
 // every edit lands on the same card object, so both views stay in step
 function tcAfterEdit(p){
@@ -9850,6 +10035,9 @@ const SCORE_SHORTCUTS=[
   {re:/hunt.?hess|\bhh\b/i,label:"Hunt-Hess",ref:"Hunt-Hess score",tmpl:"Hunt-Hess __"},
   {re:/modified fisher|mfish|mFisher|\bmf\b/i,label:"Modified Fisher",ref:"Hunt-Hess score",tmpl:"modified Fisher __"},
   {re:/ich score|\bichs\b/i,label:"ICH Score",ref:"ICH Score",tmpl:"ICH score __"},
+  {re:/\btlics\b|thoracolumbar.*(?:fx|fracture)|(?:thoracic|lumbar).*(?:fx|fracture)/i,label:"TLICS",ref:"TLICS calculator",tmpl:"TLICS __"},
+  {re:/\bsins\b|spinal instability|spine.*(?:tumou?r|mass|metast|mets)|(?:tumou?r|mass|metast|mets).*spine/i,label:"SINS",ref:"SINS score calculator",tmpl:"SINS __"},
+  {re:/\bphases\b|unruptured.*aneurysm|aneurysm.*rupture risk/i,label:"PHASES",ref:"PHASES score calculator",tmpl:"PHASES __"},
   {re:/spetzler|spetzler.?martin|\bsm\b.*(?:avm|grade)|avm grade/i,label:"Spetzler-Martin",ref:"Spetzler-Martin",tmpl:"Spetzler-Martin: size __ + eloquence __ + venous drainage __ = SM __"}
 ];
 function scoreShortcutsFor(t){return SCORE_SHORTCUTS.filter(x=>x.re.test(String(t||"")))}
