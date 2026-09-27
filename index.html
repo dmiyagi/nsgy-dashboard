@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.191 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.192 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5545,7 +5545,7 @@ function setRStepDL(id,i,min){
 }
 const EX_MENTAL_OPTS=["","awake, alert, age-appropriate interaction; consolable","awake, alert, interactive; irritable but consolable","awake, alert, minimally interactive","sleepy but arousable","drowsy, requires repeated stimulation","irritable and difficult to console","inconsolable","lethargic","not arousable","limited assessment due to age","limited assessment due to sedation"];
 const EX_SKIN_OPTS=["","Warm well perfused","Incision clean dry and intact"];
-const EX_FACE_OPTS=["","Face symmetric","Face asymmetric","facial droop"];
+const EX_FACE_OPTS=["","Face symmetric","L facial droop","R facial droop","Face asymmetric","facial droop"];
 const EX_GAZE_OPTS=["","gaze conjugate, tracks appropriately","gaze conjugate","tracks appropriately","gaze dysconjugate","does not track"];
 const EX_FONTANELLE_OPTS=["","soft and flat","full","bulging","sunken"];
 const EX_SUTURE_OPTS=["","approximated","splayed","overriding"];
@@ -5663,6 +5663,8 @@ function examStructFromText(t){
   else if(/\bPresent right corneal reflex only\b|\bR\s+corneal\b|\bright\s+corneal\b|\bcorneal\s+R\b/i.test(s))out.corneal="Present right corneal reflex only";
   else if(/\bPresent corneal reflex bilaterally\b|\b(?:bilateral|both)\s+corneals?\b|\bcorneals?\s+(?:bilateral|both|present)\b/i.test(s))out.corneal="Present corneal reflex bilaterally";
   if(/\bface symmetric\b/i.test(s))out.face="Face symmetric";
+  else if(/\b(?:left|L)\s+(?:facial\s+)?droop\b|\b(?:facial\s+)?droop\s+(?:on\s+)?(?:left|L)\b/i.test(s))out.face="L facial droop";
+  else if(/\b(?:right|R)\s+(?:facial\s+)?droop\b|\b(?:facial\s+)?droop\s+(?:on\s+)?(?:right|R)\b/i.test(s))out.face="R facial droop";
   else if(/\bface asymmetric\b|\bfacial droop\b/i.test(s))out.face=/facial droop/i.test(s)?"facial droop":"Face asymmetric";
   if(/\bWarm well perfused\b/i.test(s))out.skin="Warm well perfused";
   else if(/\bIncision clean dry and intact\b|\bincision CDI\b|\bCDI incision\b/i.test(s))out.skin="Incision clean dry and intact";
