@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.190 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.191 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5549,8 +5549,9 @@ const EX_FACE_OPTS=["","Face symmetric","Face asymmetric","facial droop"];
 const EX_GAZE_OPTS=["","gaze conjugate, tracks appropriately","gaze conjugate","tracks appropriately","gaze dysconjugate","does not track"];
 const EX_FONTANELLE_OPTS=["","soft and flat","full","bulging","sunken"];
 const EX_SUTURE_OPTS=["","approximated","splayed","overriding"];
-const EX_MOVES_OPTS=["","Moves all extremities spontaneously and symmetrically","Moves all extremities spontaneously","Moves all extremities symmetrically","Asymmetric spontaneous movement"];
+const EX_MOVES_OPTS=["","Moves all extremities spontaneously and symmetrically","Moves all extremities spontaneously","Moves all extremities symmetrically","Asymmetric spontaneous movement","Trace movement","No movement"];
 const EX_REFLEX_OPTS=["","- hoffmans","- clonus","- hoffmans, - clonus","+ hoffmans","+ clonus","+ hoffmans, + clonus","no hoffmans or clonus"];
+const EX_MOTOR_OPTS=["","5/5","4+/5","4/5","4-/5","3/5","2/5","1/5","0/5","5","4+","4","4-","3","2","1","0","antigravity","follows commands","FC squeeze hands","FC wiggle toes","wiggles toes","moves spontaneously","moves spontaneous","trace movement","no movement","TF","extensor","withdraw","withdraws","localize","localizes","baseline","pain-limited","NT","UTA"];
 function examFieldWrap(id,k,label,inner,wide,removable){
   return '<div class="examfield '+(wide?'wide ':'')+(removable?'xable':'')+'"><label>'+label+inner+'</label>'+(removable?'<button type="button" class="xf" title="Hide this field" onclick="roundExamDropField(\''+id+'\',\''+k+'\')">×</button>':"")+'</div>';
 }
@@ -5574,12 +5575,12 @@ function spineMotorParts(v,n){
   return Array(n).fill("");
 }
 function examSpineMotorHtml(id,k,label,val,n,labels,removable){
-  const opts=["5","4+","4","4-","3","2","1","0","5/5","4+/5","4/5","4-/5","3/5","2/5","1/5","0/5","NT","UTA","baseline","pain-limited"];
+  const opts=EX_MOTOR_OPTS.filter(Boolean);
   const parts=spineMotorParts(val,n);
   const listId="ex_"+k+"_opts_"+id;
   const dl='<datalist id="'+listId+'">'+opts.map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</datalist>';
   const cells=labels.map((lab,i)=>
-    '<span class="spinelimbcell">'+esc(lab)+'<input type="text" inputmode="decimal" list="'+listId+'" id="ex_'+k+'_'+i+'_'+id+'" value="'+esc(parts[i]||"")+'" placeholder="5" oninput="spineLimbApply(\''+id+'\',\''+k+'\','+n+')"></span>').join("");
+    '<span class="spinelimbcell">'+esc(lab)+'<input type="text" inputmode="text" list="'+listId+'" id="ex_'+k+'_'+i+'_'+id+'" value="'+esc(parts[i]||"")+'" placeholder="5" oninput="spineLimbApply(\''+id+'\',\''+k+'\','+n+')"></span>').join("");
   return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'">'+dl+'<div class="spinelimbgrid">'+cells+'</div>',true,removable);
 }
 function spineLimbApply(id,k,n){
@@ -5643,7 +5644,11 @@ function examStructFromText(t){
   else if(/\bFC\b.*\bsqueeze hands\b|\bfollows? commands?\b.*\bsqueeze hands\b/i.test(s))out.cmd="FC squeeze hands";
   else if(/\bFC\b|\bfollows? commands?\b/i.test(s))out.cmd="follows commands";
   else if(/\bnot following\b|\bdoes not follow\b/i.test(s))out.cmd="not following commands";
-  if(/\bPERRV\b/i.test(s))out.pup="PERRV";
+  const rpup=s.match(/\bR(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b[^;\n,]*[,; ]+\s*L(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b/i);
+  const lpup=s.match(/\bL(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b[^;\n,]*[,; ]+\s*R(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b/i);
+  if(rpup)out.pup="R "+rpup[1]+" "+rpup[2]+", L "+rpup[3]+" "+rpup[4];
+  else if(lpup)out.pup="R "+lpup[3]+" "+lpup[4]+", L "+lpup[1]+" "+lpup[2];
+  else if(/\bPERRV\b/i.test(s))out.pup="PERRV";
   else if(/\bPERRL\b/i.test(s))out.pup="PERRL";
   else if(/\bR\s*[>]\s*L\b|\bL\s*[<]\s*R\b/i.test(s))out.pup=/baseline/i.test(s)?"R > L baseline":"R > L";
   else if(/\bL\s*[>]\s*R\b|\bR\s*[<]\s*L\b/i.test(s))out.pup=/baseline/i.test(s)?"L > R baseline":"L > R";
@@ -5664,14 +5669,16 @@ function examStructFromText(t){
   const af=s.match(/\banterior fontanelle\s*:?\s*(soft and flat|full|bulging|sunken)\b/i);if(af)out.fontanelle=af[1].toLowerCase();
   const sut=s.match(/\bsutures\s*:?\s*(approximated|splayed|overriding)\b/i);if(sut)out.sutures=sut[1].toLowerCase();
   const hc=s.match(/\bHead circumference\s*:?\s*([0-9.]+)\s*cm\b/i);if(hc)out.hc=hc[1];
-  if(/\bMoves all extremities spontaneously and symmetrically\b/i.test(s))out.moves="Moves all extremities spontaneously and symmetrically";
+  if(/\b(?:no movement|no motor|no spontaneous movement)\b/i.test(s))out.moves="No movement";
+  else if(/\btrace movement\b/i.test(s))out.moves="Trace movement";
+  else if(/\bMoves all extremities spontaneously and symmetrically\b/i.test(s))out.moves="Moves all extremities spontaneously and symmetrically";
   else if(/\bMoves all extremities spontaneously\b/i.test(s))out.moves="Moves all extremities spontaneously";
   else if(/\bMoves all extremities symmetrically\b/i.test(s))out.moves="Moves all extremities symmetrically";
   const valAfter=k=>{const m=s.match(new RegExp("\\b"+k+"\\b\\s*:?\\s*([^\\t,;\\n]+)","i"));return m?m[1].trim():""};
   out.bue=valAfter("BUE");out.ble=valAfter("BLE");
   out.rue=valAfter("RUE");out.lue=valAfter("LUE");out.rle=valAfter("RLE");out.lle=valAfter("LLE");
   [["bueSp","BUE"],["bleSp","BLE"],["rueSp","RUE"],["lueSp","LUE"],["rleSp","RLE"],["lleSp","LLE"]].forEach(([k,l])=>{
-    const m=s.match(new RegExp("\\b"+l+"\\b\\s*:?\\s*((?:[0-5][+-]?|NT|UTA)(?:\\s*/\\s*(?:[0-5][+-]?|NT|UTA)){2,7})","i"));
+    const m=s.match(new RegExp("\\b"+l+"\\b\\s*:?\\s*((?:[0-5][+-]?|NT|UTA|trace movement|no movement|moves spontaneous(?:ly)?)(?:\\s*/\\s*(?:[0-5][+-]?|NT|UTA|trace movement|no movement|moves spontaneous(?:ly)?)){2,7})","i"));
     if(m)out[k]=m[1].replace(/\s+/g,"");
   });
   if(out.rue||out.lue||out.rle||out.lle)out.mode="four";
@@ -5679,7 +5686,7 @@ function examStructFromText(t){
     out.mode="spine";
     const lines=s.split(/\n/).map(x=>x.trim()).filter(Boolean);
     let spineSection="";
-    const spineRowPat=/^([RL])\s+((?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited)(?:\s*\/\s*(?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited)){4,5})\b/i;
+    const spineRowPat=/^([RL])\s+((?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited|trace movement|no movement|moves spontaneous(?:ly)?)(?:\s*\/\s*(?:[0-5][+-]?|NT|UTA|baseline|pain[- ]limited|trace movement|no movement|moves spontaneous(?:ly)?)){4,5})\b/i;
     lines.forEach(line=>{
       if(/\bDelt\b.*\bbi\b.*\btri\b.*\bwe\b.*\bff\b.*\bfa\b/i.test(line)){spineSection="upper";return}
       if(/\bIp\b.*\bquad\b.*\bat\b.*\behl\b.*\bgastroc\b/i.test(line)){spineSection="lower";return}
@@ -5693,7 +5700,7 @@ function examStructFromText(t){
     });
     out.spu=(lines.find(x=>/\b(?:D|delt|bi|tri|we|ff|io|BUE)\b/i.test(x))||out.bue||"");
     out.spl=(lines.find(x=>/\b(?:IP|quad|ta|ehl|gastroc|BLE)\b/i.test(x))||out.ble||"");
-    const scorePat="(5\\/5|4\\/5|3\\/5|2\\/5|1\\/5|0\\/5|antigravity|TF|extensor|withdraws?|localizes?|baseline|NT)";
+    const scorePat="(5\\/5|4\\+\\/5|4\\/5|4-\\/5|3\\/5|2\\/5|1\\/5|0\\/5|5|4\\+|4|4-|3|2|1|0|antigravity|moves spontaneous(?:ly)?|trace movement|no movement|TF|extensor|withdraws?|localizes?|baseline|pain[- ]limited|NT|UTA)";
     const allUpper=s.match(new RegExp("\\b(?:D\\/?B\\/?T\\/?WE\\/?FF\\/?(?:FA|IO)|Delt\\/?Bi\\/?Tri\\/?WE\\/?FF\\/?FA)\\s*"+scorePat+"\\b","i"));
     if(allUpper){["delt","bi","tri","we","ff","fa"].forEach(k=>out[k]=allUpper[1])}
     [["delt","(?:delt|deltoid|D)"],["bi","(?:bi|biceps|B)"],["tri","(?:tri|triceps|T)"],["we","WE"],["ff","FF"],["fa","(?:FA|IO)"]].forEach(([k,pat])=>{
@@ -5732,13 +5739,13 @@ function examStructFromText(t){
 function roundExamBuilderHtml(r,cur){
   const v=examStructFromText(cur), id=r.id;
   v.mode=r.examMode||v.mode||"basic";
-  const scores=["","5/5","4/5","3/5","2/5","1/5","0/5","antigravity","TF","extensor","withdraw","localize","withdraws","localizes","baseline","NT"];
-  const neuroScores=scores.concat(["wiggles toes"]);
+  const scores=EX_MOTOR_OPTS.slice();
+  const neuroScores=scores.slice();
   const ox=["","A+Ox3","Ox0","Ox1","Ox2","Ox3","Ox4","AOx3","intubated","UTA"];
   const eyes=["","open spontaneously","open to voice","open to stimulation","closed","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
   const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
   const mods=["","intubated","sedated","intubated + sedated","aphasic","confused","pain-limited","hard of hearing","baseline deficit"];
-  const pupils=["","PERRL","PERRV","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
+  const pupils=["","PERRL","PERRV","R 3 brisk, L 3 brisk","R 3 reactive, L 3 reactive","R 3 brisk, L 4 brisk","R 4 brisk, L 3 brisk","R 3 reactive, L 4 reactive","R 4 reactive, L 3 reactive","R 3 sluggish, L 4 reactive","R 4 reactive, L 3 sluggish","R 3 NR, L 3 reactive","R 3 reactive, L 3 NR","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
   const cough=["","Present cough reflex","Absent cough reflex","+ cough","- cough","cough present","cough absent","UTA cough"];
   const corneal=["","Present corneal reflex bilaterally","Absent corneal reflex bilaterally","Present left corneal reflex only","Present right corneal reflex only","bilateral corneals","R corneal","L corneal","no corneals","corneals UTA"];
   const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
@@ -7990,6 +7997,7 @@ const SO_OPTIONAL_BOXES=[
   {key:"evd",label:"EVD",fields:["EVD","EVD/Output","EVD + ICP course"],re:/\b(?:evd|external ventricular|ivh|icp)\b/i},
   {key:"drain",label:"Drain",fields:["Drains","Drains + output","EVD/Output","EVD + ICP course","Lines"],extra:"Drain",re:/\b(?:drain|jp|blake|hemovac|ld|lumbar drain|seps)\b/i},
   {key:"vent",label:"Vent",fields:["Vent"],re:/\b(?:vent|intubat|ett|trach|oxygen|fio2|peep)\b/i},
+  {key:"neuroplan",label:"Neuro plan",fields:["A/P Neuro","Plan"],extra:"Neuro plan",re:/\b(?:neuro plan|a\/p neuro|q\d\s*(?:h|hr)\s*checks?|neuro checks?|icp management|sbp goal|na goal|seizure ppx|evd wean|clamp trial|valve plan)\b/i},
   {key:"na",label:"Na",fields:["Na goal","Na goal + last","Labs","Renal","DI watch"],re:/\b(?:na|sodium|euna|hts|florinef|di watch)\b/i},
   {key:"bp",label:"BP",fields:["BP goal","Vitals","Cards","MAP goal if cord"],re:/\b(?:sbp|bp|map|pressors?|cardene|nicard)\b/i},
   {key:"abx",label:"ABX",fields:["Antibiotics"],extra:"Antibiotics",re:/\b(?:abx|antibiotic|ancef|cefazolin|vanc|cefepime|ceftriaxone|zosyn|bactrim|culture|cx\b|infect|ssi|wound)\b/i},
@@ -8014,6 +8022,9 @@ const SO_EXTRA_BOXES=[
  {k:"Pre-op status",ph:"done: consent, booking/case request, NPO, CBC/coags/T&S, H&P/pre-op note, DVT held, postop bed · not done: ___",
   covers:[],
   re:/\b(?:pre-?op|to the OR|book(?:ed|ing)?|case request|NPO|T&S|type and screen|consent|postop bed|OR front desk)\b/i},
+ {k:"Neuro plan",ph:"neuro checks ___ · BP/Na/ICP/device goals ___ · escalation trigger ___",
+  covers:["A/P Neuro","Plan","ICP management","Wean plan","Valve plan","Clamp trial"],
+  re:/\b(?:neuro plan|a\/p neuro|q\d\s*(?:h|hr)\s*checks?|neuro checks?|icp management|sbp goal|na goal|seizure ppx|evd wean|clamp trial|valve plan)\b/i},
  {k:"Drain",ph:"JP/blake/EVD/LD ___ · level/suction/output ___ · pull plan ___",
   covers:["Drains","Drains + output","EVD","EVD/Output","EVD + ICP course","Lines"],
   re:/\b(?:drain|jp|blake|hemovac|evd|ld|lumbar drain|seps)\b/i},
@@ -8135,7 +8146,12 @@ function soBoardOptionalOn(r,opt){
   const f=soBoxFieldFor(r,opt);
   return !!(f&&((r.so&&r.so[f])||opt.re.test(soBoardText(r))));
 }
-const SO_ORDER_HINT=["One-liner","POD","Post-bleed day","Post-trauma status","Pre-op status","Exam","Exam @ SBP","Exam vs pre-op","Exam + baseline","Motor exam","Exam + change from baseline","Urinary status / bowel movements","EVD","EVD/Output","EVD + ICP course","Drain","Drains","Drains + output","Vent","Vitals","BP goal","MAP goal if cord","Na goal","Na goal + last","Labs","Micro/ID","ID","Antibiotics","Steroids","Seizures / ASM","Seizure ppx","Daily meds","Meds of consequence","AC / antiplatelet","AC status","Imaging","Images","Post-op imaging","New events / imaging","Overnight events","Pending studies","Plan","A/P Neuro","Source control / OR","Dispo + barriers","Dispo / barriers","Other barriers to dispo","Notes"];
+const SO_ORDER_HINT=["One-liner","POD","Post-bleed day","Post-trauma status","Pre-op status",
+  "Exam","Exam @ SBP","Exam incl. visual fields","Exam vs pre-op","Exam + baseline","Motor exam","Exam + change from baseline","Baseline vs current exam",
+  "EVD","EVD/Output","EVD + ICP course","Drain","Drains","Drains + output","Clamp trial","CSF labs / cultures",
+  "A/P Neuro","Neuro plan","ICP management","Wean plan","Valve plan","Escalation trigger","Seizure meds / LTM","Seizure ppx","Seizures / ASM","Na goal","Na goal + last","BP goal","MAP goal if cord",
+  "Vitals","Vent","Pulm","Cards","I/Os","Drips/rate","Lines","Labs","Micro/ID","ID","Antibiotics","Steroids","Daily meds","Meds of consequence","AC / antiplatelet","AC status","Heme","Endo","Renal","GU","GI","Nutrition","Prophylaxis",
+  "Imaging","Images","Post-op imaging","New events / imaging","Imaging pending","Imaging comparison","Overnight events","Pending studies","Plan","Source control / OR","Dispo","Dispo + barriers","Dispo / barriers","Other barriers to dispo","Notes"];
 function soOrderRank(label){
   const i=SO_ORDER_HINT.findIndex(x=>x.toLowerCase()===String(label||"").toLowerCase());
   return i>=0?i:1000;
