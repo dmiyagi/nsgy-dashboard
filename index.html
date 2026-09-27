@@ -618,6 +618,12 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxcond select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc);
   font-family:var(--font);font-size:11px;font-weight:700;padding:3px 6px;max-width:150px}
 .sxnone{font-size:11px;color:var(--mut);font-style:italic}
+.exchips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+.exchips button{font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;
+  font-family:var(--font);border:1px solid var(--line);background:var(--card2);color:var(--acc)}
+.exchips button:hover{border-color:var(--acc)}
+.exchips button.exgo{border-color:var(--teal);color:var(--teal)}
+
 .sxcheck{position:relative;margin-top:8px;padding:7px 26px 7px 9px;background:#2a1e10;border:1px solid #6b4b1c;border-radius:9px}
 .sxckrow{font-size:11.5px;line-height:1.45}
 .sxckrow+.sxckrow{margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,202,122,.18)}
@@ -814,7 +820,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.193 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.194 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6003,6 +6009,7 @@ function roundExamHtml(r){
     roundExamBuilderHtml(r,cur)+
     '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
     '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onpaste="roundExamPaste(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
+    examChipsHtml(r.id)+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
       (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
@@ -6109,11 +6116,132 @@ function copyRoundPrevExam(id){
   const t=(el?el.value:roundPrevExamText(r)).trim();
   if(t){toClip(t);showToast("Previous exam copied")}
 }
+// ---------- exam shorthand ----------
+// Accepts the way an exam is actually spoken: "rue + drift", "bue no drift",
+// "ble 5/5", "perrl" — with free-text comments passing through untouched.
+const EX_REGION={rue:"RUE",lue:"LUE",bue:"BUE",rle:"RLE",lle:"LLE",ble:"BLE",
+  ue:"BUE",le:"BLE",
+  delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",
+  ip:"IP",quad:"Quad",at:"AT",ehl:"EHL",gastroc:"Gastroc"};
+// findings that read as present or absent rather than graded
+const EX_SIGN={drift:"drift",clonus:"clonus",hoffman:"Hoffmans",hoffmans:"Hoffmans",
+  babinski:"Babinski",spasticity:"spasticity",tremor:"tremor",dysmetria:"dysmetria",
+  nystagmus:"nystagmus",rigidity:"rigidity",fasciculations:"fasciculations",
+  tenderness:"tenderness",numbness:"numbness",tingling:"tingling",pain:"pain",
+  deficit:"deficit",weakness:"weakness"};
+// one-word states that expand to their usual written form
+const EX_PHRASE={perrl:"PERRL",perrla:"PERRLA",eomi:"EOMI",silt:"SILT",
+  aox3:"AOx3",aox4:"AOx4",mae:"MAE x4",maex4:"MAE x4",wd:"WD x4",wdx4:"WD x4",
+  fc:"follows commands",ntd:"no new deficit",nf:"non-focal",
+  abl:"at baseline",baseline:"at baseline",wnl:"WNL",
+  intact:"intact",sym:"symmetric",symmetric:"symmetric",
+  sedated:"sedated",intubated:"intubated",awake:"awake",alert:"alert"};
+function examToken(w){return String(w||"").toLowerCase().replace(/[^a-z0-9+/-]/g,"")}
+function examStrength(w){
+  const m=String(w||"").match(/^([0-5])([+-]?)(?:\/5)?$/);
+  return m?(m[1]+m[2]+"/5"):null;
+}
+// "at", "bi", "we", "ip", "fa", "le", "ue" are also ordinary English words, so
+// they only count as a muscle group when exam grammar follows them
+const EX_AMBIGUOUS={at:1,bi:1,we:1,ip:1,fa:1,le:1,ue:1,ff:1};
+function examIsNeg(t){return /^(no|neg|negative|without|wo|w\/o)$/.test(t)}
+function examSign(t){return EX_SIGN[t]||EX_SIGN[t.replace(/s$/,"")]||null}
+function examQualifies(tok){
+  if(!tok)return false;
+  const t=examToken(tok);
+  return !!(examStrength(t)||examIsNeg(t)||examSign(t)||t==="+"||(t.length>1&&/^[+-]/.test(t)&&examSign(t.slice(1))));
+}
+function examExpandClause(clause){
+  const raw=String(clause||"").trim();
+  if(!raw)return "";
+  const words=raw.split(/\s+/);
+  // a sentence with no exam grammar is prose — never rearrange it
+  const hasGrammar=words.some((w,i)=>{
+    const t=examToken(w);
+    if(EX_REGION[t]&&(!EX_AMBIGUOUS[t]||examQualifies(words[i+1])))return true;
+    return !!(examStrength(t)||examSign(t)||(t.length>1&&/^[+-]/.test(t)&&examSign(t.slice(1))));
+  });
+  if(!hasGrammar&&words.length>4)return raw;
+  const groups=[];   // {region,strength,neg,signs}
+  const phrases=[],rest=[];
+  let cur=null,used=false;
+  const flush=()=>{if(cur){groups.push(cur);cur=null}};
+  for(let i=0;i<words.length;i++){
+    const t=examToken(words[i]);
+    if(!t){rest.push(words[i]);continue}
+    const region=EX_REGION[t];
+    if(region&&(!EX_AMBIGUOUS[t]||examQualifies(words[i+1]))){
+      flush();cur={region:region,strength:"",neg:false,signs:[]};used=true;continue;
+    }
+    if(examIsNeg(t)){if(cur)cur.neg=true;else{cur={region:"",strength:"",neg:true,signs:[]}}used=true;continue}
+    if(t==="+"){if(cur)cur.neg=false;used=true;continue}
+    if(t.length>1&&/^[+-]/.test(t)){
+      const sg=examSign(t.slice(1));
+      if(sg){if(!cur)cur={region:"",strength:"",neg:false,signs:[]};if(t[0]==="-")cur.neg=true;cur.signs.push(sg);used=true;continue}
+    }
+    const st=examStrength(t);
+    if(st&&cur&&cur.region&&!cur.strength){cur.strength=st;used=true;continue}
+    const sg=examSign(t);
+    if(sg){if(!cur)cur={region:"",strength:"",neg:false,signs:[]};cur.signs.push(sg);used=true;continue}
+    const ph=EX_PHRASE[t];
+    if(ph){flush();phrases.push(ph);used=true;continue}
+    rest.push(words[i]);
+  }
+  flush();
+  // nothing here was exam grammar — leave the author's words alone
+  if(!used)return raw;
+  const parts=groups.map(g=>{
+    const head=[g.region,g.strength].filter(Boolean).join(" ");
+    if(!g.signs.length)return head;
+    const tail=(g.neg?"no ":"+")+g.signs.join(", ");
+    return head?(head+", "+tail):tail;
+  }).filter(Boolean);
+  if(phrases.length)parts.push(phrases.join(", "));
+  if(rest.length)parts.push(rest.join(" "));
+  return parts.join(", ").replace(/\s+/g," ").replace(/\s+,/g,",").trim();
+}
+function examExpand(text){
+  const src=String(text||"");
+  if(!src.trim())return src;
+  // keep the author's own line breaks; expand within each line
+  return src.split("\n").map(line=>{
+    if(!line.trim())return line;
+    return line.split(/\s*[;,]\s*/).map(examExpandClause).filter(Boolean).join(", ");
+  }).join("\n");
+}
+// one-tap findings; tapping appends shorthand and expands it
+const EX_CHIPS=[["AOx3","aox3"],["PERRL","perrl"],["EOMI","eomi"],["MAE x4","mae"],
+  ["SILT","silt"],["no drift","bue no drift"],["+ R drift","rue + drift"],["+ L drift","lue + drift"],
+  ["no clonus","no clonus"],["sedated","sedated"],["intubated","intubated"],["at baseline","abl"]];
+function examChipsHtml(id){
+  return '<div class="exchips">'+EX_CHIPS.map(c=>
+    '<button type="button" onclick="examChip(\''+id+'\',\''+esc(c[1])+'\')">'+esc(c[0])+'</button>').join("")+
+    '<button type="button" class="exgo" title="Expand shorthand and refresh the fields above" onclick="examExpandBox(\''+id+'\')">⤢ Expand</button>'+
+  '</div>';
+}
+function examChip(id,shorthand){
+  const el=document.getElementById("rexam_"+id);if(!el)return;
+  const cur=el.value.replace(/\s+$/,"");
+  const sep=cur?(/[\n]$/.test(el.value)?"":(cur.length?", ":"")):"";
+  el.value=cur+sep+shorthand;
+  el.value=examExpand(el.value);
+  el.focus();
+  roundExamInput(id,el);
+}
+function examExpandBox(id){
+  const el=document.getElementById("rexam_"+id);if(!el)return;
+  const before=el.value;
+  const after=examExpand(before);
+  if(after===before){showToast("Nothing to expand");return}
+  el.value=after;roundExamSave(id,el,true);
+  roundExamParseIntoFields(id);
+  showToast("Shorthand expanded",()=>{const e=document.getElementById("rexam_"+id);if(e){e.value=before;roundExamSave(id,e,true)}},"Undo");
+}
 function roundExamInput(id,el){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const v=el.value.trim();
   if(r.exam===v)return;
-  r.exam=v;r.examAt=sxNow();r.updatedAt=Date.now();autosave();
+  r.exam=v;r.examAt=sxNow();stampF(r,"exam");r.updatedAt=Date.now();autosave();
 }
 function roundExamHistInput(id,i){
   const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
@@ -6146,8 +6274,8 @@ function roundExamSave(id,el,explicit){
       r.examHist.push({ts:Date.now(),text:v});
       r.examHist=r.examHist.slice(-3);
     }
-    r.exam=v;r.examAt=sxNow();
-    r.prevExam=v;
+    r.exam=v;r.examAt=sxNow();stampF(r,"exam");
+    r.prevExam=v;stampF(r,"prevExam");
   }else{
     r.exam="";
   }
@@ -6525,7 +6653,7 @@ function roundNoteSave(id,el,manual){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const v=el.value.trim();
   if(r.note===v){if(manual)showToast("Notes saved — "+(r.label||""));return}
-  r.note=v;r.updatedAt=Date.now();autosave();
+  r.note=v;stampF(r,"note");r.updatedAt=Date.now();autosave();
   if(manual)showToast("Notes saved — "+(r.label||""));
 }
 function woundRoundCandidate(r){
@@ -7211,8 +7339,8 @@ function roundEditCancel(id){REDIT.delete(id);const r=S.rounds.find(x=>x.id===id
 function roundEditSave(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
-  if(lab)r.label=lab.value.trim()||r.label;
-  if(raw){r.raw=raw.value.trim()||r.raw;r.team=teamFromText(r.raw);r.attg=attgFromText(r.raw);r.soT=detectTmpl(r.raw)}
+  if(lab&&lab.value.trim()&&lab.value.trim()!==r.label){r.label=lab.value.trim();stampF(r,"label")}
+  if(raw&&raw.value.trim()&&raw.value.trim()!==r.raw){r.raw=raw.value.trim();stampF(r,"raw");r.team=teamFromText(r.raw);r.attg=attgFromText(r.raw);r.soT=detectTmpl(r.raw);stampF(r,"soT")}
   if(tg)r.tags=normalizeRoundTags(tg.value.split(",").map(t=>t.trim()).filter(Boolean));
   delete r._edit;
   r.updatedAt=Date.now();REDIT.delete(id);renderRounds();save();
@@ -7666,6 +7794,7 @@ function soFocus(el){el.dataset.prev=el.value||""}
 function soSave(el,quiet){const r=findAny(soId);if(r){r.so=r.so||{};r.soPrev=r.soPrev||{};
   const k=el.dataset.so,prev=(el.dataset.prev||"").trim(),val=el.value.trim();
   const changed=r.so[k]!==val;
+  if(changed)stampSo(r,k);
   if(changed&&(soIsExamField(k)||soIsTrendField(k))){
     const last=String(r.so[k]||prev||"").trim();
     if(last&&last!==val)r.soPrev[k]=last;
@@ -9211,10 +9340,10 @@ function nccuNoteSave(id,el){
   const r=findAny(id);if(!r)return;
   const v=el.value.trim();
   if(r.note===v)return;
-  r.note=v;r.updatedAt=Date.now();
+  r.note=v;stampF(r,"note");r.updatedAt=Date.now();
   // a rounding entry and its linked board card share one set of notes
-  if(nccuIsRound(r))(S.consults||[]).forEach(c=>{if(c.roundId===r.id&&!c.closed){c.note=v;c.updatedAt=r.updatedAt}});
-  else if(r.roundId){const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(rr){rr.note=v;rr.updatedAt=r.updatedAt}}
+  if(nccuIsRound(r))(S.consults||[]).forEach(c=>{if(c.roundId===r.id&&!c.closed){c.note=v;stampF(c,"note");c.updatedAt=r.updatedAt}});
+  else if(r.roundId){const rr=(S.rounds||[]).find(x=>x.id===r.roundId);if(rr){rr.note=v;stampF(rr,"note");rr.updatedAt=r.updatedAt}}
   autosave();
 }
 function nccuTodoToggle(id,i){
@@ -10450,9 +10579,10 @@ function mergeDoneList(a,b){
   return Object.keys(seen).filter(k=>seen[k].d>=seen[k].u);
 }
 function mergeWorkArray(primary,secondary,pOwner,sOwner){
-  const sec={};
+  const sec={},seen={};
   (secondary||[]).forEach(x=>{const k=workKey(x&&x.t);if(k&&!sec[k])sec[k]=x});
-  return (primary||[]).map(x=>{
+  const merged=(primary||[]).map(x=>{
+    const pk=workKey(x&&x.t);if(pk)seen[pk]=true;
     const k=workKey(x&&x.t),y=k?sec[k]:null;
     if(!y)return x;
     const xDone=!!(x.done||wasDone(pOwner,x.t)),yDone=!!(y.done||wasDone(sOwner,y.t));
@@ -10463,6 +10593,15 @@ function mergeWorkArray(primary,secondary,pOwner,sOwner){
     else if(xDone){x.dueISO=null}
     return x;
   });
+  // anything the other device added and this one has never seen
+  (secondary||[]).forEach(x=>{
+    const k=workKey(x&&x.t);
+    if(!k||seen[k])return;
+    seen[k]=true;
+    if(wasDone(pOwner,x.t)){x.done=true;x.dueISO=null}
+    merged.push(x);
+  });
+  return merged;
 }
 function mergeSxArray(primary,secondary,pOwner,sOwner){
   const byKey={};
@@ -10478,8 +10617,54 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
   add(secondary,sOwner);add(primary,pOwner);
   return Object.values(byKey).map(x=>{const y=Object.assign({},x);delete y._owner;return y}).sort((a,b)=>(a.ts||0)-(b.ts||0));
 }
+// Fields edited independently on two devices must both survive. Each carries
+// its own stamp in `fAt`; without one we fall back to the record stamp.
+const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
+  "action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
+function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
+function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
+function fieldStamp(rec,k){
+  if(!rec)return 0;
+  const fa=rec.fAt&&rec.fAt[k];
+  if(fa)return fa;
+  if(k==="exam"&&rec.examAt)return rec.examAt;
+  return rec.updatedAt||rec.created||0;
+}
+function mergeFields(primary,secondary){
+  primary.fAt=Object.assign({},secondary.fAt||{},primary.fAt||{});
+  MERGE_FIELDS.forEach(k=>{
+    const ps=fieldStamp(primary,k),ss=fieldStamp(secondary,k);
+    const pHas=primary[k]!==undefined&&primary[k]!==null&&primary[k]!=="";
+    const sHas=secondary[k]!==undefined&&secondary[k]!==null&&secondary[k]!=="";
+    if(!sHas)return;
+    if(!pHas||ss>ps){
+      primary[k]=secondary[k];
+      const st=(secondary.fAt&&secondary.fAt[k])||ss;
+      if(st){primary.fAt=primary.fAt||{};primary.fAt[k]=st}
+      if(k==="exam"&&secondary.examAt)primary.examAt=secondary.examAt;
+    }
+  });
+  // the sign-out template object merges key by key on its own stamps
+  if(secondary.so){
+    primary.so=primary.so||{};
+    primary.soAt=Object.assign({},secondary.soAt||{},primary.soAt||{});
+    Object.keys(secondary.so).forEach(k=>{
+      const sv=secondary.so[k];
+      if(sv===undefined||sv===null||sv==="")return;
+      const ps=(primary.soAt&&primary.soAt[k])||primary.updatedAt||0;
+      const ss=(secondary.soAt&&secondary.soAt[k])||secondary.updatedAt||0;
+      const pHas=primary.so[k]!==undefined&&primary.so[k]!==null&&primary.so[k]!=="";
+      if(!pHas||ss>ps){
+        primary.so[k]=sv;
+        if(ss){primary.soAt=primary.soAt||{};primary.soAt[k]=ss}
+      }
+    });
+  }
+  return primary;
+}
 function mergeWorkRecord(primary,secondary){
   if(!primary||!secondary)return primary||secondary;
+  mergeFields(primary,secondary);
   const pClose=primary.closedAt||0,sClose=secondary.closedAt||0,pOpen=primary.reopenedAt||0,sOpen=secondary.reopenedAt||0;
   if(primary.closed!==secondary.closed){
     const closeAt=Math.max(pClose,sClose),openAt=Math.max(pOpen,sOpen);
