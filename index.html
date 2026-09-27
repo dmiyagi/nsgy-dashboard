@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.189 · 2026-09-26</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.190 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -10217,7 +10217,7 @@ function renderCapture(){
 // ---------- sync engine (private GitHub Gist) ----------
 const SYNC_FILE="nsgy-triage-sync.json";
 const TK="nsgy_gh_token",GK="nsgy_gh_gist",SK_DIRTY="nsgy_sync_dirty_at",SK_RETRY="nsgy_sync_retry_at",SK_LAST="nsgy_sync_last_ok";
-let pushT=null,retryT=null,syncing=false,syncAgain=false,syncFail=0,syncBlocked="";
+let pushT=null,retryT=null,syncing=false,syncAgain=false,syncFail=0,syncBlocked="",syncStartedAt=0,syncRunSeq=0;
 const MIN_SYNC_GAP=4000;      // never hit the API faster than this
 let lastSyncAt=0,rateRemaining=null;
 function syncPausedUntil(){return parseInt(localStorage.getItem(SK_RETRY)||"0",10)}
@@ -10245,6 +10245,32 @@ function setDot(){
 function markSyncDirty(){const cfg=syncCfg();if(cfg.token)localStorage.setItem(SK_DIRTY,String(Date.now()))}
 function clearSyncDirty(){localStorage.removeItem(SK_DIRTY);localStorage.removeItem(SK_RETRY)}
 function hasSyncDirty(){return !!localStorage.getItem(SK_DIRTY)}
+function syncFetchTimeout(auto){return auto?18000:35000}
+function syncFetchOpts(opts,auto){
+  opts=Object.assign({},opts||{});
+  const ms=syncFetchTimeout(auto);
+  if(window.AbortController){
+    const ac=new AbortController();
+    opts.signal=ac.signal;
+    const t=setTimeout(()=>ac.abort(),ms);
+    opts._clearTimeout=()=>clearTimeout(t);
+  }
+  return opts;
+}
+async function timedFetch(url,opts,auto){
+  const o=syncFetchOpts(opts,auto);
+  try{return await fetch(url,o)}
+  catch(e){
+    if(e&&e.name==="AbortError"){const err=new Error("Network timeout");err.timeout=true;throw err}
+    throw e;
+  }finally{if(o._clearTimeout)o._clearTimeout()}
+}
+function recoverStaleSync(){
+  if(syncing&&syncStartedAt&&Date.now()-syncStartedAt>45000){
+    syncing=false;syncAgain=false;syncStartedAt=0;
+    if(hasSyncDirty())schedulePush(500);
+  }
+}
 function shouldPullSync(){
   if(syncPausedUntil()>Date.now())return false;   // honour the backoff window
   if(hasSyncDirty()||localStorage.getItem(SK_RETRY))return true;
@@ -10282,16 +10308,17 @@ function scheduleSyncRetry(delay){
 }
 function resumePendingSync(){
   if(!syncCfg().token)return;
+  recoverStaleSync();
   const retryAt=parseInt(localStorage.getItem(SK_RETRY)||"0",10);
   if(hasSyncDirty()||retryAt){
     const delay=retryAt?Math.max(0,retryAt-Date.now()):1200;
     schedulePush(delay);
   }
 }
-async function gh(path,opts){
+async function gh(path,opts,auto){
   const cfg=syncCfg();
-  const r=await fetch("https://api.github.com"+path,Object.assign({},opts,{headers:Object.assign({
-    "Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json","Content-Type":"application/json"},(opts&&opts.headers)||{})}));
+  const r=await timedFetch("https://api.github.com"+path,Object.assign({},opts,{headers:Object.assign({
+    "Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json","Content-Type":"application/json"},(opts&&opts.headers)||{})}),auto);
   if(!r.ok){
     let msg="GitHub "+r.status;
     try{const j=await r.json();if(j&&j.message)msg+=" — "+j.message}catch(e){}
@@ -10324,11 +10351,11 @@ function fatalSyncHint(e){
   return "";
 }
 let gistEtag="",gistCache=null;
-async function ghGistGet(id){
+async function ghGistGet(id,auto){
   const cfg=syncCfg();
   const headers={"Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json"};
   if(gistEtag&&gistCache)headers["If-None-Match"]=gistEtag;
-  const r=await fetch("https://api.github.com/gists/"+id,{headers:headers,cache:"no-store"});
+  const r=await timedFetch("https://api.github.com/gists/"+id,{headers:headers,cache:"no-store"},auto);
   const rem=r.headers.get("x-ratelimit-remaining");
   if(rem!==null)rateRemaining=parseInt(rem,10);
   if(r.status===304)return {notModified:true};
@@ -10348,12 +10375,12 @@ async function ghGistGet(id){
   gistEtag=r.headers.get("etag")||"";
   return {gist:await r.json()};
 }
-async function fetchGistFile(f){
+async function fetchGistFile(f,auto){
   if(!f)return "";
   if(!f.truncated)return f.content||"";
   // gist.githubusercontent.com rejects an Authorization header at CORS
   // preflight, so the authenticated fetch used to fail on any board past ~1 MB
-  const r=await fetch(f.raw_url,{cache:"no-store"});
+  const r=await timedFetch(f.raw_url,{cache:"no-store"},auto);
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
@@ -10482,6 +10509,7 @@ function mergeState(local,remote){
   return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At};
 }
 async function doSync(auto){
+  recoverStaleSync();
   const cfg=syncCfg();
   if(!cfg.token||!cfg.gist){setDot();if(!auto)openSync();return}
   if(auto&&syncBlocked)return;
@@ -10492,12 +10520,13 @@ async function doSync(auto){
   // absolute floor on request rate, so no code path can ever run away
   const gap=lastSyncAt+MIN_SYNC_GAP-Date.now();
   if(gap>0){if(auto){schedulePush(gap);return}await new Promise(r=>setTimeout(r,gap))}
-  syncing=true;syncAgain=false;clearTimeout(pushT);clearTimeout(retryT);setDot();
+  const syncRun=++syncRunSeq;
+  syncing=true;syncAgain=false;syncStartedAt=Date.now();clearTimeout(pushT);clearTimeout(retryT);setDot();
   lastSyncAt=Date.now();
   const dirtyAtStart=localStorage.getItem(SK_DIRTY)||"";
   let failed=false;
   try{
-    const res=await ghGistGet(cfg.gist);
+    const res=await ghGistGet(cfg.gist,auto);
     let remote={consults:[],tomb:{},day:{date:"",checks:{}},round24:false,round24At:0};
     if(res.notModified&&gistCache){
       remote=gistCache;                       // nothing changed upstream since last GET
@@ -10505,7 +10534,7 @@ async function doSync(auto){
       const g=res.gist;
       const f=g&&g.files&&g.files[SYNC_FILE];
       if(f){
-        let content=await fetchGistFile(f);
+        let content=await fetchGistFile(f,auto);
         try{remote=JSON.parse(content)}catch(e){}
       }
       gistCache=remote;
@@ -10517,7 +10546,7 @@ async function doSync(auto){
     const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0});
     const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At});
     if(remoteStr!==mergedStr){
-      await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})});
+      await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})},auto);
       gistEtag="";                            // our own write invalidates the cached tag
       gistCache=JSON.parse(mergedStr);
     }
@@ -10555,8 +10584,9 @@ async function doSync(auto){
     }
   }
   finally{
-    syncing=false;if(auto)startupCompactBoard=false;
-    if(!failed&&(syncAgain||hasSyncDirty()))schedulePush(800);
+    if(syncRun===syncRunSeq){syncing=false;syncStartedAt=0}
+    if(auto)startupCompactBoard=false;
+    if(syncRun===syncRunSeq&&!failed&&(syncAgain||hasSyncDirty()))schedulePush(800);
   }
 }
 function openSync(){
@@ -10687,9 +10717,10 @@ setInterval(()=>{
 },PULL_MS);
 window.addEventListener("online",()=>{syncFail=0;schedulePush(500)});
 window.addEventListener("pagehide",()=>{flushAutosave();if(hasSyncDirty())doSync(true)});
+window.addEventListener("pageshow",()=>{recoverStaleSync();resumePendingSync();doSync(true);if(!activeEdit())boardClockTick(true)});
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){flushAutosave();if(hasSyncDirty())doSync(true)}
-  else{resumePendingSync();doSync(true);if(!activeEdit())boardClockTick(true)}
+  else{recoverStaleSync();resumePendingSync();doSync(true);if(!activeEdit())boardClockTick(true)}
 });
 let boardClockMinute=null;
 function boardClockTick(force){
