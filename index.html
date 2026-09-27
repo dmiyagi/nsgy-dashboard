@@ -814,7 +814,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.192 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.193 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -2365,13 +2365,16 @@ const GCS_OPTS={
 };
 const GCS_STATE={form:{e:null,v:null,m:null},tc:{e:null,v:null,m:null},ftc:{e:null,v:null,m:null},ref:{e:null,v:null,m:null}};
 const HH_OPTS=[
- ["1","Mild headache, alert/oriented, minimal nuchal rigidity"],
- ["2","Moderate-severe headache or full nuchal rigidity; alert/oriented, no deficit except CN palsy"],
- ["3","Lethargy/confusion or mild focal neurologic deficit"],
- ["4","Stuporous or more severe focal deficit"],
- ["5","Comatose, severe neurologic impairment/posturing"]
+ ["1","Mild headache, alert/oriented, minimal nuchal rigidity","30%"],
+ ["2","Moderate-severe headache or full nuchal rigidity; alert/oriented, no deficit except CN palsy","40%"],
+ ["3","Lethargy/confusion or mild focal neurologic deficit","50%"],
+ ["4","Stuporous or more severe focal deficit","80%"],
+ ["5","Comatose, severe neurologic impairment/posturing","90%"]
 ];
-const HH_STATE={form:{v:null},tc:{v:null},ftc:{v:null},ref:{v:null}};
+const MF_SAH_OPTS=[["0","No SAH present"],["thin","Focal or diffuse thin SAH"],["thick","Focal or diffuse thick SAH"]];
+const MF_IVH_OPTS=[["0","No IVH"],["1","IVH present"]];
+const MF_RISK={0:"0%",1:"6-24%",2:"15-33%",3:"33-35%",4:"34-40%"};
+const HH_STATE={form:{v:null,mfSah:null,mfIvh:null},tc:{v:null,mfSah:null,mfIvh:null},ftc:{v:null,mfSah:null,mfIvh:null},ref:{v:null,mfSah:null,mfIvh:null}};
 const AO_MORPH=[
  ["A0","Minor, nonstructural fracture","Usually lowest instability morphology; confirm no posterior tension band/translation/neuro issue."],
  ["A1","Wedge-compression","Single endplate wedge compression; check posterior wall and PLC."],
@@ -2473,7 +2476,7 @@ function completedIchLine(ns){
 }
 function completedHhLine(ns){
   const line=hhSummary(ns);
-  return /^Hunt-Hess \d/.test(line)?line:"";
+  return /^(?:Hunt-Hess \d|modified Fisher \d)/.test(line)?line:"";
 }
 function completedAoLine(ns){
   const line=aoSummary(ns);
@@ -2497,6 +2500,7 @@ function mergeScoreLines(text,lines){
   const isGenerated=l=>/^\s*GCS\s+E\S+\s+V\S+\s+M\S+/i.test(l)
     ||/^\s*ICH score\s+\d/i.test(l)
     ||/^\s*Hunt-Hess\s+\d/i.test(l)
+    ||/^\s*modified Fisher\s+\d/i.test(l)
     ||/^\s*AO Spine\s+\S/i.test(l)
     ||/^\s*TLICS\s+\d/i.test(l)
     ||/^\s*SINS\s+\d/i.test(l)
@@ -2542,7 +2546,7 @@ function scoreClear(ns,kind){
 }
 function scoreCopy(ns,kind){
   const t=String((SCORE_SUMMARY[kind]||function(){return ""})(ns)||"").trim();
-  if(!t||/^(GCS|HH|ICH|AO|TLICS|SINS|PHASES)\b[^0-9A-Za-z]*$/.test(t)){showToast("Nothing selected yet");return}
+  if(!t||/^Select\b/i.test(t)||/^(GCS|HH|ICH|AO|TLICS|SINS|PHASES)\b[^0-9A-Za-z]*$/.test(t)){showToast("Nothing selected yet");return}
   toClip(t);showToast("Copied — "+t.slice(0,40));
 }
 function scoreBtns(ns,kind){
@@ -2578,21 +2582,40 @@ function insertGcsExam(ns){
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
 function hhSummary(ns){
-  const v=(HH_STATE[ns]||{}).v;
-  return v?"Hunt-Hess "+v:"Select Hunt-Hess grade";
+  const s=HH_STATE[ns]||{},parts=[];
+  if(s.v){
+    const o=HH_OPTS.find(x=>x[0]===s.v);
+    parts.push("Hunt-Hess "+s.v+(o&&o[2]?" (mortality "+o[2]+")":""));
+  }
+  const mf=mfGrade(ns);
+  if(mf!==null)parts.push("modified Fisher "+mf+" (symptomatic vasospasm risk "+MF_RISK[mf]+")");
+  return parts.length?parts.join("; "):"Select Hunt-Hess / modified Fisher";
+}
+function mfGrade(ns){
+  const s=HH_STATE[ns]||{};
+  if(s.mfSah===null||s.mfSah===undefined||s.mfIvh===null||s.mfIvh===undefined)return null;
+  const ivh=s.mfIvh==="1";
+  if(s.mfSah==="0")return ivh?2:0;
+  if(s.mfSah==="thin")return ivh?2:1;
+  if(s.mfSah==="thick")return ivh?4:3;
+  return null;
 }
 function renderHhAid(ns,targetId,force){
   const el=document.getElementById(targetId);if(!el)return;
   const txt=scoreContextText(ns);
   const show=force||isAneurysmalSAHText(txt)||sahUnknownEtiologyText(txt)||/hunt.?hess|modified fisher|mFisher/i.test(txt);
   const s=HH_STATE[ns]||{};
-  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"hh",show)+'><summary>Hunt-Hess score</summary><div class="scorebody">'+
-    '<div class="note">Aneurysmal SAH aid. Use with modified Fisher and clinical judgment.</div>'+
-    '<div class="gcsopts">'+HH_OPTS.map(o=>'<button type="button" class="'+(s.v===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\''+o[0]+'\')">HH'+o[0]+'</button>').join("")+'</div>'+
-    '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]).join("\n")+'</div>'+
+  const btns=(arr,k)=>arr.map(o=>'<button type="button" class="'+(String(s[k])===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\''+k+'\',\''+o[0]+'\')">'+o[1]+'</button>').join("");
+  el.innerHTML='<details class="scoreaid '+(show?"show":"")+'"'+scoreOpenAttr(ns,"hh",show)+'><summary>Hunt-Hess / modified Fisher</summary><div class="scorebody">'+
+    '<div class="note">Aneurysmal SAH aids. Hunt-Hess grades clinical severity; modified Fisher estimates symptomatic vasospasm risk.</div>'+
+    '<div class="gcsrow"><div class="glabel">Hunt-Hess grade</div><div class="gcsopts">'+HH_OPTS.map(o=>'<button type="button" class="'+(s.v===o[0]?"on":"")+'" onclick="setHhPart(\''+ns+'\',\'v\',\''+o[0]+'\')">HH'+o[0]+' · '+o[2]+'</button>').join("")+'</div></div>'+
+    '<div class="pre" style="margin-top:8px">'+HH_OPTS.map(o=>"HH"+o[0]+": "+o[1]+" · mortality "+o[2]).join("\n")+'</div>'+
+    '<div class="gcsrow"><div class="glabel">Signs/symptoms</div><div class="gcsopts">'+btns(MF_SAH_OPTS,"mfSah")+'</div></div>'+
+    '<div class="gcsrow"><div class="glabel">Intraventricular hemorrhage (IVH)</div><div class="gcsopts">'+btns(MF_IVH_OPTS,"mfIvh")+'</div></div>'+
+    '<div class="pre" style="margin-top:8px">Modified Fisher vasospasm risk:\n0: 0%\n1: 6-24%\n2: 15-33%\n3: 33-35%\n4: 34-40%</div>'+
     '<div class="gcsout"><b>'+hhSummary(ns)+'</b>'+scoreBtns(ns,"hh")+(ns==="ref"?"":'<button type="button" onclick="insertHhScore(\''+ns+'\')">'+(ns==="form"?"Add to current state":"Add to HPI")+'</button>')+'</div></div></details>';
 }
-function setHhPart(ns,v){HH_STATE[ns].v=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")renderFTCFlags()}
+function setHhPart(ns,k,v){HH_STATE[ns][k]=v;if(ns==="form")syncFormScoreFields();renderHhContext(ns);if(ns==="ftc")renderFTCFlags()}
 function renderHhContext(ns){
   if(ns==="form")renderHhAid("form","f_hh",false);
   else if(ns==="tc")renderHhAid("tc","tc_hh",false);
@@ -2601,10 +2624,10 @@ function renderHhContext(ns){
 }
 function insertHhScore(ns){
   const line=hhSummary(ns);
-  if(!/^Hunt-Hess \d/.test(line)){showToast("Select Hunt-Hess grade first");return}
+  if(!/^(?:Hunt-Hess \d|modified Fisher \d)/.test(line)){showToast("Select Hunt-Hess or modified Fisher fields first");return}
   const id=ns==="form"?"f_state":(ns==="tc"?"tc_hpi":"ftc_hpi");
   const el=document.getElementById(id);if(!el)return;
-  const cur=el.value.replace(/\s*Hunt-Hess \d+.*/i,"").trim();
+  const cur=el.value.replace(/\s*(?:Hunt-Hess \d|modified Fisher \d)[^\n.]*/ig,"").trim();
   el.value=(cur?cur+" ":"")+line+".";
   if(ns==="tc")tcBuild();else if(ns==="ftc")ftcBuild();else renderFlags();
 }
