@@ -222,12 +222,18 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .steps{margin:5px 0 2px;border-left:2px solid var(--line);padding-left:9px}
 .step{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--mut);padding:2px 0}
 .step.done{text-decoration:line-through;opacity:.5;cursor:pointer}
-.step.active{color:var(--text);font-weight:600}
+.step.active{color:var(--mut);font-weight:400}
 .step.locked{opacity:.65}
 .step button{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:6px;border:1px solid var(--acc);background:transparent;color:var(--acc);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .step button.xbtn,.roundsugg button.xbtn{border-color:var(--line);color:var(--mut);padding:2px 7px}
 .step button.xbtn:hover,.roundsugg button.xbtn:hover{border-color:var(--e3);color:var(--e3)}
 .step .stxt{flex:1}
+.autotimer{display:inline-flex;align-items:center;gap:5px}
+.autotimer.on{border-color:var(--acc);color:var(--acc)}
+.autotimer.off{border-color:var(--e2);color:var(--e2);background:#2a1e10}
+.autotimer .sw{width:18px;height:10px;border-radius:999px;border:1px solid currentColor;position:relative;display:inline-block;box-sizing:border-box}
+.autotimer .sw:after{content:"";position:absolute;top:1px;left:1px;width:6px;height:6px;border-radius:50%;background:currentColor;transition:left .12s ease}
+.autotimer.on .sw:after{left:9px}
 button.tbtn{border:1px solid var(--line);background:transparent;color:var(--mut);font-family:var(--font);font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;cursor:pointer;white-space:nowrap}
 button.tbtn.set{border-color:var(--e2);color:var(--e2)}
 .clockico{display:inline-block;width:.95em;height:.95em;border:2px solid currentColor;border-radius:50%;position:relative;box-sizing:border-box;vertical-align:-.13em;margin-right:3px;background:transparent;color:#eef4ff}
@@ -674,6 +680,8 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 @media(hover:none){.boxtools{display:flex;opacity:.55}}
 details.planbox.reachbox{border-color:#5a4a1c;background:#1d1a10}
 details.planbox.reachbox .sgt{color:var(--e1)}
+details.planbox.reachbox h4{margin:10px 0 4px;color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.7px}
+details.planbox.reachbox h4.incl{color:var(--ok)}
 ul.reachlist{margin:8px 0 0 18px;font-size:12px;color:#d9e2ef;line-height:1.55}
 ul.reachlist li{margin-bottom:3px}
 ul.reachlist .rx{color:var(--mut);font-size:11px}
@@ -820,7 +828,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.194 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.197 · 2026-09-27</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1384,8 +1392,8 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
 <details class="ref"><summary>MRI protocols + trials</summary><div class="rb">
 <h4>MRI protocols</h4><p>Moyamoya: MRI Brain WWO Moyamoya + MRA Brain WO (comment: "please perform MRI Brain WWO Moyamoya"). Vascular malformation: MRI Brain WWO Vasc Malf + MRA Brain WO. Medulloblastoma: MRI Brain and Spine COG Protocol.</p>
 <h4>NICO (ICH)</h4><p><b>In:</b> lobar/basal ganglia ICH · 18–80 · 30–80 cc · GCS 5–14 · NIHSS >5 · surgery within 24 h of LKW. <b>Out:</b> underlying vascular lesion · irreversible coagulopathy · thalamic/brainstem extension.</p>
-<h4>REACH (ICH)</h4><p><b>In:</b> 18–70 · GCS 5–14 · mRS 0–1 · anterior basal ganglia ICH 20–80 mL · within 24 h. <b>Out (key):</b> aneurysm/AVM/tumor · NIHSS <5 · bilateral fixed pupils · extensor posturing · IVH >50% of a lateral ventricle · thalamic >25% · non-reversible AC · plt <75K or INR >1.4 · ESRD/liver/mech valve · CMO/DNR.</p>
-<p class="note">If a patient qualifies: NO empiric hypertonics pre-op unless herniating. Secure-chat the vascular team for screening.</p>
+<h4>REACH (ICH)</h4><p><b>Inclusion:</b> age 18–70 · GCS 5–14 · mRS 0–1 pre-randomization · pre-randomization CTH shows acute spontaneous anterior basal ganglia primary ICH · ICH volume 20–80 mL · study intervention feasible within 24 h of symptom onset. <b>Out (key):</b> aneurysm/AVM/tumor · NIHSS <5 · bilateral fixed pupils · extensor posturing · IVH >50% of a lateral ventricle · thalamic >25% · non-reversible AC · plt <75K or INR >1.4 · ESRD/liver/mech valve · CMO/DNR.</p>
+<p class="note">If a patient qualifies: do NOT empirically give hypertonics pre-op unless herniation syndrome is present or hypertonics are needed for suspected ICP elevation. If inclusion criteria appear met, immediately Secure Chat patient information to Krisztina Moldovan, Elias Shaaya, Radmehr Torabi, Carlos Pince De Leon Mendez, and Maria Duffy.</p>
 <h4>ICA stenosis consult</h4><p>TCAR: bifurcation (distance to clavicle, C-level). CEA: stenosis length across C-levels. Degree = widest plaque/widest vessel + laterality · AC/antiplatelet · hx neck surgery/XRT · soft thrombus → heparinize + re-image in 3 d.</p>
 <h4>Baclofen pump</h4><p>1-alarm: 90 d to replacement/refill. 2-alarm: empty/battery/stopped >48 h. To-do: PT/PTT + T&S + CK + NPO · PO baclofen 20–30 q8 (up to 240/d) · cyproheptadine 4–8 q6 · IV diazepam (ICU) · propofol (intubated) · interrogate pump · CT abdomen · LD for IT baclofen.</p>
 <h4>Pituitary / suprasellar consult</h4><p>Diagnosis: suprasellar mass. Add MRI brain/pituitary w/wo pituitary protocol, CT w/wo, ophtho, endocrine, prolactin, stat cortisol, AM cortisol/ACTH, TSH/free T4, LH/FSH, testosterone, IGF-1, GH. If operative/inpatient: hold ASA/DVT ppx as directed, BP 100-140, NPO at midnight if no acute hemorrhage, EKG/CXR/UA/coags, pulse ox + telemetry.</p>
@@ -1754,17 +1762,17 @@ function ichTrialCandidateText(t){
 const NICO_REACH_TASKS=[
   "NICO/REACH screen: age, baseline mRS, LKW/onset time",
   "NICO: lobar/basal ganglia ICH 30-80 cc, GCS 5-14, NIHSS >5, surgery feasible within 24 h",
-  "REACH: anterior basal ganglia ICH 20-80 mL, age 18-70, mRS 0-1, GCS 5-14, within 24 h",
+  "REACH inclusion: age 18-70, GCS 5-14, pre-randomization mRS 0-1, acute spontaneous anterior basal ganglia primary ICH on pre-randomization CTH, volume 20-80 mL, intervention feasible within 24 h of symptom onset",
   "Exclude aneurysm/AVM/VST/tumor, major IVH/thalamic/brainstem extension, fixed pupils/posturing",
   "Check platelets/INR and non-reversible AC/coagulopathy exclusions; discuss with senior/trial screening team"
 ];
 function addNicoReachChecklist(){addUniqueLines("f_tasks",NICO_REACH_TASKS);showToast("NICO/REACH checklist added")}
 function nicoReachChecklistHtml(){
   const nico=["18-80","lobar/basal ganglia ICH","30-80 cc","GCS 5-14","NIHSS >5","surgery feasible within 24 h LKW"];
-  const reach=["18-70","mRS 0-1","anterior basal ganglia ICH","20-80 mL","GCS 5-14","within 24 h"];
+  const reach=["Age 18-70","GCS 5-14","mRS 0-1 pre-randomization","Pre-randomization head CT: acute spontaneous anterior basal ganglia primary ICH","ICH volume 20-80 mL","Study intervention feasible within 24 h of symptom onset"];
   const excl=["aneurysm/AVM/VST/tumor","bilateral fixed pupils or extensor posturing","IVH >50% lateral ventricle","thalamic >25% / brainstem extension","non-reversible AC/coagulopathy","plt <75K or INR >1.4","ESRD/liver/mech valve","CMO/DNR"];
   const box=(h,arr)=>'<div class="checklist"><b>'+h+'</b>'+arr.map(x=>'<label><input type="checkbox"><span>'+x+'</span></label>').join("")+'</div>';
-  return box("NICO",nico)+box("REACH",reach)+box("Key exclusions",excl);
+  return box("NICO",nico)+box("REACH INCLUSION CRITERIA",reach)+box("Key exclusions",excl);
 }
 const SAH_RULEOUT_TASKS=[
   "SAH rule-out: noncontrast CTH timing from onset; if negative but high suspicion, LP for xanthochromia/non-clearing RBCs",
@@ -2063,6 +2071,11 @@ function needsDVTHold(c){
   if(p&&p.dvt)return true;
   return /\b(evd|bolt|licox|lumbar drain|\bld\b|lumbar puncture|\blp\b|seps|shunt tap|shuntogram|fontanelle|reservoir tap|drain (pull|removal)|pull .{0,12}(drain|jp|blake)|remove .{0,12}(drain|jp|blake))\b/i.test(txt);
 }
+function noConsentProc(c){
+  if(!c||c.type!=="PROC")return false;
+  const txt=[c.prob,c.action,c.note,(c.steps||[]).map(s=>s.t).join(" ")].filter(Boolean).join(" ");
+  return /\b(?:evd|ld|lumbar drain|jp|blake|hemovac|drain)\b.{0,24}(?:pull|remov|d\/?c)|(?:pull|remov|d\/?c).{0,24}\b(?:evd|ld|lumbar drain|jp|blake|hemovac|drain)\b/i.test(txt);
+}
 const STAFF_THREAD_STEP="Tell the staff thread (nurse + charge + covering APP)";
 const DVT_STEP="Hold DVT ppx — confirm held 6 h pre/post + order held";
 function consentThenDVT(lines){
@@ -2091,6 +2104,16 @@ function staffDVTThenConsent(lines){
 // ---------- live note flags ----------
 // ---------- REACH trial exclusions ----------
 // Prompted on a spontaneous ICH when the note does not already address them.
+const REACH_INCL=[
+ "Age 18-70",
+ "GCS 5-14",
+ "mRS 0-1 pre-randomization",
+ "Pre-randomization head CT demonstrating acute spontaneous anterior basal ganglia primary ICH",
+ "ICH volume 20-80 mL",
+ "Study intervention feasible within 24 h of symptom onset"
+];
+const REACH_CONTACTS=["Krisztina Moldovan","Elias Shaaya","Radmehr Torabi","Carlos Pince De Leon Mendez","Maria Duffy"];
+const REACH_OP_NOTE="If a patient qualifies for REACH, do NOT empirically give hypertonics pre-operatively unless herniation syndrome is present or hypertonics are needed for suspected ICP elevation.";
 const REACH_EXCL=[
  ["Secondary cause on imaging","Ruptured aneurysm, AVM, vascular anomaly, Moyamoya, venous sinus thrombosis, mass/tumor, hemorrhagic conversion of infarct, or recurrence of an ICH within 1 year"],
  ["NIHSS < 5",""],
@@ -2126,18 +2149,26 @@ function reachExclusionsAddressed(t){
   return /\b(?:exclusion|ineligible|not eligible|does not qualify|screened out|aneurysm|avm|arteriovenous|moyamoya|venous sinus thrombosis|tumor|mass lesion|hemorrhagic conversion|nihss|fixed (?:and )?dilated|posturing|infratentorial|pontine|cerebell|thalamic|mechanical valve|esrd|end.stage|cirrhosis|dnr|cmo|comfort measures|hospice|pregnan)\b/i.test(s);
 }
 function reachText(){
-  return "REACH exclusions\n"+REACH_EXCL.map(e=>"- "+e[0]+(e[1]?" ("+e[1]+")":"")).join("\n");
+  return "REACH inclusion criteria\n"+
+    REACH_INCL.map(e=>"- "+e).join("\n")+
+    "\n\nREACH operational note\n- "+REACH_OP_NOTE+
+    "\n- If inclusion criteria appear met, immediately Secure Chat patient information to: "+REACH_CONTACTS.join(", ")+
+    "\n\nREACH exclusions\n"+REACH_EXCL.map(e=>"- "+e[0]+(e[1]?" ("+e[1]+")":"")).join("\n");
 }
-function copyReach(){toClip(reachText());showToast("REACH exclusions copied")}
+function copyReach(){toClip(reachText());showToast("REACH trial info copied")}
 function addReachToTasks(){
   if(!F)return;
-  addUniqueLines("f_tasks",["REACH: screen exclusions and document eligibility"]);
+  addUniqueLines("f_tasks",[
+    "REACH: confirm inclusion criteria",
+    "REACH: if likely qualifies, avoid empiric pre-op hypertonics unless herniation/suspected ICP need",
+    "REACH: Secure Chat Krisztina Moldovan, Elias Shaaya, Radmehr Torabi, Carlos Pince De Leon Mendez, Maria Duffy with patient info"
+  ]);
   showToast("Added REACH screening to to-do");
 }
 function addReachToNote(){
   if(!F)return;
   const el=document.getElementById("f_note");if(!el)return;
-  if(el.value.indexOf("REACH exclusions")>=0){showToast("Already in notes");return}
+  if(/\bREACH (?:inclusion|exclusions|operational note)\b/i.test(el.value)){showToast("Already in notes");return}
   el.value=(el.value.trim()?el.value.trim()+"\n\n":"")+reachText();
   F.note=el.value;
   showToast("REACH exclusions added to notes");
@@ -2145,15 +2176,18 @@ function addReachToNote(){
 function reachBoxHtml(txt){
   if(!reachRelevant(txt))return "";
   const addressed=reachExclusionsAddressed(txt);
+  const inclRows=REACH_INCL.map(e=>'<li>'+esc(e)+'</li>').join("");
   const rows=REACH_EXCL.map(e=>'<li>'+esc(e[0])+(e[1]?' <span class="rx">'+esc(e[1])+'</span>':"")+'</li>').join("");
   return '<details class="planbox reachbox"'+(addressed?"":" open")+'><summary>'+
-    '<span class="sgt">REACH exclusions</span><span class="sgs">'+
-    (addressed?"exclusions look addressed — tap to re-check":"not addressed in this note yet")+'</span></summary>'+
+    '<span class="sgt">REACH trial criteria</span><span class="sgs">'+
+    (addressed?"exclusions look addressed — tap to re-check":"inclusion + exclusions not fully addressed")+'</span></summary>'+
     '<div class="qbtns">'+
-      '<button type="button" onclick="copyReach()">⧉ Copy list</button>'+
+      '<button type="button" onclick="copyReach()">⧉ Copy trial info</button>'+
       '<button type="button" onclick="addReachToNote()">＋ Notes</button>'+
       '<button type="button" onclick="addReachToTasks()">＋ To-Do</button>'+
-    '</div><ul class="reachlist">'+rows+'</ul></details>';
+    '</div><h4 class="incl">REACH inclusion criteria</h4><ul class="reachlist">'+inclRows+'</ul>'+
+    '<h4>Operational note</h4><ul class="reachlist"><li>'+esc(REACH_OP_NOTE)+'</li><li>If inclusion criteria appear met, immediately Secure Chat patient information to: '+esc(REACH_CONTACTS.join(", "))+'</li></ul>'+
+    '<h4>Key exclusions</h4><ul class="reachlist">'+rows+'</ul></details>';
 }
 // ---------- admission / plan protocols (nsgy_bootcamp.txt) ----------
 // Each entry carries a one-line text-message form and the full order set.
@@ -3126,8 +3160,8 @@ function renderSmartHints(){
   const hints=[];
   const box=(title,body,btns)=>'<details class="smartbox"><summary><span><b>'+title+'</b></span>'+(btns||"")+'</summary>'+(body?'<div class="smartbody">'+body+'</div>':"")+'</details>';
   if(F.type==="CONSENT")hints.push(box("Suggested attending list",esc(consentAttendingsFor(txt)),'<span class="qbtns"><button type="button" onclick="addConsentAttendings()">＋ Add</button></span>'));
-  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/TPA · Flush/tap EVD · remove staples · shunt dial/check · baclofen pump check",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT TPA\';renderFlags()">TPA</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD tap\';renderFlags()">EVD tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'Flush EVD\';renderFlags()">Flush EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove staples\';renderFlags()">Staples</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt dial check\';renderFlags()">Shunt dial</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'baclofen pump check\';renderFlags()">Pump</button></span>'));
-  if(F.type==="PROC")hints.push(box("Floor proc presets","EVD · Bolt/Licox · LD · LP · SEPS · drain/EVD/LD pull · remove dssg/staples/sutures",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'place EVD\';renderFlags()">EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'bolt\';renderFlags()">Bolt</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'lumbar drain\';renderFlags()">LD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LP\';renderFlags()">LP</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'SEPS\';renderFlags()">SEPS</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'drain pull\';renderFlags()">Drain pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD pull\';renderFlags()">EVD pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LD pull\';renderFlags()">LD pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove dssg\';renderFlags()">Dssg</button></span>'));
+  if(F.type==="PCON")hints.push(box("Quick proc presets","IT Cardene/TPA · Flush/tap EVD · remove dssg/staples · shunt dial/check · baclofen pump check",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'IT TPA\';renderFlags()">TPA</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD tap\';renderFlags()">EVD tap</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'Flush EVD\';renderFlags()">Flush EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove dssg\';renderFlags()">Dssg</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'remove staples\';renderFlags()">Staples</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'shunt dial check\';renderFlags()">Shunt dial</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'baclofen pump check\';renderFlags()">Pump</button></span>'));
+  if(F.type==="PROC")hints.push(box("Floor proc presets","EVD · Bolt/Licox · LD · LP · SEPS · drain/EVD/LD pull · remove staples/sutures",'<span class="qbtns"><button type="button" onclick="document.getElementById(\'f_prob\').value=\'place EVD\';renderFlags()">EVD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'bolt\';renderFlags()">Bolt</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'lumbar drain\';renderFlags()">LD</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LP\';renderFlags()">LP</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'SEPS\';renderFlags()">SEPS</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'drain pull\';renderFlags()">Drain pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'EVD pull\';renderFlags()">EVD pull</button><button type="button" onclick="document.getElementById(\'f_prob\').value=\'LD pull\';renderFlags()">LD pull</button></span>'));
   if(/\b(admit|admission|we will admit)\b/i.test(txt))hints.push(box("Admit plan detected","Add H&P and admission-order reminders.",'<span class="qbtns"><button type="button" onclick="addAdmissionChecklist()">＋ H&P</button></span>'));
   if(/\b(or|book(ed|ing)?|pre-?op|operative|surgery)\b/i.test(txt))hints.push(box("OR/pre-op plan detected","Add rH&P, pre-op note, consent, and booking reminders.",'<span class="qbtns"><button type="button" onclick="addORChecklist()">＋ OR checklist</button></span>'));
   if(F.type==="CONSULT"&&infectionConcernText(txt))hints.push(box("R/o SSI/infection detected","Verify antibiotics already given; if stable and not started, confirm sampling plan with chief/attending before antibiotics.",'<span class="qbtns"><button type="button" onclick="addInfectionChecklist()">＋ Infection</button></span>'));
@@ -3353,7 +3387,8 @@ function migrate(d){
       if(c.wf.cc1&&!c.wf.ccam)c.wf.ccam=c.wf.cc1;
       if(c.wf.cc4&&!c.wf.ccpm)c.wf.ccpm=c.wf.cc4;
     }
-    if((!c.type||c.type==="CONSULT")&&!c.timersOff&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
+    c.autoTimersOff=!!c.autoTimersOff;
+    if((!c.type||c.type==="CONSULT")&&!autoTimersDisabled(c)&&!c.reviewOff&&!c.reviewManual)resetReviewClock(c,c.reviewAt||c.created||c.updatedAt||Date.now(),true);
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];r.doneKeys=Array.isArray(r.doneKeys)?r.doneKeys:[];(r.steps||[]).forEach(t=>{if(t&&t.done)rememberDone(r,t.t,true)});if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
@@ -3558,10 +3593,11 @@ function reviewWindowMin(c){
   const e=Math.max(0,Math.min(3,c.E||0));
   return E_WINDOW_MIN[e];
 }
+function autoTimersDisabled(c){return !!(c&&(c.timersOff||c.autoTimersOff))}
 function resetReviewClock(c,at,force){
   const m=reviewWindowMin(c);if(m===null)return;
   // never re-arm something the user deliberately switched off or set by hand
-  if(c.timersOff)return;
+  if(autoTimersDisabled(c))return;
   if(!force&&(c.reviewOff||c.reviewManual))return;
   const t=at||Date.now();
   delete c.reviewOff;
@@ -3570,7 +3606,7 @@ function resetReviewClock(c,at,force){
 }
 function setReviewClockForMin(c,min,at){
   if(!c||c.type!=="CONSULT")return;
-  if(c.timersOff)return;
+  if(autoTimersDisabled(c))return;
   const t=at||Date.now();
   delete c.reviewOff;
   c.reviewAt=t;
@@ -3584,12 +3620,13 @@ function consultMilestoneSnoozeMin(k){
 }
 function ensureReviewClock(c){
   if(!c||c.type!=="CONSULT")return;
-  if(c.timersOff)return;
+  if(autoTimersDisabled(c))return;
   if(c.reviewOff)return;
   if(!c.reviewAt||!c.reviewDueISO)resetReviewClock(c,c.created||c.updatedAt||Date.now());
 }
 function reviewDL(c){
   if(!c||c.type!=="CONSULT")return null;
+  if(autoTimersDisabled(c))return null;
   if(c.reviewOff)return null;
   ensureReviewClock(c);
   return fmtDL(c.reviewDueISO);
@@ -3917,6 +3954,7 @@ function workflowSet(c){
 function visibleWorkflowSet(c){
   let set=workflowSet(c);
   if(c&&c.type==="PROC"&&!needsDVTHold(c))set=set.filter(([k])=>k!=="dvt");
+  if(c&&c.type==="PROC"&&noConsentProc(c))set=set.filter(([k])=>k!=="consent");
   return set;
 }
 function workflowComplete(c){
@@ -3996,10 +4034,24 @@ function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.dueISO)||(c.tasks||[]).some(t=>!effectivelyDone(c,t)&&t.dueISO);
   const hasReview=c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO;
   return '<span class="dlbtns"><button onclick="bumpDL(\''+c.id+'\',5)">+5m</button><button onclick="bumpDL(\''+c.id+'\',15)">+15m</button><button onclick="bumpDL(\''+c.id+'\',30)">+30m</button><button onclick="bumpDL(\''+c.id+'\',60)">+1h</button>'+
+   '<button class="autotimer '+(c.autoTimersOff?"off":"on")+'" onclick="toggleAutoTimers(\''+c.id+'\')" title="Toggle automatic review/follow-up timers"><span class="sw"></span> auto '+(c.autoTimersOff?"off":"on")+'</button>'+
    (hasReview?'<button onclick="clearReviewDL(\''+c.id+'\')" title="Clear review timer">✕ review</button>':"")+
    (c.deadlineISO?'<button onclick="clearDL(\''+c.id+'\')" title="Discontinue timer">✕ timer</button>':"")+
    (hasOverdueTimers(c)?'<button onclick="clearOverdueTimers(\''+c.id+'\')" title="Clear only overdue timers">✕ overdue</button>':"")+
    (hasStepT?'<button onclick="clearAllStepDL(\''+c.id+'\')" title="Discontinue all sub-task timers">✕ sub-timers</button>':"")+'</span>';
+}
+function toggleAutoTimers(id){
+  const c=S.consults.find(x=>x.id===id);if(!c)return;
+  c.autoTimersOff=!c.autoTimersOff;
+  if(c.autoTimersOff){
+    c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null;
+    showToast("Auto timers off");
+  }else{
+    c.timersOff=false;
+    if(c.type==="CONSULT")resetReviewClock(c,Date.now(),true);
+    showToast("Auto timers on");
+  }
+  touch(c);render();
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.timersOff=true;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
@@ -4115,7 +4167,7 @@ function nextDue(c){
 function boardDue(c){
   const explicit=nextDue(c);
   if(explicit)return explicit;
-  if(c&&c.type==="CONSULT"&&!c.reviewOff){
+  if(c&&c.type==="CONSULT"&&!autoTimersDisabled(c)&&!c.reviewOff){
     ensureReviewClock(c);
     return c.reviewDueISO||null;
   }
@@ -5625,7 +5677,8 @@ function spineLimbApply(id,k,n){
   roundExamBuildApply(id,false);
 }
 function examDefaultFields(mode){
-  const base=["ox","eye","pup","gaze","corneal","cough","cmd","mod"];
+  const base=["ox","eye","pup","gaze","cmd","mod"];
+  if(mode==="intubated")return ["mod","eye","pup","corneal","cough","rue","lue","rle","lle","comment","extra"];
   if(mode==="four")return base.concat(["face","rue","lue","rle","lle","drift","sens","comment","extra"]);
   if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
   return base.concat(["face","bue","ble","drift","sens","comment","extra"]);
@@ -5634,6 +5687,7 @@ function examAllFieldKeys(){return ["ox","mental","eye","pup","gaze","corneal","
 function examFieldKeysForMode(mode){
   const all=examAllFieldKeys();
   if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
+  if(mode==="intubated")return all.filter(k=>!["ox","mental","face","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves"].includes(k));
   if(mode==="four")return all.filter(k=>!["bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
   return all.filter(k=>!["bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
 }
@@ -5761,7 +5815,7 @@ function examStructFromText(t){
   else if(/\b-\s*clonus\b/i.test(s))out.reflex="- clonus";
   else if(/\+\s*hoffmans?\b/i.test(s))out.reflex="+ hoffmans";
   else if(/\+\s*clonus\b/i.test(s))out.reflex="+ clonus";
-  if(/\bintubated\b/i.test(s))out.mod="intubated";
+  if(/\bintubated\b/i.test(s)){out.mod="intubated";if(out.mode!=="spine")out.mode="intubated"}
   else if(/\bsedated\b/i.test(s))out.mod="sedated";
   else if(/\baphasic\b|\baphasia\b/i.test(s))out.mod="aphasic";
   else if(/\bpain[- ]limited\b/i.test(s))out.mod="pain-limited";
@@ -5779,7 +5833,7 @@ function roundExamBuilderHtml(r,cur){
   const pupils=["","PERRL","PERRV","R 3 brisk, L 3 brisk","R 3 reactive, L 3 reactive","R 3 brisk, L 4 brisk","R 4 brisk, L 3 brisk","R 3 reactive, L 4 reactive","R 4 reactive, L 3 reactive","R 3 sluggish, L 4 reactive","R 4 reactive, L 3 sluggish","R 3 NR, L 3 reactive","R 3 reactive, L 3 NR","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
   const cough=["","Present cough reflex","Absent cough reflex","+ cough","- cough","cough present","cough absent","UTA cough"];
   const corneal=["","Present corneal reflex bilaterally","Absent corneal reflex bilaterally","Present left corneal reflex only","Present right corneal reflex only","bilateral corneals","R corneal","L corneal","no corneals","corneals UTA"];
-  const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["spine","Spine groups"]];
+  const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["intubated","Intubated"],["spine","Spine groups"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
   const sens=["","SILT","decreased sensation","sensory level","baseline numbness","UTA sensation"];
   const spineSens=["","+ sensation","- sensation","SILT","decreased","numbness","paresthesias","baseline","UTA"];
@@ -5874,9 +5928,9 @@ function roundExamQuick(id,kind){
   }else if(kind==="intubated"){
     const r=S.rounds.find(x=>x.id===id);
     if(r){
-      const fields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1])));
-      ["mod","eye","pup","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
-      r.examFields=fields;r.examFieldsCustom=true;
+      r.examMode="intubated";
+      r.examFields=examDefaultFields("intubated");
+      r.examFieldsCustom=false;
       const el=document.getElementById("rexam_"+id);
       const cur=(el?el.value:String(r.exam||"")).trim();
       const add=["Intubated","Eyes closed","PERRL","Present cough reflex","Present corneal reflex bilaterally"].filter(t=>!new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(cur));
@@ -5884,12 +5938,12 @@ function roundExamQuick(id,kind){
       r.examAt=sxNow();r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();return;
     }
   }else if(kind==="baseline"){
-    if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
+    if(mode==="four"||mode==="intubated")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
     else if(mode==="spine"){exSetSpineLimb(id,"rueSp","baseline",6);exSetSpineLimb(id,"lueSp","baseline",6);exSetSpineLimb(id,"rleSp","baseline",5);exSetSpineLimb(id,"lleSp","baseline",5);["rueSens","lueSens","rleSens","lleSens"].forEach(k=>exSet(id,k,"baseline"))}
     else{exSet(id,"bue","baseline");exSet(id,"ble","baseline")}
     exSet(id,"comment","at baseline");
   }else{
-    if(mode==="four")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"5/5"));
+    if(mode==="four"||mode==="intubated")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"5/5"));
     else if(mode==="spine"){exSetSpineLimb(id,"rueSp","5/5/5/5/5/5",6);exSetSpineLimb(id,"lueSp","5/5/5/5/5/5",6);exSetSpineLimb(id,"rleSp","5/5/5/5/5",5);exSetSpineLimb(id,"lleSp","5/5/5/5/5",5);["rueSens","lueSens","rleSens","lleSens"].forEach(k=>exSet(id,k,"+ sensation"))}
     else{exSet(id,"bue","5/5");exSet(id,"ble","5/5")}
     exSet(id,"drift","no drift");
@@ -5955,7 +6009,7 @@ function roundExamBuildApply(id,explicit){
   if(moves)lines.push(moves);
   if(cmd)lines.push(cmd);
   if(mod)lines.push(mod);
-  if(mode==="four"){
+  if(mode==="four"||mode==="intubated"){
     [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
   }else if(mode==="spine"){
     [["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
@@ -6010,7 +6064,7 @@ function roundExamHtml(r){
     '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
     '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onpaste="roundExamPaste(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
     examChipsHtml(r.id)+
-    '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
+    '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'intubated\')">Intubated</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
       (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
       (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
@@ -6286,7 +6340,10 @@ function roundExamSave(id,el,explicit){
 function roundExamPreset(id,kind){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   const el=document.getElementById("rexam_"+id);if(!el)return;
-  el.value=kind==="spine"?TC_SPINE_EXAM:TC_CNS_EXAM;
+  r.examMode=kind==="spine"?"spine":(kind==="intubated"?"intubated":"basic");
+  r.examFields=examDefaultFields(r.examMode);
+  r.examFieldsCustom=false;
+  el.value=kind==="spine"?TC_SPINE_EXAM:(kind==="intubated"?TC_INTUBATED_EXAM:TC_CNS_EXAM);
   roundExamSave(id,el,true);
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
@@ -9567,6 +9624,17 @@ const TC_SPINE_EXAM=[
  "Sensation: RUE +; LUE +; RLE +; LLE +; dermatome/level ___",
  "DRE: ___"
 ].join("\n");
+const TC_INTUBATED_EXAM=[
+ "Intubated",
+ "Eyes closed",
+ "PERRL",
+ "Present corneal reflex bilaterally",
+ "Present cough reflex",
+ "RUE 5/5",
+ "LUE 5/5",
+ "RLE 5/5",
+ "LLE 5/5"
+].join("\n");
 const TC_BABY_EXAM=[
  "Skin: ***",
  "",
@@ -9586,7 +9654,8 @@ function stripExamSmartLists(s){
 }
 function tcIsSpineText(t){return !carotidText(t)&&/spine|c-?spine|t-?spine|l-?spine|cervical|thoracic|lumbar|sacral|myelopath|radiculopath|cord|cauda|saddle|pvr|retention|stenosis|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC|burst|lami|fusion|tlif|acdf|xlif|alif|corpect/i.test(t||"")}
 function tcIsBabyText(t){return /\b(?:baby|infant|neonate|newborn|nicu|wi|w&i|pedi|peds|months?\s*old|weeks?\s*old|days?\s*old|fontanelle|head circumference|sutures?)\b/i.test(t||"")}
-function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:TC_CNS_EXAM)}
+function tcIsIntubatedText(t){return /\b(?:intubated|ett|vent(?:ed|ilator)?|sedated on prop|corneal|cough reflex)\b/i.test(t||"")}
+function tcSuggestedExam(t){return tcIsBabyText(t)?TC_BABY_EXAM:(tcIsSpineText(t)?TC_SPINE_EXAM:(tcIsIntubatedText(t)?TC_INTUBATED_EXAM:TC_CNS_EXAM))}
 function tcRelevantLabs(t){
   const labs=["Na","PT/PTT/INR","platelets"];
   const add=x=>{if(x&&!labs.includes(x))labs.push(x)};
@@ -10285,7 +10354,7 @@ function renderCapture(){
   capActions=[];
   const consultParse=parseCaptureConsult(text);
   const pathAbbrev=knownPathAbbrev(text);
-  const quickProcText=/\b(?:remove staples?|staple removal|evd tap|tap evd|evd (?:csf|sample|culture|draw)|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen)|\btpa\b|baclofen pump|pump (?:check|interrogat|refill|reprogram)|shunt (?:dial|setting|program|re-?program|check)|valve (?:setting|check)|re-?program.{0,20}(?:shunt|valve))\b/i.test(text);
+  const quickProcText=/\b(?:remove (?:staples?|dssg|drssg|dressings?)|(?:staple|dssg|drssg|dressing) removal|rm (?:dssg|drssg)|evd tap|tap evd|evd (?:csf|sample|culture|draw)|evd flush|flush(?:ing)? (?:the )?evd|intrathecal|it (?:cardene|nicardipine|meds?|medication|tpa|abx|baclofen)|\btpa\b|baclofen pump|pump (?:check|interrogat|refill|reprogram)|shunt (?:dial|setting|program|re-?program|check)|valve (?:setting|check)|re-?program.{0,20}(?:shunt|valve))\b/i.test(text);
   const knownProcCue=procMatch(text)||/\b(?:evd|bolt|licox|lumbar drain|\bld\b|seps|halo|shunt tap|shuntogram|fontanelle tap|reservoir tap|lp|lumbar puncture|drain pull|jp|blake|dssg|dressing removal|staples?|sutures?|prolenes?)\b/i.test(text);
   if(text.length<4&&!pathAbbrev&&!knownProcCue&&!scoreShortcutsFor(text).length){el.innerHTML="";return}
   const bed=consultParse.bed||extractBed(text);
@@ -10360,7 +10429,7 @@ function renderCapture(){
     add("oe primary","⌕","Ask OpenEvidence","copies your question + opens OE",()=>capOE(text));
     if(clinical)add("","◉","New consult instead",preview,()=>capConsult(text,bed));
   }else if(pconCue){
-    add("primary",SCREW_ICON,"Quick proc — IT med / Flush EVD / dial","simple: notify → gather supplies → notify → sig event",()=>capTask("PCON",text,{loc:bed||""}));
+    add("primary",SCREW_ICON,"Quick proc — IT med / Flush EVD / dssg / dial","simple: notify → gather supplies → notify → sig event",()=>capTask("PCON",text,{loc:bed||""}));
   }else if(procCue&&(kit||verbStart||procKeywordCue)){
     add("primary",HAMMER_ICON,"Floor procedure"+(kit?" — "+kit.name:""),(kit?"supplies + step chain ready to load":"starts with a verb — proc? time-out · consent · DVT ppx"),()=>capTask("PROC",text,{loc:bed||""}));
     if(kit)add("","◷","+ Snooze to a date","e.g. remove prolenes on 5/1 — hides until then",()=>capTask("PROC",text,{loc:bed||""}));
