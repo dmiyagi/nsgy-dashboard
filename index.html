@@ -828,7 +828,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.197 · 2026-09-27</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.198 · 2026-09-28</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3362,12 +3362,16 @@ const BLOCKS=[
  {id:"pm",s:"18:00",e:"21:00",t:"PM signout",tasks:["Floor signs out first — keep seeing consults/procedures until your turn","Sign out ICU/peds with scripts (aSAH · TSSH · post-op crani · severe TBI — see Reference)","Charge Review: every consult + post-op note signed","If time: prep tomorrow's OR list, add pre-ops to 'add preops' list, write whiteboard"]}
 ];
 // ---------- state ----------
+let BOARD_AUTO_TIMERS_OFF=false;
 let S=load();
 let globalSearch="";
 let startupCompactBoard=true;
 function migrate(d){
   d.round24=!!d.round24;
   d.round24At=d.round24At||0;
+  d.boardAutoTimersOff=!!d.boardAutoTimersOff;
+  d.boardAutoTimersAt=d.boardAutoTimersAt||0;
+  BOARD_AUTO_TIMERS_OFF=d.boardAutoTimersOff;
   (d.consults||[]).forEach(c=>{
     if(!c.type)c.type="CONSULT";
     if(c.closed&&!c.closedAt)c.closedAt=c.updatedAt||c.created||Date.now();
@@ -3404,7 +3408,7 @@ function migrate(d){
   });
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}BOARD_AUTO_TIMERS_OFF=false;return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false,boardAutoTimersOff:false,boardAutoTimersAt:0}}
 let lastSaved="";
 let syncApplying=false;
 function save(){
@@ -3593,7 +3597,7 @@ function reviewWindowMin(c){
   const e=Math.max(0,Math.min(3,c.E||0));
   return E_WINDOW_MIN[e];
 }
-function autoTimersDisabled(c){return !!(c&&(c.timersOff||c.autoTimersOff))}
+function autoTimersDisabled(c){return !!(BOARD_AUTO_TIMERS_OFF||(c&&(c.timersOff||c.autoTimersOff)))}
 function resetReviewClock(c,at,force){
   const m=reviewWindowMin(c);if(m===null)return;
   // never re-arm something the user deliberately switched off or set by hand
@@ -3731,6 +3735,23 @@ function setBoardType(k){
 }
 function setBoardOwner(k){boardOwnerFilter=k||"ALL";render()}
 function setBoardSort(k){boardSortMode=k||"bubble";render()}
+function toggleBoardAutoTimers(){
+  S.boardAutoTimersOff=!S.boardAutoTimersOff;
+  S.boardAutoTimersAt=Date.now();
+  BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
+  if(S.boardAutoTimersOff){
+    (S.consults||[]).forEach(c=>{
+      if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null;touch(c)}
+    });
+    showToast("Board auto timers off");
+  }else{
+    (S.consults||[]).forEach(c=>{
+      if(c.type==="CONSULT"&&!c.timersOff&&!c.autoTimersOff){resetReviewClock(c,Date.now(),true);touch(c)}
+    });
+    showToast("Board auto timers on");
+  }
+  render();flushAutosave();
+}
 function boardVisible(c){return !!(c&&c.type!=="CHART"&&c.type!=="WOUND")}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
@@ -3753,7 +3774,8 @@ function renderTypeFilters(list){
   ].map(([k,l])=>'<option value="'+k+'" '+(boardSortMode===k?"selected":"")+'>'+l+'</option>').join("");
   el.innerHTML='<label class="filterctrl">Type <select aria-label="Type" onchange="setBoardType(this.value)">'+typeOpts+'</select></label>'+
     '<label class="filterctrl">Assigned <select aria-label="Assigned" onchange="setBoardOwner(this.value)">'+ownerOpts+'</select></label>'+
-    '<label class="filterctrl">Sort <select onchange="setBoardSort(this.value)">'+sortOpts+'</select></label>';
+    '<label class="filterctrl">Sort <select onchange="setBoardSort(this.value)">'+sortOpts+'</select></label>'+
+    '<button class="filterctrl autotimer '+(S.boardAutoTimersOff?"off":"on")+'" onclick="toggleBoardAutoTimers()" title="Toggle automatic Board priority timers"><span class="sw"></span> auto timers '+(S.boardAutoTimersOff?"off":"on")+'</button>';
 }
 const CONSULT_GATE=[["list","List"],["handoff","Handoff"],["seen","Seen"]];
 const CONSULT_PRIORITY_WF=[["seen","Seen",140],["staffedC","Staffed-Chief",120],["staffedA","Staffed-Attg",110],["commplan","Comm'd Plan",90]];
@@ -10623,7 +10645,7 @@ async function fetchGistFile(f,auto){
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
-function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,ts:Date.now()}}
+function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,boardAutoTimersOff:!!S.boardAutoTimersOff,boardAutoTimersAt:S.boardAutoTimersAt||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
 const DELETE_TOMBSTONE_MS=7*24*3600*1000;
 function tombStamp(){return Date.now()+DELETE_TOMBSTONE_MS}
@@ -10801,7 +10823,10 @@ function mergeState(local,remote){
   const l24=local.round24At||0,r24=remote.round24At||0;
   const round24At=Math.max(l24,r24);
   const round24=(l24||r24)?(l24>=r24?!!local.round24:!!remote.round24):!!(local.round24||remote.round24);
-  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At};
+  const lat=local.boardAutoTimersAt||0,rat=remote.boardAutoTimersAt||0;
+  const boardAutoTimersAt=Math.max(lat,rat);
+  const boardAutoTimersOff=(lat||rat)?(lat>=rat?!!local.boardAutoTimersOff:!!remote.boardAutoTimersOff):!!(local.boardAutoTimersOff||remote.boardAutoTimersOff);
+  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At,boardAutoTimersOff:boardAutoTimersOff,boardAutoTimersAt:boardAutoTimersAt};
 }
 async function doSync(auto){
   recoverStaleSync();
@@ -10835,11 +10860,11 @@ async function doSync(auto){
       gistCache=remote;
     }
     const merged=mergeState(S,remote);
-    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;
+    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
-    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0});
-    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At});
+    const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0,boardAutoTimersOff:!!remote.boardAutoTimersOff,boardAutoTimersAt:remote.boardAutoTimersAt||0});
+    const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At,boardAutoTimersOff:!!merged.boardAutoTimersOff,boardAutoTimersAt:merged.boardAutoTimersAt||0});
     if(remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})},auto);
       gistEtag="";                            // our own write invalidates the cached tag
