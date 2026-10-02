@@ -828,7 +828,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.200 · 2026-09-29</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.201 · 2026-10-01</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4170,7 +4170,7 @@ function stepsHtml(c){
   }).join("")+'</div>';
 }
 function togStepTimer(id,i){const k=id+":"+i;openStepTimer=(openStepTimer===k)?null:k;render()}
-function togTaskTimer(id,i){const k=id+":"+i;openTaskTimer=(openTaskTimer===k)?null:k;render()}
+function togTaskTimer(id,i){const k=id+":"+i;openTaskTimer=(openTaskTimer===k)?null:k;render();renderRounds()}
 function setStepDL(id,i,min){
   const c=S.consults.find(x=>x.id===id);if(!c||!c.steps||!c.steps[i])return;
   if(pinnedTopId===id)pinnedTopId=null;
@@ -4184,7 +4184,7 @@ function setTaskDL(id,i,min){
   if(pinnedTopId===id)pinnedTopId=null;
   if(min)c.timersOff=false;
   c.tasks[i].dueISO=min?new Date(Date.now()+min*60000).toISOString():null;
-  openTaskTimer=null;touch(c);render();
+  openTaskTimer=null;touch(c);render();renderRounds();
   showToast(min?("Timer set on: "+c.tasks[i].t.slice(0,40)):"Timer cleared");
 }
 function doneStep(id,i){const c=S.consults.find(x=>x.id===id);if(c&&c.steps&&c.steps[i]){
@@ -5528,6 +5528,7 @@ function hasActiveChartCheck(r){
 function roundChecksFor(r){
   return roundChecks();
 }
+function chartOnlyChecks(){return [["ccam","Chart check AM"],["ccpm","Chart check PM"]]}
 function roundChartHtml(r){
   r.chartChecks=r.chartChecks||{};
   const checks=roundChecksFor(r);
@@ -5591,7 +5592,7 @@ function roundStepBox(r,i){
   return '<button class="rcheck" title="Mark to-do done" aria-label="Mark to-do done" onclick="event.stopPropagation();rStepDone(\''+r.id+'\','+i+')">✓</button>';
 }
 function roundTodoIndicator(r){
-  const n=(r&&r.steps||[]).filter(s=>!effectivelyDone(r,s)).length;
+  const n=((r&&r.steps)||[]).concat((r&&r.tasks)||[]).filter(s=>!effectivelyDone(r,s)).length;
   return n?'<span class="todoind" title="'+n+' pending to-do'+(n===1?"":"s")+'" aria-label="'+n+' pending to-do'+(n===1?"":"s")+'"></span>':"";
 }
 function roundCheckAdvance(id){
@@ -6406,6 +6407,12 @@ function chartDotsHtml(r){
   const checks=roundChecksFor(r);
   return '<span class="chartdots" title="'+checks.map(c=>c[1]).join(" / ")+'">'+checks.map(([k])=>'<span class="chartdot '+(k==="am"||k==="pmseen"?"amseen ":"")+(cc[k]?"on":"")+'"></span>').join("")+'</span>';
 }
+function chartCheckDotsHtml(c){
+  const set=chartOnlyChecks();
+  return '<span class="chartdots" title="'+set.map(x=>x[1]).join(" / ")+'">'+set.map(([k,l])=>
+    '<button type="button" class="chartdotbtn" title="'+esc(l)+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')"><span class="chartdot '+(k==="ccam"?"amseen ":"")+(c.wf&&c.wf[k]?"on":"")+'"></span></button>'
+  ).join("")+'</span>';
+}
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
 function collapseRounds(v){S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
@@ -6450,6 +6457,27 @@ function roundIdentityBadges(r){
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"")+
     (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"");
+}
+function chartCheckRoundProxy(c){
+  const linked=chartCheckRound(c);
+  const raw=[c&&c.loc,c&&c.prob,c&&c.note].filter(Boolean).join(" · ");
+  if(linked){
+    const r=Object.assign({},linked);
+    if(!r.raw&&raw)r.raw=raw;
+    return r;
+  }
+  const label=roundLabel([c&&c.loc,patientLast3(c)].filter(Boolean).join(" "))||roundLabel(raw)||c.loc||"Chart check";
+  return {
+    id:c.id,
+    label:label,
+    raw:raw||label,
+    tags:normalizeRoundTags(roundTags(raw||label)),
+    team:c.team||teamFromText(raw),
+    attg:c.attg||attgFromText(raw),
+    soCcResp:c.soCcResp,
+    nccuSO:c.nccuSO,
+    isFloor:false
+  };
 }
 function stripRoundAttgParens(s,r){
   const attg=roundAttg(r);
@@ -6587,32 +6615,53 @@ function chartCheckIdentityHtml(c){
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
-function chartCheckDotsHtml(c){
-  const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
-  if(!set.length)return "";
-  return '<span class="chartdots" title="'+set.map(x=>x[1]).join(" / ")+'">'+set.map(([k,l])=>
-    '<button type="button" class="chartdotbtn" title="'+esc(l)+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')"><span class="chartdot '+(k==="ccam"||k==="wseen1"?"amseen ":"")+(c.wf&&c.wf[k]?"on":"")+'"></span></button>'
-  ).join("")+'</span>';
-}
 function chartCheckMiniButtons(c){
-  const set=visibleWorkflowSet(c).filter(([k])=>k!=="__close");
-  if(!set.length)return "";
+  const set=chartOnlyChecks();
   return '<span class="chartmini">'+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
+}
+function chartCheckButtonsHtml(c){
+  const set=chartOnlyChecks(),done=set.filter(([k])=>c.wf&&c.wf[k]).length;
+  return '<div class="wf">'+set.map(([k,l])=>'<button class="routine '+(c.wf&&c.wf[k]?"on":"")+'" onclick="togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l)+'</button>').join("")+
+    '<span class="chartprog'+(done===set.length?" all":"")+'">'+done+'/'+set.length+'</span></div>';
+}
+function chartCheckTasksHtml(c){
+  const ts=c.tasks||[];if(!ts.length)return "";
+  return '<div class="rsteps">'+ts.map((t,i)=>{
+    if(effectivelyDone(c,t))return '<div class="step done" onclick="togChk(\''+c.id+'\','+i+')">✓ <span class="stxt">'+esc(t.t)+'</span><button class="xbtn" onclick="event.stopPropagation();chartCheckTaskRemove(\''+c.id+'\','+i+')">×</button></div>';
+    return '<div class="step active"><button onclick="togChk(\''+c.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(t.t)+'</span>'+taskTimerBtn(c,i,t)+'<button class="xbtn" onclick="event.stopPropagation();chartCheckTaskRemove(\''+c.id+'\','+i+')">×</button></div>'+taskTimerRow(c,i);
+  }).join("")+'</div>';
 }
 function chartCheckListRow(c){
   const due=nextDue(c);
   const dl=fmtDL(due);
   const open=!c.collapsed;
-  const wf=wfChips(c,false);
   const worry=c.worry?'<span class="bg warn">! 2–3×/day</span>':"";
   const title=chartCheckTitle(c);
   const ctx=chartCheckContextHtml(c,due);
+  const r=chartCheckRoundProxy(c);
+  const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
+  const nccu=(c.nccuSO||r.nccuSO)?'<span class="bg warn">SO</span>':"";
+  if(!open){
+    return '<div class="card crowwrap hastrash" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
+      trashBtn(c.id,"chart")+
+      '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
+        chartCheckDotsHtml(c)+
+        roundTodoIndicator(c)+
+        (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
+        (worry?'<span class="bg warn">!</span>':"")+
+        (roundRoom(r)?'<span class="rwho">'+esc(roundRoom(r))+'</span>':"")+
+        (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
+        '<span class="rtags">'+roundCareBadges(r)+nccu+tags+'</span>'+
+        '<span class="rprob">'+oneLinerKeyHtml(title)+'</span>'+
+        chartCheckMiniButtons(c)+
+        '<span class="car">▸</span></div></div>';
+  }
   return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
     trashBtn(c.id,"chart")+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
       chartCheckDotsHtml(c)+
-      chartCheckIdentityHtml(c)+
-      typeBadgeHtml(c,true)+
+      roundIdentityBadges(r)+
+      nccu+
       (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
       (due?chartDueChip(due):"")+
       worry+
@@ -6622,7 +6671,8 @@ function chartCheckListRow(c){
     (open?'<div class="wounddetail">'+
       ctx+
       '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
-      chartCheckNoteHtml(c)+stepsHtml(c)+checksHtml(c)+chartCheckTodoAddHtml(c)+wf+soValsHtml(c)+
+      chartCheckButtonsHtml(c)+
+      chartCheckNoteHtml(c)+chartCheckTasksHtml(c)+chartCheckTodoAddHtml(c)+
       '<div class="cardbtns">'+linkedSourceButton(c)+'<button onclick="chartCheckToRounds(\''+c.id+'\')">→ Rounds</button><button onclick="openForm(\''+c.id+'\')">Edit</button><button onclick="copyLine(\''+c.id+'\')">Copy line</button><button onclick="boardMarkSO(\''+c.id+'\')"'+soButtonAttrs(c)+'>SO</button>'+closeDoneButton(c,false)+'</div>'+
     '</div>':"")+
     '</div>';
@@ -6645,6 +6695,12 @@ function chartCheckTodoAdd(id){
   c.tasks=c.tasks||[];
   if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){rememberDone(c,t,false);c.tasks.push({t:t,done:false})}
   el.value="";touch(c);renderRounds();renderCal();save();
+}
+function chartCheckTaskRemove(id,i){
+  const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c||!c.tasks||!c.tasks[i])return;
+  const t=c.tasks[i].t;
+  c.tasks.splice(i,1);touch(c);renderRounds();save();
+  showToast("Removed "+String(t||"").slice(0,44));
 }
 function stripRoundsDateText(s){
   return String(s||"").replace(/^Rounds date:\s*/i,"").trim();
@@ -6727,12 +6783,43 @@ function purgeChartChecks(){
     render();renderRounds();renderCal();flushAutosave();
   },"Undo");
 }
+function chartCheckToRoundRecord(c){
+  if(!c)return null;
+  const raw=[c.loc,chartCheckTitle(c),c.note].filter(Boolean).join(" · ");
+  const label=roundLabel([c.loc,patientLast3(c)].filter(Boolean).join(" "))||roundLabel(raw)||c.loc||"Rounds";
+  let r=c.roundId?(S.rounds||[]).find(x=>x.id===c.roundId):null;
+  if(!r)r=findRoundLike(label,raw);
+  const now=Date.now();
+  let created=false;
+  if(!r){
+    r={
+      id:"r"+uid(),raw:raw||label,label:label,tags:normalizeRoundTags(roundTags(raw||label)),
+      team:c.team||teamFromText(raw),attg:c.attg||attgFromText(raw),
+      soT:c.soT||detectTmpl(raw),so:Object.assign({},c.so||{}),soPrev:Object.assign({},c.soPrev||{}),
+      seen:false,plan:"",note:"",steps:[],doneKeys:[],collapsed:true,created:now,updatedAt:now
+    };
+    S.rounds=S.rounds||[];
+    S.rounds.push(r);
+    created=true;
+  }else{
+    r.label=r.label||label;
+    if(!r.raw&&raw)r.raw=raw;
+    r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags(raw||label)));
+    r.team=r.team||c.team||teamFromText(raw);
+    r.attg=r.attg||c.attg||attgFromText(raw);
+    r.soT=r.soT||c.soT||detectTmpl(raw);
+    r.so=Object.assign({},c.so||{},r.so||{});
+    r.soPrev=Object.assign({},c.soPrev||{},r.soPrev||{});
+    r.updatedAt=now;
+  }
+  c.roundId=r.id;touch(c);
+  return {r:r,created:created};
+}
 function chartCheckToRounds(id){
   const c=(S.consults||[]).find(x=>x.id===id);if(!c)return;
-  boardToRounds(id);
-  c.closed=true;c.closedAt=Date.now();touch(c);
+  const res=chartCheckToRoundRecord(c);if(!res)return;
   render();renderRounds();renderNccu();flushAutosave();
-  showToast("Moved chart check back to Rounds — "+(c.loc||"patient"));
+  showToast((res.created?"Added to Rounds":"Linked to Rounds")+" — "+(res.r.label||c.loc||"patient"));
 }
 function renderRoundArchive(items){
   if(!items||!items.length)return "";
