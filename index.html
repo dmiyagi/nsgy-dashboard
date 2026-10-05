@@ -7046,14 +7046,7 @@ function roundRemoveAfterSend(r,msg){
   renderRounds();render();renderCal();flushAutosave();
   showToast(msg||("Moved off rounds — "+(r.label||"")),()=>{r.listMode=previous;r.updatedAt=Date.now();renderRounds();save()},"Undo");
 }
-function roundAddWoundAndRemove(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
-  (S.consults||[]).filter(c=>c.roundId===id&&c.type==="CHART").forEach(c=>{c.listHidden=true;touch(c)});
-  autoScheduleWoundDateTask(r,false);
-  woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-inpt"]=true;
-  roundRemoveAfterSend(r,"Moved to wound list — "+(r.label||""));
-}
+function roundAddWoundAndRemove(id){addRoundWoundList(id)}
 function roundAddChartAndRemove(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.woundListed=false;
@@ -7327,7 +7320,7 @@ function patientSavedInfo(r){
   return text+((r.listMode==="chart"||r.listMode==="wound")?roundExamHtml(r):"");
 }
 function patientMoveButtons(r){
-  return '<div class="cardbtns"><button onclick="movePatientList(\''+r.id+'\',\'rounds\')">→ Rounds</button><button onclick="movePatientList(\''+r.id+'\',\'chart\')">→ Chart check</button><button onclick="movePatientList(\''+r.id+'\',\'wound\')">→ Wound check</button></div>';
+  return '<div class="cardbtns"><button onclick="movePatientList(\''+r.id+'\',\'rounds\')">→ Rounds</button><button onclick="movePatientList(\''+r.id+'\',\'chart\')">→ Chart check</button><button onclick="movePatientList(\''+r.id+'\',\'wound\')">＋ Wound check</button></div>';
 }
 function movePatientList(id,mode){
   let r=(S.rounds||[]).find(x=>x.id===id)||(S.formerWounds||[]).find(x=>x.id===id);if(!r)return;
@@ -7335,8 +7328,12 @@ function movePatientList(id,mode){
     S.formerWounds=(S.formerWounds||[]).filter(x=>x.id!==id);
     S.rounds.push(r);if(S.tomb)delete S.tomb[id];
   }
-  r.listMode=mode;r.woundListed=mode==="wound";r.updatedAt=Date.now();
-  (S.consults||[]).filter(c=>c.roundId===id&&c.type==="CHART").forEach(c=>{c.listHidden=mode!=="chart";c.updatedAt=Date.now()});
+  if(mode==="wound"){
+    r.woundListed=true;
+    if(r.listMode&&r.listMode!=="rounds")r.listMode="wound";
+  }else r.listMode=mode;
+  r.updatedAt=Date.now();
+  (S.consults||[]).filter(c=>c.roundId===id&&c.type==="CHART").forEach(c=>{c.listHidden=r.listMode!=="chart";c.updatedAt=Date.now()});
   if(mode==="chart")roundChartCardFor(r);
   renderRounds();renderCal();save();
 }
