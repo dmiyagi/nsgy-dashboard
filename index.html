@@ -857,6 +857,11 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="banner">Use only HIPAA-compliant data — bed + first three letters of last name, never full names or MRNs. Data is never stored on any server. Wipe everything with the Set button below.</div>
   <input id="cap" class="capin capin-hero" placeholder="Type anything…" autocomplete="off">
   <div id="capsugg"></div>
+  <div class="rowflex" style="margin:8px 0">
+    <input class="capin" id="boardTodoText" aria-label="To-do" placeholder="Add any to-do…" style="flex:1;min-width:180px;margin:0" onkeydown="if(event.key==='Enter'){event.preventDefault();addBoardTodo()}">
+    <select id="boardTodoPatient" aria-label="Optional patient attachment"><option value="">No patient</option></select>
+    <button class="btn sec sm" onclick="addBoardTodo()">＋ Add to-do</button>
+  </div>
   <div class="boardtools">
     <details class="addmenu">
       <summary>＋ Add by type ▾</summary>
@@ -1936,6 +1941,8 @@ const PHONE_ICON='<span class="phoneico" aria-hidden="true"></span>';
 const HAMMER_ICON='<span class="hammerico" aria-hidden="true"></span>';
 const SCREW_ICON='<span class="screwico" aria-hidden="true"></span>';
 const TYPES={
+ TODO:{i:"✓",l:"To-do",probL:"To-do",probPh:"Anything you need to do",dlL:"Due by",
+  presets:[["+30 min",30],["+1 h",60],["Before signout","17:45"],["+1 day",1440],["Clear",0]],rem:""},
  CONSULT:{i:"◉",l:"Consult",probL:"Problem",probPh:"right temporal EDH",dlL:"Deadline",
   presets:[["+10 min",10],["+30 min",30],["+1 h",60],["+4 h",240],["Clear",0]],rem:""},
  COMM:{i:PHONE_ICON,l:"Communication",probL:"Call who — about what",probPh:"Call ICU: relay BP goal for BB7-2 · call mother of PICU4 re: baseline",dlL:"Call by",
@@ -2049,7 +2056,7 @@ const PROC_LIB=[
  {re:/drain (pull|removal)|pull .{0,15}(drain|jp|blake)|remove .{0,15}(drain|jp|blake)/i,name:"Drain pull",dvt:true,
   supplies:["Get lidocaine (if tacked/tender)","Suture removal kit / scissors","Sterile gloves","Chucks","Xeroform + gauze + tegaderm","Stitch at bedside (nylon) if site gapes"],
   steps:["Confirm with senior drain is ready to come out","Cut retention stitch","Pull drain — check tip intact","Stitch or steri + dress site","Document + update handoff"]},
- {re:/(remove|rm|take down|take off).{0,20}(dssg|dressing)|\bdssg removal\b|dressing removal/i,name:"Remove dressing",
+ {re:/(remove|rm|take down|take off).{0,20}(dssg|drssg|dressing)|\b(?:dssg|drssg) removal\b|dressing removal/i,name:"Remove dressing",
   supplies:["Sterile gloves","Gauze","Staple remover","Tape or tegaderm if re-dressing needed"],
   steps:["Rm dssg","Update handoff"]},
  {re:/(remove|rm|pull|take out).{0,20}staples?|staple removal/i,name:"Remove staples",
@@ -2980,6 +2987,7 @@ function applyProcKit(mode){
 }
 function loadProcKit(p,mode){
   if(!p||!F)return;
+  if(p.name==="Remove dressing"){F.procSupplies=p.supplies.slice();normalizeDressingChecklist(F);showToast("Dressing checklist: supplies → procedure → handoff");return}
   if(mode!=="steps"){
     F.tasks=F.tasks||[];
     const supp=p.dvt?dvtThenConsent(p.supplies.slice()):p.supplies.slice();
@@ -2999,6 +3007,7 @@ function loadProcKit(p,mode){
 }
 function applyProcKitToCard(c,p,mode){
   if(!c||!p)return;
+  if(p.name==="Remove dressing"){c.procSupplies=p.supplies.slice();normalizeDressingChecklist(c);return}
   if(mode!=="steps"){
     c.tasks=c.tasks||[];
     const supp=p.dvt?dvtThenConsent(p.supplies.slice()):p.supplies.slice();
@@ -3386,7 +3395,15 @@ let BOARD_AUTO_TIMERS_OFF=false;
 let S=load();
 let globalSearch="";
 let startupCompactBoard=true;
+function normalizeDeletionStamps(doc){
+  if(doc.tombFormat!==2){
+    Object.keys(doc.tomb||{}).forEach(id=>{doc.tomb[id]=Math.max(0,doc.tomb[id]-7*24*3600*1000)});
+    doc.tombFormat=2;
+  }
+  return doc;
+}
 function migrate(d){
+  normalizeDeletionStamps(d);
   d.round24=!!d.round24;
   d.round24At=d.round24At||0;
   d.boardAutoTimersOff=!!d.boardAutoTimersOff;
@@ -3427,17 +3444,23 @@ function migrate(d){
   });
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}BOARD_AUTO_TIMERS_OFF=false;return {consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false,boardAutoTimersOff:false,boardAutoTimersAt:0}}
-let lastSaved="";
-let syncApplying=false;
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}BOARD_AUTO_TIMERS_OFF=false;return {tombFormat:2,consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false,boardAutoTimersOff:false,boardAutoTimersAt:0}}
+let lastSaved=JSON.stringify(S);
+// Loading, normalizing and drawing the app are read-only sync operations.
+let syncApplying=true;
+function savedContentFingerprint(state){
+  return JSON.stringify(state,(key,value)=>
+    ["collapsed","examOpen","woundOpen","nccuCompact","nccuView","blocksOpen","updatedAt","reviewAt","reviewDueISO"].includes(key)?undefined:value);
+}
 function save(){
   const j=JSON.stringify(S);
   if(j===lastSaved)return;
+  const changed=savedContentFingerprint(S)!==savedContentFingerprint(JSON.parse(lastSaved||"{}"));
   lastSaved=j;localStorage.setItem(LS,j);
   // housekeeping done while applying a sync result (day rollover, review
   // clocks) is not a user edit — treating it as one re-armed the push and
   // spun GitHub at thousands of requests an hour
-  if(syncApplying)return;
+  if(syncApplying||!changed)return;
   markSyncDirty();schedulePush();
 }
 // ---------- edit safety: nothing typed is ever lost ----------
@@ -3500,9 +3523,13 @@ function restoreFocus(){
 function keepFocus(fn){return function(){snapFocus();try{return fn.apply(this,arguments)}finally{restoreFocus()}}}
 // background work (sync pulls, clock ticks) waits until the keyboard is down
 let _pendingRender=false;
+function renderReadOnly(draw){
+  const applying=syncApplying;syncApplying=true;
+  try{draw();save()}finally{syncApplying=applying}
+}
 function renderAllSafe(){
   if(uiBusy()){_pendingRender=true;return}
-  _pendingRender=false;renderAll();renderBlocks();
+  _pendingRender=false;renderReadOnly(()=>{renderAll();renderBlocks()});
 }
 document.addEventListener("focusout",()=>{
   flushAutosave();
@@ -3983,9 +4010,30 @@ const TYPE_WF={
  COMM:[["attempted","Attempted"],["__close","Done"]],
  DC:DC_WF
 };
+function isDressingRemoval(c){
+  return !!(c&&(c.type==="PROC"||c.type==="PCON")&&/\b(?:remove|rm|take down|take off|pull)\b.{0,20}\b(?:dssg|drssg|dressings?)\b|\b(?:dssg|drssg|dressing)\s+removal\b/i.test([c.prob,c.action].filter(Boolean).join(" ")));
+}
+function normalizeDressingChecklist(c){
+  if(!isDressingRemoval(c))return;
+  const generated=/^(?:rm dssg|remove dressing|update handoff|tell nursing(?:\/team)?|tell the staff thread.*|sterile gloves|gauze|staple remover|tape or tegaderm if re-dressing needed)$/i;
+  const removed=(c.steps||[]).concat(c.tasks||[]).filter(t=>generated.test(String(t.t||"").trim()));
+  if(removed.length){
+    c.procLegacyWork=c.procLegacyWork||[];
+    removed.forEach(t=>{if(!c.procLegacyWork.some(x=>workKey(x.t)===workKey(t.t)))c.procLegacyWork.push(t)});
+    c.wf=c.wf||{};
+    removed.filter(t=>effectivelyDone(c,t)).forEach(t=>{
+      if(/^(?:rm dssg|remove dressing)$/i.test(t.t))c.wf.doproc=true;
+      if(/^update handoff$/i.test(t.t))c.wf.handoff=true;
+    });
+    c.steps=(c.steps||[]).filter(t=>!generated.test(String(t.t||"").trim()));
+    c.tasks=(c.tasks||[]).filter(t=>!generated.test(String(t.t||"").trim()));
+  }
+  if(generated.test(String(c.action||"").trim()))c.action="";
+}
 function workflowSet(c){
   const type=(c.type&&TYPES[c.type])?c.type:"CONSULT";
   if(type==="CONSULT"&&c&&c.wf&&c.wf.note&&!c.wf.signednote){c.wf.signednote=c.wf.note;delete c.wf.note}
+  if(isDressingRemoval(c))return [["supplies","Gather supplies"],["doproc","Do proc"],["handoff","Update handoff"]];
   let set=TYPE_WF[type]||[];
   if(type==="CHART"&&c.worry){
     set=[["wseen1","Seen 1"],["wseen2","Seen 2"],["wseen3","Seen 3"]].concat(set.filter(([k])=>k!=="seen"));
@@ -4019,7 +4067,7 @@ function allCardWorkDone(c){
   return !!(set.length||(c.steps||[]).length||(c.tasks||[]).length||c.lastDone);
 }
 function chartNextDueMin(c){
-  if(!c||c.type!=="CHART")return null;
+  if(!c||c.type!=="CHART"||c.autoTimersOff||c.timersOff)return null;
   const wf=c.wf||{};
   if(c.worry){
     if(!wf.wseen1)return 8*60;
@@ -4071,6 +4119,9 @@ function phoneHtml(c){
 function consentInterpBadge(c){
   return c&&c.type==="CONSENT"&&c.needsInterpreter?'<span class="bg warn">Interpreter'+(c.language?' · '+esc(c.language):"")+'</span>':"";
 }
+function autoTimerButton(c){
+  return '<button class="autotimer '+(c.autoTimersOff?"off":"on")+'" aria-pressed="'+(!c.autoTimersOff)+'" onclick="event.stopPropagation();toggleAutoTimers(\''+c.id+'\')" title="Toggle automatic timers"><span class="sw"></span> auto '+(c.autoTimersOff?"off":"on")+'</button>';
+}
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.dueISO)||(c.tasks||[]).some(t=>!effectivelyDone(c,t)&&t.dueISO);
   const hasReview=c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO;
@@ -4092,7 +4143,8 @@ function toggleAutoTimers(id){
     if(c.type==="CONSULT")resetReviewClock(c,Date.now(),true);
     showToast("Auto timers on");
   }
-  touch(c);render();
+  if(c.type==="CHART"&&c.autoTimersOff&&c.autoChartSnoozeISO===c.snoozeISO){c.snoozeISO=null;c.autoChartSnoozeISO=null}
+  touch(c);render();renderRounds();renderCal();save();
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.timersOff=true;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
@@ -4319,7 +4371,50 @@ function renderCal(){
       }).join("")+'</div>';
   }).join("")||'<div class="empty">No dated tasks. Give a task a deadline or a ◷ snooze date and it shows up here.</div>';
 }
+function boardTodoPatientChoices(){
+  const choices=(S.rounds||[]).map(r=>({value:"round:"+r.id,label:r.label||"Patient"}));
+  (S.consults||[]).filter(c=>!c.closed&&c.type!=="TODO"&&c.loc&&!c.roundId).forEach(c=>{
+    if(!choices.some(x=>x.label===c.loc))choices.push({value:"board:"+c.id,label:c.loc});
+  });
+  return choices.sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true}));
+}
+function boardTodoPatientOptions(selected){
+  return '<option value="">No patient</option>'+boardTodoPatientChoices().map(x=>'<option value="'+esc(x.value)+'"'+(selected===x.value?' selected':'')+'>'+esc(x.label)+'</option>').join("");
+}
+function renderBoardTodoPatients(){
+  const el=document.getElementById("boardTodoPatient");if(el)el.innerHTML=boardTodoPatientOptions(el.value);
+}
+function attachBoardTodo(c,value){
+  c.roundId=null;c.sourceId=null;c.loc="";c.team="";c.attg="";
+  const [kind,id]=String(value||"").split(":");
+  const patient=kind==="round"?(S.rounds||[]).find(r=>r.id===id):kind==="board"?(S.consults||[]).find(p=>p.id===id):null;
+  if(patient){
+    c.loc=kind==="round"?patient.label:patient.loc;
+    c.roundId=kind==="round"?patient.id:patient.roundId||null;
+    c.sourceId=kind==="board"?patient.id:null;
+    c.team=patient.team||"";c.attg=patient.attg||"";
+  }
+  c.todoPatient=value||"";touch(c);
+}
+function addBoardTodo(text,patient){
+  const input=document.getElementById("boardTodoText"),select=document.getElementById("boardTodoPatient");
+  const task=String(text===undefined?(input?input.value:""):text).trim();if(!task)return;
+  const c=blankC();applyTypeDefaults(c,"TODO",{fresh:true});c.E=0;c.prob=task;c.tasks=[{t:task,done:false}];
+  attachBoardTodo(c,patient===undefined?(select?select.value:""):patient);
+  S.consults.push(c);if(input)input.value="";
+  render();save();showToast("To-do added"+(c.loc?" — "+c.loc:""));
+}
+function changeBoardTodoPatient(id,value){
+  const c=S.consults.find(c=>c.id===id&&c.type==="TODO");if(!c)return;
+  attachBoardTodo(c,value);render();save();
+}
+function boardTodoAttachmentHtml(c){
+  if(c.type!=="TODO")return "";
+  const value=c.todoPatient||(c.roundId?"round:"+c.roundId:c.sourceId?"board:"+c.sourceId:"");
+  return '<div class="rowflex"><label>Patient (optional) <select aria-label="Patient attachment" onchange="changeBoardTodoPatient(\''+c.id+'\',this.value)">'+boardTodoPatientOptions(value)+'</select></label></div>';
+}
 function render(){
+  renderBoardTodoPatients();
   const baseAct=S.consults.filter(c=>boardVisible(c)&&!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
   const act=sortBoardList(baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)));
@@ -4505,6 +4600,7 @@ function boardListButtons(c){
     '<button onclick="boardToChartCheck(\''+c.id+'\')">'+(boardHasChart(c)?'✓ Chart':'▤ Chart')+'</button>';
 }
 function card(c){
+  normalizeDressingChecklist(c);
   const dl=fmtDL(nextDue(c));
   const rdl=reviewDL(c),rOver=reviewOverdue(c);
   const showReview=rdl&&!sameDL(c.reviewDueISO,nextDue(c));
@@ -4523,8 +4619,9 @@ function card(c){
        patientTag(c)+linkedCardsHtml(c,true)+
        (needsConsent(c)?'<span class="bg consent">✎ consent?</span>':"")+consentInterpBadge(c)+worryBadge+colBtn(c)+'</div>'+
      '<span class="who">'+esc(c.loc)+'</span>'+(c.prob?' · <span class="prob">'+esc(c.prob)+'</span>':"")+
-     phoneHtml(c)+
+     phoneHtml(c)+boardTodoAttachmentHtml(c)+
      careMetaHtml(c)+
+     (c.procSupplies&&c.procSupplies.length?'<details class="moredet"><summary>Supplies</summary><div class="state">'+esc(c.procSupplies.join(" · "))+'</div></details>':"")+
      linkedCardsHtml(c,false)+
      '<div class="rowflex" style="margin:4px 0 0">'+(dl?'<span class="dl '+dl.cls+'">'+clockIcon()+dl.txt+'</span>':"")+dlBtnsHtml(c)+'</div>'+
      (c.type==="DC"?"":stepsHtml(c))+
@@ -4550,6 +4647,7 @@ function card(c){
    stepsHtml(c)+
    checksHtml(c)+
    evSection(c)+
+   roundExamHtml(c)+
    wf+
    '<div class="cardbtns"><button onclick="openForm(\''+c.id+'\',true)">↻ Reassess</button><button onclick="openForm(\''+c.id+'\')">Edit</button>'+boardListButtons(c)+'<button onclick="copyLine(\''+c.id+'\')">Copy line</button>'+(c.note?'<button onclick="copyNotes(\''+c.id+'\')">N Copy notes</button>':"")+'<button onclick="openTC(\''+c.id+'\')">▯ Text</button>'+closeDoneButton(c,false)+'</div>'+
   '</div>';
@@ -4659,10 +4757,11 @@ function chartSeenFollowupISO(k){
   return null;
 }
 function applyChartSeenSnooze(c,k,on){
-  if(!c||c.type!=="CHART"||!c.worry||!/^wseen[123]$/.test(k))return;
-  if(!on){c.snoozeISO=null;return}
+  if(!c||c.type!=="CHART"||!c.worry||c.autoTimersOff||c.timersOff||!/^wseen[123]$/.test(k))return;
+  if(!on){if(c.snoozeISO===c.autoChartSnoozeISO)c.snoozeISO=null;c.autoChartSnoozeISO=null;return}
   c.snoozeISO=chartSeenFollowupISO(k);
   if(k==="wseen3")c.snoozeISO=null;
+  c.autoChartSnoozeISO=c.snoozeISO;
 }
 function togWf(id,k){const c=S.consults.find(x=>x.id===id);if(!c)return;c.wf=c.wf||{};
   if(c.type==="CHART"){
@@ -5678,12 +5777,12 @@ const EX_FONTANELLE_OPTS=["","soft and flat","full","bulging","sunken"];
 const EX_SUTURE_OPTS=["","approximated","splayed","overriding"];
 const EX_MOVES_OPTS=["","Moves all extremities spontaneously and symmetrically","Moves all extremities spontaneously","Moves all extremities symmetrically","Asymmetric spontaneous movement","Trace movement","No movement"];
 const EX_REFLEX_OPTS=["","- hoffmans","- clonus","- hoffmans, - clonus","+ hoffmans","+ clonus","+ hoffmans, + clonus","no hoffmans or clonus"];
-const EX_MOTOR_OPTS=["","5/5","4+/5","4/5","4-/5","3/5","2/5","1/5","0/5","5","4+","4","4-","3","2","1","0","antigravity","follows commands","FC squeeze hands","FC wiggle toes","wiggles toes","moves spontaneously","trace movement","no movement","TF","extensor","withdraw","localize","baseline","pain-limited","NT","UTA"];
+const EX_MOTOR_OPTS=["","5/5","4+/5","4/5","4-/5","3/5","2/5","1/5","0/5","antigravity","FC antigravity","spont antigravity","follows commands","FC squeeze hands","FC wiggle toes","wiggles toes","moves spontaneously","trace movement","no movement","TF","extensor","withdraw","localize","baseline","pain-limited","NT","UTA"];
 function examFieldWrap(id,k,label,inner,wide,removable){
   return '<div class="examfield '+(wide?'wide ':'')+(removable?'xable':'')+'"><label>'+label+inner+'</label>'+(removable?'<button type="button" class="xf" title="Hide this field" onclick="roundExamDropField(\''+id+'\',\''+k+'\')">×</button>':"")+'</div>';
 }
 function examOptionKey(value){
-  return String(value||"").trim().toLowerCase().replace(/\b(?:wd|wow|withdraws|withdrawal|withdraws? to pain)\b/g,"withdraw").replace(/\blocalizes?\b/g,"localize").replace(/\s+/g," ");
+  return String(value||"").trim().toLowerCase().replace(/^([0-5][+-]?)$/,"$1/5").replace(/\bfc\s+(?:ag|antigravity)\b/g,"fc antigravity").replace(/\b(?:spont|spontaneous|spontaneously)\s+(?:ag|antigravity)\b/g,"spont antigravity").replace(/\b(?:wd|wow|withdraws|withdrawal|withdraws? to pain)\b/g,"withdraw").replace(/\blocalizes?\b/g,"localize").replace(/\s+/g," ");
 }
 function examPickHtml(id,k,label,opts,val,wide,removable){
   const change=k==="mode"?"roundExamModeChange('"+id+"')":"roundExamBuildApply('"+id+"',false)";
@@ -5730,47 +5829,103 @@ function spineLimbApply(id,k,n){
   if(hidden)hidden.value=vals.some(Boolean)?vals.map(v=>v||"NT").join("/"):"";
   roundExamBuildApply(id,false);
 }
-function examDefaultFields(mode){
-  const base=["ox","eye","pup","gaze","cmd","mod"];
-  if(mode==="intubated")return ["mod","eye","pup","corneal","cough","rue","lue","rle","lle","comment","extra"];
-  if(mode==="four")return base.concat(["face","rue","lue","rle","lle","drift","sens","comment","extra"]);
-  if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
-  return base.concat(["face","bue","ble","drift","sens","comment","extra"]);
-}
-function examAllFieldKeys(){return ["ox","mental","eye","pup","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
-function examFieldKeysForMode(mode){
-  const all=examAllFieldKeys();
-  if(mode==="spine")return ["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
-  if(mode==="intubated")return all.filter(k=>!["ox","mental","face","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves"].includes(k));
-  if(mode==="four")return all.filter(k=>!["bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
-  return all.filter(k=>!["bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt"].includes(k));
-}
-function examVisibleFields(r,mode,defs){
-  const allowed=Object.keys(defs||{}).filter(k=>examFieldKeysForMode(mode).includes(k));
-  let fields=Array.isArray(r.examFields)&&r.examFields.length?r.examFields.slice():examDefaultFields(mode);
-  fields=fields.filter(k=>allowed.includes(k)).filter((k,i,a)=>a.indexOf(k)===i);
+function examRecord(id){return (S.rounds||[]).find(r=>r.id===id)||(S.consults||[]).find(c=>c.id===id)||null}
+function renderExamCards(id){if((S.consults||[]).some(c=>c.id===id))render();else renderRounds()}
+function examIntactText(mode,limbs){
   if(mode==="spine"){
-    const order=["rueSp","lueSp","rleSp","lleSp","dre","rueSens","lueSens","rleSens","lleSens","dermSens","comment","extra"];
-    fields=fields.slice().sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+    const upper="5/5/5/5/5/5",lower="5/5/5/5/5";
+    return limbs==="bilateral"?"BUE: "+upper+"\nBLE: "+lower:"RUE: "+upper+"\nLUE: "+upper+"\nRLE: "+lower+"\nLLE: "+lower;
   }
-  return fields.length?fields:examDefaultFields(mode).filter(k=>allowed.includes(k));
+  const motor=limbs==="unilateral"?"RUE 5/5\nLUE 5/5\nRLE 5/5\nLLE 5/5":"BUE 5/5\nBLE 5/5";
+  return "AOx3\nPERRL\nEOMI\n"+motor;
+}
+function roundExamIntact(id){
+  const r=examRecord(id);if(!r)return;
+  const mode=r.examMode||"basic",limbs=r.examLimbs||((mode==="spine"||mode==="four")?"unilateral":"bilateral");
+  const el=document.getElementById("rexam_"+id),previous=el?el.value.trim():r.exam||"";
+  r.examHist=r.examHist||[];
+  if(previous&&previous.toLowerCase()!=="intact"&&!r.examHist.some(h=>h.text===previous))r.examHist.push({ts:Date.now(),text:previous});
+  const text=examIntactText(mode,limbs);
+  r.examFields=examGivenFields(examStructFromText(text));r.examFieldsCustom=true;r.examFieldLayout="given";
+  roundExamSave(id,{value:text},true);
+}
+function examPupilParts(values){
+  const finding=String(values.pup||"").replace(/\b([RL])\s+(\d(?:\.\d)?)\s*(?:mm\s*)?(?=brisk|reactive|sluggish|NR)/gi,"$1 ");
+  return {finding:finding,right:values.pupilR||"",left:values.pupilL||""};
+}
+function examPupilHtml(id,values){
+  const parts=examPupilParts(values);
+  const options=["","PERRL","PERRV","brisk bilaterally","reactive bilaterally","sluggish bilaterally","NR","R > L","L > R","R > L baseline","L > R baseline","anisocoria baseline","UTA"];
+  if(parts.finding&&!options.includes(parts.finding))options.push(parts.finding);
+  const select='<select id="ex_pup_'+id+'" onchange="roundExamBuildApply(\''+id+'\',false)">'+options.map(o=>'<option value="'+esc(o)+'"'+(o===parts.finding?' selected':'')+'>'+esc(o)+'</option>').join("")+'</select>';
+  const size=(side,value)=>'<label>'+side+' size (mm, optional)<input type="number" min="0" max="12" step="0.5" id="ex_pup'+side+'_'+id+'" value="'+esc(value)+'" placeholder="—" oninput="roundExamBuildApply(\''+id+'\',false)"></label>';
+  return examFieldWrap(id,"pup","Pupils",select+'<div class="rowflex" style="margin-top:6px">'+size("R",parts.right)+size("L",parts.left)+'</div>',true,true);
+}
+function examMotorKeys(mode,limbs){
+  const unilateral=limbs==="unilateral"||mode==="four";
+  if(mode==="spine")return unilateral?["rueSp","lueSp","rleSp","lleSp"]:["bueSp","bleSp"];
+  return unilateral?["rue","lue","rle","lle"]:["bue","ble"];
+}
+function examDefaultFields(mode,limbs){
+  const motor=examMotorKeys(mode,limbs||((mode==="spine"||mode==="four")?"unilateral":"bilateral"));
+  if(mode==="spine")return motor.concat(["sens"]);
+  if(mode==="intubated")return ["eye","pup"].concat(motor);
+  if(mode==="pediatric")return ["mental","pup","moves"];
+  return ["ox","pup","face"].concat(motor,["drift","sens"]);
+}
+function examAllFieldKeys(){return ["ox","mental","eye","pup","eomi","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
+function examFieldKeysForMode(mode){return examAllFieldKeys()}
+function examGivenFields(values){
+  return examAllFieldKeys().filter(k=>{
+    if(k==="pup"&&(values.pupilR||values.pupilL))return true;
+    if(!String(values[k]||"").trim())return false;
+    if(["bue","ble","rue","lue","rle","lle"].includes(k)&&values[k+"Sp"])return false;
+    return true;
+  });
+}
+function examVisibleFields(r,mode,defs,values){
+  const allowed=Object.keys(defs||{});
+  const parsed=values||examStructFromText(r.exam||"");
+  let fields;
+  if(r.examFieldsCustom&&r.examFieldLayout&&Array.isArray(r.examFields))fields=r.examFields.slice();
+  else if(r.examFieldLayout!=="base"&&examGivenFields(parsed).length)fields=examGivenFields(parsed);
+  else fields=examDefaultFields(mode,r.examLimbs);
+  return fields.filter(k=>allowed.includes(k)).filter((k,i,a)=>a.indexOf(k)===i);
+}
+function roundExamUseBase(id,mode){
+  const r=examRecord(id);if(!r)return;
+  r.examMode=mode||r.examMode||"basic";
+  r.examLimbs=r.examLimbs||((r.examMode==="spine"||r.examMode==="four")?"unilateral":"bilateral");
+  const given=examGivenFields(examStructFromText(r.exam||""));
+  r.examFields=[...new Set(examDefaultFields(r.examMode,r.examLimbs).concat(given))];
+  r.examFieldLayout="base";r.examFieldsCustom=true;r.examFieldLayout="custom";r.examOpen=true;touch(r);renderExamCards(id);save();
+}
+function roundExamLimbsChange(id,value){
+  const r=examRecord(id);if(!r)return;
+  r.examLimbs=value;
+  if(r.examMode==="four")r.examMode="basic";
+  const motors=["bue","ble","rue","lue","rle","lle","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp"];
+  const fields=r.examFieldsCustom?r.examFields:examGivenFields(examStructFromText(r.exam||""));
+  r.examFields=[...new Set((fields||[]).filter(k=>!motors.includes(k)).concat(examMotorKeys(r.examMode,value)))];
+  r.examFieldsCustom=true;r.examOpen=true;touch(r);renderExamCards(id);save();
 }
 function roundExamAddField(id){
-  const r=S.rounds.find(x=>x.id===id),sel=document.getElementById("ex_add_"+id);if(!r||!sel||!sel.value)return;
+  const r=examRecord(id),sel=document.getElementById("ex_add_"+id);if(!r||!sel||!sel.value)return;
   const mode=exVal(id,"mode")||r.examMode||"basic";
   const fields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1])));
   if(!fields.includes(sel.value))fields.push(sel.value);
-  r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
+  r.examFields=fields;r.examFieldsCustom=true;r.examFieldLayout="custom";r.examOpen=true;r.updatedAt=Date.now();renderExamCards(id);save();
 }
 function roundExamDropField(id,k){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const mode=exVal(id,"mode")||r.examMode||"basic";
   r.examFields=examVisibleFields(r,mode,Object.fromEntries(examFieldKeysForMode(mode).map(k=>[k,1]))).filter(x=>x!==k);
-  r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();save();
+  r.examFieldsCustom=true;r.examFieldLayout="custom";r.examOpen=true;r.updatedAt=Date.now();renderExamCards(id);save();
 }
 function examStructFromText(t){
-  const s=String(t||""), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",dre:"",rueSens:"",lueSens:"",rleSens:"",lleSens:"",dermSens:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||"").replace(/\b((?:A)?Ox)O\b/gi,(_,prefix)=>prefix+"0"), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",pupilR:"",pupilL:"",eomi:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",dre:"",rueSens:"",lueSens:"",rleSens:"",lleSens:"",dermSens:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A\+O|A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox=/A\+O/i.test(ox[0])?"A+Ox"+ox[1]:"Ox"+ox[1];
+  if(ox){const rest=s.slice(ox.index+ox[0].length).split(/[\n,;]/)[0];if(/^\s+(?:in|with|via|using)\b/i.test(rest))out.ox+=rest}
   EX_MENTAL_OPTS.slice(1).forEach(o=>{if(!out.mental&&s.toLowerCase().includes(o.toLowerCase()))out.mental=o});
   if(/\beyes?\s+open\s+spontaneously\b|\bopen spontaneously\b/i.test(s))out.eye="open spontaneously";
   else if(/\beyes?\s+open\s+to\s+voice\b|\bopen to voice\b|\bEO\s*voice\b/i.test(s))out.eye="open to voice";
@@ -5781,6 +5936,10 @@ function examStructFromText(t){
   else if(/\bFC\b.*\bsqueeze hands\b|\bfollows? commands?\b.*\bsqueeze hands\b/i.test(s))out.cmd="FC squeeze hands";
   else if(/\bFC\b|\bfollows? commands?\b/i.test(s))out.cmd="follows commands";
   else if(/\bnot following\b|\bdoes not follow\b/i.test(s))out.cmd="not following commands";
+  const rightSize=s.match(/\b(?:R|right)\s+pupil\s*:?\s*(\d(?:\.\d)?)\b|\bR\s*:?\s*(\d(?:\.\d)?)\s*(?:mm\b|(?=brisk|reactive|sluggish|NR\b))/i);
+  const leftSize=s.match(/\b(?:L|left)\s+pupil\s*:?\s*(\d(?:\.\d)?)\b|\bL\s*:?\s*(\d(?:\.\d)?)\s*(?:mm\b|(?=brisk|reactive|sluggish|NR\b))/i);
+  if(rightSize)out.pupilR=rightSize[1]||rightSize[2];if(leftSize)out.pupilL=leftSize[1]||leftSize[2];
+  if(/\bEOMI\b/i.test(s))out.eomi="EOMI";
   const rpup=s.match(/\bR(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b[^;\n,]*[,; ]+\s*L(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b/i);
   const lpup=s.match(/\bL(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b[^;\n,]*[,; ]+\s*R(?:\s+pupil)?\s*:?\s*(\d(?:\.\d)?)\s*(?:mm)?\s*(brisk|reactive|sluggish|NR|nonreactive)\b/i);
   if(rpup)out.pup="R "+rpup[1]+" "+rpup[2]+", L "+rpup[3]+" "+rpup[4];
@@ -5789,6 +5948,10 @@ function examStructFromText(t){
   else if(/\bPERRL\b/i.test(s))out.pup="PERRL";
   else if(/\bR\s*[>]\s*L\b|\bL\s*[<]\s*R\b/i.test(s))out.pup=/baseline/i.test(s)?"R > L baseline":"R > L";
   else if(/\bL\s*[>]\s*R\b|\bR\s*[<]\s*L\b/i.test(s))out.pup=/baseline/i.test(s)?"L > R baseline":"L > R";
+  if(!out.pup){
+    const finding=s.match(/\bR\s+(brisk|reactive|sluggish|NR)\s*,?\s*L\s+(brisk|reactive|sluggish|NR)\b/i)||s.match(/\b(?:brisk|reactive|sluggish) bilaterally\b|\banisocoria baseline\b|\bNR\b/i);
+    if(finding)out.pup=finding[0];
+  }
   if(/\bgaze conjugate\b.*\btracks appropriately\b|\btracks appropriately\b.*\bgaze conjugate\b/i.test(s))out.gaze="gaze conjugate, tracks appropriately";
   else if(/\bgaze conjugate\b/i.test(s))out.gaze="gaze conjugate";
   else if(/\btracks appropriately\b/i.test(s))out.gaze="tracks appropriately";
@@ -5884,10 +6047,10 @@ function roundExamBuilderHtml(r,cur){
   const eyes=["","open spontaneously","open to voice","open to stimulation","closed","eyes open","eyes closed","eyes open to voice","eyes open to stim","opens to pain","UTA eyes"];
   const cmds=["","follows commands","FC squeeze hands","FC wiggle toes","FC squeeze hands + wiggle toes","not following commands","sedated / UTA commands"];
   const mods=["","intubated","sedated","intubated + sedated","aphasic","confused","pain-limited","hard of hearing","baseline deficit"];
-  const pupils=["","PERRL","PERRV","R 3 brisk, L 3 brisk","R 3 reactive, L 3 reactive","R 3 brisk, L 4 brisk","R 4 brisk, L 3 brisk","R 3 reactive, L 4 reactive","R 4 reactive, L 3 reactive","R 3 sluggish, L 4 reactive","R 4 reactive, L 3 sluggish","R 3 NR, L 3 reactive","R 3 reactive, L 3 NR","R > L","L > R","L < R","R < L","R > L baseline","L > R baseline","L < R baseline","R < L baseline","anisocoria baseline","NR"];
+
   const cough=["","Present cough reflex","Absent cough reflex","+ cough","- cough","cough present","cough absent","UTA cough"];
   const corneal=["","Present corneal reflex bilaterally","Absent corneal reflex bilaterally","Present left corneal reflex only","Present right corneal reflex only","bilateral corneals","R corneal","L corneal","no corneals","corneals UTA"];
-  const mode=[["basic","BUE/BLE"],["four","R/L limbs"],["intubated","Intubated"],["spine","Spine groups"]];
+  const mode=[["basic","Cranial"],["four","Cranial (R/L)"],["spine","Spine"],["intubated","Intubated"],["pediatric","Pediatric"]];
   const drift=["","no drift","RUE + drift","LUE + drift","BUE + drift","UTA drift"];
   const sens=["","SILT","decreased sensation","sensory level","baseline numbness","UTA sensation"];
   const spineSens=["","+ sensation","- sensation","SILT","decreased","numbness","paresthesias","baseline","UTA"];
@@ -5899,7 +6062,8 @@ function roundExamBuilderHtml(r,cur){
     eye:()=>examPickHtml(id,"eye","Eyes",eyes,v.eye,false,true),
     cmd:()=>examPickHtml(id,"cmd","Commands",cmds,v.cmd,false,true),
     mod:()=>examPickHtml(id,"mod","Modifier",mods,v.mod,false,true),
-    pup:()=>examPickHtml(id,"pup","Pupils",pupils,v.pup,false,true),
+    pup:()=>examPupilHtml(id,v),
+    eomi:()=>examPickHtml(id,"eomi","Eye movements",["","EOMI","limited eye movements","UTA"],v.eomi,false,true),
     gaze:()=>examPickHtml(id,"gaze","Gaze/track",EX_GAZE_OPTS,v.gaze,true,true),
     cough:()=>examPickHtml(id,"cough","Cough",cough,v.cough,false,true),
     corneal:()=>examPickHtml(id,"corneal","Corneals",corneal,v.corneal,false,true),
@@ -5907,8 +6071,8 @@ function roundExamBuilderHtml(r,cur){
     skin:()=>examPickHtml(id,"skin","Skin",EX_SKIN_OPTS,v.skin,true,true),
     bue:()=>examPickHtml(id,"bue","BUE",neuroScores,v.bue,false,true),
     ble:()=>examPickHtml(id,"ble","BLE",neuroScores,v.ble,false,true),
-    bueSp:()=>examInputHtml(id,"bueSp","BUE spine",v.bueSp,"5/5/5/5/5/5",true,true),
-    bleSp:()=>examInputHtml(id,"bleSp","BLE spine",v.bleSp,"5/5/5/5/5",true,true),
+    bueSp:()=>examSpineMotorHtml(id,"bueSp","BUE",v.bueSp,6,upperLabs,true),
+    bleSp:()=>examSpineMotorHtml(id,"bleSp","BLE",v.bleSp,5,lowerLabs,true),
     rueSp:()=>examSpineMotorHtml(id,"rueSp","RUE",v.rueSp,6,upperLabs,true),
     lueSp:()=>examSpineMotorHtml(id,"lueSp","LUE",v.lueSp,6,upperLabs,true),
     rleSp:()=>examSpineMotorHtml(id,"rleSp","RLE",v.rleSp,5,lowerLabs,true),
@@ -5942,14 +6106,16 @@ function roundExamBuilderHtml(r,cur){
     comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
-  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE motor",lueSp:"LUE motor",rleSp:"RLE motor",lleSp:"LLE motor",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",dre:"DRE",rueSens:"RUE sensation",lueSens:"LUE sensation",rleSens:"RLE sensation",lleSens:"LLE sensation",dermSens:"Dermatome / level",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
+  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",eomi:"Eye movements",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE motor",lueSp:"LUE motor",rleSp:"RLE motor",lleSp:"LLE motor",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",dre:"DRE",rueSens:"RUE sensation",lueSens:"LUE sensation",rleSens:"RLE sensation",lleSens:"LLE sensation",dermSens:"Dermatome / level",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
   const all=Object.keys(defs).filter(k=>examFieldKeysForMode(v.mode).includes(k));
-  const fields=examVisibleFields(r,v.mode,defs);
+  const fields=examVisibleFields(r,v.mode,defs,v);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
   const addHtml='<div class="examquick"><select id="ex_add_'+id+'" style="max-width:220px"><option value="">+ add field...</option>'+addOpts+'</select><button type="button" onclick="roundExamAddField(\''+id+'\')">Add</button></div>';
   return '<div class="exambuilder">'+
-    examPickHtml(id,"mode","Mode",mode,v.mode)+
-    '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intubated\')">intubated exam</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">all 5/5 + no drift</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button><button type="button" onclick="roundExamParseIntoFields(\''+id+'\')">parse into fields</button></div>'+
+    examPickHtml(id,"mode","Base exam",mode,v.mode)+
+    '<div class="examfield"><label>Limbs<select onchange="roundExamLimbsChange(\''+id+'\',this.value)"><option value="bilateral"'+((r.examLimbs||((v.mode==="spine"||v.mode==="four")?"unilateral":"bilateral"))==="bilateral"?' selected':'')+'>Bilateral (BUE / BLE)</option><option value="unilateral"'+((r.examLimbs||((v.mode==="spine"||v.mode==="four")?"unilateral":"bilateral"))==="unilateral"?' selected':'')+'>Separate R / L limbs</option></select></label></div>'+
+    '<div class="examquick"><button type="button" onclick="roundExamParseIntoFields(\''+id+'\')">Only given findings</button><button type="button" onclick="roundExamUseBase(\''+id+'\')">Use base fields</button></div>'+
+    '<div class="examquick"><button type="button" onclick="roundExamQuick(\''+id+'\',\'intubated\')">intubated exam</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'intact\')">Intact</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'baseline\')">baseline</button><button type="button" onclick="roundExamQuick(\''+id+'\',\'clear\')">clear fields</button><button type="button" onclick="roundExamParseIntoFields(\''+id+'\')">parse into fields</button></div>'+
     (v.mode==="spine"?'<div class="examref"><b>Spine motor order:</b> RUE/LUE Delt/Bi/Tri/WE/FF/FA · RLE/LLE IP/Quad/AT/EHL/Gastroc.</div>'+spineExamWarningHtml(id):"")+
     fields.map(k=>defs[k]?defs[k]():"").join("")+
     addHtml+
@@ -5969,28 +6135,18 @@ function spineExamWarningHtml(id){
   return '<div class="spinewarn">Spine exam flag: include side-specific motor, sensation by limb or dermatome, and DRE/rectal tone when relevant.</div>';
 }
 function roundExamModeChange(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const el=document.getElementById("rexam_"+id),m=document.getElementById("ex_mode_"+id);
   if(el)r.exam=el.value.trim();
-  if(m){r.examMode=m.value||"basic";r.examFields=examDefaultFields(r.examMode);r.examFieldsCustom=false}
-  r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
+  if(m){roundExamUseBase(id,m.value||"basic");return}
+  r.examOpen=true;r.updatedAt=Date.now();renderExamCards(id);autosave();
 }
 function roundExamQuick(id,kind){
+  if(kind==="intact"){roundExamIntact(id);return}
+  if(kind==="intubated"){roundExamUseBase(id,"intubated");return}
   const mode=exVal(id,"mode")||"basic";
   if(kind==="clear"){
     examAllFieldKeys().concat(["spu"]).forEach(k=>exSet(id,k,""));
-  }else if(kind==="intubated"){
-    const r=S.rounds.find(x=>x.id===id);
-    if(r){
-      r.examMode="intubated";
-      r.examFields=examDefaultFields("intubated");
-      r.examFieldsCustom=false;
-      const el=document.getElementById("rexam_"+id);
-      const cur=(el?el.value:String(r.exam||"")).trim();
-      const add=["Intubated","Eyes closed","PERRL","Present cough reflex","Present corneal reflex bilaterally"].filter(t=>!new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i").test(cur));
-      r.exam=[cur].concat(add).filter(Boolean).join(cur?"\n":"");
-      r.examAt=sxNow();r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();return;
-    }
   }else if(kind==="baseline"){
     if(mode==="four"||mode==="intubated")["rue","lue","rle","lle"].forEach(k=>exSet(id,k,"baseline"));
     else if(mode==="spine"){exSetSpineLimb(id,"rueSp","baseline",6);exSetSpineLimb(id,"lueSp","baseline",6);exSetSpineLimb(id,"rleSp","baseline",5);exSetSpineLimb(id,"lleSp","baseline",5);["rueSens","lueSens","rleSens","lleSens"].forEach(k=>exSet(id,k,"baseline"))}
@@ -6038,22 +6194,27 @@ function examStructuredChunk(s){
   return false;
 }
 function examCarryoverText(current,lines){
+  const generatedKeys=examGivenFields(examStructFromText((lines||[]).join("\n")));
   const existing=(lines||[]).map(x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim()).filter(Boolean);
   return String(current||"").split(/[\t,;\n]+/).map(x=>x.trim()).filter(Boolean).filter(ch=>{
     const n=ch.toLowerCase().replace(/\s+/g," ").trim();
     if(existing.some(e=>e===n||e.includes(n)||n.includes(e)))return false;
-    return !examStructuredChunk(ch);
+    const keys=examGivenFields(examStructFromText(ch));
+    return !keys.some(k=>generatedKeys.includes(k));
   }).join("\n");
 }
 function roundExamBuildApply(id,explicit){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const mode=exVal(id,"mode")||"basic", lines=[];
   r.examMode=mode;
   const ox=exVal(id,"ox"),mental=exVal(id,"mental"),eye=exVal(id,"eye"),cmd=exVal(id,"cmd"),mod=exVal(id,"mod"),pup=exVal(id,"pup"),gaze=exVal(id,"gaze"),cough=exVal(id,"cough"),corneal=exVal(id,"corneal"),face=exVal(id,"face"),skin=exVal(id,"skin"),reflex=exVal(id,"reflex"),dre=exVal(id,"dre"),rueSens=exVal(id,"rueSens"),lueSens=exVal(id,"lueSens"),rleSens=exVal(id,"rleSens"),lleSens=exVal(id,"lleSens"),dermSens=exVal(id,"dermSens"),drift=exVal(id,"drift"),sens=exVal(id,"sens"),fontanelle=exVal(id,"fontanelle"),sutures=exVal(id,"sutures"),hc=exVal(id,"hc"),moves=exVal(id,"moves"),comment=exVal(id,"comment"),extra=exVal(id,"extra");
   if(ox)lines.push(ox);
   if(mental)lines.push("Mental status/behavior: "+mental);
   if(eye)lines.push(eye);
-  if(pup)lines.push(pup);
+  const pupilR=exVal(id,"pupR"),pupilL=exVal(id,"pupL");
+  const sizes=[pupilR?"R pupil "+pupilR+" mm":"",pupilL?"L pupil "+pupilL+" mm":""].filter(Boolean);
+  if(pup||sizes.length)lines.push([pup,sizes.join(", ")].filter(Boolean).join(" · "));
+  const eomi=exVal(id,"eomi");if(eomi)lines.push(eomi);
   if(gaze)lines.push(gaze);
   if(corneal)lines.push(corneal);
   if(cough)lines.push(cough);
@@ -6064,18 +6225,11 @@ function roundExamBuildApply(id,explicit){
   if(moves)lines.push(moves);
   if(cmd)lines.push(cmd);
   if(mod)lines.push(mod);
-  if(mode==="four"||mode==="intubated"){
-    [["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
-  }else if(mode==="spine"){
-    [["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
-    if(dre)lines.push("DRE: "+dre);
-    const sl=[["RUE",rueSens],["LUE",lueSens],["RLE",rleSens],["LLE",lleSens]].filter(x=>x[1]).map(x=>x[0]+" "+x[1]);
-    if(sl.length||dermSens)lines.push("Sensation: "+sl.concat(dermSens?[dermSens]:[]).join("; "));
-  }else{
-    const bue=exVal(id,"bue"),ble=exVal(id,"ble");
-    if(bue)lines.push("BUE "+bue);
-    if(ble)lines.push("BLE "+ble);
-  }
+  [["BUE","bue"],["BLE","ble"],["RUE","rue"],["LUE","lue"],["RLE","rle"],["LLE","lle"]].forEach(([l,k])=>{const v=exVal(id,k);if(v)lines.push(l+" "+v)});
+  [["BUE","bueSp",6],["BLE","bleSp",5],["RUE","rueSp",6],["LUE","lueSp",6],["RLE","rleSp",5],["LLE","lleSp",5]].forEach(([lbl,k,n])=>{const v=spineGroupLine(id,lbl,k,n);if(v)lines.push(v)});
+  if(dre)lines.push("DRE: "+dre);
+  const sl=[["RUE",rueSens],["LUE",lueSens],["RLE",rleSens],["LLE",lleSens]].filter(x=>x[1]).map(x=>x[0]+" "+x[1]);
+  if(sl.length||dermSens)lines.push("Sensation: "+sl.concat(dermSens?[dermSens]:[]).join("; "));
   if(reflex)lines.push(reflex);
   if(drift)lines.push(drift);
   if(sens)lines.push(sens);
@@ -6083,26 +6237,26 @@ function roundExamBuildApply(id,explicit){
   if(comment)lines.push(comment);
   if(extra)lines.push(extra);
   const oldEl=document.getElementById("rexam_"+id);
-  const carry=extra?"":examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines);
+  const carry=examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines);
   if(carry)lines.push(carry);
   const text=lines.join("\n");
   const el=document.getElementById("rexam_"+id);if(el){el.value=text;roundExamInput(id,el)}
   if(explicit)roundExamSave(id,el,true);
 }
 function roundExamParseIntoFields(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const el=document.getElementById("rexam_"+id);
   const text=(el?el.value:String(r.exam||"")).trim();
   if(!text){showToast("No exam text to parse");return}
+  if(/^intact$/i.test(text)){roundExamIntact(id);return}
   r.exam=text;r.examAt=sxNow();
   const v=examStructFromText(text);
   if(v.mode&&v.mode!=="basic")r.examMode=v.mode;
   const mode=r.examMode||v.mode||"basic";
-  const modeKeys=examFieldKeysForMode(mode);
-  const fields=examVisibleFields(r,mode,Object.fromEntries(modeKeys.map(k=>[k,1])));
-  modeKeys.forEach(k=>{if(v[k]&&!fields.includes(k))fields.push(k)});
-  if(v.mod&&/intubated/i.test(v.mod))["eye","cough","corneal"].forEach(k=>{if(!fields.includes(k))fields.push(k)});
-  r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderRounds();autosave();
+  const fields=examGivenFields(v);
+  r.examFieldLayout="given";
+  r.examLimbs=(v.rue||v.lue||v.rle||v.lle||v.rueSp||v.lueSp||v.rleSp||v.lleSp)?"unilateral":"bilateral";
+  r.examFields=fields;r.examFieldsCustom=true;r.examOpen=true;r.updatedAt=Date.now();renderExamCards(id);autosave();
 }
 function roundExamPaste(id,el){
   setTimeout(()=>{roundExamInput(id,el);roundExamParseIntoFields(id)},60);
@@ -6130,60 +6284,60 @@ function roundExamHtml(r){
 }
 // clearing the box only; the saved trend is left alone
 function copyRoundExam(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const el=document.getElementById("rexam_"+id);
   const t=((el?el.value:(r.exam===undefined?roundPrevExamText(r):r.exam))||"").trim();
   if(!t){showToast("Current exam is empty");return}
   toClip(t);showToast("Current exam copied");
 }
 function clearRoundExam(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const before=r.exam;
   if(!String(before===undefined?roundPrevExamText(r):before||"").trim()){showToast("Current exam is already empty");return}
-  r.exam="";r.updatedAt=Date.now();renderRounds();flushAutosave();
+  r.exam="";r.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   showToast("Current exam cleared — "+r.label,()=>{
-    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    const rr=examRecord(id);if(!rr)return;
     if(before===undefined)delete rr.exam;else rr.exam=before;
-    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+    rr.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   },"Undo");
 }
 // wipes the box and the whole recorded trend for this patient
 function clearRoundExamAll(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const before={exam:r.exam,hist:(r.examHist||[]).slice(),prev:r.prevExam,had:"exam" in r};
   if(!String(r.exam||"").trim()&&!before.hist.length&&!String(r.prevExam||"").trim()){showToast("No exams to clear");return}
   r.exam="";r.examHist=[];r.prevExam="";
   if(editingExamHist&&editingExamHist.indexOf(id+":")===0)editingExamHist="";
-  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  r.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   showToast("Cleared all exams — "+r.label,()=>{
-    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    const rr=examRecord(id);if(!rr)return;
     if(before.had)rr.exam=before.exam;else delete rr.exam;
     rr.examHist=before.hist;rr.prevExam=before.prev;
-    rr.updatedAt=Date.now();renderRounds();flushAutosave();
+    rr.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   },"Undo");
 }
 function delRoundExamHist(id,i){
-  const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
+  const r=examRecord(id);if(!r||!r.examHist||!r.examHist[i])return;
   const removed=r.examHist[i];
   r.examOpen=true;examHistOpen[id]=true;   // keep the trend panel where it was
   r.examHist.splice(i,1);
   r.prevExam=roundPrevExamText(r);
   if(editingExamHist===id+":"+i)editingExamHist="";
-  r.updatedAt=Date.now();renderRounds();flushAutosave();
+  r.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   showToast("Exam deleted — "+String(removed.text||"").slice(0,34),()=>{
-    const rr=S.rounds.find(x=>x.id===id);if(!rr)return;
+    const rr=examRecord(id);if(!rr)return;
     rr.examHist=rr.examHist||[];rr.examHist.splice(i,0,removed);
-    rr.prevExam=roundPrevExamText(rr);rr.updatedAt=Date.now();renderRounds();flushAutosave();
+    rr.prevExam=roundPrevExamText(rr);rr.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   },"Undo");
 }
-function roundExamToggle(id,on){const r=S.rounds.find(x=>x.id===id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
+function roundExamToggle(id,on){const r=examRecord(id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
 function roundPrevExamText(r){
   if(!r)return "";
   const h=(r.examHist||[]).slice().reverse().find(x=>x&&x.text);
   return h?h.text:(r.prevExam||"");
 }
 function roundPrevExamSave(id,el){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   r.prevExam=el.value.trim();
   r.examHist=r.examHist||[];
   if(r.prevExam&&!r.examHist.some(x=>x&&x.text===r.prevExam))r.examHist.push({ts:Date.now(),text:r.prevExam});
@@ -6204,23 +6358,23 @@ function roundExamHistoryHtml(r){
     return '<div class="fld"><label>Exam '+(i+1)+' · '+esc(dt?new Date(h.ts).toLocaleString([],{month:"2-digit",day:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"")+'</label><div class="pre">'+esc(h.text||"")+'</div><div class="qbtns"><button type="button" onclick="copyRoundExamHist(\''+r.id+'\','+idx+')">Copy</button><button type="button" onclick="editRoundExamHist(\''+r.id+'\','+idx+')">Edit</button><button type="button" class="xbtn" onclick="delRoundExamHist(\''+r.id+'\','+idx+')">✕ Delete</button></div></div>';
   }).join("")+'</div></details>';
 }
-function editRoundExamHist(id,i){editingExamHist=id+":"+i;renderRounds()}
+function editRoundExamHist(id,i){editingExamHist=id+":"+i;renderExamCards(id)}
 function roundExamHistSave(id,i){
-  const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
+  const r=examRecord(id);if(!r||!r.examHist||!r.examHist[i])return;
   const txt=document.getElementById("rexh_"+id+"_"+i),dt=document.getElementById("rexht_"+id+"_"+i);
   r.examHist[i].text=txt?txt.value.trim():r.examHist[i].text;
   if(dt&&dt.value)r.examHist[i].ts=new Date(dt.value).getTime();
   r.prevExam=roundPrevExamText(r);
-  r.updatedAt=Date.now();editingExamHist="";renderRounds();save();
+  r.updatedAt=Date.now();editingExamHist="";renderExamCards(id);save();
 }
 function copyRoundExamHist(id,i){
-  const r=S.rounds.find(x=>x.id===id);
+  const r=examRecord(id);
   const el=document.getElementById("rexh_"+id+"_"+i);
   const t=(el?el.value.trim():(r&&r.examHist&&r.examHist[i]?String(r.examHist[i].text||"").trim():""));
   if(t){toClip(t);showToast("Exam copied")}
 }
 function copyRoundPrevExam(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const el=document.getElementById("rprev_"+id);
   const t=(el?el.value:roundPrevExamText(r)).trim();
   if(t){toClip(t);showToast("Previous exam copied")}
@@ -6346,14 +6500,16 @@ function examExpandBox(id){
   roundExamParseIntoFields(id);
   showToast("Shorthand expanded",()=>{const e=document.getElementById("rexam_"+id);if(e){e.value=before;roundExamSave(id,e,true)}},"Undo");
 }
+const editedExamInputs=new Set();
 function roundExamInput(id,el){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const v=el.value.trim();
   if(r.exam===v)return;
+  editedExamInputs.add(id);
   r.exam=v;r.examAt=sxNow();stampF(r,"exam");r.updatedAt=Date.now();autosave();
 }
 function roundExamHistInput(id,i){
-  const r=S.rounds.find(x=>x.id===id);if(!r||!r.examHist||!r.examHist[i])return;
+  const r=examRecord(id);if(!r||!r.examHist||!r.examHist[i])return;
   const txt=document.getElementById("rexh_"+id+"_"+i);if(!txt)return;
   const v=txt.value.trim();
   if(r.examHist[i].text===v)return;
@@ -6366,15 +6522,18 @@ function roundEditVal(r,k){
   return k==="tags"?((r.tags||[]).join(", ")):(r[k]||"");
 }
 function roundEditInput(id){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   const lab=document.getElementById("re_lab_"+id),raw=document.getElementById("re_raw_"+id),tg=document.getElementById("re_tags_"+id);
   r._edit={label:lab?lab.value:"",raw:raw?raw.value:"",tags:tg?tg.value:""};
   autosave();
 }
 function roundExamSave(id,el,explicit){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
+  const r=examRecord(id);if(!r)return;
   el=el||document.getElementById("rexam_"+id);
   const v=el?el.value.trim():String(r.exam||"").trim();
+  if(/^intact$/i.test(v)){roundExamIntact(id);return}
+  if(!explicit&&!editedExamInputs.has(id)&&r.exam===v)return;
+  editedExamInputs.delete(id);
   const beforeHist=(r.examHist||[]).length;
   r.examHist=r.examHist||[];
   if(v){
@@ -6389,17 +6548,11 @@ function roundExamSave(id,el,explicit){
     r.exam="";
   }
   r.examOpen=true;
-  r.updatedAt=Date.now();renderRounds();save();
+  r.updatedAt=Date.now();renderExamCards(id);save();
   if(explicit)showToast((r.examHist||[]).length>beforeHist?"Exam saved to trend":"Exam saved");
 }
 function roundExamPreset(id,kind){
-  const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  const el=document.getElementById("rexam_"+id);if(!el)return;
-  r.examMode=kind==="spine"?"spine":(kind==="intubated"?"intubated":"basic");
-  r.examFields=examDefaultFields(r.examMode);
-  r.examFieldsCustom=false;
-  el.value=kind==="spine"?TC_SPINE_EXAM:(kind==="intubated"?TC_INTUBATED_EXAM:TC_CNS_EXAM);
-  roundExamSave(id,el,true);
+  roundExamUseBase(id,kind==="spine"?"spine":kind==="intubated"?"intubated":kind==="pediatric"?"pediatric":"basic");
 }
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
@@ -6629,7 +6782,7 @@ function chartCheckIdentityHtml(c){
 }
 function chartCheckMiniButtons(c){
   const set=chartOnlyChecks();
-  return '<span class="chartmini">'+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
+  return '<span class="chartmini">'+autoTimerButton(c)+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
 }
 function chartCheckButtonsHtml(c){
   const set=chartOnlyChecks(),done=set.filter(([k])=>c.wf&&c.wf[k]).length;
@@ -10618,6 +10771,7 @@ function renderCapture(){
     add("oe primary","⌕","No auto-match — ask OpenEvidence?","copies your text + opens OE",()=>capOE(text));
     add("","◉","New consult with this text","",()=>capConsult(text,bed));
   }
+  add("","✓","Add general to-do","Board · no patient required",()=>{addBoardTodo(text,"");document.getElementById("cap").value="";el.innerHTML=""});
   if(pmatch&&!bookCue&&!/\bmri\b/i.test(text)){
     const typed=tiedTypeForRoundTodo(text);
     add("rl","▤",(typed==="COMM"?"Add to-do + Comm card — ":"Add/link action to patient — ")+esc(pmatch.label),esc((pmatch.raw||"").slice(0,70))+(pmatch.raw?"…":"")+" from "+(pmatch.kind==="round"?"Rounds":"Board"),()=>capPatientTask(text,bed,pmatch));
@@ -10793,13 +10947,12 @@ async function fetchGistFile(f,auto){
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
-function syncDoc(){return {consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,boardAutoTimersOff:!!S.boardAutoTimersOff,boardAutoTimersAt:S.boardAutoTimersAt||0,ts:Date.now()}}
+function syncDoc(){return {tombFormat:2,consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,boardAutoTimersOff:!!S.boardAutoTimersOff,boardAutoTimersAt:S.boardAutoTimersAt||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
-const DELETE_TOMBSTONE_MS=7*24*3600*1000;
-function tombStamp(){return Date.now()+DELETE_TOMBSTONE_MS}
+function tombStamp(){return Date.now()}
 function tombSet(id,ts){
   if(!id)return 0;
-  S.tomb=S.tomb||{};
+  normalizeDeletionStamps(S);S.tomb=S.tomb||{};
   const v=ts||tombStamp();
   S.tomb[id]=Math.max(S.tomb[id]||0,v);
   return S.tomb[id];
@@ -10870,13 +11023,11 @@ function fieldStamp(rec,k){
   return rec.updatedAt||rec.created||0;
 }
 function mergeFields(primary,secondary){
-  primary.fAt=Object.assign({},secondary.fAt||{},primary.fAt||{});
+  const primaryStamps={};MERGE_FIELDS.forEach(k=>{primaryStamps[k]=fieldStamp(primary,k)});
   MERGE_FIELDS.forEach(k=>{
-    const ps=fieldStamp(primary,k),ss=fieldStamp(secondary,k);
-    const pHas=primary[k]!==undefined&&primary[k]!==null&&primary[k]!=="";
-    const sHas=secondary[k]!==undefined&&secondary[k]!==null&&secondary[k]!=="";
-    if(!sHas)return;
-    if(!pHas||ss>ps){
+    const ps=primaryStamps[k],ss=fieldStamp(secondary,k);
+    if(secondary[k]===undefined)return;
+    if(ss>ps||(primary[k]===undefined&&ss===ps)){
       primary[k]=secondary[k];
       const st=(secondary.fAt&&secondary.fAt[k])||ss;
       if(st){primary.fAt=primary.fAt||{};primary.fAt[k]=st}
@@ -10886,14 +11037,13 @@ function mergeFields(primary,secondary){
   // the sign-out template object merges key by key on its own stamps
   if(secondary.so){
     primary.so=primary.so||{};
-    primary.soAt=Object.assign({},secondary.soAt||{},primary.soAt||{});
+    primary.soAt=Object.assign({},primary.soAt||{});
     Object.keys(secondary.so).forEach(k=>{
       const sv=secondary.so[k];
-      if(sv===undefined||sv===null||sv==="")return;
+      if(sv===undefined)return;
       const ps=(primary.soAt&&primary.soAt[k])||primary.updatedAt||0;
       const ss=(secondary.soAt&&secondary.soAt[k])||secondary.updatedAt||0;
-      const pHas=primary.so[k]!==undefined&&primary.so[k]!==null&&primary.so[k]!=="";
-      if(!pHas||ss>ps){
+      if(ss>ps||(primary.so[k]===undefined&&ss===ps)){
         primary.so[k]=sv;
         if(ss){primary.soAt=primary.soAt||{};primary.soAt[k]=ss}
       }
@@ -10940,6 +11090,8 @@ function mergeRoundCheckState(primary,secondary){
   return primary;
 }
 function mergeState(local,remote){
+  local=normalizeDeletionStamps(JSON.parse(JSON.stringify(local)));
+  remote=normalizeDeletionStamps(JSON.parse(JSON.stringify(remote)));
   const tomb={},tCut=Date.now()-TOMB_KEEP_MS;
   // prune ancient tombstones so the gist does not grow without bound
   [local.tomb||{},remote.tomb||{}].forEach(t=>Object.keys(t).forEach(id=>{if(t[id]>tCut)tomb[id]=Math.max(tomb[id]||0,t[id])}));
@@ -10996,7 +11148,16 @@ function mergeState(local,remote){
   const lat=local.boardAutoTimersAt||0,rat=remote.boardAutoTimersAt||0;
   const boardAutoTimersAt=Math.max(lat,rat);
   const boardAutoTimersOff=(lat||rat)?(lat>=rat?!!local.boardAutoTimersOff:!!remote.boardAutoTimersOff):!!(local.boardAutoTimersOff||remote.boardAutoTimersOff);
-  return {consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At,boardAutoTimersOff:boardAutoTimersOff,boardAutoTimersAt:boardAutoTimersAt};
+  return {tombFormat:2,consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At,boardAutoTimersOff:boardAutoTimersOff,boardAutoTimersAt:boardAutoTimersAt};
+}
+function parseSyncDocument(content){
+  const doc=JSON.parse(content);
+  if(!doc||typeof doc!=="object"||!Array.isArray(doc.consults)||
+    (doc.rounds!==undefined&&!Array.isArray(doc.rounds))||
+    (doc.formerWounds!==undefined&&!Array.isArray(doc.formerWounds))){
+    throw new Error("Invalid sync data — remote data was left unchanged");
+  }
+  return normalizeDeletionStamps(doc);
 }
 async function doSync(auto){
   recoverStaleSync();
@@ -11023,19 +11184,22 @@ async function doSync(auto){
     }else{
       const g=res.gist;
       const f=g&&g.files&&g.files[SYNC_FILE];
-      if(f){
-        let content=await fetchGistFile(f,auto);
-        try{remote=JSON.parse(content)}catch(e){}
-      }
+      if(!f)throw new Error("Sync file is missing — remote data was left unchanged");
+      remote=parseSyncDocument(await fetchGistFile(f,auto));
       gistCache=remote;
     }
-    const merged=mergeState(S,remote);
+    if(autosaveT)flushAutosave();
+    const localHadChanges=hasSyncDirty();
+    // A clean device opening the app pulls the saved remote state, never pushes
+    // its stale cache. Offline edits still merge by their original edit stamps.
+    const remoteSnapshot=JSON.parse(JSON.stringify(remote));
+    const merged=mergeState(localHadChanges?S:{},remoteSnapshot);
     S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
     const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0,boardAutoTimersOff:!!remote.boardAutoTimersOff,boardAutoTimersAt:remote.boardAutoTimersAt||0});
     const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At,boardAutoTimersOff:!!merged.boardAutoTimersOff,boardAutoTimersAt:merged.boardAutoTimersAt||0});
-    if(remoteStr!==mergedStr){
+    if(localHadChanges&&remoteStr!==mergedStr){
       await gh("/gists/"+cfg.gist,{method:"PATCH",body:JSON.stringify({files:{[SYNC_FILE]:{content:out}}})},auto);
       gistEtag="";                            // our own write invalidates the cached tag
       gistCache=JSON.parse(mergedStr);
@@ -11218,7 +11382,7 @@ function boardClockTick(force){
   const m=nowMin();
   if(!force&&m===boardClockMinute)return;
   boardClockMinute=m;
-  renderAll();renderBlocks();
+  renderReadOnly(()=>{renderAll();renderBlocks()});
 }
 // ---------- swipe to delete ----------
 function attachSwipe(containerId,kind){
@@ -11539,6 +11703,8 @@ const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SE
 compactBoardForStartup();
 renderAll();renderBlocks();
 boardClockTick(true);
+lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
+syncApplying=false;
 attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");attachSwipe("nccucards","nccu");
 setDot();
 const syncAtStartup=!!(syncCfg().token&&syncCfg().gist);
