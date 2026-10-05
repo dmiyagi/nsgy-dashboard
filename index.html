@@ -823,6 +823,8 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 .card.woundcard,.card.crowwrap,.card.E0{border-left-color:var(--acc);border-radius:12px}
 .crow.woundrow{display:flex;align-items:center;gap:8px;cursor:pointer}
 .crow.woundrow .rprob{flex:1;min-width:0}
+.card.crowwrap > .crow{min-height:26px}
+.card.crowwrap > .woundrow{padding:0;margin:0}
 </style>
 </head>
 <body>
@@ -6759,12 +6761,28 @@ function renderRounds(){
   }
   el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundChartCheckList()+renderRoundWoundList(visible.concat(S.rounds.filter(r=>r.listMode==="wound"&&matchSearch(r))))+trashHtml("round");
 }
+function setChartAutoTimers(off){
+  let changed=0;
+  (S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{
+    if(!!c.autoTimersOff===off&&(off||!c.timersOff))return;
+    c.autoTimersOff=off;
+    if(off){
+      if(c.autoChartSnoozeISO&&c.snoozeISO===c.autoChartSnoozeISO)c.snoozeISO=null;
+      c.autoChartSnoozeISO=null;
+    }else c.timersOff=false;
+    touch(c);changed++;
+  });
+  render();renderRounds();renderCal();save();
+  showToast("Chart-check auto timers "+(off?"off":"on")+" for all cards");
+}
 function renderRoundChartCheckList(){
   const items=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).slice().sort((a,b)=>String(a.loc||"").localeCompare(String(b.loc||""),undefined,{numeric:true}));
   if(!items.length)return "";
   const k="chart-round-all";
+  const all=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART");
+  const allOff=all.every(c=>c.autoTimersOff),allOn=all.every(c=>!c.autoTimersOff&&!c.timersOff);
   return '<details class="closedsec"'+woundSecAttr(k)+'><summary>Chart Checks ('+items.length+')</summary>'+
-    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" class="autotimer off" aria-pressed="'+allOff+'" onclick="setChartAutoTimers(true)" title="Turn off automatic timers for every active chart-check card"><span class="sw"></span> Auto off for all</button><button type="button" class="autotimer on" aria-pressed="'+allOn+'" onclick="setChartAutoTimers(false)" title="Turn on automatic timers for every active chart-check card"><span class="sw"></span> Auto on for all</button><span style="color:var(--mut)">'+(allOff?'All off':allOn?'All on':'Mixed')+'</span><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
     items.map(chartCheckListRow).join("")+
     '</details>';
 }
@@ -7329,7 +7347,7 @@ function woundRow(r,former,scope){
   const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
   const b=woundRowBadges(r,former,latest,kind,compact);
   const remove='<button class="webtrash wtrash" title="Remove wound check" aria-label="Remove wound check" onclick="event.stopPropagation();'+(former?'removeFormerWound':'removeWoundCheck')+'(\''+r.id+'\')">✕</button>';
-  return '<div class="card woundcard hastrash" data-id="'+r.id+'">'+remove+
+  return '<div class="card crowwrap woundcard hastrash" data-id="'+r.id+'">'+remove+
     '<div class="crow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
     woundSeenBoxHtml(r,former)+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
