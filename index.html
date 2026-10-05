@@ -971,7 +971,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <div class="toolgrp">
       <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
       <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
-      <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show the full day/night round: AM seen, 1p chart, 4p chart, PM seen, then the AM chart check before morning sign-out">◑ 24 hr</button>
+      <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show AM seen, Chart AM, Chart PM, Seen PM, and Chart Night">◑ 24 hr</button>
       <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
       <button class="btn sec sm" id="floorGroupBtn" onclick="toggleFloorGroup()">Floors</button>
     </div>
@@ -5617,12 +5617,11 @@ function rStepsHtml(r){
     return '<div class="step active"><button onclick="rStepDone(\''+r.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(s.t)+'</span>'+rStepTimerBtn(r,i,s)+'<button class="xbtn" onclick="event.stopPropagation();rStepRemove(\''+r.id+'\','+i+')">×</button></div>'+rStepTimerRow(r,i);
   }).join("")+'</div>';
 }
-// day view keeps the original three; 24-hour view adds the AM chart check and
-// the evening walk-round, giving the five things owed across a day/night
+// Keep stable storage keys so existing checkmarks survive the new labels.
+// Normal view has three checks; 24-hour view adds the evening visit and night chart.
 // null = triggered by the morning reset rather than a clock time.
-// 29*60 puts the 5 am chart on the day after the cycle started.
-const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60]];
-const ROUND_CHECKS_24=[["am","AM seen",null],["pm1","1p chart",13*60],["pm4","4p chart",16*60],["pmseen","PM seen",18*60],["pm9","9p chart",21*60],["midnight","12a chart",24*60],["amchart","5a chart",29*60]];
+const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","Chart AM",8*60],["pm4","Chart PM",16*60]];
+const ROUND_CHECKS_24=ROUND_CHECKS_DAY.concat([["pmseen","Seen PM",18*60],["pm9","Chart Night",21*60]]);
 function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
 function hasActiveChartCheck(r){
   return !!(r&&r.id&&(S.consults||[]).some(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id));
@@ -5642,8 +5641,7 @@ function roundChartHtml(r){
 // ---- round schedule ----------------------------------------------------
 // Each check names the clock time it comes due. Ticking a check archives the
 // patient until the *next* check is due, so nothing reappears early. Minutes
-// run from the cycle anchor (midnight of the day the morning reset ran), so
-// the 5 am chart lands on the following calendar day.
+// run from the cycle anchor (midnight of the day the morning reset ran).
 const UNTIL_RESET=4102444800000; // sentinel: sleeps until the morning reset
 function roundCycleAnchor(){
   const d=new Date(S.roundCycleAt||Date.now());
@@ -5747,7 +5745,7 @@ function toggleRound24(){
   S.round24=!S.round24;
   S.round24At=Date.now();
   renderRounds();flushAutosave();
-  showToast(S.round24?"24-hour view — AM seen · 1p · 4p · 6p PM seen · 9p · 12a · 5a":"Day view — AM seen · 1p · 4p");
+  showToast(S.round24?"24-hour view — AM seen · Chart AM · Chart PM · Seen PM · Chart Night":"Normal view — AM seen · Chart AM · Chart PM");
 }
 function toggleRoundChart(id,k){
   const r=roundWorkRecord(id);if(!r)return;
