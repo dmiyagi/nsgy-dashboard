@@ -8,12 +8,13 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
 const assert=(value,message)=>{if(!value)throw new Error(message)};
 const workKey=t=>String(t||'').trim().toLowerCase(),wasDone=(o,t)=>(o.doneKeys||[]).includes(workKey(t));
+let BOARD_AUTO_TIMERS_OFF=false;
 let S={tombFormat:2,consults:[],rounds:[],formerWounds:[]};
 let writes=0,pushes=0,dirty=false,syncApplying=false,lastSaved=JSON.stringify(S);
 const localStorage={setItem(){writes++}};const LS='local';
@@ -58,6 +59,7 @@ applyChartSeenSnooze(c,'wseen1',true);assert(c.snoozeISO==='manual','Auto-off ch
 toggleAutoTimers(c.id);assert(!c.autoTimersOff&&chartNextDueMin(c)===480,'Chart auto-on ignored');
 applyChartSeenSnooze(c,'wseen1',true);assert(c.autoChartSnoozeISO===c.snoozeISO,'Auto snooze not tracked');
 toggleAutoTimers(c.id);assert(c.snoozeISO===null,'Auto snooze retained after switching off');
+BOARD_AUTO_TIMERS_OFF=true;assert(chartNextDueMin(c)===null,'Chart ignored shared global timer switch');BOARD_AUTO_TIMERS_OFF=false;
 // General to-dos may attach and detach without losing their content.
 S.rounds=[{id:'r1',label:'NCCU12 Wu',team:'BLUE'}];
 const todo={type:'TODO',prob:'Print lists',tasks:[{t:'Print lists',done:false,dueISO:'2026-10-05'}]};

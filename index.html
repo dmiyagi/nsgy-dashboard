@@ -3798,7 +3798,7 @@ function toggleBoardAutoTimers(){
     });
     showToast("Board auto timers on");
   }
-  render();flushAutosave();
+  render();renderRounds();renderCal();flushAutosave();
 }
 function boardVisible(c){return !!(c&&c.type!=="CHART"&&c.type!=="WOUND")}
 function renderTypeFilters(list){
@@ -4069,7 +4069,7 @@ function allCardWorkDone(c){
   return !!(set.length||(c.steps||[]).length||(c.tasks||[]).length||c.lastDone);
 }
 function chartNextDueMin(c){
-  if(!c||c.type!=="CHART"||c.autoTimersOff||c.timersOff)return null;
+  if(!c||c.type!=="CHART"||autoTimersDisabled(c))return null;
   const wf=c.wf||{};
   if(c.worry){
     if(!wf.wseen1)return 8*60;
@@ -4121,9 +4121,6 @@ function phoneHtml(c){
 function consentInterpBadge(c){
   return c&&c.type==="CONSENT"&&c.needsInterpreter?'<span class="bg warn">Interpreter'+(c.language?' · '+esc(c.language):"")+'</span>':"";
 }
-function autoTimerButton(c){
-  return '<button class="autotimer '+(c.autoTimersOff?"off":"on")+'" aria-pressed="'+(!c.autoTimersOff)+'" onclick="event.stopPropagation();toggleAutoTimers(\''+c.id+'\')" title="Toggle automatic timers"><span class="sw"></span> auto '+(c.autoTimersOff?"off":"on")+'</button>';
-}
 function dlBtnsHtml(c){
   const hasStepT=(c.steps||[]).some(s=>!effectivelyDone(c,s)&&s.dueISO)||(c.tasks||[]).some(t=>!effectivelyDone(c,t)&&t.dueISO);
   const hasReview=c.type==="CONSULT"&&!c.reviewOff&&c.reviewDueISO;
@@ -4149,12 +4146,12 @@ function toggleAutoTimers(id){
   touch(c);render();renderRounds();renderCal();save();
 }
 function clearAllStepDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
-  c.timersOff=true;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();showToast("Sub-task timers cleared")}
+  c.timersOff=true;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});touch(c);render();renderRounds();renderCal();save();showToast("Sub-task timers cleared")}
 function clearCardTimers(id){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.timersOff=true;
   c.deadlineISO=null;(c.steps||[]).forEach(s=>{s.dueISO=null});(c.tasks||[]).forEach(t=>{t.dueISO=null});
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
-  touch(c);render();showToast("Timers off")}
+  touch(c);render();renderRounds();renderCal();save();showToast("Timers off")}
 function clearOverdueStepDL(c){
   let cleared=false,now=Date.now();
   (c.steps||[]).forEach(s=>{if(!effectivelyDone(c,s)&&s.dueISO&&Date.parse(s.dueISO)<=now){s.dueISO=null;cleared=true}});
@@ -4173,7 +4170,7 @@ function clearOverdueTimers(id){
     if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
   }
   if(n&&pinnedTopId===id)pinnedTopId=null;
-  touch(c);render();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
+  touch(c);render();renderRounds();renderCal();save();showToast(n?("Cleared "+n+" overdue timer"+(n>1?"s":"")):"No overdue timers");
 }
 function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(pinnedTopId===id)pinnedTopId=null;
@@ -4181,16 +4178,16 @@ function bumpDL(id,min){const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.timersOff=false;
   c.deadlineISO=new Date(Date.now()+min*60000).toISOString();
   if(c.type==="CONSULT"){c.reviewOff=false;c.reviewManual=true;c.reviewAt=Date.now();c.reviewDueISO=c.deadlineISO}
-  touch(c);render();
+  touch(c);render();renderRounds();renderCal();save();
   showToast("Timer reset for about "+(min<60?min+" min":Math.round(min/60)+" h")+(cleared?" · old overdue sub-timer cleared":""))}
-function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.timersOff=true;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();showToast("Review timer cleared")}
+function clearReviewDL(id){const c=S.consults.find(x=>x.id===id);if(!c)return;c.timersOff=true;c.reviewOff=true;c.reviewAt=null;c.reviewDueISO=null;touch(c);render();renderRounds();renderCal();save();showToast("Review timer cleared")}
 function clearDL(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   c.timersOff=true;
   c.deadlineISO=null;
   if(c.type==="CONSULT"){c.reviewOff=true;c.reviewManual=false;c.reviewAt=null;c.reviewDueISO=null}
   if(pinnedTopId===id)pinnedTopId=null;
-  touch(c);render();showToast("Timer off — back to priority order");
+  touch(c);render();renderRounds();renderCal();save();showToast("Timer off — back to priority order");
 }
 let openStepTimer=null; // "<id>:<i>"
 let openTaskTimer=null; // "<id>:<i>"
@@ -4759,7 +4756,7 @@ function chartSeenFollowupISO(k){
   return null;
 }
 function applyChartSeenSnooze(c,k,on){
-  if(!c||c.type!=="CHART"||!c.worry||c.autoTimersOff||c.timersOff||!/^wseen[123]$/.test(k))return;
+  if(!c||c.type!=="CHART"||!c.worry||autoTimersDisabled(c)||!/^wseen[123]$/.test(k))return;
   if(!on){if(c.snoozeISO===c.autoChartSnoozeISO)c.snoozeISO=null;c.autoChartSnoozeISO=null;return}
   c.snoozeISO=chartSeenFollowupISO(k);
   if(k==="wseen3")c.snoozeISO=null;
@@ -6803,7 +6800,7 @@ function chartCheckIdentityHtml(c){
 }
 function chartCheckMiniButtons(c){
   const set=chartOnlyChecks();
-  return '<span class="chartmini">'+autoTimerButton(c)+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
+  return '<span class="chartmini">'+set.map(([k,l])=>'<button type="button" class="'+(c.wf&&c.wf[k]?"on":"")+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+k+'\')">'+(c.wf&&c.wf[k]?"✓ ":"")+esc(l.replace(/^Chart check /,""))+'</button>').join("")+'</span>';
 }
 function chartCheckButtonsHtml(c){
   const set=chartOnlyChecks(),done=set.filter(([k])=>c.wf&&c.wf[k]).length;
