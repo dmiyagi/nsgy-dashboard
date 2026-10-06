@@ -98,7 +98,7 @@ section.view.active{display:block}
 .bg.w3{background:#0d3a4a;color:var(--w3);border:1px solid var(--w3)}
 .bg.mod{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:700}
 .bg.warn{background:#3a1220;color:var(--e3);border:1px solid var(--e3)}
-.bg.roomresp,.rwho.roomresp{border:1px solid var(--e3);box-shadow:0 0 0 1px rgba(255,77,94,.28);position:relative}
+.bg.roomresp,.rwho.roomresp{box-shadow:none;position:relative}
 .bg.roomresp::before,.rwho.roomresp::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--e3);margin-right:5px;vertical-align:middle}
 .card .who{font-weight:700;font-size:15px}
 .card .prob{color:var(--acc);font-weight:600}
@@ -6775,14 +6775,19 @@ function setChartAutoTimers(off){
   render();renderRounds();renderCal();save();
   showToast("Chart-check auto timers "+(off?"off":"on")+" for all cards");
 }
+function collapseChartChecks(compact){
+  (S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=compact});
+  renderRounds();renderCal();save();
+}
 function renderRoundChartCheckList(){
   const items=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).slice().sort((a,b)=>String(a.loc||"").localeCompare(String(b.loc||""),undefined,{numeric:true}));
   if(!items.length)return "";
   const k="chart-round-all";
   const all=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART");
   const allOff=all.every(c=>c.autoTimersOff),allOn=all.every(c=>!c.autoTimersOff&&!c.timersOff);
+  const compact=all.every(c=>c.collapsed),expanded=all.every(c=>!c.collapsed);
   return '<details class="closedsec"'+woundSecAttr(k)+'><summary>Chart Checks ('+items.length+')</summary>'+
-    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" class="autotimer off" aria-pressed="'+allOff+'" onclick="setChartAutoTimers(true)" title="Turn off automatic timers for every active chart-check card"><span class="sw"></span> Auto off for all</button><button type="button" class="autotimer on" aria-pressed="'+allOn+'" onclick="setChartAutoTimers(false)" title="Turn on automatic timers for every active chart-check card"><span class="sw"></span> Auto on for all</button><span style="color:var(--mut)">'+(allOff?'All off':allOn?'All on':'Mixed')+'</span><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" aria-pressed="'+compact+'" onclick="collapseChartChecks(true)">⊟ Compact</button><button type="button" aria-pressed="'+expanded+'" onclick="collapseChartChecks(false)">⊞ Expand</button><button type="button" class="autotimer off" aria-pressed="'+allOff+'" onclick="setChartAutoTimers(true)" title="Turn off automatic timers for every active chart-check card"><span class="sw"></span> Auto off for all</button><button type="button" class="autotimer on" aria-pressed="'+allOn+'" onclick="setChartAutoTimers(false)" title="Turn on automatic timers for every active chart-check card"><span class="sw"></span> Auto on for all</button><span style="color:var(--mut)">'+(allOff?'All off':allOn?'All on':'Mixed')+'</span><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
     items.map(chartCheckListRow).join("")+
     '</details>';
 }
@@ -8085,10 +8090,17 @@ function soExtraOneLinerFields(r){
   return Array.from({length:soExtraOneLinerCount(r)},(_,i)=>["One-liner "+(i+2),"updated/alternate one-liner"]);
 }
 function soIsExtraOneLiner(k){return /^One-liner\s+\d+$/i.test(k||"")}
+function soExamFirst(labels){
+  const one=labels.filter(k=>/^one[- ]?liner(?:\s+\d+)?$/i.test(k));
+  const exams=labels.filter(k=>/\bexam\b/i.test(k)&&!one.includes(k));
+  return one.concat(exams,labels.filter(k=>!one.includes(k)&&!exams.includes(k)));
+}
 function soTemplateFields(r){
   const t=soTemplate(r);
   const base=t.fields.slice();
-  return base.slice(0,1).concat(soExtraOneLinerFields(r),base.slice(1));
+  const fields=base.slice(0,1).concat(soExtraOneLinerFields(r),base.slice(1));
+  const labels=soExamFirst(fields.map(f=>f[0]));
+  return labels.map(k=>fields.find(f=>f[0]===k));
 }
 function soAddOneLiner(){
   const r=findAny(soId);if(!r)return;
@@ -8707,13 +8719,13 @@ function soOrderRank(label){
 }
 function soApplyCustomOrder(r,labels){
   const order=(r&&Array.isArray(r.soBoxOrder))?r.soBoxOrder:[];
-  if(!order.length)return labels;
+  if(!order.length)return soExamFirst(labels);
   const ix={};order.forEach((k,i)=>ix[k]=i);
-  return labels.slice().sort((a,b)=>{
+  return soExamFirst(labels.slice().sort((a,b)=>{
     const ai=ix[a],bi=ix[b];
     if(ai!==undefined||bi!==undefined)return (ai===undefined?9999:ai)-(bi===undefined?9999:bi);
     return soOrderRank(a)-soOrderRank(b)||a.localeCompare(b);
-  });
+  }));
 }
 function soSuggestedSort(labels){
   return labels.slice().sort((a,b)=>soOrderRank(a)-soOrderRank(b)||a.localeCompare(b));
@@ -9366,8 +9378,8 @@ function sxItemsBySys(items){
   });
   return by;
 }
-function sxManagementThreads(r){
-  const core=sxAll(r).filter(x=>["state","delta","goal","constraint"].includes(x.role));
+function sxManagementThreads(r,exams=[]){
+  const core=sxAll(r).filter(x=>!exams.some(e=>e.id===x.id)).filter(x=>["state","delta","goal","constraint"].includes(x.role));
   const by=sxItemsBySys(core),out=[];
   sxSystemOrder().forEach(sys=>{
     const items=by[sys]||[];
@@ -9405,7 +9417,9 @@ function sxAssemble(r){
   const ctx=sxByRole(r,"context").map(x=>sxClause(x.t)).join("; ");
   const head=soLabel(r)+(ctx?" — "+ctx:"");
   lines.push({cls:"head",text:head});
-  sxManagementThreads(r).forEach(l=>lines.push(l));
+  const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
+  exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
+  sxManagementThreads(r,exams).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
   return lines;

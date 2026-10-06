@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -107,6 +107,7 @@ S.consults=[{id:'a',type:'CHART',autoTimersOff:false,snoozeISO:'auto',autoChartS
 setChartAutoTimers(true);assert(S.consults[0].autoTimersOff&&S.consults[1].autoTimersOff&&S.consults[0].snoozeISO===null&&S.consults[1].snoozeISO==='manual','Bulk off failed or cleared a manual date');
 assert(!S.consults[2].autoTimersOff&&!S.consults[3].autoTimersOff,'Bulk chart toggle changed other cards');
 setChartAutoTimers(false);assert(!S.consults[0].autoTimersOff&&!S.consults[1].autoTimersOff,'Bulk chart on failed');
+assert(soExamFirst(['Events','One-liner','Labs','Exam','One-liner 2']).join('|')==='One-liner|One-liner 2|Exam|Events|Labs','Exam was not immediately after the one-liner');
 return 'Regression checks PASS';
 `;
 const result=new Function(setup+names.map(extract).join('\n')+checks)();
