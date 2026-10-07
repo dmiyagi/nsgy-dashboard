@@ -36,6 +36,12 @@ S.consults[0].collapsed=true;save();assert(!dirty&&pushes===0,'Compact view queu
 renderReadOnly(()=>{S.consults[0].reviewDueISO='generated';S.consults[0].collapsed=false});
 assert(!dirty,'Rendering marked the device dirty');
 S.consults[0].note='edited';S.consults[0].updatedAt=200;save();assert(dirty&&pushes===1,'Actual edit was not queued');
+// A failed local write must remain eligible for retry rather than becoming the saved baseline.
+const beforeFailure=lastSaved,originalWrite=localStorage.setItem;
+S.consults[0].note='retry after storage failure';localStorage.setItem=()=>{throw new Error('storage full')};
+try{save()}catch(e){}
+assert(lastSaved===beforeFailure,'Failed storage write was recorded as saved');
+localStorage.setItem=originalWrite;save();assert(lastSaved===JSON.stringify(S),'Local save retry failed');
 // Field timestamps are compared BEFORE either device stamps are merged.
 let field=mergeFields({updatedAt:900,note:'old',fAt:{note:100}},{updatedAt:800,note:'new',fAt:{note:800}});
 assert(field.note==='new','Stale iOS field beat newer desktop field');
@@ -158,12 +164,56 @@ const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 
+const simpleSignoutCheck=new Function(`
+const calls=[],input={value:'- MRI reviewed\\n\\n• Check sodium',focus(){}};
+const document={getElementById:id=>id.startsWith('sxkind_')?{value:'loop'}:input};
+const sxAdd=(id,t,role)=>{calls.push({id,t,role});return {t,role}};
+const renderNccu=()=>{},renderRounds=()=>{},flushAutosave=()=>{},showToast=()=>{};
+${extract('sxAddFromInput')}
+sxAddFromInput('prefix-patient','patient');
+if(calls.length!==2||calls[0].t!=='MRI reviewed'||calls[1].t!=='Check sodium'||calls.some(x=>x.id!=='patient'||x.role!=='loop')||input.value!=='')throw new Error('Multiline sign-out input was not separated or assigned correctly');
+return 'Simple sign-out entry checks PASS';
+`)();
+if(typeof console!=='undefined')console.log(simpleSignoutCheck);
+if(typeof report==='function')report(simpleSignoutCheck);
+
+const signoutReliabilitySetup=`
+let clock=100,undo=null;const r={id:'patient',sx:[{id:'line',t:'old',ts:10,day:'today'}]};
+const findAny=()=>r,sxNow=()=>++clock;
+const syncLinkedSo=()=>{},renderNccu=()=>{},flushAutosave=()=>{},autosave=()=>{};
+const showToast=(text,callback)=>{undo=callback};
+const workKey=t=>String(t||'').trim().toLowerCase();
+`;
+const signoutReliabilityChecks=`
+const stale=JSON.parse(JSON.stringify(r));
+sxEdit('patient','line',{value:'new information'});
+for(const pair of [[r,stale],[stale,r]]){
+ const merged=mergeSxArray(pair[0].sx,pair[1].sx,pair[0],pair[1]);
+ if(merged[0].t!=='new information')throw new Error('Stale sign-out line overwrote an edit');
+}
+sxRemove('patient','line');
+if(sxActive(r).length)throw new Error('Dropped line remained visible');
+for(const pair of [[r,stale],[stale,r]]){
+ if(!mergeSxArray(pair[0].sx,pair[1].sx,pair[0],pair[1])[0].dropped)throw new Error('Stale device resurrected a dropped line');
+}
+const dropped=JSON.parse(JSON.stringify(r));undo();
+if(sxActive(r).length!==1)throw new Error('Undo did not restore the line');
+for(const pair of [[r,dropped],[dropped,r]]){
+ if(mergeSxArray(pair[0].sx,pair[1].sx,pair[0],pair[1])[0].dropped)throw new Error('Stale deletion overrode a newer Undo');
+}
+return 'Sign-out edit / drop / Undo sync checks PASS';
+`;
+const reliabilityResult=new Function(signoutReliabilitySetup+['sxList','sxActive','sxFind','sxEdit','sxRemove','mergeSxArray'].map(extract).join('\n')+signoutReliabilityChecks)();
+if(typeof console!=='undefined')console.log(reliabilityResult);
+if(typeof report==='function')report(reliabilityResult);
+
 // Exercise the actual GET/merge/PATCH path with two saved device snapshots.
 const syncNames=['doSync','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];
 const syncSetup=`
 const assert=(v,m)=>{if(!v)throw new Error(m)};
 const workKey=t=>String(t||'').trim().toLowerCase(),wasDone=(o,t)=>(o.doneKeys||[]).includes(workKey(t));
-const TOMB_KEEP_MS=45*24*3600*1000,MERGE_FIELDS=['note','exam','plan','loc','prob','raw'];
+const TOMB_KEEP_MS=45*24*3600*1000;
+${appSource.match(/const MERGE_FIELDS=\[[\s\S]*?\];/)[0]}
 const SYNC_FILE='board',SK_DIRTY='dirty',SK_LAST='last',LS='local',MIN_SYNC_GAP=0;
 let dirty='',syncing=false,syncAgain=false,syncBlocked='',lastSyncAt=0,syncRunSeq=0,syncStartedAt=0,pushT=0,retryT=0,gistCache=null,gistEtag='',syncFail=0,syncApplying=false,startupCompactBoard=true,lastSaved='',BOARD_AUTO_TIMERS_OFF=false;
 let patches=0,autosaveT=null;const flushAutosave=()=>{};
@@ -180,18 +230,44 @@ const gh=async(path,opts)=>{patches++;remote=JSON.parse(JSON.parse(opts.body).fi
 `;
 const syncChecks=`
 return (async()=>{
- await doSync(true);
- assert(patches===0,'Opening a clean stale iOS cache sent a PATCH');
- assert(S.consults[0].note==='desktop new','Clean iOS did not pull desktop data');
- S.consults[0].note='iOS edit';S.consults[0].updatedAt=300;dirty='300';
- await doSync(true);
- assert(patches===1&&remote.consults[0].note==='iOS edit','An actual iOS edit failed to save');
- // Closing and reopening after that successful save remains read-only.
- S.consults[0].collapsed=false;
- await doSync(true);
- assert(patches===1,'Reopening pushed a display-only change');
- return 'Sync lifecycle checks PASS';
+ const clone=x=>JSON.parse(JSON.stringify(x));
+ const seed=()=>({tombFormat:2,consults:[{id:'p',note:'baseline',exam:'baseline exam',updatedAt:100,created:1,fAt:{note:100,exam:100},sx:[{id:'line',t:'baseline line',ts:100}],tasks:[{t:'Check MRI',done:false}]}],rounds:[{id:'r',label:'NCCU12 Wu',raw:'baseline',morningNotes:'morning baseline',daytimeNotes:'',updatedAt:100,created:1,fAt:{morningNotes:100,daytimeNotes:100}}],tomb:{},day:{date:'',checks:{}}});
+ for(const [sender,receiver] of [['desktop','iOS'],['iOS','desktop']]){
+  remote=seed();S=clone(remote);dirty='';patches=0;
+  const stale=clone(S);
+  S.consults[0].note=sender+' new';S.consults[0].updatedAt=200;S.consults[0].fAt.note=200;
+  S.rounds[0].daytimeNotes=sender+' daytime update';S.rounds[0].updatedAt=200;S.rounds[0].fAt.daytimeNotes=200;dirty='200';
+  await doSync(true);
+  assert(patches===1&&remote.consults[0].note===sender+' new',sender+' save did not reach server');
+  S=clone(stale);dirty='';await doSync(true);
+  assert(patches===1&&S.consults[0].note===sender+' new'&&S.rounds[0].daytimeNotes===sender+' daytime update',receiver+' stale reopening overwrote or missed sender data');
+  assert(JSON.parse(values.local).consults[0].note===sender+' new',receiver+' did not persist pulled state locally');
+  S.consults[0].note=receiver+' reply';S.consults[0].updatedAt=300;S.consults[0].fAt.note=300;dirty='300';await doSync(true);
+  S=clone(stale);dirty='';await doSync(true);
+  assert(patches===2&&S.consults[0].note===receiver+' reply',sender+' did not receive return edit');
+  // A stale device editing a different field must preserve newer saved information.
+  S=clone(stale);S.consults[0].exam=receiver+' offline exam';S.consults[0].fAt.exam=400;S.consults[0].updatedAt=400;
+  S.rounds[0].morningNotes=receiver+' offline baseline';S.rounds[0].fAt.morningNotes=400;S.rounds[0].updatedAt=400;dirty='400';await doSync(true);
+  assert(remote.consults[0].note===receiver+' reply'&&remote.consults[0].exam===receiver+' offline exam','Offline edit overwrote an unrelated newer field: '+receiver);
+  assert(remote.rounds[0].morningNotes===receiver+' offline baseline'&&remote.rounds[0].daytimeNotes===sender+' daytime update','Offline baseline lost daytime notes: '+receiver);
+  // Edits, drops and Undo must win over older line snapshots in either direction.
+  S.consults[0].sx[0].t=sender+' edited line';S.consults[0].sx[0].updatedAt=500;S.consults[0].updatedAt=500;dirty='500';await doSync(true);
+  S=clone(stale);S.consults[0].exam='another offline exam';S.consults[0].fAt.exam=550;S.consults[0].updatedAt=550;dirty='550';await doSync(true);
+  assert(remote.consults[0].sx[0].t===sender+' edited line','Stale receiver overwrote sign-out edit: '+receiver);
+  S.consults[0].sx[0].dropped=true;S.consults[0].sx[0].droppedAt=600;S.consults[0].sx[0].updatedAt=600;S.consults[0].updatedAt=600;dirty='600';await doSync(true);
+  const dropped=clone(remote);
+  S=clone(stale);S.consults[0].note='offline unrelated edit';S.consults[0].fAt.note=650;S.consults[0].updatedAt=650;dirty='650';await doSync(true);
+  assert(remote.consults[0].sx[0].dropped,'Stale receiver restored dropped sign-out line: '+receiver);
+  S.consults[0].sx[0].dropped=false;S.consults[0].sx[0].droppedAt=0;S.consults[0].sx[0].updatedAt=700;S.consults[0].updatedAt=700;dirty='700';await doSync(true);
+  S=clone(dropped);S.consults[0].exam='edit after undo';S.consults[0].fAt.exam=750;S.consults[0].updatedAt=750;dirty='750';await doSync(true);
+  assert(!remote.consults[0].sx[0].dropped,'Older deletion overrode Undo: '+receiver);
+  const before=patches;S.consults[0].collapsed=false;dirty='';await doSync(true);
+  assert(patches===before,'Display-only reopening wrote remote data: '+receiver);
+  if(typeof report==='function')report(sender+' → '+receiver+' sync checks PASS');
+ }
+ return 'Bidirectional sync lifecycle checks PASS';
 })()
 `;
+
 const syncResult=new Function(syncSetup+syncNames.map(n=>extract(n).replace(/^function doSync/, 'async function doSync')).join('\n')+syncChecks)();
 syncResult.then(v=>{if(typeof console!=='undefined')console.log(v);if(typeof report==='function')report(v)},e=>{if(typeof report==='function')report('FAIL: '+e.message);else throw e});
