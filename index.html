@@ -953,6 +953,13 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
+  <details class="roundentry"><summary>Morning / afternoon sign-out notes</summary>
+    <p class="note">Start each patient with bed + abbreviated surname. Indent their follow-up tasks underneath. Notes save as you type; choose Sort into rounds when ready.</p>
+    <label>Morning sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
+    <div class="qbtns"><button onclick="sortHandoffNotes('morning')">⇣ Sort morning notes into rounds</button></div>
+    <label>Daytime notes for afternoon sign-out<textarea class="evta" id="handoff_daytime" style="width:100%;min-height:100px" oninput="handoffNotesSave('daytime',this)"></textarea></label>
+    <div class="qbtns"><button onclick="sortHandoffNotes('daytime')">⇣ Sort daytime notes into rounds</button></div>
+  </details>
   <div class="roundentry">
     <textarea id="dropbox" class="evta" style="min-height:110px;width:100%" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
 B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
@@ -975,6 +982,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
       <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
       <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show AM seen, Chart AM, Chart PM, Seen PM, and Chart Night">◑ 24 hr</button>
       <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
+      <button class="btn sec sm autotimer" id="roundTimersBtn" onclick="setRoundAutoTimers(!roundAutoTimersOff())">Auto timers</button>
       <button class="btn sec sm" id="floorGroupBtn" onclick="toggleFloorGroup()">Floors</button>
     </div>
     <div class="toolgrp">
@@ -3434,7 +3442,7 @@ function migrate(d){
   });
   (d.rounds||[]).forEach(r=>{if(typeof r.collapsed==="undefined")r.collapsed=true;if(!Array.isArray(r.woundLog))r.woundLog=[];if(!Array.isArray(r.examHist))r.examHist=[];r.doneKeys=Array.isArray(r.doneKeys)?r.doneKeys:[];(r.steps||[]).forEach(t=>{if(t&&t.done)rememberDone(r,t.t,true)});if(r.prevExam&&!r.examHist.length)r.examHist.push({ts:r.updatedAt||Date.now(),text:r.prevExam});r.examHist=r.examHist.slice(0,3);if(r.woundChecks&&r.woundChecks.date!==undefined&&r.woundChecks.seen===undefined)r.woundChecks.seen=r.woundChecks.date;r.tags=normalizeRoundTags((r.tags||[]).concat(roundTags([r.raw,r.label].filter(Boolean).join(" "))))});
   d.formerWounds=d.formerWounds||[];
-  d.woundCompact=!!d.woundCompact;
+  d.woundCompact=true;
   (d.rounds||[]).forEach(r=>{r.woundOpen=false});
   d.formerWounds.forEach(r=>{
     if(!Array.isArray(r.woundLog))r.woundLog=[];
@@ -3446,7 +3454,7 @@ function migrate(d){
   });
   return d;
 }
-function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}BOARD_AUTO_TIMERS_OFF=false;return {tombFormat:2,consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:false,boardAutoTimersOff:false,boardAutoTimersAt:0}}
+function load(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&d.consults){d.tomb=d.tomb||{};d.rounds=d.rounds||[];d.formerWounds=d.formerWounds||[];d.trash=d.trash||[];return migrate(d)}}catch(e){}BOARD_AUTO_TIMERS_OFF=false;return {tombFormat:2,consults:[],rounds:[],formerWounds:[],tomb:{},trash:[],day:{date:"",checks:{}},blocksOpen:{},round24:false,round24At:0,woundCompact:true,boardAutoTimersOff:false,boardAutoTimersAt:0}}
 let lastSaved=JSON.stringify(S);
 // Loading, normalizing and drawing the app are read-only sync operations.
 let syncApplying=true;
@@ -3645,7 +3653,7 @@ function reviewWindowMin(c){
   const e=Math.max(0,Math.min(3,c.E||0));
   return E_WINDOW_MIN[e];
 }
-function autoTimersDisabled(c){return !!(BOARD_AUTO_TIMERS_OFF||(c&&(c.timersOff||c.autoTimersOff)))}
+function autoTimersDisabled(c){return !!(BOARD_AUTO_TIMERS_OFF||(c&&(c.timersOff||c.autoTimersOff||((c.type==="CHART"||c.roundId)&&roundAutoTimersOff()))))}
 function resetReviewClock(c,at,force){
   const m=reviewWindowMin(c);if(m===null)return;
   // never re-arm something the user deliberately switched off or set by hand
@@ -3800,7 +3808,7 @@ function toggleBoardAutoTimers(){
   }
   render();renderRounds();renderCal();flushAutosave();
 }
-function boardVisible(c){return !!(c&&c.type!=="CHART"&&c.type!=="WOUND")}
+function boardVisible(c){return !!(c&&c.type!=="CHART"&&c.type!=="WOUND"&&c.type!=="HANDOFF_NOTES")}
 function renderTypeFilters(list){
   const el=document.getElementById("typefilters");if(!el)return;
   const counts={};list.forEach(c=>{const k=boardType(c);counts[k]=(counts[k]||0)+1});
@@ -4895,7 +4903,7 @@ function applyTypeDefaults(c,type,opts){
   }
   return c;
 }
-function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],doneKeys:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:false,closed:false,created:Date.now()}}
+function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],doneKeys:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:true,closed:false,created:Date.now()}}
 function workKey(t){return String(t||"").trim().toLowerCase().replace(/\s+/g," ")}
 function rememberDone(o,t,on){
   if(!o||!t)return;
@@ -5568,6 +5576,41 @@ function findRoundLike(label,raw){
     return room&&rk.split("|")[0]===room;   // same room, abbreviation missing on one side
   })||null;
 }
+function handoffNotesRecord(){
+  let record=(S.consults||[]).find(c=>c.type==="HANDOFF_NOTES");
+  if(!record){record={id:"handoff-notes",type:"HANDOFF_NOTES",created:Date.now(),collapsed:true};S.consults.push(record)}
+  return record;
+}
+function handoffNotesSave(kind,el){
+  const r=handoffNotesRecord(),key=kind==="morning"?"morningNotes":"daytimeNotes";
+  if(r[key]===el.value)return;
+  r[key]=el.value;stampF(r,key);touch(r);autosave();
+}
+function renderHandoffNotes(){
+  const r=(S.consults||[]).find(c=>c.type==="HANDOFF_NOTES");
+  ["morning","daytime"].forEach(kind=>{const el=document.getElementById("handoff_"+kind);if(el&&document.activeElement!==el)el.value=(r&&r[kind==="morning"?"morningNotes":"daytimeNotes"])||""});
+}
+function sortHandoffNotes(kind){
+  const el=document.getElementById("handoff_"+kind);if(!el||!el.value.trim())return;
+  handoffNotesSave(kind,el);
+  const blocks=parseBlocks(el.value),box=document.getElementById("dropbox"),draft=box.value;
+  const valid=blocks.filter(b=>roundBedFromText(b.main)||last3FromText(b.main));
+  if(!valid.length){showToast("Add a bed and abbreviated surname to each patient line first");return}
+  box.value=valid.map(b=>b.main+b.subs.map(t=>"\n\t"+t).join("")).join("\n");
+  parseRounds();box.value=draft;
+  valid.forEach(b=>{
+    const r=findRoundLike(roundLabel(b.main),b.main);if(!r)return;
+    const key=kind==="morning"?"morningNotes":"daytimeNotes";
+    const note=[b.main].concat(b.subs).join("\n");
+    if(!String(r[key]||"").includes(note))r[key]=[r[key],note].filter(Boolean).join("\n\n");
+    r.listMode="rounds";r.collapsed=true;stampF(r,key);touch(r);
+  });
+  renderRounds();save();showToast("Sorted "+valid.length+" patient notes into rounds"+(valid.length<blocks.length?"; unmatched notes remain saved":""));
+}
+function patientHandoffNotesHtml(r){
+  const parts=[["Morning sign-out notes",r.morningNotes],["Daytime / afternoon sign-out notes",r.daytimeNotes]].filter(x=>x[1]);
+  return parts.length?'<details class="moredet"><summary>Sign-out notes</summary>'+parts.map(([label,text])=>'<div class="fld"><label>'+label+'</label><div class="state" style="white-space:pre-wrap">'+esc(text)+'</div></div>').join("")+'</details>':"";
+}
 function parseRounds(){
   const txt=document.getElementById("dropbox").value;
   if(!txt.trim())return;
@@ -5665,6 +5708,7 @@ function roundLastDoneCheck(r){
 }
 // when a patient comes back after the check just ticked
 function roundWakeAfter(r){
+  if(roundAutoTimersOff())return 0;
   const nx=roundNextCheck(r);
   if(!nx)return UNTIL_RESET;
   const due=stageDueAt(nx.due);
@@ -6577,7 +6621,7 @@ function chartCheckDotsHtml(c){
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
 function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
-function collapseRounds(v){S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
+function collapseRounds(v){(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=v});S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
 function initialsOf(r){
   const ab=last3FromText(r.raw)||last3FromText(r.label);
   if(ab)return ab.toUpperCase();
@@ -6691,11 +6735,13 @@ function roundRowCard(r){
     '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){
+  renderHandoffNotes();
   S.rounds=S.rounds||[];
   const el=document.getElementById("rcards");if(!el)return;
   const sb=document.getElementById("rsort");
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
+  const rt=document.getElementById("roundTimersBtn");if(rt){const off=roundAutoTimersOff();rt.classList.toggle("off",off);rt.classList.toggle("on",!off);rt.setAttribute("aria-pressed",String(!off));rt.innerHTML='<span class="sw"></span> Auto timers '+(off?"off":"on")+" for rounds"}
   const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
   const cmp=(S.roundSort==="initials")
@@ -6710,7 +6756,9 @@ function renderRounds(){
   const list=visible.filter(r=>!roundArchived(r)).slice().sort(cmp);
   autoScheduleRoundDateTasksFor(visible);
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
+  const chartItems=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).map(c=>Object.assign(chartCheckRoundProxy(c),{_chartCard:c})).filter(r=>!soCcOnly||r.soCcResp);
   const renderRoundList=arr=>arr.map(r=>{
+    if(r._chartCard)return chartCheckListRow(r._chartCard);
     if(REDIT.has(r.id)){
       return '<div class="card'+(roundIsFloor(r)?' floorcard':'')+'" style="border-left-color:'+(roundIsFloor(r)?'#5aa7ff':'var(--e1)')+'">'+
        '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(roundEditVal(r,"label"))+'" oninput="roundEditInput(\''+r.id+'\')"></div>'+
@@ -6728,6 +6776,7 @@ function renderRounds(){
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
      roundExamHtml(r)+
      rStepsHtml(r)+
+     patientHandoffNotesHtml(r)+
      roundChartHtml(r)+
      '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
@@ -6754,9 +6803,21 @@ function renderRounds(){
     mainHtml=(other.length?renderRoundList(other):'<div class="empty" style="padding:14px 10px">No ICU/ED/other patients in this view.</div>')+
       (floors.length?'<details class="closedsec floorsec" open><summary>Floor patients ('+floors.length+')</summary>'+renderRoundList(floors)+'</details>':"");
   }else{
-    mainHtml=list.length?renderRoundList(list):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
+    const mixed=list.concat(S.roundGroupFloor?[]:chartItems).sort(cmp);
+    mainHtml=mixed.length?renderRoundList(mixed):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
   }
-  el.innerHTML=mainHtml+renderRoundArchive(archived)+renderRoundChartCheckList()+renderRoundWoundList(visible.concat(S.rounds.filter(r=>r.listMode==="wound"&&matchSearch(r))))+trashHtml("round");
+  el.innerHTML=mainHtml+renderRoundArchive(archived)+(S.roundGroupFloor?renderRoundChartCheckList():"")+renderRoundWoundList(visible.concat(S.rounds.filter(r=>r.listMode==="wound"&&matchSearch(r))))+trashHtml("round");
+}
+function roundAutoTimersOff(){return !!((S.consults||[]).find(c=>c.type==="HANDOFF_NOTES")||{}).roundAutoTimersOff}
+function setRoundAutoTimers(off){
+  const record=handoffNotesRecord();record.roundAutoTimersOff=!!off;stampF(record,"roundAutoTimersOff");touch(record);
+  (S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&(c.type==="CHART"||c.roundId)).forEach(c=>{
+    c.autoTimersOff=!!off;
+    if(off){if(c.autoChartSnoozeISO&&c.snoozeISO===c.autoChartSnoozeISO)c.snoozeISO=null;c.autoChartSnoozeISO=null}
+    else c.timersOff=false;
+    touch(c);
+  });
+  render();renderRounds();renderCal();save();
 }
 function setChartAutoTimers(off){
   let changed=0;
@@ -6781,10 +6842,10 @@ function renderRoundChartCheckList(){
   if(!items.length)return "";
   const k="chart-round-all";
   const all=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART");
-  const allOff=all.every(c=>c.autoTimersOff),allOn=all.every(c=>!c.autoTimersOff&&!c.timersOff);
+
   const compact=all.every(c=>c.collapsed),expanded=all.every(c=>!c.collapsed);
   return '<details class="closedsec"'+woundSecAttr(k)+'><summary>Chart Checks ('+items.length+')</summary>'+
-    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" aria-pressed="'+compact+'" onclick="collapseChartChecks(true)">⊟ Compact</button><button type="button" aria-pressed="'+expanded+'" onclick="collapseChartChecks(false)">⊞ Expand</button><button type="button" class="autotimer off" aria-pressed="'+allOff+'" onclick="setChartAutoTimers(true)" title="Turn off automatic timers for every active chart-check card"><span class="sw"></span> Auto off for all</button><button type="button" class="autotimer on" aria-pressed="'+allOn+'" onclick="setChartAutoTimers(false)" title="Turn on automatic timers for every active chart-check card"><span class="sw"></span> Auto on for all</button><span style="color:var(--mut)">'+(allOff?'All off':allOn?'All on':'Mixed')+'</span><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
+    '<div class="qbtns" style="margin:6px 0 8px"><button type="button" aria-pressed="'+compact+'" onclick="collapseChartChecks(true)">⊟ Compact</button><button type="button" aria-pressed="'+expanded+'" onclick="collapseChartChecks(false)">⊞ Expand</button><button type="button" onclick="purgeChartChecks()">Clear all chart checks</button></div>'+
     items.map(chartCheckListRow).join("")+
     '</details>';
 }
@@ -7035,7 +7096,7 @@ function woundRoundCandidate(r){
 }
 function addRoundWoundList(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
-  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
+  r.woundListed=true;woundRowOpen[r.id]=false;r.woundChecks=r.woundChecks||{};r.updatedAt=Date.now();
   autoScheduleWoundDateTask(r,false);
   woundSecOpen["wound-round-all"]=true;woundSecOpen["wound-cal-inpt"]=true;
   renderRounds();renderCal();save();showToast("Added to wound check list");
@@ -7082,7 +7143,7 @@ function addWoundChecksFromRoundsInput(){
     const r=standaloneWoundRecord(b.main,b.subs);
     S.formerWounds.push(r);
     autoScheduleWoundDateTask(r,true);
-    woundRowOpen[r.id]=true;
+    woundRowOpen[r.id]=false;
     n++;
   });
   clearRoundsInput();
@@ -7319,7 +7380,7 @@ function patientSavedInfo(r){
   if(!r)return "";
   const details=[r.raw,r.plan,r.note].filter(Boolean);
   const text=details.length?'<details style="margin-top:8px"><summary>Patient details / notes</summary><div class="state" style="white-space:pre-wrap">'+esc(details.join("\n\n"))+'</div></details>':"";
-  return text+((r.listMode==="chart"||r.listMode==="wound")?roundExamHtml(r):"");
+  return text+patientHandoffNotesHtml(r)+((r.listMode==="chart"||r.listMode==="wound")?roundExamHtml(r):"");
 }
 function patientMoveButtons(r){
   return '<div class="cardbtns"><button onclick="movePatientList(\''+r.id+'\',\'rounds\')">→ Rounds</button><button onclick="movePatientList(\''+r.id+'\',\'chart\')">→ Chart check</button><button onclick="movePatientList(\''+r.id+'\',\'wound\')">＋ Wound check</button></div>';
@@ -7341,7 +7402,7 @@ function movePatientList(id,mode){
 }
 function woundRow(r,former,scope){
   const open=!!woundRowOpen[r.id];
-  const compact=!!S.woundCompact;
+  const compact=S.woundCompact!==false;
   const latest=(r.woundLog||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];
   const kind=former?(r.woundStandalone?"Standalone":"Former"):"Wound";
   const b=woundRowBadges(r,former,latest,kind,compact);
@@ -9274,6 +9335,7 @@ function sxDerived(r){
   const hide=r.sxHide||{};
   const stored=sxActive(r).map(x=>x.t.toLowerCase().trim());
   const out=[];
+  [["morningNotes","Morning sign-out"],["daytimeNotes","Daytime updates"]].forEach(([key,label])=>{if(r[key]&&!hide["@"+key])out.push({id:"@"+key,t:label+": "+r[key],role:"delta",sys:"neuro",derived:key,ts:fieldStamp(r,key),live:label})});
   const exam=String(r.exam||"").trim();
   if(exam&&!hide["@exam"]&&!stored.some(t=>t===exam.toLowerCase()))
     out.push({id:"@exam",t:exam,role:"state",sys:"neuro",derived:"exam",
@@ -11036,7 +11098,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
-  "action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
+  "morningNotes","daytimeNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
@@ -11572,7 +11634,7 @@ function boardToWoundList(id){
   const res=boardToRoundRecord(c);if(!res)return;
   const r=res.r;
   const synced=syncBoardTodoToRounds(c);
-  r.woundListed=true;woundRowOpen[r.id]=true;r.woundChecks=r.woundChecks||{};
+  r.woundListed=true;woundRowOpen[r.id]=false;r.woundChecks=r.woundChecks||{};
   if(!r.woundOne&&c.prob)r.woundOne=c.prob;
   r.updatedAt=Date.now();
   autoScheduleWoundDateTask(r,false);

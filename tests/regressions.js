@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -20,14 +20,14 @@ let writes=0,pushes=0,dirty=false,syncApplying=false,lastSaved=JSON.stringify(S)
 const localStorage={setItem(){writes++}};const LS='local';
 const markSyncDirty=()=>{dirty=true},schedulePush=()=>{pushes++};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-const editedExamInputs=new Set();
+const editedExamInputs=new Set();const autosave=()=>{};
 const document={getElementById:()=>null},sxNow=()=>Date.now(),stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()};
 const touch=c=>c.updatedAt=Date.now(),render=()=>{},renderRounds=()=>{},renderCal=()=>{},showToast=()=>{},resetReviewClock=()=>{};
 const nowMin=()=>600,chartSeenFollowupISO=()=> '2026-10-05T12:00:00Z';
 const TOMB_KEEP_MS=45*24*3600*1000;
 const TYPES={PROC:{},PCON:{},CONSULT:{}},TYPE_WF={PROC:[['staff','Tell nursing'],['consent','Consent']]},WF_ITEMS=[];
 const effectivelyDone=(o,t)=>!!t.done;
-const MERGE_FIELDS=['note','exam','plan','loc','prob','raw'];
+const MERGE_FIELDS=['note','exam','plan','loc','prob','raw','morningNotes','daytimeNotes'];
 `;
 const checks=`
 // Opening/compacting a device must never queue a write.
@@ -109,7 +109,17 @@ S.consults=[{id:'a',type:'CHART',autoTimersOff:false,snoozeISO:'auto',autoChartS
 setChartAutoTimers(true);assert(S.consults[0].autoTimersOff&&S.consults[1].autoTimersOff&&S.consults[0].snoozeISO===null&&S.consults[1].snoozeISO==='manual','Bulk off failed or cleared a manual date');
 assert(!S.consults[2].autoTimersOff&&!S.consults[3].autoTimersOff,'Bulk chart toggle changed other cards');
 setChartAutoTimers(false);assert(!S.consults[0].autoTimersOff&&!S.consults[1].autoTimersOff,'Bulk chart on failed');
+setRoundAutoTimers(true);
+assert(roundAutoTimersOff()&&autoTimersDisabled({type:'CHART'})&&autoTimersDisabled({type:'CONSULT',roundId:'round-1'}),'Rounds timer setting did not cover new or linked cards');
+assert(!autoTimersDisabled({type:'CONSULT'}),'Rounds toggle affected unrelated board consults');
+setRoundAutoTimers(false);
+assert(!roundAutoTimersOff()&&!autoTimersDisabled(S.consults[0]),'Rounds timers could not be reenabled');
+assert(S.consults[1].snoozeISO==='manual','Rounds timer toggle cleared a manually scheduled date');
 assert(soExamFirst(['Events','One-liner','Labs','Exam','One-liner 2']).join('|')==='One-liner|One-liner 2|Exam|Events|Labs','Exam was not immediately after the one-liner');
+handoffNotesSave('morning',{value:'NCCU12 Wu morning updates'});handoffNotesSave('daytime',{value:'NCCU12 Wu afternoon updates'});
+const handoff=handoffNotesRecord();assert(handoff.morningNotes.includes('morning')&&handoff.daytimeNotes.includes('afternoon')&&!boardVisible(handoff),'Sign-out notes were not saved separately');
+const mergedNotes=mergeFields({updatedAt:500,morningNotes:'old',daytimeNotes:'day new',fAt:{morningNotes:100,daytimeNotes:500}},{updatedAt:400,morningNotes:'morning new',daytimeNotes:'old day',fAt:{morningNotes:400,daytimeNotes:200}});
+assert(mergedNotes.morningNotes==='morning new'&&mergedNotes.daytimeNotes==='day new','Independent handoff note edits were lost');
 return 'Regression checks PASS';
 `;
 const result=new Function(setup+names.map(extract).join('\n')+checks)();
