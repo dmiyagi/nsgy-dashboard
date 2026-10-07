@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesSave'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -126,6 +126,37 @@ const result=new Function(setup+names.map(extract).join('\n')+checks)();
 if(typeof console!=='undefined')console.log(result);
 if(typeof report==='function')report(result);
 result;
+
+// Sorting notes must preserve the clinical record and create tasks only for follow-ups.
+const handoffSetup=`
+let S={consults:[],rounds:[{id:'existing',label:'NCCU12 Wu',raw:'Original diagnosis',exam:'Original exam',steps:[],listMode:'wound',woundListed:true}]};
+let nextId=0,boardTasks=[];
+const inputs={handoff_morning:{value:'NCCU12 Wu\\n\\tBaseline weakness'},handoff_daytime:{value:'NCCU12 Wu\\n\\tStrength improved'},handoff_followup:{value:'NCCU12 Wu\\n\\tReview MRI\\nB707 Li\\n\\tCheck sodium'}};
+const document={getElementById:id=>inputs[id]};
+const roundBedFromText=t=>(t.match(/^(NCCU[0-9]+|B[0-9]+)/)||[])[0],last3FromText=()=>'';
+const roundLabel=t=>t.split(/\\s+/).slice(0,2).join(' ');
+const findRoundLike=label=>S.rounds.find(r=>r.label===label);
+const uid=()=>String(++nextId),normalizeRoundTags=x=>x,roundTags=()=>[],teamFromText=()=>'',attgFromText=()=>'',detectTmpl=()=> 'floor';
+const workKey=t=>t.trim().toLowerCase(),wasDone=(r,t)=>false;
+const stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()},touch=r=>{r.updatedAt=Date.now()};
+const syncRoundTodosToBoard=(r,lines)=>boardTasks.push(...lines),renderRounds=()=>{},save=()=>{},autosave=()=>{},showToast=()=>{};
+`;
+const handoffChecks=`
+sortHandoffNotes('morning');sortHandoffNotes('daytime');
+const patient=S.rounds[0];
+if(patient.raw!=='Original diagnosis'||patient.exam!=='Original exam'||patient.steps.length)throw new Error('Notes changed clinical data or became tasks');
+if(!patient.morningNotes.includes('Baseline weakness')||!patient.daytimeNotes.includes('Strength improved'))throw new Error('Baseline and new information were not separated');
+if(patient.listMode!=='rounds'||!patient.woundListed)throw new Error('Sorting did not add to rounds while retaining wound membership');
+sortHandoffNotes('followup');patient.steps[0].done=true;sortHandoffNotes('followup');sortHandoffNotes('morning');
+if(S.rounds.length!==2||patient.steps.length!==1||!patient.steps[0].done||boardTasks.length!==2)throw new Error('Repeated sorting duplicated patients/tasks or reset completion');
+if(patient.morningNotes.split('Baseline weakness').length!==2)throw new Error('Repeated sorting duplicated notes');
+patientHandoffNotesSave('existing','daytime',{value:'Edited new information'});
+if(patient.daytimeNotes!=='Edited new information'||!patient.fAt.daytimeNotes)throw new Error('Per-patient note edit was not saved');
+return 'Handoff sorting checks PASS';
+`;
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave'].map(extract).join('\n')+handoffChecks)();
+if(typeof console!=='undefined')console.log(handoffResult);
+if(typeof report==='function')report(handoffResult);
 
 // Exercise the actual GET/merge/PATCH path with two saved device snapshots.
 const syncNames=['doSync','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];

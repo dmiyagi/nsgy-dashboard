@@ -954,11 +954,15 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
   <details class="roundentry"><summary>Morning / afternoon sign-out notes</summary>
-    <p class="note">Start each patient with bed + abbreviated surname. Indent their follow-up tasks underneath. Notes save as you type; choose Sort into rounds when ready.</p>
-    <label>Morning sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
+    <p class="note">Start each patient with bed + abbreviated surname. Indent notes or tasks underneath that patient. All three boxes save as you type. Choose Sort into rounds to attach them to patient cards; only Follow up creates checkable tasks.</p>
+    <label>Morning baseline / sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
     <div class="qbtns"><button onclick="sortHandoffNotes('morning')">⇣ Sort morning notes into rounds</button></div>
-    <label>Daytime notes for afternoon sign-out<textarea class="evta" id="handoff_daytime" style="width:100%;min-height:100px" oninput="handoffNotesSave('daytime',this)"></textarea></label>
-    <div class="qbtns"><button onclick="sortHandoffNotes('daytime')">⇣ Sort daytime notes into rounds</button></div>
+    <label>New daytime information / afternoon sign-out<textarea class="evta" id="handoff_daytime" style="width:100%;min-height:100px" oninput="handoffNotesSave('daytime',this)"></textarea></label>
+    <div class="qbtns"><button onclick="sortHandoffNotes('daytime')">⇣ Sort new information into rounds</button></div>
+    <label>Follow up / pending tasks<textarea class="evta" id="handoff_followup" style="width:100%;min-height:100px" placeholder="NCCU12 Wu
+    Review MRI result
+    Confirm afternoon sodium" oninput="handoffNotesSave('followup',this)"></textarea></label>
+    <div class="qbtns"><button onclick="sortHandoffNotes('followup')">⇣ Sort follow-ups into rounds</button></div>
   </details>
   <div class="roundentry">
     <textarea id="dropbox" class="evta" style="min-height:110px;width:100%" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
@@ -5581,36 +5585,57 @@ function handoffNotesRecord(){
   if(!record){record={id:"handoff-notes",type:"HANDOFF_NOTES",created:Date.now(),collapsed:true};S.consults.push(record)}
   return record;
 }
+function handoffNotesKey(kind){return kind==="morning"?"morningNotes":kind==="followup"?"followupNotes":"daytimeNotes"}
 function handoffNotesSave(kind,el){
-  const r=handoffNotesRecord(),key=kind==="morning"?"morningNotes":"daytimeNotes";
+  const r=handoffNotesRecord(),key=handoffNotesKey(kind);
   if(r[key]===el.value)return;
   r[key]=el.value;stampF(r,key);touch(r);autosave();
 }
 function renderHandoffNotes(){
   const r=(S.consults||[]).find(c=>c.type==="HANDOFF_NOTES");
-  ["morning","daytime"].forEach(kind=>{const el=document.getElementById("handoff_"+kind);if(el&&document.activeElement!==el)el.value=(r&&r[kind==="morning"?"morningNotes":"daytimeNotes"])||""});
+  ["morning","daytime","followup"].forEach(kind=>{const el=document.getElementById("handoff_"+kind);if(el&&document.activeElement!==el)el.value=(r&&r[handoffNotesKey(kind)])||""});
 }
 function sortHandoffNotes(kind){
   const el=document.getElementById("handoff_"+kind);if(!el||!el.value.trim())return;
   handoffNotesSave(kind,el);
-  const blocks=parseBlocks(el.value),box=document.getElementById("dropbox"),draft=box.value;
-  const valid=blocks.filter(b=>roundBedFromText(b.main)||last3FromText(b.main));
-  if(!valid.length){showToast("Add a bed and abbreviated surname to each patient line first");return}
-  box.value=valid.map(b=>b.main+b.subs.map(t=>"\n\t"+t).join("")).join("\n");
-  parseRounds();box.value=draft;
+  const blocks=parseBlocks(el.value),valid=blocks.filter(b=>(roundBedFromText(b.main)||last3FromText(b.main))&&(kind!=="followup"||b.subs.length));
+  if(!valid.length){showToast(kind==="followup"?"Add bed + surname, then indent follow-up tasks underneath":"Add a bed and abbreviated surname to each patient line first");return}
   valid.forEach(b=>{
-    const r=findRoundLike(roundLabel(b.main),b.main);if(!r)return;
-    const key=kind==="morning"?"morningNotes":"daytimeNotes";
-    const note=[b.main].concat(b.subs).join("\n");
-    if(!String(r[key]||"").includes(note))r[key]=[r[key],note].filter(Boolean).join("\n\n");
-    r.listMode="rounds";r.collapsed=true;stampF(r,key);touch(r);
+    const label=roundLabel(b.main);
+    let r=findRoundLike(label,b.main);
+    if(!r){
+      r={id:"r"+uid(),raw:b.main,label:label,tags:normalizeRoundTags(roundTags(b.main)),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:[],collapsed:true,created:Date.now()};
+      S.rounds.push(r);
+    }
+    if(kind==="followup"){
+      const lines=b.subs;
+      r.steps=r.steps||[];
+      const added=lines.filter(t=>!r.steps.some(x=>workKey(x.t)===workKey(t))&&!wasDone(r,t));
+      added.forEach(t=>r.steps.push({t:t,done:false,ts:Date.now(),source:"handoff-followup"}));
+      if(added.length)syncRoundTodosToBoard(r,added);
+    }else{
+      const key=handoffNotesKey(kind),note=[b.main].concat(b.subs).join("\n");
+      if(!String(r[key]||"").split("\n\n").includes(note)){
+        r[key]=[r[key],note].filter(Boolean).join("\n\n");stampF(r,key);
+      }
+    }
+    r.listMode="rounds";r.collapsed=true;touch(r);
   });
-  renderRounds();save();showToast("Sorted "+valid.length+" patient notes into rounds"+(valid.length<blocks.length?"; unmatched notes remain saved":""));
+  renderRounds();save();showToast("Sorted "+valid.length+" patient "+(kind==="followup"?"follow-ups":"notes")+" into rounds"+(valid.length<blocks.length?"; unmatched notes remain saved":""));
+}
+function patientHandoffNotesSave(id,kind,el){
+  const r=(S.rounds||[]).find(x=>x.id===id);if(!r)return;
+  const key=handoffNotesKey(kind);if(r[key]===el.value)return;
+  r[key]=el.value;stampF(r,key);touch(r);autosave();
 }
 function patientHandoffNotesHtml(r){
-  const parts=[["Morning sign-out notes",r.morningNotes],["Daytime / afternoon sign-out notes",r.daytimeNotes]].filter(x=>x[1]);
-  return parts.length?'<details class="moredet"><summary>Sign-out notes</summary>'+parts.map(([label,text])=>'<div class="fld"><label>'+label+'</label><div class="state" style="white-space:pre-wrap">'+esc(text)+'</div></div>').join("")+'</details>':"";
+  return '<details class="moredet"><summary>Sign-out notes'+(r.daytimeNotes?' · New daytime information':'')+'</summary>'+
+    [["morning","Morning baseline / sign-out notes"],["daytime","New daytime information / afternoon sign-out"]].map(([kind,label])=>{
+      const key=handoffNotesKey(kind);
+      return '<div class="fld"><label>'+label+'</label><textarea class="evta" style="width:100%;min-height:64px" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(r[key]||"")+'</textarea></div>';
+    }).join("")+'<p class="note">Follow-ups appear in this patient’s checkable to-do list.</p></details>';
 }
+
 function parseRounds(){
   const txt=document.getElementById("dropbox").value;
   if(!txt.trim())return;
@@ -9335,7 +9360,7 @@ function sxDerived(r){
   const hide=r.sxHide||{};
   const stored=sxActive(r).map(x=>x.t.toLowerCase().trim());
   const out=[];
-  [["morningNotes","Morning sign-out"],["daytimeNotes","Daytime updates"]].forEach(([key,label])=>{if(r[key]&&!hide["@"+key])out.push({id:"@"+key,t:label+": "+r[key],role:"delta",sys:"neuro",derived:key,ts:fieldStamp(r,key),live:label})});
+  [["morningNotes","Morning baseline"],["daytimeNotes","NEW — daytime information"]].forEach(([key,label])=>{if(r[key]&&!hide["@"+key])out.push({id:"@"+key,t:label+": "+r[key],role:key==="morningNotes"?"state":"delta",sys:"neuro",derived:key,ts:fieldStamp(r,key),live:label})});
   const exam=String(r.exam||"").trim();
   if(exam&&!hide["@exam"]&&!stored.some(t=>t===exam.toLowerCase()))
     out.push({id:"@exam",t:exam,role:"state",sys:"neuro",derived:"exam",
@@ -11098,7 +11123,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
-  "morningNotes","daytimeNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
+  "morningNotes","daytimeNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
