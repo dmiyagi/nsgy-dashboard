@@ -6538,7 +6538,7 @@ function examExpand(text){
     return line.split(/\s*[;,]\s*/).map(examExpandClause).filter(Boolean).join(", ");
   }).join("\n");
 }
-// one-tap findings; tapping appends shorthand and expands it
+// One-tap findings replace the matching current finding.
 const EX_CHIPS=[["AOx3","aox3"],["PERRL","perrl"],["EOMI","eomi"],["MAE x4","mae"],
   ["SILT","silt"],["no drift","bue no drift"],["+ R drift","rue + drift"],["+ L drift","lue + drift"],
   ["no clonus","no clonus"],["sedated","sedated"],["intubated","intubated"],["at baseline","abl"]];
@@ -6548,15 +6548,38 @@ function examChipsHtml(id){
     '<button type="button" class="exgo" title="Expand shorthand and refresh the fields above" onclick="examExpandBox(\''+id+'\')">⤢ Expand</button>'+
   '</div>';
 }
+function examReplaceFinding(text,shorthand){
+  const value=examExpand(shorthand),key=String(shorthand).toLowerCase();
+  const patterns={
+    aox3:/\b(?:AO\s*x\s*[0-4O]|O\s*x\s*[0-4O]|oriented\s*(?:x\s*[0-4]|to\s+(?:person(?:,?\s*place)?(?:,?\s*(?:and\s*)?time)?)))\b/gi,
+    perrl:/\b(?:PERRL|PERRV|pupils?\s+(?:equal(?:\s+and)?\s+(?:round\s+and\s+)?reactive(?:\s+to\s+light)?))\b/gi,
+    eomi:/\b(?:EOMI|extraocular\s+movements?\s+(?:intact|full))\b/gi,
+    mae:/\b(?:MAE|WD|moves?\s+all\s+extremities)(?:\s*x?\s*4)?\b/gi,
+    silt:/\b(?:SILT|sensation\s+intact(?:\s+to\s+light\s+touch)?)\b/gi,
+    'no clonus':/\b(?:no\s+clonus|(?:sustained\s+)?clonus(?:\s+(?:present|absent))?)\b/gi,
+    sedated:/\b(?:not\s+sedated|unsedated|sedated)\b/gi,
+    intubated:/\b(?:not\s+intubated|intubated|extubated)\b/gi,
+    abl:/\b(?:not\s+at\s+baseline|at\s+baseline|baseline)\b/gi
+  };
+  let pattern=patterns[key];
+  if(key.includes('drift')){
+    pattern=key==='bue no drift'?/(?:\b(?:BUE|RUE|LUE|R|L)\s*[:,]?\s*)?(?:no\s+|\+\s*|positive\s+)?(?:pronator\s+)?drift\b/gi:
+      key.startsWith('rue')?/(?:\b(?:BUE|RUE|R|right)\s*[:,]?\s*(?:no\s+|\+\s*|positive\s+)?(?:pronator\s+)?drift\b|\bno\s+(?:pronator\s+)?drift\b)/gi:
+      /(?:\b(?:BUE|LUE|L|left)\s*[:,]?\s*(?:no\s+|\+\s*|positive\s+)?(?:pronator\s+)?drift\b|\bno\s+(?:pronator\s+)?drift\b)/gi;
+  }
+  const src=String(text||'');let replaced=false;
+  const updated=pattern?src.replace(pattern,()=>{if(replaced)return '';replaced=true;return value}):src;
+  if(!replaced)return [src.trim(),value].filter(Boolean).join('\n');
+  return updated.replace(/(?:,\s*){2,}/g,', ').replace(/^[,; ]+|[,; ]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+}
 function examChip(id,shorthand){
   const el=document.getElementById("rexam_"+id);if(!el)return;
-  const cur=el.value.replace(/\s+$/,"");
-  const sep=cur?(/[\n]$/.test(el.value)?"":(cur.length?", ":"")):"";
-  el.value=cur+sep+shorthand;
-  el.value=examExpand(el.value);
-  el.focus();
+  el.value=examReplaceFinding(el.value,shorthand);
   roundExamInput(id,el);
+  renderExamCards(id);flushAutosave();
+  const current=document.getElementById("rexam_"+id);if(current)current.focus();
 }
+
 function examExpandBox(id){
   const el=document.getElementById("rexam_"+id);if(!el)return;
   const before=el.value;
@@ -11083,7 +11106,7 @@ function mergeDoneList(a,b){
       if(t.undoneAt)s.u=Math.max(s.u,t.undoneAt);
     });
   });
-  return Object.keys(seen).filter(k=>seen[k].d>=seen[k].u);
+  return Object.keys(seen).filter(k=>seen[k].d>0&&seen[k].d>seen[k].u);
 }
 function mergeWorkArray(primary,secondary,pOwner,sOwner){
   const sec={},seen={};

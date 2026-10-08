@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -20,6 +20,7 @@ let writes=0,pushes=0,dirty=false,syncApplying=false,lastSaved=JSON.stringify(S)
 const localStorage={setItem(){writes++}};const LS='local';
 const markSyncDirty=()=>{dirty=true},schedulePush=()=>{pushes++};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const examExpand=t=>({aox3:"AOx3",perrl:"PERRL",eomi:"EOMI",mae:"MAE x4",silt:"SILT","bue no drift":"BUE, no drift","rue + drift":"RUE, +drift","lue + drift":"LUE, +drift"}[t]||t);
 const editedExamInputs=new Set();const autosave=()=>{};
 const document={getElementById:()=>null},sxNow=()=>Date.now(),stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()};
 const touch=c=>c.updatedAt=Date.now(),render=()=>{},renderRounds=()=>{},renderCal=()=>{},showToast=()=>{},resetReviewClock=()=>{};
@@ -126,6 +127,14 @@ handoffNotesSave('morning',{value:'NCCU12 Wu morning updates'});handoffNotesSave
 const handoff=handoffNotesRecord();assert(handoff.morningNotes.includes('morning')&&handoff.daytimeNotes.includes('afternoon')&&!boardVisible(handoff),'Sign-out notes were not saved separately');
 const mergedNotes=mergeFields({updatedAt:500,morningNotes:'old',daytimeNotes:'day new',fAt:{morningNotes:100,daytimeNotes:500}},{updatedAt:400,morningNotes:'morning new',daytimeNotes:'old day',fAt:{morningNotes:400,daytimeNotes:200}});
 assert(mergedNotes.morningNotes==='morning new'&&mergedNotes.daytimeNotes==='day new','Independent handoff note edits were lost');
+assert(mergeDoneList({tasks:[{t:'Fresh task',done:false}]},{tasks:[]}).length===0,'Untouched task auto-completed during sync');
+assert(mergeDoneList({tasks:[{t:'Fresh task',done:false,undoneAt:20}]},{tasks:[{t:'Fresh task',done:true,doneAt:10}]}).length===0,'Older completion overrode Undo');
+assert(mergeDoneList({tasks:[{t:'Fresh task',done:true,doneAt:30}]},{tasks:[{t:'Fresh task',done:false,undoneAt:20}]}).length===1,'Real completion was lost');
+const updatedExam=examReplaceFinding('AOx1, PERRV, EOMI\\nRUE 4/5, LUE 5/5\\nPain limited','aox3');
+assert(updatedExam.includes('AOx3')&&!updatedExam.includes('AOx1')&&updatedExam.includes('Pain limited')&&updatedExam.includes('RUE 4/5'),'Orientation was appended or unrelated exam was lost');
+assert(examReplaceFinding(updatedExam,'perrl').includes('PERRL')&&!examReplaceFinding(updatedExam,'perrl').includes('PERRV'),'Pupil chip did not replace old finding');
+assert(examReplaceFinding('BUE, no drift\\nSILT','rue + drift').includes('RUE, +drift')&&!examReplaceFinding('BUE, no drift','rue + drift').includes('no drift'),'Drift chip retained conflicting finding');
+assert(examReplaceFinding('AOx3','aox3')==='AOx3','Repeated chip duplicated a finding');
 return 'Regression checks PASS';
 `;
 const result=new Function(setup+names.map(extract).join('\n')+checks)();
@@ -261,6 +270,7 @@ return (async()=>{
   S.consults[0].sx[0].dropped=false;S.consults[0].sx[0].droppedAt=0;S.consults[0].sx[0].updatedAt=700;S.consults[0].updatedAt=700;dirty='700';await doSync(true);
   S=clone(dropped);S.consults[0].exam='edit after undo';S.consults[0].fAt.exam=750;S.consults[0].updatedAt=750;dirty='750';await doSync(true);
   assert(!remote.consults[0].sx[0].dropped,'Older deletion overrode Undo: '+receiver);
+  assert(!remote.consults[0].tasks[0].done&&!(remote.consults[0].doneKeys||[]).includes('check mri'),'Untouched to-do auto-completed during device sync: '+receiver);
   const before=patches;S.consults[0].collapsed=false;dirty='';await doSync(true);
   assert(patches===before,'Display-only reopening wrote remote data: '+receiver);
   if(typeof report==='function')report(sender+' → '+receiver+' sync checks PASS');
