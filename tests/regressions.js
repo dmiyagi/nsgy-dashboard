@@ -159,7 +159,7 @@ result;
 // Sorting notes must preserve the clinical record and create tasks only for follow-ups.
 const handoffSetup=`
 let S={consults:[],rounds:[{id:'existing',label:'NCCU12 Wu',raw:'Original diagnosis',exam:'Original exam',steps:[],listMode:'wound',woundListed:true}]};
-let nextId=0,boardTasks=[];
+let nextId=0,boardTasks=[],explicitWrites=0;const flushAutosave=()=>{explicitWrites++};
 const inputs={handoff_morning:{value:'NCCU12 Wu\\n\\tBaseline weakness'},handoff_daytime:{value:'NCCU12 Wu\\n\\tStrength improved'},handoff_followup:{value:'NCCU12 Wu\\n\\tReview MRI\\nB707 Li\\n\\tCheck sodium'}};
 const document={getElementById:id=>inputs[id]};
 const roundBedFromText=t=>(t.match(/^(NCCU[0-9]+|B[0-9]+)/)||[])[0],last3FromText=()=>'';
@@ -189,9 +189,12 @@ if(notesHtml.includes('<details')||notesHtml.split('<textarea').length!==4||note
 if(!previousDayNotesText(patient).includes('Legacy free-form note')||!previousDayNotesText(patient).includes('Yesterday update'))throw new Error('Existing notes were lost');
 patientHandoffNotesSave('existing','previous',{value:'Yesterday update and retained legacy note'});
 if(patient.previousDayNotes!=='Yesterday update and retained legacy note'||patient.note!==''||!patient.fAt.previousDayNotes||!patient.fAt.note)throw new Error('Previous notes did not save with independent stamps');
+const noteInputs=[{dataset:{noteKind:'daytime'},value:'Afternoon explicit'},{dataset:{noteKind:'morning'},value:'Morning explicit'},{dataset:{noteKind:'previous'},value:'Previous explicit'}];
+patientHandoffNotesSaveNow('existing',{closest:()=>({querySelectorAll:()=>noteInputs})});
+if(explicitWrites!==1||patient.daytimeNotes!=='Afternoon explicit'||patient.morningNotes!=='Morning explicit'||patient.previousDayNotes!=='Previous explicit')throw new Error('Explicit save did not persist all three patient note areas');
 return 'Handoff sorting checks PASS';
 `;
-const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 
