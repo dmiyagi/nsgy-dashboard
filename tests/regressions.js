@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
+const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','removePatientWork','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -135,6 +135,16 @@ assert(updatedExam.includes('AOx3')&&!updatedExam.includes('AOx1')&&updatedExam.
 assert(examReplaceFinding(updatedExam,'perrl').includes('PERRL')&&!examReplaceFinding(updatedExam,'perrl').includes('PERRV'),'Pupil chip did not replace old finding');
 assert(examReplaceFinding('BUE, no drift\\nSILT','rue + drift').includes('RUE, +drift')&&!examReplaceFinding('BUE, no drift','rue + drift').includes('no drift'),'Drift chip retained conflicting finding');
 assert(examReplaceFinding('AOx3','aox3')==='AOx3','Repeated chip duplicated a finding');
+const pending={id:'delete-test',tasks:[{t:'Review MRI',done:false}],steps:[]};
+const staleTask=JSON.parse(JSON.stringify(pending));S.consults=[pending];S.rounds=[];
+removePatientWork(pending,'Review MRI');
+for(const pair of [[pending,staleTask],[staleTask,pending]]){
+ const mergedTask=mergeWorkRecord(JSON.parse(JSON.stringify(pair[0])),JSON.parse(JSON.stringify(pair[1])));
+ assert(mergedTask.tasks.length===0,'Deleted task returned from stale device');
+ assert(reconcileTaskList(mergedTask,['Review MRI']).length===0,'Deleted task returned from generated list');
+}
+const reopened=JSON.parse(JSON.stringify(pending));reopened.workRestored={'review mri':pending.workDeleted['review mri']+1};reopened.tasks=[{t:'Review MRI',done:false}];
+assert(mergeWorkRecord(reopened,JSON.parse(JSON.stringify(pending))).tasks.length===1,'Explicitly recreated task was deleted');
 return 'Regression checks PASS';
 `;
 const result=new Function(setup+names.map(extract).join('\n')+checks)();
@@ -152,6 +162,7 @@ const roundBedFromText=t=>(t.match(/^(NCCU[0-9]+|B[0-9]+)/)||[])[0],last3FromTex
 const roundLabel=t=>t.split(/\\s+/).slice(0,2).join(' ');
 const findRoundLike=label=>S.rounds.find(r=>r.label===label);
 const uid=()=>String(++nextId),normalizeRoundTags=x=>x,roundTags=()=>[],teamFromText=()=>'',attgFromText=()=>'',detectTmpl=()=> 'floor';
+const esc=t=>String(t||'');
 const workKey=t=>t.trim().toLowerCase(),wasDone=(r,t)=>false;
 const stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()},touch=r=>{r.updatedAt=Date.now()};
 const syncRoundTodosToBoard=(r,lines)=>boardTasks.push(...lines),renderRounds=()=>{},save=()=>{},autosave=()=>{},showToast=()=>{};
@@ -167,9 +178,15 @@ if(S.rounds.length!==2||patient.steps.length!==1||!patient.steps[0].done||boardT
 if(patient.morningNotes.split('Baseline weakness').length!==2)throw new Error('Repeated sorting duplicated notes');
 patientHandoffNotesSave('existing','daytime',{value:'Edited new information'});
 if(patient.daytimeNotes!=='Edited new information'||!patient.fAt.daytimeNotes)throw new Error('Per-patient note edit was not saved');
+patient.note='Legacy free-form note';patient.previousDayNotes='Yesterday update';
+const notesHtml=patientHandoffNotesHtml(patient);
+if(notesHtml.includes('<details')||notesHtml.split('<textarea').length!==4||notesHtml.indexOf('Afternoon rounds')>notesHtml.indexOf('Morning baseline'))throw new Error('Notes are not open or afternoon-first');
+if(!previousDayNotesText(patient).includes('Legacy free-form note')||!previousDayNotesText(patient).includes('Yesterday update'))throw new Error('Existing notes were lost');
+patientHandoffNotesSave('existing','previous',{value:'Yesterday update and retained legacy note'});
+if(patient.previousDayNotes!=='Yesterday update and retained legacy note'||patient.note!==''||!patient.fAt.previousDayNotes||!patient.fAt.note)throw new Error('Previous notes did not save with independent stamps');
 return 'Handoff sorting checks PASS';
 `;
-const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave'].map(extract).join('\n')+handoffChecks)();
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 
@@ -217,7 +234,7 @@ if(typeof console!=='undefined')console.log(reliabilityResult);
 if(typeof report==='function')report(reliabilityResult);
 
 // Exercise the actual GET/merge/PATCH path with two saved device snapshots.
-const syncNames=['doSync','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];
+const syncNames=['doSync','preserveLocalCardView','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];
 const syncSetup=`
 const assert=(v,m)=>{if(!v)throw new Error(m)};
 const workKey=t=>String(t||'').trim().toLowerCase(),wasDone=(o,t)=>(o.doneKeys||[]).includes(workKey(t));
@@ -229,7 +246,7 @@ let patches=0,autosaveT=null;const flushAutosave=()=>{};
 const values={},localStorage={getItem:k=>k==='dirty'?dirty:values[k],setItem:(k,v)=>{values[k]=v}};
 const cfg={token:'mock',gist:'mock'};
 const syncCfg=()=>cfg,recoverStaleSync=()=>{},setDot=()=>{},openSync=()=>{},syncPausedUntil=()=>0,shouldPullSync=()=>true,hasSyncDirty=()=>!!dirty;
-const clearTimeout=()=>{},schedulePush=()=>{},clearSyncDirty=()=>{dirty=''},renderAllSafe=()=>{},compactBoardForStartup=()=>{S.consults.forEach(c=>c.collapsed=true)};
+const clearTimeout=()=>{},schedulePush=()=>{},clearSyncDirty=()=>{dirty=''},renderAllSafe=()=>{},compactBoardForStartup=()=>{if(startupCompactBoard)S.consults.forEach(c=>c.collapsed=true)};
 const document={getElementById:()=>null};
 let remote={tombFormat:2,consults:[{id:'p',note:'desktop new',updatedAt:200,created:1}],rounds:[],tomb:{},day:{date:'',checks:{}}};
 let S={tombFormat:2,consults:[{id:'p',note:'iOS old',updatedAt:100,created:1}],rounds:[],tomb:{}};
@@ -272,6 +289,7 @@ return (async()=>{
   assert(!remote.consults[0].sx[0].dropped,'Older deletion overrode Undo: '+receiver);
   assert(!remote.consults[0].tasks[0].done&&!(remote.consults[0].doneKeys||[]).includes('check mri'),'Untouched to-do auto-completed during device sync: '+receiver);
   const before=patches;S.consults[0].collapsed=false;dirty='';await doSync(true);
+  assert(S.consults[0].collapsed===false,'Sync closed a locally open card: '+receiver);
   assert(patches===before,'Display-only reopening wrote remote data: '+receiver);
   if(typeof report==='function')report(sender+' → '+receiver+' sync checks PASS');
  }

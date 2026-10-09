@@ -953,12 +953,12 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <details class="roundentry"><summary>Morning / afternoon sign-out notes</summary>
+  <details class="roundentry" open><summary>Morning / afternoon sign-out notes</summary>
     <p class="note">Start each patient with bed + abbreviated surname. Indent notes or tasks underneath that patient. All three boxes save as you type. Choose Sort into rounds to attach them to patient cards; only Follow up creates checkable tasks.</p>
-    <label>Morning baseline / sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
-    <div class="qbtns"><button onclick="sortHandoffNotes('morning')">⇣ Sort morning notes into rounds</button></div>
     <label>New daytime information / afternoon sign-out<textarea class="evta" id="handoff_daytime" style="width:100%;min-height:100px" oninput="handoffNotesSave('daytime',this)"></textarea></label>
     <div class="qbtns"><button onclick="sortHandoffNotes('daytime')">⇣ Sort new information into rounds</button></div>
+    <label>Morning baseline / sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
+    <div class="qbtns"><button onclick="sortHandoffNotes('morning')">⇣ Sort morning notes into rounds</button></div>
     <label>Follow up / pending tasks<textarea class="evta" id="handoff_followup" style="width:100%;min-height:100px" placeholder="NCCU12 Wu
     Review MRI result
     Confirm afternoon sodium" oninput="handoffNotesSave('followup',this)"></textarea></label>
@@ -3102,7 +3102,7 @@ function addInfectionChecklist(){
 function ensureInfectionChecklistOnCard(c,txt){
   if(!c||!infectionConcernText(txt))return;
   c.tasks=c.tasks||[];
-  INFECTION_TASKS.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
+  INFECTION_TASKS.forEach(t=>{if(!workRemoved(c,t)&&!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase()))c.tasks.push({t:t,done:false})});
   if((c.E||0)<2)c.E=2;
   if((c.W||0)<2)c.W=2;
   c.mods=c.mods||[];
@@ -3534,7 +3534,16 @@ function restoreFocus(){
     el.scrollTop=f.top;
   }catch(e){}
 }
-function keepFocus(fn){return function(){snapFocus();try{return fn.apply(this,arguments)}finally{restoreFocus()}}}
+function keepFocus(fn){return function(){
+  snapFocus();
+  const cards=Array.from(document.querySelectorAll('.view.active [data-id],.view.on [data-id],.view [data-id]')).filter(el=>el.getClientRects().length);
+  const anchor=cards.find(el=>el.getBoundingClientRect().bottom>0),top=anchor?anchor.getBoundingClientRect().top:0,id=anchor&&anchor.getAttribute('data-id'),y=window.scrollY;
+  try{return fn.apply(this,arguments)}finally{
+    restoreFocus();
+    const next=id&&Array.from(document.querySelectorAll('[data-id]')).find(el=>el.getAttribute('data-id')===id&&el.getClientRects().length);
+    window.scrollTo({top:next?window.scrollY+next.getBoundingClientRect().top-top:y,left:window.scrollX,behavior:'instant'});
+  }
+}}
 // background work (sync pulls, clock ticks) waits until the keyboard is down
 let _pendingRender=false;
 function renderReadOnly(draw){
@@ -4909,12 +4918,23 @@ function applyTypeDefaults(c,type,opts){
 }
 function blankC(){return {id:uid(),type:"CONSULT",loc:"",prob:"",fname:"",phone:"",E:1,O:1,W:0,cQuick:null,domains:Array(11).fill(null),mods:[],state:"",action:"",lastDone:"",steps:[],tasks:[],doneKeys:[],deadlineISO:null,snoozeISO:null,timersOff:false,trig:"",owner:"me",team:"",attg:"",note:"",qs:"",evq:[],evOpen:false,wf:{},worry:false,needsInterpreter:false,language:"",soT:"floor",so:{},roundId:null,collapsed:true,closed:false,created:Date.now()}}
 function workKey(t){return String(t||"").trim().toLowerCase().replace(/\s+/g," ")}
+function workRemoved(o,t){const k=workKey(t);return !!(o&&(o.workDeleted||{})[k]>((o.workRestored||{})[k]||0))}
+function removePatientWork(record,text){
+  const key=workKey(text),now=sxNow();if(!key)return;
+  const round=(S.rounds||[]).find(r=>r.id===record.id||r.id===record.roundId);
+  const related=[record].concat(round?[round]:[]).concat((S.consults||[]).filter(c=>round&&c.roundId===round.id));
+  new Set(related).forEach(r=>{
+    r.workDeleted=r.workDeleted||{};r.workDeleted[key]=now;
+    r.steps=(r.steps||[]).filter(t=>workKey(t.t)!==key);r.tasks=(r.tasks||[]).filter(t=>workKey(t.t)!==key);
+    r.doneKeys=(r.doneKeys||[]).filter(k=>k!==key);r.updatedAt=now;
+  });
+}
 function rememberDone(o,t,on){
   if(!o||!t)return;
   const k=workKey(t);if(!k)return;
   o.doneKeys=Array.isArray(o.doneKeys)?o.doneKeys:[];
   if(on){if(!o.doneKeys.includes(k))o.doneKeys.push(k)}
-  else o.doneKeys=o.doneKeys.filter(x=>x!==k);
+  else {o.doneKeys=o.doneKeys.filter(x=>x!==k);if(workRemoved(o,t)){o.workRestored=o.workRestored||{};o.workRestored[k]=sxNow()}}
 }
 function wasDone(o,t){return !!(o&&Array.isArray(o.doneKeys)&&o.doneKeys.includes(workKey(t)))}
 function effectivelyDone(o,item){return !!(item&&(item.done||wasDone(o,item.t)))}
@@ -5585,7 +5605,7 @@ function handoffNotesRecord(){
   if(!record){record={id:"handoff-notes",type:"HANDOFF_NOTES",created:Date.now(),collapsed:true};S.consults.push(record)}
   return record;
 }
-function handoffNotesKey(kind){return kind==="morning"?"morningNotes":kind==="followup"?"followupNotes":"daytimeNotes"}
+function handoffNotesKey(kind){return kind==="morning"?"morningNotes":kind==="previous"?"previousDayNotes":kind==="followup"?"followupNotes":"daytimeNotes"}
 function handoffNotesSave(kind,el){
   const r=handoffNotesRecord(),key=handoffNotesKey(kind);
   if(r[key]===el.value)return;
@@ -5625,15 +5645,21 @@ function sortHandoffNotes(kind){
 }
 function patientHandoffNotesSave(id,kind,el){
   const r=(S.rounds||[]).find(x=>x.id===id);if(!r)return;
-  const key=handoffNotesKey(kind);if(r[key]===el.value)return;
-  r[key]=el.value;stampF(r,key);touch(r);autosave();
+  const key=handoffNotesKey(kind);if(r[key]===el.value&&!(kind==="previous"&&r.note))return;
+  r[key]=el.value;stampF(r,key);
+  if(kind==="previous"&&r.note){r.note="";stampF(r,"note")}
+  touch(r);autosave();
+}
+function previousDayNotesText(r){
+  const previous=String(r.previousDayNotes||""),legacy=String(r.note||"");
+  return legacy&&!previous.includes(legacy)?[previous,legacy].filter(Boolean).join("\n\n"):previous;
 }
 function patientHandoffNotesHtml(r){
-  return '<details class="moredet"><summary>Sign-out notes'+(r.daytimeNotes?' · New daytime information':'')+'</summary>'+
-    [["morning","Morning baseline / sign-out notes"],["daytime","New daytime information / afternoon sign-out"]].map(([kind,label])=>{
-      const key=handoffNotesKey(kind);
-      return '<div class="fld"><label>'+label+'</label><textarea class="evta" style="width:100%;min-height:64px" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(r[key]||"")+'</textarea></div>';
-    }).join("")+'<p class="note">Follow-ups appear in this patient’s checkable to-do list.</p></details>';
+  return '<div class="handoffnotes" aria-label="Patient sign-out notes">'+
+    [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
+      const key=handoffNotesKey(kind),text=kind==="previous"?previousDayNotesText(r):r[key]||"";
+      return '<div class="fld"><label>'+label+'</label><textarea class="evta" style="width:100%;min-height:80px" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(text)+'</textarea></div>';
+    }).join("")+'</div>';
 }
 
 function parseRounds(){
@@ -5828,7 +5854,7 @@ function toggleRoundChart(id,k){
 function rStepDone(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){setWorkDone(r,r.steps[i],true);syncRoundDoneToBoard(r,r.steps[i].t,true);r.updatedAt=Date.now();renderRounds();render();save();
   const nx=(r.steps||[]).find(s=>!effectivelyDone(r,s));showToast(nx?("Next → "+nx.t.slice(0,44)):("All to-dos done — "+r.label))}}
 function rStepUndo(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){setWorkDone(r,r.steps[i],false);syncRoundDoneToBoard(r,r.steps[i].t,false);r.updatedAt=Date.now();renderRounds();render();save()}}
-function rStepRemove(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;r.steps.splice(i,1);r.updatedAt=Date.now();renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
+function rStepRemove(id,i){const r=roundWorkRecord(id);if(r&&r.steps&&r.steps[i]){const t=r.steps[i].t;removePatientWork(r,t);renderRounds();save();showToast("Removed "+String(t||"").slice(0,44))}}
 function togRStepTimer(id,i){const k=id+":"+i;openRStepTimer=(openRStepTimer===k)?null:k;renderRounds()}
 function setRStepDL(id,i,min){
   const r=roundWorkRecord(id);if(!r||!r.steps||!r.steps[i])return;
@@ -6822,16 +6848,14 @@ function renderRounds(){
     return '<div class="card hastrash'+(roundIsFloor(r)?' floorcard':'')+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)')))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+roundTodoIndicator(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
+     patientHandoffNotesHtml(r)+
      roundExamHtml(r)+
      rStepsHtml(r)+
-     patientHandoffNotesHtml(r)+
      roundChartHtml(r)+
      '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
      (r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
        (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':"")+
-     '<textarea class="evta" id="rnote_'+r.id+'" placeholder="Notes… (saves as you type)" style="min-height:54px;margin-top:8px" oninput="roundNoteSave(\''+r.id+'\',this)" onblur="roundNoteSave(\''+r.id+'\',this)">'+esc(r.note||"")+'</textarea>'+
-     '<div class="qbtns" style="margin:5px 0 0"><button type="button" onpointerdown="event.preventDefault()" onclick="roundNoteSave(\''+r.id+'\',document.getElementById(\'rnote_'+r.id+'\'),true)">Save notes</button></div>'+
      '<div class="cardbtns">'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="toggleRoundFloor(\''+r.id+'\')" '+(roundIsFloor(r)?'style="border-color:#5aa7ff;color:#8fc1ff"':"")+'>Floor</button>'+
@@ -6991,8 +7015,7 @@ function chartCheckTodoAdd(id){
 function chartCheckTaskRemove(id,i){
   const c=(S.consults||[]).find(x=>x.id===id&&x.type==="CHART");if(!c||!c.tasks||!c.tasks[i])return;
   const t=c.tasks[i].t;
-  c.tasks.splice(i,1);
-  const r=chartCheckRound(c);if(r){r.steps=(r.steps||[]).filter(s=>workKey(s.t)!==workKey(t));r.updatedAt=Date.now()}
+  removePatientWork(c,t);
   touch(c);renderRounds();save();
   showToast("Removed "+String(t||"").slice(0,44));
 }
@@ -8041,7 +8064,7 @@ function syncBoardTodoToRounds(c){
   r.steps=r.steps||[];
   const lines=[wasDone(c,c.action)?"":c.action].concat((c.tasks||[]).filter(t=>!effectivelyDone(c,t)).map(t=>t.t)).map(t=>String(t||"").trim()).filter(Boolean);
   let n=0;
-  lines.forEach(t=>{if(!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){rememberDone(r,t,false);r.steps.push({t:t,done:false});n++}});
+  lines.forEach(t=>{if(!workRemoved(r,t)&&!r.steps.some(s=>String(s.t||"").toLowerCase()===t.toLowerCase())){rememberDone(r,t,false);r.steps.push({t:t,done:false});n++}});
   if(n)r.updatedAt=Date.now();
   return n;
 }
@@ -8105,7 +8128,7 @@ function syncRoundTodosToBoard(r,lines){
   (S.consults||[]).filter(c=>!c.closed&&((c.roundId&&c.roundId===r.id)||patientKey(c)===rk)).forEach(c=>{
     c.roundId=r.id;
     c.tasks=c.tasks||[];
-    todoLines.forEach(t=>{if(!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){rememberDone(c,t,false);c.tasks.push({t:t,done:false});n++}});
+    todoLines.forEach(t=>{if(!workRemoved(c,t)&&!c.tasks.some(x=>String(x.t||"").toLowerCase()===t.toLowerCase())){rememberDone(c,t,false);c.tasks.push({t:t,done:false});n++}});
     if(n)touch(c);
   });
   return n;
@@ -9893,8 +9916,7 @@ function nccuTodoAdd(id){
 function nccuTodoRemove(id,i){
   const r=findAny(id);if(!r)return;
   const list=nccuTodoArr(r);const t=list[i];if(!t)return;
-  list.splice(i,1);
-  r.updatedAt=Date.now();
+  removePatientWork(r,t.t);
   renderNccu();renderRounds();render();flushAutosave();
   showToast("Removed "+String(t.t||"").slice(0,44));
 }
@@ -11131,7 +11153,7 @@ function mergeWorkArray(primary,secondary,pOwner,sOwner){
     if(wasDone(pOwner,x.t)){x.done=true;x.dueISO=null}
     merged.push(x);
   });
-  return merged;
+  return merged.filter(t=>{const k=workKey(t.t),deleted=Math.max((pOwner.workDeleted||{})[k]||0,(sOwner.workDeleted||{})[k]||0),restored=Math.max((pOwner.workRestored||{})[k]||0,(sOwner.workRestored||{})[k]||0);return !deleted||restored>=deleted});
 }
 function mergeSxArray(primary,secondary,pOwner,sOwner){
   const byKey={};
@@ -11150,7 +11172,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
-  "morningNotes","daytimeNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
+  "morningNotes","daytimeNotes","previousDayNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
@@ -11200,7 +11222,8 @@ function mergeWorkRecord(primary,secondary){
   }
   primary.steps=mergeWorkArray(primary.steps,secondary.steps,primary,secondary);
   primary.tasks=mergeWorkArray(primary.tasks,secondary.tasks,primary,secondary);
-  primary.doneKeys=mergeDoneList(primary,secondary);
+  ["workDeleted","workRestored"].forEach(field=>{const a=primary[field]||{},b=secondary[field]||{};primary[field]={};Object.keys(Object.assign({},a,b)).forEach(k=>primary[field][k]=Math.max(a[k]||0,b[k]||0))});
+  primary.doneKeys=mergeDoneList(primary,secondary).filter(k=>!workRemoved(primary,k));
   primary.sx=mergeSxArray(primary.sx,secondary.sx,primary,secondary);
   mergeRoundCheckState(primary,secondary);
   (primary.steps||[]).concat(primary.tasks||[]).forEach(t=>{if(t&&wasDone(primary,t.t)){t.done=true;t.dueISO=null}});
@@ -11297,6 +11320,12 @@ function parseSyncDocument(content){
   }
   return normalizeDeletionStamps(doc);
 }
+function preserveLocalCardView(local,merged){
+  ["consults","rounds","formerWounds"].forEach(kind=>{
+    const byId=new Map((local[kind]||[]).map(r=>[r.id,r]));
+    (merged[kind]||[]).forEach(r=>{const old=byId.get(r.id);if(old)["collapsed","examOpen","woundOpen","woundRowOpen","nccuCompact"].forEach(k=>{if(old[k]!==undefined)r[k]=old[k]})});
+  });
+}
 async function doSync(auto){
   recoverStaleSync();
   const cfg=syncCfg();
@@ -11332,6 +11361,7 @@ async function doSync(auto){
     // its stale cache. Offline edits still merge by their original edit stamps.
     const remoteSnapshot=JSON.parse(JSON.stringify(remote));
     const merged=mergeState(localHadChanges?S:{},remoteSnapshot);
+    preserveLocalCardView(S,merged);
     S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
@@ -11734,7 +11764,7 @@ function roundChartCardFor(r){
 }
 function reconcileTaskList(c,lines){
   const tasks=(c.tasks||[]).slice(),keys=new Set(tasks.map(t=>workKey(t.t)));
-  (lines||[]).forEach(t=>{const k=workKey(t);if(k&&!keys.has(k)){keys.add(k);tasks.push({t:t,done:wasDone(c,t)})}});
+  (lines||[]).forEach(t=>{const k=workKey(t);if(k&&!keys.has(k)&&!workRemoved(c,t)){keys.add(k);tasks.push({t:t,done:wasDone(c,t)})}});
   return tasks;
 }
 
