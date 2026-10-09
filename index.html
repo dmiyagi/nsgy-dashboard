@@ -837,7 +837,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.227 · 2026-10-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.228 · 2026-10-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -956,17 +956,6 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
-  <details class="roundentry" open><summary>Morning / afternoon sign-out notes</summary>
-    <p class="note">Start each patient with bed + abbreviated surname. Indent notes or tasks underneath that patient. All three boxes save as you type. Choose Sort into rounds to attach them to patient cards; only Follow up creates checkable tasks.</p>
-    <label>New daytime information / afternoon sign-out<textarea class="evta" id="handoff_daytime" style="width:100%;min-height:100px" oninput="handoffNotesSave('daytime',this)"></textarea></label>
-    <div class="qbtns"><button onclick="sortHandoffNotes('daytime')">⇣ Sort new information into rounds</button></div>
-    <label>Morning baseline / sign-out notes<textarea class="evta" id="handoff_morning" style="width:100%;min-height:100px" oninput="handoffNotesSave('morning',this)"></textarea></label>
-    <div class="qbtns"><button onclick="sortHandoffNotes('morning')">⇣ Sort morning notes into rounds</button></div>
-    <label>Follow up / pending tasks<textarea class="evta" id="handoff_followup" style="width:100%;min-height:100px" placeholder="NCCU12 Wu
-    Review MRI result
-    Confirm afternoon sodium" oninput="handoffNotesSave('followup',this)"></textarea></label>
-    <div class="qbtns"><button onclick="sortHandoffNotes('followup')">⇣ Sort follow-ups into rounds</button></div>
-  </details>
   <div class="roundentry">
     <textarea id="dropbox" class="evta" style="min-height:110px;width:100%" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
 B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
@@ -6813,7 +6802,6 @@ function roundRowCard(r){
     '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){
-  renderHandoffNotes();
   S.rounds=S.rounds||[];
   const el=document.getElementById("rcards");if(!el)return;
   const sb=document.getElementById("rsort");
