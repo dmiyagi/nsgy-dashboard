@@ -135,6 +135,9 @@ details.closedsec>summary{color:var(--mut);font-size:13px;cursor:pointer}
 .sheet{max-width:720px;margin:0 auto calc(40px + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
 .sheet h2{font-size:17px;margin-bottom:10px}
 .fld{margin-bottom:12px}
+.handoffnotes{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card2)}
+.handoffnotes h3{margin:0 0 12px;color:var(--acc);font-size:16px}
+.handoffnotes .fld:last-child{margin-bottom:0}
 .fld label{display:block;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
 .fld input[type=text],.fld input[type=tel],.fld input[type=datetime-local],.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:var(--font);font-size:15px;padding:9px 10px}
 .fld textarea{min-height:54px;resize:vertical}
@@ -834,7 +837,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.201 · 2026-10-01</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.227 · 2026-10-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3624,6 +3627,7 @@ function compactBoardForStartup(){
   if(!startupCompactBoard)return;
   (S.consults||[]).forEach(c=>{if(!c.closed)c.collapsed=true});
   (S.rounds||[]).forEach(r=>{r.collapsed=true});
+  startupCompactBoard=false;
 }
 function renderAll(){render();renderRounds();renderNccu();renderPhones();renderBookings();renderGcsAid("ref","ref_gcs",true);renderHhAid("ref","ref_hh",true);renderIchAid("ref","ref_ich",true);renderAoAid("ref","ref_ao",true);renderTlicsAid("ref","ref_tlics",true);renderSinsAid("ref","ref_sins",true);renderPhasesAid("ref","ref_phases",true);filterRefs()}
 function filterRefs(){
@@ -5639,7 +5643,7 @@ function sortHandoffNotes(kind){
         r[key]=[r[key],note].filter(Boolean).join("\n\n");stampF(r,key);
       }
     }
-    r.listMode="rounds";r.collapsed=true;touch(r);
+    r.listMode="rounds";touch(r);
   });
   renderRounds();save();showToast("Sorted "+valid.length+" patient "+(kind==="followup"?"follow-ups":"notes")+" into rounds"+(valid.length<blocks.length?"; unmatched notes remain saved":""));
 }
@@ -5655,7 +5659,7 @@ function previousDayNotesText(r){
   return legacy&&!previous.includes(legacy)?[previous,legacy].filter(Boolean).join("\n\n"):previous;
 }
 function patientHandoffNotesHtml(r){
-  return '<div class="handoffnotes" aria-label="Patient sign-out notes">'+
+  return '<div class="handoffnotes" aria-label="Patient sign-out notes"><h3>Sign-out notes</h3>'+
     [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
       const key=handoffNotesKey(kind),text=kind==="previous"?previousDayNotesText(r):r[key]||"";
       return '<div class="fld"><label>'+label+'</label><textarea class="evta" style="width:100%;min-height:80px" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(text)+'</textarea></div>';

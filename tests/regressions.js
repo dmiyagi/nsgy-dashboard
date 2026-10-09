@@ -8,13 +8,13 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','removePatientWork','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
+const names=['savedContentFingerprint','save','compactBoardForStartup','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','removePatientWork','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
 const assert=(value,message)=>{if(!value)throw new Error(message)};
 const workKey=t=>String(t||'').trim().toLowerCase(),wasDone=(o,t)=>(o.doneKeys||[]).includes(workKey(t));
-let BOARD_AUTO_TIMERS_OFF=false;
+let BOARD_AUTO_TIMERS_OFF=false,startupCompactBoard=true;
 let S={tombFormat:2,consults:[],rounds:[],formerWounds:[]};
 let writes=0,pushes=0,dirty=false,syncApplying=false,lastSaved=JSON.stringify(S);
 const localStorage={setItem(){writes++}};const LS='local';
@@ -145,6 +145,10 @@ for(const pair of [[pending,staleTask],[staleTask,pending]]){
 }
 const reopened=JSON.parse(JSON.stringify(pending));reopened.workRestored={'review mri':pending.workDeleted['review mri']+1};reopened.tasks=[{t:'Review MRI',done:false}];
 assert(mergeWorkRecord(reopened,JSON.parse(JSON.stringify(pending))).tasks.length===1,'Explicitly recreated task was deleted');
+S.consults=[{id:'session-card',collapsed:false}];S.rounds=[{id:'session-round',collapsed:false}];startupCompactBoard=true;
+compactBoardForStartup();assert(S.consults[0].collapsed&&S.rounds[0].collapsed&&!startupCompactBoard,'New session did not compact once');
+S.consults[0].collapsed=false;S.rounds[0].collapsed=false;compactBoardForStartup();
+assert(!S.consults[0].collapsed&&!S.rounds[0].collapsed,'Later refresh collapsed open cards');
 return 'Regression checks PASS';
 `;
 const result=new Function(setup+names.map(extract).join('\n')+checks)();
@@ -168,7 +172,8 @@ const stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()},touch=r=>{r.updatedAt=
 const syncRoundTodosToBoard=(r,lines)=>boardTasks.push(...lines),renderRounds=()=>{},save=()=>{},autosave=()=>{},showToast=()=>{};
 `;
 const handoffChecks=`
-sortHandoffNotes('morning');sortHandoffNotes('daytime');
+S.rounds[0].collapsed=false;sortHandoffNotes('morning');sortHandoffNotes('daytime');
+if(S.rounds[0].collapsed)throw new Error('Sorting notes collapsed an open card');
 const patient=S.rounds[0];
 if(patient.raw!=='Original diagnosis'||patient.exam!=='Original exam'||patient.steps.length)throw new Error('Notes changed clinical data or became tasks');
 if(!patient.morningNotes.includes('Baseline weakness')||!patient.daytimeNotes.includes('Strength improved'))throw new Error('Baseline and new information were not separated');
