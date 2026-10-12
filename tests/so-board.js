@@ -26,13 +26,18 @@ let writes=[];
 const slotVal=(r,k,f)=>((r.slots||{})[k]||{})[f]||'';
 const slotUpdate=(r,k,f,v)=>{r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};r.slots[k][f]=v;writes.push([k,f,v])};
 const SLOT_SEED=[],stampF=()=>{},sxNow=()=>1;
-${['soSlotMapping','syncTemplateSlots','routeDaytimeUpdate'].map(fn).join('\n')}
+${['soSlotMapping','syncTemplateSlots','routeDaytimeUpdate','templateIndividualValue','cleanDiWatchDuplicates'].map(fn).join('\n')}
 const r={morningNotes:'original baseline'};
 routeDaytimeUpdate(r,'Concern for SIADH');
 if(r.slots.sodiumStudies.concern!=='Concern for SIADH'||r.slots.sodiumStudies.urineOsm!==undefined)throw new Error('SIADH update invented results');
 routeDaytimeUpdate(r,'Urine osm 650, urine sodium 72, serum osm 270');
 if(r.slots.sodiumStudies.urineOsm!=='650'||r.slots.sodiumStudies.urineNa!=='72'||r.slots.sodiumStudies.serumOsm!=='270'||r.morningNotes!=='original baseline')throw new Error('Urine studies were not mapped or baseline was changed');
 syncTemplateSlots(r,'BP goal','SBP <160');if(r.slots.bp.goal!=='SBP <160')throw new Error('Template did not populate corresponding board parameter');
+const old={so:{'DI watch':'Na 142, UOP 240, 130, Urine Osm 650, spec grav 1.003'},slots:{gu:{cur:'Na 142, UOP 240, 130, Urine Osm 650'},sodiumStudies:{concern:'Na 142, UOP 240; Na 142, UOP 240, 130'}}};
+if(templateIndividualValue(old,'DI watch','diWatch','na')!=='142'||templateIndividualValue(old,'DI watch','diWatch','uop')!=='240, 130'||templateIndividualValue(old,'DI watch','diWatch','urineOsm')!=='650'||templateIndividualValue(old,'DI watch','diWatch','sg')!=='1.003')throw new Error('DI watch did not split into distinct measurements');
+cleanDiWatchDuplicates(old);if(old.slots.gu.cur!==''||old.slots.sodiumStudies.concern!==''||old.diWatchLegacy.length!==2)throw new Error('DI output duplicates were not removed and archived');
+routeDaytimeUpdate(r,'Concern for SIADH, urine osm 650');routeDaytimeUpdate(r,'Concern for SIADH, urine osm 660');
+if(r.slots.sodiumStudies.concern.includes(';'))throw new Error('Typing appended incremental concern copies');
 return 'Template mapping / daytime sodium routing checks PASS';
 `)();report(routing);
 

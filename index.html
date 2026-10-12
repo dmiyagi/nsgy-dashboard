@@ -871,7 +871,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.238 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.239 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -8325,6 +8325,28 @@ function soFieldValue(r,k){
   if(v)return v;
   return soIsExamField(k)?soExamSource(r):"";
 }
+function templateIndividualValue(r,label,k,f){
+  const value=slotVal(r,k,f),key=k+"."+f;
+  if(value||(r.slotAt||{})[key])return value;
+  const original=String((r.so||{})[label]||"");
+  if(k!=="diWatch")return "";
+  const patterns={na:/\bNa\s*[:=]?\s*(1\d{2})(?!\d)/i,uop:/\bUOP\s*[:=]?\s*([^;]+?)(?=,\s*(?:urine|Na|spec)|;|$)/i,urineOsm:/urine\s+osm(?:olality)?\s*[:=]?\s*(\d+(?:\.\d+)?)/i,sg:/(?:spec(?:ific)?\s*grav(?:ity)?|\bSG)\s*[:=]?\s*(1\.\d+)/i};
+  const match=patterns[f]&&original.match(patterns[f]);return match?match[1].trim():"";
+}
+function cleanDiWatchDuplicates(r){
+  const duplicate=text=>/\bUOP\b|urine\s+osm/i.test(text)&&!/(?:foley|void|retention|PVR|CIC|SIADH|concern)/i.test(text);
+  [["gu","cur"],["sodiumStudies","concern"]].forEach(([k,field])=>{
+    const old=slotVal(r,k,field);if(!duplicate(old))return;
+    r.diWatchLegacy=r.diWatchLegacy||[];if(!r.diWatchLegacy.includes(old))r.diWatchLegacy.push(old);
+    stampF(r,"diWatchLegacy");slotUpdate(r,k,field,"");
+  });
+}
+function templateIndividualHtml(r,label,map){
+  const def=slotDef(map.k);if(!def)return "";
+  const controls=slotVisibleFields(r,map.k).map(([f,placeholder])=>'<div class="fld"><label>'+esc(placeholder)+'</label><input class="slotin" style="width:100%" value="'+esc(templateIndividualValue(r,label,map.k,f))+'" placeholder="'+esc(placeholder)+'" oninput="slotSet(\''+r.id+'\',\''+map.k+'\',\''+f+'\',this.value)"></div>').join('');
+  const original=String((r.so||{})[label]||"");
+  return controls+(original?'<details class="moredet"><summary>Original template text</summary><div style="white-space:pre-wrap">'+esc(original)+'</div></details>':"");
+}
 function soFieldHtml(r,f){
   const k=f[0],v=soFieldValue(r,k);
   const attrs='class="evta soinput" data-so="'+esc(k)+'" placeholder="'+esc(f[1])+'" onfocus="soFocus(this)" oninput="soSave(this,true)" onchange="soSave(this)"';
@@ -8336,6 +8358,7 @@ function soFieldHtml(r,f){
   const head='<div class="nccuhead"><b>'+esc(k)+'<span class="draghint">drag</span></b>'+order+(nccuFieldChanged(r,k)?'<button class="nccuclear" type="button" title="Clear change highlight for this box" onclick="nccuResetField(\''+r.id+'\',\''+esc(k)+'\')">clear Δ</button>':"")+'</div>';
   const picks=soPickMenuHtml(k);
   const shellOpen='<div class="fld" draggable="true" ondragstart="soBoxDragStart(event,\''+r.id+'\',\''+jsq(k)+'\')" ondragend="soBoxDragEnd(event)" ondragover="event.preventDefault()" ondrop="soModalBoxDrop(event,\''+r.id+'\',\''+jsq(k)+'\')">';
+  const map=soSlotMapping(k);if(map&&map.k!=="exam")return shellOpen+head+templateIndividualHtml(r,k,map)+prev+"</div>";
   if(/^One-liner(?:\s+\d+)?$/i.test(k)||r.soT==="nccu")return shellOpen+head+picks+(soIsTrendField(k)?prev:"")+'<textarea '+attrs+' style="min-height:'+(k==="Events"?90:72)+'px">'+esc(v)+'</textarea><div class="sohint" data-sohint="'+esc(k)+'"></div>'+(soIsTrendField(k)?"":prev)+'</div>';
   return shellOpen+head+picks+'<input type="text" '+attrs+' value="'+esc(v)+'"><div class="sohint" data-sohint="'+esc(k)+'"></div>'+prev+'</div>';
 }
@@ -9689,7 +9712,8 @@ const SO_SLOTS=[
     const g=v.goal?("Goal "+v.goal):"Na";
     return v.cur?(g+", currently "+v.cur):g;
   }},
- {k:"sodiumStudies",l:"Sodium concern / studies",order:41,group:"Neuro",re:/\bsiadh\b|urine osm|urine sodium/i,fields:[["concern","daytime sodium concern"],["urineOsm","urine osmolality"],["urineNa","urine sodium"],["serumOsm","serum osmolality"]],fmt:v=>[v.concern,v.urineOsm?"urine osm "+v.urineOsm:"",v.urineNa?"urine Na "+v.urineNa:"",v.serumOsm?"serum osm "+v.serumOsm:""].filter(Boolean).join(", ")},
+ {k:"diWatch",l:"DI watch",order:41,group:"Neuro",re:/di watch|\bdi\b|tssh|transsphenoid|pituitary|suprasellar/i,fields:[["na","sodium"],["uop","urine output (mL/h)"],["urineOsm","urine osmolality"],["sg","urine specific gravity"]],fmt:v=>[["Na",v.na],["UOP",v.uop],["urine osm",v.urineOsm],["specific gravity",v.sg]].filter(x=>x[1]).map(x=>x.join(" ")).join(", ")},
+ {k:"sodiumStudies",l:"Sodium concern / studies",order:42,group:"Neuro",re:/\bsiadh\b|urine osm|urine sodium/i,fields:[["concern","daytime sodium concern"],["urineOsm","urine osmolality"],["urineNa","urine sodium"],["serumOsm","serum osmolality"]],fmt:v=>[v.concern,v.urineOsm?"urine osm "+v.urineOsm:"",v.urineNa?"urine Na "+v.urineNa:"",v.serumOsm?"serum osm "+v.serumOsm:""].filter(Boolean).join(", ")},
  {k:"asm",l:"Seizure meds",order:50,group:"Neuro",
   re:/keppra|levetiracetam|dilantin|phenytoin|vimpat|lacosamide|depakote|valproate|\basm\b|\baed\b|seizure|epilep|\bceeg\b|\bltm\b/i,
   fields:[["goal","drug, dose + duration"],["cur","day of course / events"]],
@@ -9727,19 +9751,22 @@ const SO_SLOTS=[
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")}
 ];
 function soSlotMapping(label){
-  const groups=[[/^exam/i,"exam","cur"],[/evd|drains?/i,"drain","goal"],[/icp/i,"icp","cur"],[/na goal|sodium/i,"na","goal"],[/bp goal|blood pressure|map goal/i,"bp","goal"],[/seizure|asm|ltm/i,"asm","goal"],[/anticoag/i,"ac","goal"],[/^id|antibiotic|infection/i,"id","goal"],[/renal|di watch/i,"gu","cur"],[/nutrition|diet/i,"gi","goal"]];
+  const groups=[[/^di watch$/i,"diWatch","uop"],[/^exam/i,"exam","cur"],[/evd|drains?/i,"drain","goal"],[/icp/i,"icp","cur"],[/na goal|sodium/i,"na","goal"],[/bp goal|blood pressure|map goal/i,"bp","goal"],[/seizure|asm|ltm/i,"asm","goal"],[/anticoag/i,"ac","goal"],[/^id|antibiotic|infection/i,"id","goal"],[/renal|di watch/i,"gu","cur"],[/nutrition|diet/i,"gi","goal"]];
   const match=groups.find(([re])=>re.test(label));return match?{k:match[1],f:match[2]}:null;
 }
 function syncTemplateSlots(r,label,text){
   const map=soSlotMapping(label);if(!map)return;
   if(map.k==="exam"){r.exam=text;stampF(r,"exam");r.examAt=sxNow()}
+  if(map.k==="diWatch"){
+    ["na","uop","urineOsm","sg"].forEach(f=>{const v=templateIndividualValue(r,label,map.k,f);if(v)slotUpdate(r,map.k,f,v)});return;
+  }
   slotUpdate(r,map.k,map.f,text);
-  if(/siadh|urine\s+(?:osm|sodium|na)/i.test(text))routeDaytimeUpdate(r,text);
+  if(map.k!=="diWatch"&&/siadh|urine\s+(?:osm|sodium|na)/i.test(text))routeDaytimeUpdate(r,text);
   SLOT_SEED.forEach(seed=>{const m=String(text).match(seed.re);if(m&&seed.k===map.k)slotUpdate(r,seed.k,seed.f,(m[1]||m[0]).trim())});
 }
 function routeDaytimeUpdate(r,text){
   if(/\bsiadh\b|urine\s+(?:osm|sodium|na)/i.test(text)){
-    const was=slotVal(r,"sodiumStudies","concern");slotUpdate(r,"sodiumStudies","concern",was&&!was.includes(text)?was+"; "+text:text);
+    if(/\bsiadh\b|concern|hyponatr|hypernatr/i.test(text))slotUpdate(r,"sodiumStudies","concern",text);
     [["urineOsm",/urine\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["urineNa",/urine\s+(?:na|sodium)\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["serumOsm",/serum\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i]].forEach(([f,re])=>{const m=text.match(re);if(m)slotUpdate(r,"sodiumStudies",f,m[1])});
   }
   SLOT_SEED.forEach(seed=>{const m=text.match(seed.re);if(m)slotUpdate(r,seed.k,seed.f,(m[1]||m[0]).trim())});
@@ -9824,6 +9851,7 @@ function slotUpdate(r,k,f,v){
 }
 function slotSet(id,k,f,v){
   const r=findAny(id);if(!r)return;
+  if(k==="diWatch")cleanDiWatchDuplicates(r);
   r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
   if(String(v||"").trim())r.slots[k][f]=v;else delete r.slots[k][f];
   r.slotAt=r.slotAt||{};r.slotAt[k+"."+f]=sxNow();
@@ -11617,7 +11645,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
-  "morningNotes","daytimeNotes","previousDayNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
+  "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
