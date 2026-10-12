@@ -869,7 +869,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.233 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.234 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5695,7 +5695,8 @@ function patientHandoffNotesHtml(r){
   return '<div class="handoffnotes" aria-label="Patient sign-out notes"><h3>Sign-out notes</h3>'+
     [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
       const key=handoffNotesKey(kind),text=kind==="previous"?previousDayNotesText(r):r[key]||"";
-      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(text)+'</textarea></div>';
+      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(text)+'</textarea>'+ (kind==="daytime"?(r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
+       (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':""):"")+'</div>';
     }).join("")+'<div class="qbtns"><button type="button" onclick="event.stopPropagation();patientHandoffNotesSaveNow(\''+r.id+'\',this)">Save notes</button></div></div>';
 }
 
@@ -6397,10 +6398,10 @@ function roundExamHtml(r){
   const cur=(r.exam===undefined||r.exam===null)?prev:r.exam;
   const nHist=(r.examHist||[]).length;
   const hasAny=!!String(cur||"").trim()||nHist>0;
-  return '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
+  return '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onpaste="roundExamPaste(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
+    '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
     roundExamBuilderHtml(r,cur)+
     '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
-    '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onpaste="roundExamPaste(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
     examChipsHtml(r.id)+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'intubated\')">Intubated</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
@@ -6884,14 +6885,12 @@ function renderRounds(){
     return '<div class="card hastrash'+(roundIsFloor(r)?' floorcard':'')+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)')))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+roundTodoIndicator(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
-     patientHandoffNotesHtml(r)+
-     roundExamHtml(r)+
      rStepsHtml(r)+
-     roundChartHtml(r)+
      '<textarea class="evta rplan" id="rplan_'+r.id+'" placeholder="Plan / to-dos from rounds… (saves as you type)" style="min-height:34px;margin-top:5px" oninput="roundPlanPreview(\''+r.id+'\',this)" onchange="planSave(\''+r.id+'\',this)" onblur="if(this.value.trim())planSave(\''+r.id+'\',this)">'+esc(r.planDraft||"")+'</textarea>'+
      '<div class="roundsugg" id="rsugg_'+r.id+'">'+roundSuggestHtml(r)+'</div>'+
-     (r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
-       (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':"")+
+     patientHandoffNotesHtml(r)+
+     roundExamHtml(r)+
+     roundChartHtml(r)+
      '<div class="cardbtns">'+
       '<button onclick="togWorry(\''+r.id+'\')" '+(r.worry?'style="border-color:var(--e2);color:var(--e2)"':"")+'>!</button>'+
       '<button onclick="toggleRoundFloor(\''+r.id+'\')" '+(roundIsFloor(r)?'style="border-color:#5aa7ff;color:#8fc1ff"':"")+'>Floor</button>'+
