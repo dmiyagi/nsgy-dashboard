@@ -46,3 +46,8 @@ let c={wf:{}};let stage=chartCheckStage(c);if(stage.k!=='ccam'||stage.undo)throw
 c.wf.ccam=1;stage=chartCheckStage(c);if(stage.k!=='ccpm'||stage.undo)throw new Error('Second chart check did not advance PM');
 c.wf.ccpm=2;stage=chartCheckStage(c);if(stage.k!=='ccpm'||!stage.undo)throw new Error('Completed chart card did not offer Undo');
 return 'Chart checkmark sequence checks PASS';`)();report(chartResult);
+
+const consentResult=new Function(`${['consentCueText','hasMissingConsentCue'].map(fn).join('\n')}
+for(const prob of ['OR 10/13 (consented)','OR 10/13 [consented]','OR 10/13','OR tomorrow','consented'])if(hasMissingConsentCue({prob}))throw new Error('Consent suggestion appeared without explicit missing consent');
+for(const prob of ['OR 10/13 (not consented)','OR tomorrow (not yet consented)','NOT CONSENTED'])if(!hasMissingConsentCue({prob}))throw new Error('Explicit missing consent was not suggested');
+return 'Explicit not-consented suggestion checks PASS';`)();report(consentResult);

@@ -871,7 +871,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.239 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.240 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4340,11 +4340,9 @@ function consentCueText(c){
   return [c.prob,c.state,c.action,c.note].filter(Boolean).join(" ");
 }
 function hasMissingConsentCue(c){
-  const txt=consentCueText(c);
-  if(!txt||/\[consented\]/i.test(txt))return false;
-  if(/\b(?:needs?|need|requires?|require)\s+consent\b|\bnot\s+consented\b|\bwithout\s+consent\b|\bconsent\s+(?:needed|required|pending|todo|to do)\b|\bno\s+consent\b/i.test(txt))return true;
-  return /\b(?:OR|surgery|case)\s*(?:date|day|on|scheduled|planned)?\s*[:\-]?\s*(?:today|tomorrow|\d{1,2}[\/.-]\d{1,2}(?:[\/.-]\d{2,4})?|\d{4}-\d{1,2}-\d{1,2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2})\b/i.test(txt);
+  return /\bnot(?:\s+yet)?\s+consented\b/i.test(consentCueText(c));
 }
+
 function opBound(c){
   if(c.closed||c.type==="CONSENT")return false;
   if((c.wf||{}).consent)return false;
