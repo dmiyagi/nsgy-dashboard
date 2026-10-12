@@ -4,7 +4,7 @@ const result=new Function(`
 let nccuCompact=true;const nccuSessionViews=new Map();let patient={id:'p',nccuView:'full'};
 const findAny=()=>patient,renderNccu=()=>{};
 const slotActiveKeys=r=>r.keys||[],slotDef=k=>({fields:k==='exam'?[['cur']]:[['goal'],['out24'],['shift']]});
-${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVal'].map(fn).join('\n')}
+${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVisibleFields','slotVal'].map(fn).join('\n')}
 const assert=(x,m)=>{if(!x)throw new Error(m)};
 assert(nccuIsCompact(patient),'New session did not start compact');
 toggleOneNccuCompact('p');assert(!nccuIsCompact(patient),'Card did not expand');
@@ -16,6 +16,8 @@ const r={keys:['exam','drain'],exam:'AOx3',slots:{drain:{goal:'EVD at 10',out24:
 assert(!nccuReady(r),'Missing shift output was marked ready');
 r.slots.drain.shift='20';assert(nccuReady(r),'All filled boxes did not become ready');
 r.slots.drain.goal='  ';assert(!nccuReady(r),'Whitespace was counted as filled');
+r.slotFieldsOff={'drain.goal':true};assert(nccuReady(r),'Hidden box prevented readiness');
+if(slotVisibleFields(r,'drain').length!==2)throw new Error('Hiding one field removed the other fields');
 return 'SO readiness / session view checks PASS';
 `)();
 report(result);
@@ -33,3 +35,9 @@ if(r.slots.sodiumStudies.urineOsm!=='650'||r.slots.sodiumStudies.urineNa!=='72'|
 syncTemplateSlots(r,'BP goal','SBP <160');if(r.slots.bp.goal!=='SBP <160')throw new Error('Template did not populate corresponding board parameter');
 return 'Template mapping / daytime sodium routing checks PASS';
 `)();report(routing);
+
+const chartResult=new Function(`${['chartOnlyChecks','chartCheckStage'].map(fn).join('\n')}
+let c={wf:{}};let stage=chartCheckStage(c);if(stage.k!=='ccam'||stage.undo)throw new Error('First chart check did not advance AM');
+c.wf.ccam=1;stage=chartCheckStage(c);if(stage.k!=='ccpm'||stage.undo)throw new Error('Second chart check did not advance PM');
+c.wf.ccpm=2;stage=chartCheckStage(c);if(stage.k!=='ccpm'||!stage.undo)throw new Error('Completed chart card did not offer Undo');
+return 'Chart checkmark sequence checks PASS';`)();report(chartResult);

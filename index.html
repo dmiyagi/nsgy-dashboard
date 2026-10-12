@@ -646,7 +646,9 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   font-family:var(--font);line-height:1;padding:2px 3px}
 .slotctl button:hover:not(:disabled){color:var(--acc)}
 .slotctl button:disabled{opacity:.25;cursor:default}
-.slotcell{display:flex;flex-direction:column;min-width:0}
+.slotcell{display:flex;flex-direction:column;min-width:0;position:relative}
+.slotcell .slotin{padding-right:30px}
+.slotcell > .slotx{position:absolute;right:5px;top:3px;width:24px;min-height:24px;background:transparent;border:0;color:var(--mut);cursor:pointer}
 .slotin.live{border-style:dashed;color:#c8d3e4}
 .slotwas{font-size:10px;color:var(--mut);padding:1px 3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plab{color:var(--mut);font-weight:800}
@@ -869,7 +871,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.236 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.238 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6989,6 +6991,14 @@ function chartCheckTasksHtml(c){
     return '<div class="step active"><button onclick="togChk(\''+c.id+'\','+i+')">✓ done</button> <span class="stxt">'+esc(t.t)+'</span>'+taskTimerBtn(c,i,t)+'<button class="xbtn" onclick="event.stopPropagation();chartCheckTaskRemove(\''+c.id+'\','+i+')">×</button></div>'+taskTimerRow(c,i);
   }).join("")+'</div>';
 }
+function chartCheckStage(c){
+  const checks=chartOnlyChecks(),wf=c.wf||{},next=checks.find(([k])=>!wf[k]);
+  const [k,label]=next||checks[checks.length-1];return {k,label,undo:!next};
+}
+function chartCheckStageBox(c){
+  const stage=chartCheckStage(c),label=stage.undo?"Undo last chart check":"Mark "+stage.label+" done";
+  return '<button type="button" class="rcheck '+(stage.undo?'done':'stage')+'" title="'+esc(label)+'" aria-label="'+esc(label)+'" onclick="event.stopPropagation();togWf(\''+c.id+'\',\''+stage.k+'\')">✓</button>';
+}
 function chartCheckListRow(c){
   const due=nextDue(c);
   const dl=fmtDL(due);
@@ -7003,7 +7013,7 @@ function chartCheckListRow(c){
     return '<div class="card crowwrap hastrash" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
       trashBtn(c.id,"chart")+
       '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
-        chartCheckDotsHtml(c)+
+        chartCheckStageBox(c)+chartCheckDotsHtml(c)+
         roundTodoIndicator(c)+
         (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
         (worry?'<span class="bg warn">!</span>':"")+
@@ -9659,7 +9669,7 @@ const SO_SLOTS=[
     if(v.shift)bits.push(v.shift+" this shift");
     return bits.join(", ");
   }},
- {k:"icp",l:"ICP",order:25,group:"",
+ {k:"icp",l:"ICP",order:15,group:"",
   re:/\bevd\b|ventriculostom|\bbolt\b|licox|\bicp\b|intracranial pressure|ventricular drain/i,
   fields:[["goal","ICP goal (<20)"],["cur","current ICP range + waveform"]],
   fmt:v=>{
@@ -9820,9 +9830,19 @@ function slotSet(id,k,f,v){
   stampF(r,"slots");
   r.updatedAt=Date.now();autosave();refreshNccuReady(id);
 }
+function slotVisibleFields(r,k){const d=slotDef(k);return d?d.fields.filter(([f])=>!(r.slotFieldsOff||{})[k+"."+f]):[]}
+function slotFieldToggle(id,k,f,off){
+  const r=findAny(id);if(!r)return;
+  const key=k+"."+f;r.slotFieldsOff=r.slotFieldsOff||{};r.slotFieldOffAt=r.slotFieldOffAt||{};
+  r.slotFieldsOff[key]=!!off;r.slotFieldOffAt[key]=sxNow();touch(r);renderNccu();flushAutosave();
+}
+function slotRestoreFieldsHtml(r){
+  const items=[];slotActiveKeys(r).forEach(k=>slotDef(k).fields.forEach(([f,label])=>{if((r.slotFieldsOff||{})[k+"."+f])items.push([k,f,slotDef(k).l+" — "+label])}));
+  return items.length?'<select aria-label="Restore hidden box" onchange="const parts=this.value.split(\'|\');if(parts.length===2)slotFieldToggle(\''+r.id+'\',parts[0],parts[1],false)"><option value="">＋ restore a hidden box…</option>'+items.map(([k,f,label])=>'<option value="'+k+'|'+f+'">'+esc(label)+'</option>').join('')+'</select>':'';
+}
 function slotBody(r,k){
   const d=slotDef(k);if(!d)return "";
-  const vals={};d.fields.forEach(f=>vals[f[0]]=slotVal(r,k,f[0]));
+  const vals={};slotVisibleFields(r,k).forEach(f=>vals[f[0]]=slotVal(r,k,f[0]));
   return d.fmt(vals)||"";
 }
 function slotLine(r,k){
@@ -9853,13 +9873,14 @@ function slotAddFromSelect(id,el){
 // ---------- slot UI: one row per parameter, goal then current ----------
 function slotRowHtml(r,k,first,last){
   const d=slotDef(k);if(!d)return "";
-  const f=d.fields;
+  const f=slotVisibleFields(r,k);
   const inp=(fk,ph)=>{
     const live=slotIsLive(r,k,fk),was=slotPrev(r,k,fk);
     return '<div class="slotcell">'+
       '<input class="slotin'+(live?" live":"")+'" id="sl_'+r.id+'_'+k+'_'+fk+'" value="'+esc(slotVal(r,k,fk))+'" '+
       'placeholder="'+esc(ph)+'"'+(live?' title="from the Rounds exam — type to take over"':"")+' onclick="event.stopPropagation()" '+
       'oninput="slotSet(\''+r.id+'\',\''+k+'\',\''+fk+'\',this.value)">'+
+      '<button type="button" class="slotx" title="Hide this box" aria-label="Hide '+esc(ph)+'" onclick="event.stopPropagation();slotFieldToggle(\''+r.id+'\',\''+k+'\',\''+fk+'\',true)">×</button>'+
       (was?'<span class="slotwas" title="earlier today">was '+esc(was.slice(0,40))+'</span>':"")+
     '</div>';
   };
@@ -9882,7 +9903,7 @@ function slotBoardHtml(r){
     if(g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
     html+=slotRowHtml(r,k,i===0,i===keys.length-1);
   });
-  html+='<div class="slotadd">'+
+  html+='<div class="slotadd">'+slotRestoreFieldsHtml(r)+
     (rest.length?'<select onclick="event.stopPropagation()" onchange="slotAddFromSelect(\''+r.id+'\',this)">'+
       '<option value="">＋ add a parameter…</option>'+
       rest.map(s=>'<option value="'+s.k+'">'+esc(s.l)+'</option>').join("")+'</select>':"")+
@@ -10371,7 +10392,7 @@ function nccuCompactBoxesHtml(r){
 }
 function nccuReady(r){
   const keys=slotActiveKeys(r);
-  return keys.length>0&&keys.every(k=>{const def=slotDef(k);return def&&def.fields.every(([f])=>String(slotVal(r,k,f)||"").trim()!=="")});
+  return keys.length>0&&keys.every(k=>{const def=slotDef(k);return def&&slotVisibleFields(r,k).every(([f])=>String(slotVal(r,k,f)||"").trim()!=="")});
 }
 function refreshNccuReady(id){
   const r=findAny(id);if(!r)return;
@@ -11656,6 +11677,10 @@ function mergeFields(primary,secondary){
       }
     });
   }
+  const off=primary.slotFieldsOff||{},other=secondary.slotFieldsOff||{},at=primary.slotFieldOffAt||{},otherAt=secondary.slotFieldOffAt||{};
+  Object.keys(other).forEach(k=>{if((otherAt[k]||0)>(at[k]||0)||off[k]===undefined){off[k]=other[k];at[k]=otherAt[k]||0}});
+  if(Object.keys(off).length){primary.slotFieldsOff=off;primary.slotFieldOffAt=at}
+
   return primary;
 }
 function mergeWorkRecord(primary,secondary){
