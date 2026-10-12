@@ -631,13 +631,22 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .slotgroup{font-size:10.5px;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;
   margin:8px 0 4px;padding-top:6px;border-top:1px solid rgba(139,167,214,.16)}
 .slotgroup:first-child{margin-top:0;padding-top:0;border-top:none}
-.slotrow{display:grid;grid-template-columns:104px minmax(0,1fr) 22px;gap:7px;align-items:center;margin-bottom:4px}
+.slotrow{display:grid;grid-template-columns:104px minmax(0,1fr) 56px;gap:7px;align-items:center;margin-bottom:4px}
 .slotrow em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .slotfields{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
 .slotfields.three{grid-template-columns:1.3fr .8fr .8fr}
 .slotin{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
   font-family:var(--font);font-size:12.5px;padding:5px 8px}
 .slotin:focus{outline:none;border-color:var(--acc)}
+.slotctl{display:flex;gap:1px;align-items:center}
+.slotctl button{border:none;background:transparent;color:var(--mut);font-size:12px;cursor:pointer;
+  font-family:var(--font);line-height:1;padding:2px 3px}
+.slotctl button:hover:not(:disabled){color:var(--acc)}
+.slotctl button:disabled{opacity:.25;cursor:default}
+.slotcell{display:flex;flex-direction:column;min-width:0}
+.slotin.live{border-style:dashed;color:#c8d3e4}
+.slotwas{font-size:10px;color:var(--mut);padding:1px 3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plab{color:var(--mut);font-weight:800}
 .slotx{border:none;background:transparent;color:var(--mut);font-size:14px;cursor:pointer;font-family:var(--font);line-height:1;padding:0}
 .slotx:hover{color:var(--e3)}
 .slotadd{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}
@@ -645,8 +654,8 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   color:var(--acc);font-family:var(--font);font-size:11.5px;font-weight:700;padding:4px 6px}
 .slotadd .slotseed{border:1px solid var(--teal);background:transparent;color:var(--teal);border-radius:7px;
   font-size:11.5px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font);white-space:nowrap}
-@media(max-width:620px){.slotrow{grid-template-columns:1fr 20px;grid-template-areas:"lab x" "f f"}
-  .slotrow em{grid-area:lab}.slotx{grid-area:x}.slotfields{grid-area:f}}
+@media(max-width:620px){.slotrow{grid-template-columns:1fr 56px;grid-template-areas:"lab x" "f f"}
+  .slotrow em{grid-area:lab}.slotctl{grid-area:x;justify-content:flex-end}.slotfields{grid-area:f}}
 .exchips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
 .exchips button{font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;
   font-family:var(--font);border:1px solid var(--line);background:var(--card2);color:var(--acc)}
@@ -857,7 +866,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.231 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.232 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -8506,7 +8515,7 @@ function renderPresent(){
     return '<article class="pcard">'+
       lines.map(l=>l.cls==="head"
         ? '<h3>'+esc(l.text)+(loops?'<span class="pgap">'+loops+' open</span>':'<span class="pgap done">ready</span>')+'</h3>'
-        : '<div class="pl '+l.cls+'">'+esc(l.text)+'</div>').join("")+
+        : '<div class="pl '+l.cls+'">'+(l.label?'<b class="plab">'+esc(l.label)+':</b> '+esc(l.body||l.text):esc(l.text))+'</div>').join("")+
       '</article>';
   }).join("")||'<div class="empty">Nothing captured yet.</div>';
 }
@@ -9144,14 +9153,13 @@ function sxAdd(id,text,role,sys){
   if(!role&&(role2==="state"||role2==="delta")){
     const slotK=SYS_SLOT[sys2];
     const d=slotK?slotDef(slotK):null;
-    if(d&&!slotVal(r,slotK,"cur")){
-      r.slots=r.slots||{};r.slots[slotK]=r.slots[slotK]||{};
-      r.slots[slotK].cur=t;
-      r.slotAt=r.slotAt||{};r.slotAt[slotK+".cur"]=sxNow();
-      r.slotsOff=r.slotsOff||{};delete r.slotsOff[slotK];
-      r.slotsOn=r.slotsOn||{};r.slotsOn[slotK]=true;
-      stampF(r,"slots");r.updatedAt=Date.now();
-      return {role:role2,slot:slotK,slotLabel:d.l,t:t};
+    if(d){
+      const was=slotVal(r,slotK,"cur");
+      if(was!==t){
+        slotUpdate(r,slotK,"cur",t);
+        r.updatedAt=Date.now();
+        return {role:role2,slot:slotK,slotLabel:d.l,t:t,was:was};
+      }
     }
   }
   const item={id:uid(),t:t,role:role2,sys:sys2,
@@ -9173,12 +9181,13 @@ function sxAddFromInput(inputId,patientId){
   if(!added.length)return;
   const slotted=added.filter(x=>x.slot);
   const msg=slotted.length
-    ? ("→ "+slotted.map(x=>x.slotLabel).join(", ")+(added.length>slotted.length?(" + "+(added.length-slotted.length)+" line"+(added.length-slotted.length===1?"":"s")):""))
+    ? ("→ "+slotted.map(x=>x.slotLabel+(x.was?" (updated)":"")).join(", ")+(added.length>slotted.length?(" + "+(added.length-slotted.length)+" line"+(added.length-slotted.length===1?"":"s")):""))
     : ("Added "+added.length+" sign-out line"+(added.length===1?"":"s"));
   showToast(msg,()=>{
     const rr=findAny(pid);if(!rr)return;
     added.forEach(x=>{
-      if(x.slot){if(rr.slots&&rr.slots[x.slot])delete rr.slots[x.slot].cur}
+      if(x.slot){if(rr.slots&&rr.slots[x.slot]){if(x.was)rr.slots[x.slot].cur=x.was;else delete rr.slots[x.slot].cur}
+        if(rr.slotPrev)delete rr.slotPrev[x.slot+".cur"]}
       else if(x.toDo){const arr=nccuTodoArr(rr);const i=arr.findIndex(y=>y.t===x.t);if(i>=0)arr.splice(i,1)}
       else sxRemove(pid,x.id,true);
     });
@@ -9621,11 +9630,11 @@ function slotIsSpine(r){
 }
 const SO_SLOTS=[
  {k:"exam",l:"Exam",order:10,group:"",always:true,
-  fields:[["cur","BLE 5/5, no drift · vs baseline"]],
+  fields:[["cur","current exam — auto-filled from Rounds"]],
   fmt:v=>v.cur?v.cur:""},
  {k:"drain",l:"Drain / EVD",order:20,group:"",
   re:/\bevd\b|ventriculostom|lumbar drain|\bld\b|\bjp\b|blake|hemovac|\bseps\b|\bdrain\b|subgaleal/i,
-  fields:[["goal","EVD at 0"],["out24","254"],["shift","60"]],
+  fields:[["goal","drain + level (EVD at 10)"],["out24","output last 24 h"],["shift","output last shift"]],
   fmt:v=>{
     if(!v.goal&&!v.out24&&!v.shift)return "";
     const bits=[v.goal||"Drain"];
@@ -9635,7 +9644,7 @@ const SO_SLOTS=[
   }},
  {k:"icp",l:"ICP",order:25,group:"",
   re:/\bevd\b|ventriculostom|\bbolt\b|licox|\bicp\b|intracranial pressure|ventricular drain/i,
-  fields:[["goal","<20"],["cur","8-14, good waveform"]],
+  fields:[["goal","ICP goal (<20)"],["cur","current ICP range + waveform"]],
   fmt:v=>{
     if(!v.goal&&!v.cur)return "";
     const g=v.goal?("goal "+v.goal.replace(/^goal\s*/i,"")):"";
@@ -9644,10 +9653,10 @@ const SO_SLOTS=[
  // ---- neuro block, in the order it is spoken ----
  {k:"ac",l:"Anticoagulation",order:30,group:"Neuro",
   re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|\basa\b|\bdapt\b|\bdoac\b|anticoag|antiplatelet|dvt ppx/i,
-  fields:[["goal","held / restart 14d from stable scan"],["cur","apixaban, last dose 8/20"]],
+  fields:[["goal","hold / restart plan"],["cur","agent + last dose"]],
   fmt:v=>v.goal||v.cur?[v.cur,v.goal].filter(Boolean).join(" — "):""},
  {k:"na",l:"Sodium",order:40,group:"Neuro",when:slotIsCranial,
-  fields:[["goal","eunatremia 135-145"],["cur","142"]],
+  fields:[["goal","sodium goal"],["cur","last sodium value"]],
   fmt:v=>{
     if(!v.goal&&!v.cur)return "";
     const g=v.goal?("Goal "+v.goal):"Na";
@@ -9655,38 +9664,38 @@ const SO_SLOTS=[
   }},
  {k:"asm",l:"Seizure meds",order:50,group:"Neuro",
   re:/keppra|levetiracetam|dilantin|phenytoin|vimpat|lacosamide|depakote|valproate|\basm\b|\baed\b|seizure|epilep|\bceeg\b|\bltm\b/i,
-  fields:[["goal","Keppra 500 BID x7d"],["cur","d5/7, no events"]],
+  fields:[["goal","drug, dose + duration"],["cur","day of course / events"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  {k:"bp",l:"Blood pressure",order:60,group:"Neuro",when:r=>slotIsCranial(r)||/\bsbp\b|\bmap\b|cardene|nicardipine|labetalol|pressor|norepi|hypertens/i.test(slotText(r)),
-  fields:[["goal","SBP <160"],["cur","requiring cardene"]],
+  fields:[["goal","BP goal"],["cur","what it takes to hold it"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  // ---- other systems ----
- {k:"bowel",l:"Bowel",order:70,group:"Systems",when:slotIsSpine,
-  fields:[["goal","regimen: senna/colace"],["cur","last BM 10/10"]],
-  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"gi",l:"GI / nutrition",order:75,group:"Systems",
+ {k:"gi",l:"GI / nutrition",order:70,group:"Systems",
   re:/\bnpo\b|\bsbo\b|ileus|obstruction|diet|tube feed|\btf\b|\bpeg\b|\bng\b|dysphagia|swallow|aspirat|nausea|vomit|\bemesis\b|nutrition/i,
-  fields:[["goal","regular diet"],["cur","NPO for concern for SBO"]],
+  fields:[["goal","diet / feeding plan"],["cur","current intake + issues"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"bowel",l:"Bowel",order:75,group:"Systems",when:slotIsSpine,
+  fields:[["goal","bowel regimen"],["cur","date of last BM"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
  {k:"gu",l:"GU / voiding",order:80,group:"Systems",
   re:/foley|\bcic\b|void|retention|\btov\b|\bpvr\b|urolog|neurogenic bladder/i,
-  fields:[["goal","Foley out, trial of void"],["cur","voiding, PVR 60"]],
+  fields:[["goal","Foley / voiding plan"],["cur","voiding status + PVR"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  {k:"id",l:"ID",order:90,group:"Systems",
   re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
-  fields:[["goal","vanc/ctx d3/14"],["cur","afebrile, cx NGTD"]],
+  fields:[["goal","antibiotic + day of course"],["cur","Tmax, WBC, cultures"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
  {k:"resp",l:"Resp / airway",order:100,group:"Systems",
   re:/intubat|extubat|\bett\b|vent\b|trach|\bpeep\b|fio2|\bsbt\b|oxygen|\bbipap\b/i,
-  fields:[["goal","SBT in AM"],["cur","AC/VC, PEEP 5, FiO2 40%"]],
+  fields:[["goal","extubation / airway plan"],["cur","current support"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
  {k:"endo",l:"Endo / glucose",order:110,group:"Systems",
   re:/\bdi\b|diabetes insipidus|siadh|ddavp|cortisol|steroid|dex\b|insulin|glucose|\bissi?\b/i,
-  fields:[["goal","glucose 110-160, dex taper"],["cur","on ISS"]],
+  fields:[["goal","glucose goal / steroid taper"],["cur","current coverage"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  {k:"dispo",l:"Dispo",order:120,group:"Systems",
   re:/dispo|discharge|rehab|\bsnf\b|placement|\bpt\/ot\b|home with|barrier/i,
-  fields:[["goal","home once voiding + PT cleared"],["cur","awaiting PT"]],
+  fields:[["goal","destination + criteria"],["cur","what is holding them"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")}
 ];
 function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||null}
@@ -9698,6 +9707,42 @@ function slotAuto(r){
     return !!(s.re&&s.re.test(txt));
   }).map(s=>s.k);
 }
+function slotOrderIndex(r){
+  const custom=(r&&Array.isArray(r.slotOrder))?r.slotOrder:[];
+  const ix={};
+  custom.forEach((k,i)=>{ix[k]=i});
+  return ix;
+}
+function slotSortedKeys(r,keys){
+  const ix=slotOrderIndex(r);
+  const has=k=>ix[k]!==undefined;
+  return keys.slice().sort((a,b)=>{
+    if(has(a)&&has(b))return ix[a]-ix[b];
+    if(has(a))return -1;            // anything you have placed leads
+    if(has(b))return 1;
+    return slotDef(a).order-slotDef(b).order;
+  });
+}
+function slotMove(id,k,dir){
+  const r=findAny(id);if(!r)return;
+  const keys=slotActiveKeys(r);
+  const i=keys.indexOf(k);
+  const j=i+dir;
+  if(i<0||j<0||j>=keys.length)return;
+  keys.splice(j,0,keys.splice(i,1)[0]);
+  r.slotOrder=keys;stampF(r,"slotOrder");
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+}
+function slotResetOrder(id){
+  const r=findAny(id);if(!r)return;
+  const before=r.slotOrder;
+  delete r.slotOrder;stampF(r,"slotOrder");
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("Back to the default order",()=>{
+    const rr=findAny(id);if(!rr)return;
+    if(before)rr.slotOrder=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
 function slotActiveKeys(r){
   const off=(r&&r.slotsOff)||{},on=(r&&r.slotsOn)||{};
   const keys=slotAuto(r).filter(k=>!off[k]);
@@ -9708,9 +9753,29 @@ function slotActiveKeys(r){
     if(off[k]||keys.indexOf(k)>=0||!slotDef(k))return;
     if(slotDef(k).fields.some(f=>String((vals[k]||{})[f[0]]||"").trim()))keys.push(k);
   });
-  return keys.sort((a,b)=>slotDef(a).order-slotDef(b).order);
+  return slotSortedKeys(r,keys);
 }
-function slotVal(r,k,f){return (((r&&r.slots)||{})[k]||{})[f]||""}
+function slotVal(r,k,f){
+  const v=(((r&&r.slots)||{})[k]||{})[f]||"";
+  // the Rounds exam is the exam; typing here takes over
+  if(!v&&k==="exam"&&f==="cur")return String((r&&r.exam)||"").trim();
+  return v;
+}
+function slotIsLive(r,k,f){
+  return k==="exam"&&f==="cur"&&!(((r&&r.slots)||{}).exam||{}).cur&&!!String((r&&r.exam)||"").trim();
+}
+// what this field held before today's update
+function slotPrev(r,k,f){return (((r&&r.slotPrev)||{})[k+"."+f])||""}
+function slotUpdate(r,k,f,v){
+  r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
+  const old=r.slots[k][f];
+  if(old&&old!==v){r.slotPrev=r.slotPrev||{};r.slotPrev[k+"."+f]=old}
+  r.slots[k][f]=v;
+  r.slotAt=r.slotAt||{};r.slotAt[k+"."+f]=sxNow();
+  r.slotsOff=r.slotsOff||{};delete r.slotsOff[k];
+  r.slotsOn=r.slotsOn||{};r.slotsOn[k]=true;
+  stampF(r,"slots");
+}
 function slotSet(id,k,f,v){
   const r=findAny(id);if(!r)return;
   r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
@@ -9719,15 +9784,21 @@ function slotSet(id,k,f,v){
   stampF(r,"slots");
   r.updatedAt=Date.now();autosave();
 }
-function slotLine(r,k){
+function slotBody(r,k){
   const d=slotDef(k);if(!d)return "";
   const vals={};d.fields.forEach(f=>vals[f[0]]=slotVal(r,k,f[0]));
-  const body=d.fmt(vals);
-  return body?(d.k==="exam"?body:(d.l+": "+body)):"";
+  return d.fmt(vals)||"";
+}
+function slotLine(r,k){
+  const d=slotDef(k),body=slotBody(r,k);
+  if(!d||!body)return "";
+  return d.k==="exam"?body:(d.l+": "+body);
 }
 function slotLines(r){
-  return slotActiveKeys(r).map(k=>({k:k,group:slotDef(k).group,text:slotLine(r,k)}))
-    .filter(x=>x.text);
+  return slotActiveKeys(r).map(k=>{
+    const d=slotDef(k),body=slotBody(r,k);
+    return {k:k,group:d.group,label:d.k==="exam"?"":d.l,body:body,text:slotLine(r,k)};
+  }).filter(x=>x.body);
 }
 function slotToggle(id,k){
   const r=findAny(id);if(!r)return;
@@ -9744,27 +9815,36 @@ function slotAddFromSelect(id,el){
   el.value="";slotToggle(id,k);
 }
 // ---------- slot UI: one row per parameter, goal then current ----------
-function slotRowHtml(r,k){
+function slotRowHtml(r,k,first,last){
   const d=slotDef(k);if(!d)return "";
   const f=d.fields;
-  const inp=(fk,ph)=>'<input class="slotin" id="sl_'+r.id+'_'+k+'_'+fk+'" value="'+esc(slotVal(r,k,fk))+'" '+
-    'placeholder="'+esc(ph)+'" onclick="event.stopPropagation()" '+
-    'oninput="slotSet(\''+r.id+'\',\''+k+'\',\''+fk+'\',this.value)">';
+  const inp=(fk,ph)=>{
+    const live=slotIsLive(r,k,fk),was=slotPrev(r,k,fk);
+    return '<div class="slotcell">'+
+      '<input class="slotin'+(live?" live":"")+'" id="sl_'+r.id+'_'+k+'_'+fk+'" value="'+esc(slotVal(r,k,fk))+'" '+
+      'placeholder="'+esc(ph)+'"'+(live?' title="from the Rounds exam — type to take over"':"")+' onclick="event.stopPropagation()" '+
+      'oninput="slotSet(\''+r.id+'\',\''+k+'\',\''+fk+'\',this.value)">'+
+      (was?'<span class="slotwas" title="earlier today">was '+esc(was.slice(0,40))+'</span>':"")+
+    '</div>';
+  };
   return '<div class="slotrow" data-slot="'+k+'">'+
     '<em title="'+esc(d.l)+'">'+esc(d.l)+'</em>'+
     '<div class="slotfields'+(f.length>2?" three":"")+'">'+f.map(x=>inp(x[0],x[1])).join("")+'</div>'+
-    '<button type="button" class="slotx" title="Not relevant for this patient" '+
-      'onclick="event.stopPropagation();slotToggle(\''+r.id+'\',\''+k+'\')">×</button>'+
+    '<span class="slotctl">'+
+      '<button type="button" title="Move up"'+(first?" disabled":"")+' onclick="event.stopPropagation();slotMove(\''+r.id+'\',\''+k+'\',-1)">↑</button>'+
+      '<button type="button" title="Move down"'+(last?" disabled":"")+' onclick="event.stopPropagation();slotMove(\''+r.id+'\',\''+k+'\',1)">↓</button>'+
+      '<button type="button" class="slotx" title="Not relevant for this patient" onclick="event.stopPropagation();slotToggle(\''+r.id+'\',\''+k+'\')">×</button>'+
+    '</span>'+
   '</div>';
 }
 function slotBoardHtml(r){
   const keys=slotActiveKeys(r);
   const rest=SO_SLOTS.filter(s=>keys.indexOf(s.k)<0);
   let html='<div class="slotboard">',group=null;
-  keys.forEach(k=>{
+  keys.forEach((k,i)=>{
     const g=slotDef(k).group;
     if(g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
-    html+=slotRowHtml(r,k);
+    html+=slotRowHtml(r,k,i===0,i===keys.length-1);
   });
   html+='<div class="slotadd">'+
     (rest.length?'<select onclick="event.stopPropagation()" onchange="slotAddFromSelect(\''+r.id+'\',this)">'+
@@ -9772,6 +9852,8 @@ function slotBoardHtml(r){
       rest.map(s=>'<option value="'+s.k+'">'+esc(s.l)+'</option>').join("")+'</select>':"")+
     '<button type="button" class="slotseed" title="Pull goals and values out of the sign-out notes" '+
       'onclick="event.stopPropagation();slotSeedFromNotes(\''+r.id+'\')">⤓ From notes</button>'+
+    (Array.isArray(r.slotOrder)&&r.slotOrder.length?'<button type="button" class="slotseed" title="Back to the default order" '+
+      'onclick="event.stopPropagation();slotResetOrder(\''+r.id+'\')">↕ Default order</button>':"")+
   '</div></div>';
   return html;
 }
@@ -9837,7 +9919,7 @@ function sxAssemble(r){
   const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
   exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
-  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",text:sxPeriod(l.text)})});
+  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
   sxManagementThreads(r,exams).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
@@ -10041,7 +10123,7 @@ function sxQuickAddHtml(r,idPrefix){
 function sxPreviewHtml(r){
   const lines=sxAssemble(r);
   if(lines.length<=1&&!sxHasContent(r))return "";
-  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+esc(l.text)+'</div>').join("")+'</div>';
+  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+(l.label?'<b class="plab">'+esc(l.label)+':</b> '+esc(l.body||l.text):esc(l.text))+'</div>').join("")+'</div>';
 }
 function copySxCard(id){
   const r=findAny(id);if(!r)return;
@@ -11093,9 +11175,10 @@ function capToSignout(text,r){
   const it=sxAdd(r.id,line);
   const cap=document.getElementById("cap");if(cap){cap.value="";renderCapture()}
   renderNccu();renderRounds();render();flushAutosave();
-  showToast("→ "+soLabel(r)+" · "+(it?(it.slot?it.slotLabel:SX_ROLE[it.role].l):"added"),()=>{
+  showToast("→ "+soLabel(r)+" · "+(it?(it.slot?(it.slotLabel+(it.was?" (updated)":"")):SX_ROLE[it.role].l):"added"),()=>{
     if(!it)return;
-    if(it.slot){if(r.slots&&r.slots[it.slot])delete r.slots[it.slot].cur}
+    if(it.slot){if(r.slots&&r.slots[it.slot]){if(it.was)r.slots[it.slot].cur=it.was;else delete r.slots[it.slot].cur}
+      if(r.slotPrev)delete r.slotPrev[it.slot+".cur"]}
     else if(it.toDo){const arr=nccuTodoArr(r);const i=arr.findIndex(x=>x.t===it.t);if(i>=0)arr.splice(i,1)}
     else sxRemove(r.id,it.id,true);
     r.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
@@ -11475,7 +11558,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay",
-  "slotsOn","slotsOff"];
+  "slotsOn","slotsOff","slotOrder","slotPrev","exGrid"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
@@ -11490,7 +11573,8 @@ function mergeFields(primary,secondary){
   MERGE_FIELDS.forEach(k=>{
     const ps=primaryStamps[k],ss=fieldStamp(secondary,k);
     if(secondary[k]===undefined)return;
-    if(ss>ps||(primary[k]===undefined&&ss===ps)){
+    const pHas=primary[k]!==undefined&&primary[k]!==null&&primary[k]!=="";
+    if(!pHas||ss>ps){
       primary[k]=secondary[k];
       const st=(secondary.fAt&&secondary.fAt[k])||ss;
       if(st){primary.fAt=primary.fAt||{};primary.fAt[k]=st}
