@@ -857,7 +857,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.230 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.231 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -937,6 +937,13 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <button class="btn sec sm" id="nccuExpandBtn" onclick="setNccuCompact(false)">⊞ Expand</button>
     <button class="btn sec sm" onclick="openSweep()" title="Step through patients one at a time">✎ Chart check</button>
     <button class="btn sm" onclick="openPresent()" title="Read the sign-out straight off the screen">▶︎ Present</button>
+    <span class="sortbtns" id="soSortBtns">
+      <button data-m="rounds" onclick="setSoSort('rounds')">Rounds order</button>
+      <button data-m="room" onclick="setSoSort('room')">Room</button>
+      <button data-m="initials" onclick="setSoSort('initials')">Patient</button>
+      <button data-m="team" onclick="setSoSort('team')">Team</button>
+      <button data-m="attg" onclick="setSoSort('attg')">Attending</button>
+    </span>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
     <button class="btn sec sm" id="nccuResetBtn" onclick="nccuResetAll()" title="Clear change tracking on every SO board card">Δ Reset all</button>
     <div class="nccuhbar">
@@ -9054,6 +9061,8 @@ const sxOrderHold={};
 const SX_SYSTEMS=[["neuro","Neuro"],["cv","CV"],["pulm","Pulm"],["heme","Heme"],["id","ID"],
   ["gu","GU/Renal"],["gi","GI/Nutrition"],["endo","Endo"],["msk","MSK/Trauma"],["rehab","Rehab/Dispo"]];
 const SX_SYS=Object.fromEntries(SX_SYSTEMS);
+// which system tag owns which parameter row
+const SYS_SLOT={gi:"gi",gu:"gu",id:"id",pulm:"resp",endo:"endo",rehab:"dispo",heme:"ac",cv:"bp"};
 function sxList(r){if(!r)return [];if(!Array.isArray(r.sx))r.sx=[];return r.sx}
 function sxActive(r){return sxList(r).filter(x=>!x.dropped)}
 // ---- role inference: typing a line should usually be enough ----
@@ -9129,7 +9138,23 @@ function sxAdd(id,text,role,sys){
     r.updatedAt=Date.now();
     return {role:"loop",toDo:true,t:t};
   }
-  const item={id:uid(),t:t,role:role2,sys:sys||sxGuessSys(t),
+  const sys2=sys||sxGuessSys(t);
+  // "concern for SBO, made NPO" is a GI fact — put it in the GI parameter so it
+  // reads under Systems instead of floating as a loose line
+  if(!role&&(role2==="state"||role2==="delta")){
+    const slotK=SYS_SLOT[sys2];
+    const d=slotK?slotDef(slotK):null;
+    if(d&&!slotVal(r,slotK,"cur")){
+      r.slots=r.slots||{};r.slots[slotK]=r.slots[slotK]||{};
+      r.slots[slotK].cur=t;
+      r.slotAt=r.slotAt||{};r.slotAt[slotK+".cur"]=sxNow();
+      r.slotsOff=r.slotsOff||{};delete r.slotsOff[slotK];
+      r.slotsOn=r.slotsOn||{};r.slotsOn[slotK]=true;
+      stampF(r,"slots");r.updatedAt=Date.now();
+      return {role:role2,slot:slotK,slotLabel:d.l,t:t};
+    }
+  }
+  const item={id:uid(),t:t,role:role2,sys:sys2,
     ts:sxNow(),day:todayStr(),done:false};
   list.push(item);
   r.updatedAt=Date.now();
@@ -9145,7 +9170,20 @@ function sxAddFromInput(inputId,patientId){
   el.value="";
   renderNccu();renderRounds();flushAutosave();
   const nx=document.getElementById("sxin_"+inputId);if(nx)nx.focus();
-  if(added.length)showToast("Added "+added.length+" sign-out line"+(added.length===1?"":"s"));
+  if(!added.length)return;
+  const slotted=added.filter(x=>x.slot);
+  const msg=slotted.length
+    ? ("→ "+slotted.map(x=>x.slotLabel).join(", ")+(added.length>slotted.length?(" + "+(added.length-slotted.length)+" line"+(added.length-slotted.length===1?"":"s")):""))
+    : ("Added "+added.length+" sign-out line"+(added.length===1?"":"s"));
+  showToast(msg,()=>{
+    const rr=findAny(pid);if(!rr)return;
+    added.forEach(x=>{
+      if(x.slot){if(rr.slots&&rr.slots[x.slot])delete rr.slots[x.slot].cur}
+      else if(x.toDo){const arr=nccuTodoArr(rr);const i=arr.findIndex(y=>y.t===x.t);if(i>=0)arr.splice(i,1)}
+      else sxRemove(pid,x.id,true);
+    });
+    rr.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
+  },"Undo");
 }
 
 function sxFind(r,itemId){return sxList(r).find(x=>x.id===itemId)}
@@ -9595,6 +9633,14 @@ const SO_SLOTS=[
     if(v.shift)bits.push(v.shift+" this shift");
     return bits.join(", ");
   }},
+ {k:"icp",l:"ICP",order:25,group:"",
+  re:/\bevd\b|ventriculostom|\bbolt\b|licox|\bicp\b|intracranial pressure|ventricular drain/i,
+  fields:[["goal","<20"],["cur","8-14, good waveform"]],
+  fmt:v=>{
+    if(!v.goal&&!v.cur)return "";
+    const g=v.goal?("goal "+v.goal.replace(/^goal\s*/i,"")):"";
+    return [v.cur,g].filter(Boolean).join(", ");
+  }},
  // ---- neuro block, in the order it is spoken ----
  {k:"ac",l:"Anticoagulation",order:30,group:"Neuro",
   re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|\basa\b|\bdapt\b|\bdoac\b|anticoag|antiplatelet|dvt ppx/i,
@@ -9617,6 +9663,10 @@ const SO_SLOTS=[
  // ---- other systems ----
  {k:"bowel",l:"Bowel",order:70,group:"Systems",when:slotIsSpine,
   fields:[["goal","regimen: senna/colace"],["cur","last BM 10/10"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"gi",l:"GI / nutrition",order:75,group:"Systems",
+  re:/\bnpo\b|\bsbo\b|ileus|obstruction|diet|tube feed|\btf\b|\bpeg\b|\bng\b|dysphagia|swallow|aspirat|nausea|vomit|\bemesis\b|nutrition/i,
+  fields:[["goal","regular diet"],["cur","NPO for concern for SBO"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
  {k:"gu",l:"GU / voiding",order:80,group:"Systems",
   re:/foley|\bcic\b|void|retention|\btov\b|\bpvr\b|urolog|neurogenic bladder/i,
@@ -10156,11 +10206,24 @@ function nccuTodoRemove(id,i){
   renderNccu();renderRounds();render();flushAutosave();
   showToast("Removed "+String(t.t||"").slice(0,44));
 }
+// the board reads in the order you round, unless you pick another sort
+function soSortMode(){return S.soSort||"rounds"}
+function setSoSort(m){
+  S.soSort=m;renderNccu();flushAutosave();
+  showToast("SO board sorted by "+(m==="rounds"?"rounds order":m));
+}
+function soComparator(){
+  const m=soSortMode()==="rounds"?(S.roundSort||"room"):soSortMode();
+  if(m==="initials")return (a,b)=>initialsOf(a).localeCompare(initialsOf(b));
+  if(m==="team")return (a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
+  if(m==="attg")return (a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true});
+  return (a,b)=>String(soLabel(a)).localeCompare(String(soLabel(b)),undefined,{numeric:true});
+}
 function nccuPatients(){
   const out=[],seen=new Set();
   (S.rounds||[]).filter(r=>r.nccuSO).forEach(r=>{out.push(r);seen.add(r.id)});
   (S.consults||[]).filter(c=>c.nccuSO&&!c.closed&&!seen.has(c.roundId||c.id)).forEach(c=>out.push(c));
-  return out;
+  return out.sort(soComparator());
 }
 function nccuCompactTodoHtml(r){
   const nx=nccuNextTodo(r);
@@ -10234,6 +10297,8 @@ function renderNccu(){
   const el=document.getElementById("nccucards");if(!el)return;
   renderNccuHighlightChips();
   const db=document.getElementById("nccuDiffBtn");if(db)db.classList.toggle("on",nccuDiff);
+  const sb=document.getElementById("soSortBtns");
+  if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===soSortMode()));
   const pts=nccuPatients();
   el.innerHTML=pts.length?pts.map(r=>{
     try{return nccuCardHtml(r)}
@@ -11028,9 +11093,10 @@ function capToSignout(text,r){
   const it=sxAdd(r.id,line);
   const cap=document.getElementById("cap");if(cap){cap.value="";renderCapture()}
   renderNccu();renderRounds();render();flushAutosave();
-  showToast("→ "+soLabel(r)+" · "+(it?SX_ROLE[it.role].l:"added"),()=>{
+  showToast("→ "+soLabel(r)+" · "+(it?(it.slot?it.slotLabel:SX_ROLE[it.role].l):"added"),()=>{
     if(!it)return;
-    if(it.toDo){const arr=nccuTodoArr(r);const i=arr.findIndex(x=>x.t===it.t);if(i>=0)arr.splice(i,1)}
+    if(it.slot){if(r.slots&&r.slots[it.slot])delete r.slots[it.slot].cur}
+    else if(it.toDo){const arr=nccuTodoArr(r);const i=arr.findIndex(x=>x.t===it.t);if(i>=0)arr.splice(i,1)}
     else sxRemove(r.id,it.id,true);
     r.updatedAt=Date.now();renderNccu();renderRounds();render();flushAutosave();
   },"Undo");
