@@ -627,6 +627,26 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxcond select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--acc);
   font-family:var(--font);font-size:11px;font-weight:700;padding:3px 6px;max-width:150px}
 .sxnone{font-size:11px;color:var(--mut);font-style:italic}
+.slotboard{margin:8px 0 6px;padding:8px 9px;background:var(--card2);border:1px solid var(--line);border-radius:10px}
+.slotgroup{font-size:10.5px;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;
+  margin:8px 0 4px;padding-top:6px;border-top:1px solid rgba(139,167,214,.16)}
+.slotgroup:first-child{margin-top:0;padding-top:0;border-top:none}
+.slotrow{display:grid;grid-template-columns:104px minmax(0,1fr) 22px;gap:7px;align-items:center;margin-bottom:4px}
+.slotrow em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slotfields{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
+.slotfields.three{grid-template-columns:1.3fr .8fr .8fr}
+.slotin{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
+  font-family:var(--font);font-size:12.5px;padding:5px 8px}
+.slotin:focus{outline:none;border-color:var(--acc)}
+.slotx{border:none;background:transparent;color:var(--mut);font-size:14px;cursor:pointer;font-family:var(--font);line-height:1;padding:0}
+.slotx:hover{color:var(--e3)}
+.slotadd{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}
+.slotadd select{flex:1 1 150px;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;
+  color:var(--acc);font-family:var(--font);font-size:11.5px;font-weight:700;padding:4px 6px}
+.slotadd .slotseed{border:1px solid var(--teal);background:transparent;color:var(--teal);border-radius:7px;
+  font-size:11.5px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font);white-space:nowrap}
+@media(max-width:620px){.slotrow{grid-template-columns:1fr 20px;grid-template-areas:"lab x" "f f"}
+  .slotrow em{grid-area:lab}.slotx{grid-area:x}.slotfields{grid-area:f}}
 .exchips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
 .exchips button{font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;
   font-family:var(--font);border:1px solid var(--line);background:var(--card2);color:var(--acc)}
@@ -837,7 +857,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.229 · 2026-10-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.230 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -9542,6 +9562,223 @@ function sxActionLine(r){
   return sxSentence(parts);
 }
 // Returns [{cls, text}] so the same assembly drives the screen and the clipboard
+// ---------- sign-out slots ----------
+// A slot is one management parameter presented as goal → current, e.g.
+// "EVD at 0, output 254 (24h)" or "Goal eunatremia, currently 142".
+// Slots appear on their own when the patient's text says they apply, in the
+// order a sign-out is actually spoken: exam, drains, then neuro, then systems.
+function slotText(r){
+  return [r&&r.raw,r&&r.prob,r&&r.loc,r&&r.morningNotes,r&&r.daytimeNotes,r&&r.exam,
+    previousDayNotesText(r||{})].concat(sxAll(r||{}).map(x=>x.t)).filter(Boolean).join(" ");
+}
+function slotCondKeys(r){return sxConditions(r).map(c=>c.k)}
+function slotAnyCond(r,keys){const k=slotCondKeys(r);return keys.some(x=>k.indexOf(x)>=0)}
+function slotIsCranial(r){
+  return slotAnyCond(r,["tbi","asah","ich","sdh","evd","shunt","pocrani","tumor","vascular","ssi"])
+    ||/\bcrani|\bsah\b|\bich\b|\bsdh\b|\bedh\b|\bevd\b|shunt|hydroceph|tumou?r|aneurysm/i.test(slotText(r));
+}
+function slotIsSpine(r){
+  return slotAnyCond(r,["spinetrauma","pospine","tether"])
+    ||/\bspine\b|fusion|lami|discectomy|acdf|tlif|plif|corpectomy|tether|burst|odontoid/i.test(slotText(r));
+}
+const SO_SLOTS=[
+ {k:"exam",l:"Exam",order:10,group:"",always:true,
+  fields:[["cur","BLE 5/5, no drift · vs baseline"]],
+  fmt:v=>v.cur?v.cur:""},
+ {k:"drain",l:"Drain / EVD",order:20,group:"",
+  re:/\bevd\b|ventriculostom|lumbar drain|\bld\b|\bjp\b|blake|hemovac|\bseps\b|\bdrain\b|subgaleal/i,
+  fields:[["goal","EVD at 0"],["out24","254"],["shift","60"]],
+  fmt:v=>{
+    if(!v.goal&&!v.out24&&!v.shift)return "";
+    const bits=[v.goal||"Drain"];
+    if(v.out24)bits.push("output "+v.out24+" (24h)");
+    if(v.shift)bits.push(v.shift+" this shift");
+    return bits.join(", ");
+  }},
+ // ---- neuro block, in the order it is spoken ----
+ {k:"ac",l:"Anticoagulation",order:30,group:"Neuro",
+  re:/warfarin|coumadin|eliquis|apixaban|xarelto|rivaroxaban|edoxaban|pradaxa|dabigatran|heparin|lovenox|enoxaparin|plavix|clopidogrel|brilinta|ticagrelor|aspirin|\basa\b|\bdapt\b|\bdoac\b|anticoag|antiplatelet|dvt ppx/i,
+  fields:[["goal","held / restart 14d from stable scan"],["cur","apixaban, last dose 8/20"]],
+  fmt:v=>v.goal||v.cur?[v.cur,v.goal].filter(Boolean).join(" — "):""},
+ {k:"na",l:"Sodium",order:40,group:"Neuro",when:slotIsCranial,
+  fields:[["goal","eunatremia 135-145"],["cur","142"]],
+  fmt:v=>{
+    if(!v.goal&&!v.cur)return "";
+    const g=v.goal?("Goal "+v.goal):"Na";
+    return v.cur?(g+", currently "+v.cur):g;
+  }},
+ {k:"asm",l:"Seizure meds",order:50,group:"Neuro",
+  re:/keppra|levetiracetam|dilantin|phenytoin|vimpat|lacosamide|depakote|valproate|\basm\b|\baed\b|seizure|epilep|\bceeg\b|\bltm\b/i,
+  fields:[["goal","Keppra 500 BID x7d"],["cur","d5/7, no events"]],
+  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ {k:"bp",l:"Blood pressure",order:60,group:"Neuro",when:r=>slotIsCranial(r)||/\bsbp\b|\bmap\b|cardene|nicardipine|labetalol|pressor|norepi|hypertens/i.test(slotText(r)),
+  fields:[["goal","SBP <160"],["cur","requiring cardene"]],
+  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ // ---- other systems ----
+ {k:"bowel",l:"Bowel",order:70,group:"Systems",when:slotIsSpine,
+  fields:[["goal","regimen: senna/colace"],["cur","last BM 10/10"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"gu",l:"GU / voiding",order:80,group:"Systems",
+  re:/foley|\bcic\b|void|retention|\btov\b|\bpvr\b|urolog|neurogenic bladder/i,
+  fields:[["goal","Foley out, trial of void"],["cur","voiding, PVR 60"]],
+  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ {k:"id",l:"ID",order:90,group:"Systems",
+  re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
+  fields:[["goal","vanc/ctx d3/14"],["cur","afebrile, cx NGTD"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"resp",l:"Resp / airway",order:100,group:"Systems",
+  re:/intubat|extubat|\bett\b|vent\b|trach|\bpeep\b|fio2|\bsbt\b|oxygen|\bbipap\b/i,
+  fields:[["goal","SBT in AM"],["cur","AC/VC, PEEP 5, FiO2 40%"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"endo",l:"Endo / glucose",order:110,group:"Systems",
+  re:/\bdi\b|diabetes insipidus|siadh|ddavp|cortisol|steroid|dex\b|insulin|glucose|\bissi?\b/i,
+  fields:[["goal","glucose 110-160, dex taper"],["cur","on ISS"]],
+  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ {k:"dispo",l:"Dispo",order:120,group:"Systems",
+  re:/dispo|discharge|rehab|\bsnf\b|placement|\bpt\/ot\b|home with|barrier/i,
+  fields:[["goal","home once voiding + PT cleared"],["cur","awaiting PT"]],
+  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")}
+];
+function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||null}
+function slotAuto(r){
+  const txt=slotText(r);
+  return SO_SLOTS.filter(s=>{
+    if(s.always)return true;
+    if(s.when&&s.when(r))return true;
+    return !!(s.re&&s.re.test(txt));
+  }).map(s=>s.k);
+}
+function slotActiveKeys(r){
+  const off=(r&&r.slotsOff)||{},on=(r&&r.slotsOn)||{};
+  const keys=slotAuto(r).filter(k=>!off[k]);
+  Object.keys(on).forEach(k=>{if(on[k]&&keys.indexOf(k)<0&&slotDef(k))keys.push(k)});
+  // a slot you have already filled stays, whatever the detectors now say
+  const vals=(r&&r.slots)||{};
+  Object.keys(vals).forEach(k=>{
+    if(off[k]||keys.indexOf(k)>=0||!slotDef(k))return;
+    if(slotDef(k).fields.some(f=>String((vals[k]||{})[f[0]]||"").trim()))keys.push(k);
+  });
+  return keys.sort((a,b)=>slotDef(a).order-slotDef(b).order);
+}
+function slotVal(r,k,f){return (((r&&r.slots)||{})[k]||{})[f]||""}
+function slotSet(id,k,f,v){
+  const r=findAny(id);if(!r)return;
+  r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
+  if(String(v||"").trim())r.slots[k][f]=v;else delete r.slots[k][f];
+  r.slotAt=r.slotAt||{};r.slotAt[k+"."+f]=sxNow();
+  stampF(r,"slots");
+  r.updatedAt=Date.now();autosave();
+}
+function slotLine(r,k){
+  const d=slotDef(k);if(!d)return "";
+  const vals={};d.fields.forEach(f=>vals[f[0]]=slotVal(r,k,f[0]));
+  const body=d.fmt(vals);
+  return body?(d.k==="exam"?body:(d.l+": "+body)):"";
+}
+function slotLines(r){
+  return slotActiveKeys(r).map(k=>({k:k,group:slotDef(k).group,text:slotLine(r,k)}))
+    .filter(x=>x.text);
+}
+function slotToggle(id,k){
+  const r=findAny(id);if(!r)return;
+  const on=slotActiveKeys(r).indexOf(k)>=0;
+  r.slotsOff=r.slotsOff||{};r.slotsOn=r.slotsOn||{};
+  if(on){r.slotsOff[k]=true;delete r.slotsOn[k]}
+  else{delete r.slotsOff[k];r.slotsOn[k]=true}
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  const d=slotDef(k);
+  showToast((on?"Removed ":"Added ")+(d?d.l:k));
+}
+function slotAddFromSelect(id,el){
+  const k=el&&el.value;if(!k)return;
+  el.value="";slotToggle(id,k);
+}
+// ---------- slot UI: one row per parameter, goal then current ----------
+function slotRowHtml(r,k){
+  const d=slotDef(k);if(!d)return "";
+  const f=d.fields;
+  const inp=(fk,ph)=>'<input class="slotin" id="sl_'+r.id+'_'+k+'_'+fk+'" value="'+esc(slotVal(r,k,fk))+'" '+
+    'placeholder="'+esc(ph)+'" onclick="event.stopPropagation()" '+
+    'oninput="slotSet(\''+r.id+'\',\''+k+'\',\''+fk+'\',this.value)">';
+  return '<div class="slotrow" data-slot="'+k+'">'+
+    '<em title="'+esc(d.l)+'">'+esc(d.l)+'</em>'+
+    '<div class="slotfields'+(f.length>2?" three":"")+'">'+f.map(x=>inp(x[0],x[1])).join("")+'</div>'+
+    '<button type="button" class="slotx" title="Not relevant for this patient" '+
+      'onclick="event.stopPropagation();slotToggle(\''+r.id+'\',\''+k+'\')">×</button>'+
+  '</div>';
+}
+function slotBoardHtml(r){
+  const keys=slotActiveKeys(r);
+  const rest=SO_SLOTS.filter(s=>keys.indexOf(s.k)<0);
+  let html='<div class="slotboard">',group=null;
+  keys.forEach(k=>{
+    const g=slotDef(k).group;
+    if(g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
+    html+=slotRowHtml(r,k);
+  });
+  html+='<div class="slotadd">'+
+    (rest.length?'<select onclick="event.stopPropagation()" onchange="slotAddFromSelect(\''+r.id+'\',this)">'+
+      '<option value="">＋ add a parameter…</option>'+
+      rest.map(s=>'<option value="'+s.k+'">'+esc(s.l)+'</option>').join("")+'</select>':"")+
+    '<button type="button" class="slotseed" title="Pull goals and values out of the sign-out notes" '+
+      'onclick="event.stopPropagation();slotSeedFromNotes(\''+r.id+'\')">⤓ From notes</button>'+
+  '</div></div>';
+  return html;
+}
+// ---- seed slots from what was written in the morning notes ----
+const SLOT_SEED=[
+ {k:"na",f:"cur",re:/\bna\s*(?:of|=|:)?\s*(1[0-6]\d)\b/i},
+ {k:"na",f:"goal",re:/\b(eunatremia|euna\b|goal na[^,.;]*)/i},
+ {k:"bp",f:"goal",re:/\b(sbp\s*[<>]\s*\d{2,3}|map\s*[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3})/i},
+ {k:"bp",f:"cur",re:/\b(cardene|nicardipine|labetalol|norepi|pressors?)\b/i},
+ {k:"asm",f:"goal",re:/\b(keppra[^,.;]*|vimpat[^,.;]*|dilantin[^,.;]*|depakote[^,.;]*)/i},
+ {k:"ac",f:"cur",re:/\b(aspirin[^,.;]*|asa\s*\d+|eliquis|apixaban|plavix|heparin|lovenox|coumadin|warfarin)\b/i},
+ {k:"drain",f:"goal",re:/\b(evd\s*(?:at|@)\s*[-\d]+|lumbar drain\s*(?:at|@)\s*[-\d]+)/i},
+ {k:"drain",f:"out24",re:/output\s*(\d{1,4})/i},
+ {k:"id",f:"goal",re:/\b(vanc[^,.;]*|ceftriaxone[^,.;]*|cefepime[^,.;]*|zosyn[^,.;]*)/i},
+ {k:"gu",f:"goal",re:/\b(foley[^,.;]*|cic[^,.;]*|trial of void)/i},
+ {k:"dispo",f:"goal",re:/\b(home [^,.;]*|rehab[^,.;]*|discharge [^,.;]*)/i}
+];
+function slotSeedFromNotes(id){
+  const r=findAny(id);if(!r)return;
+  const txt=[r.morningNotes,r.daytimeNotes,previousDayNotesText(r)].filter(Boolean).join(". ");
+  if(!txt.trim()){showToast("No sign-out notes to read yet");return}
+  const before=JSON.parse(JSON.stringify(r.slots||{}));
+  let n=0;
+  SLOT_SEED.forEach(seed=>{
+    if(slotVal(r,seed.k,seed.f))return;             // never overwrite what you typed
+    const m=txt.match(seed.re);
+    if(!m)return;
+    const v=(m[1]||m[0]).trim();
+    if(!v)return;
+    r.slots=r.slots||{};r.slots[seed.k]=r.slots[seed.k]||{};
+    r.slots[seed.k][seed.f]=v;
+    r.slotsOff=r.slotsOff||{};delete r.slotsOff[seed.k];
+    r.slotsOn=r.slotsOn||{};r.slotsOn[seed.k]=true;
+    n++;
+  });
+  // anything in the notes that reads as a task becomes an open loop
+  let loops=0;
+  const pieces=[];
+  String(txt).split(/[.;\n]+/).forEach(sent=>{
+    const t=sent.trim();if(!t)return;
+    // a long comma-chained note is a list, not a single task
+    if(t.length>60&&t.indexOf(",")>=0)t.split(/\s*,\s*/).forEach(p=>pieces.push(p.trim()));
+    else pieces.push(t);
+  });
+  pieces.forEach(t=>{
+    if(!t||t.length<4)return;
+    if(sxGuessRole(t,false)!=="loop")return;
+    if(sxAll(r).some(x=>x.t.toLowerCase()===t.toLowerCase()))return;
+    sxAdd(r.id,t);loops++;
+  });
+  stampF(r,"slots");r.updatedAt=Date.now();renderNccu();flushAutosave();
+  if(!n&&!loops){showToast("Nothing recognised in the notes yet");return}
+  showToast("Filled "+n+" field"+(n===1?"":"s")+(loops?" + "+loops+" to-do"+(loops===1?"":"s"):""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.slots=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
 function sxAssemble(r){
   const lines=[];
   const ctx=sxByRole(r,"context").map(x=>sxClause(x.t)).join("; ");
@@ -9549,6 +9786,8 @@ function sxAssemble(r){
   lines.push({cls:"head",text:head});
   const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
   exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
+  // slots carry the goal → current parameters, in spoken order
+  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",text:sxPeriod(l.text)})});
   sxManagementThreads(r,exams).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
@@ -9954,7 +10193,7 @@ function nccuCardHtml(r){
   const dx=roundPrimaryDxTag(r);
   const body=compact
     ? nccuCompactTodoHtml(r)
-    : (sxCardHtml(r)+sxPreviewHtml(r)+nccuNoteHtml(r));
+    : (slotBoardHtml(r)+sxCardHtml(r)+sxPreviewHtml(r)+nccuNoteHtml(r));
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
@@ -11169,7 +11408,8 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
-  "morningNotes","daytimeNotes","previousDayNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay"];
+  "morningNotes","daytimeNotes","previousDayNotes","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","soSnap","soSnapDay",
+  "slotsOn","slotsOff"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
@@ -11191,6 +11431,27 @@ function mergeFields(primary,secondary){
       if(k==="exam"&&secondary.examAt)primary.examAt=secondary.examAt;
     }
   });
+  // slots merge field by field on their own stamps, like the template below
+  if(secondary.slots){
+    primary.slots=primary.slots||{};
+    primary.slotAt=Object.assign({},secondary.slotAt||{},primary.slotAt||{});
+    Object.keys(secondary.slots).forEach(k=>{
+      const sv=secondary.slots[k]||{};
+      primary.slots[k]=primary.slots[k]||{};
+      Object.keys(sv).forEach(f=>{
+        const val=sv[f];
+        if(val===undefined||val===null||val==="")return;
+        const key=k+"."+f;
+        const ps=(primary.slotAt&&primary.slotAt[key])||primary.updatedAt||0;
+        const ss=(secondary.slotAt&&secondary.slotAt[key])||secondary.updatedAt||0;
+        const pHas=primary.slots[k][f]!==undefined&&primary.slots[k][f]!==null&&primary.slots[k][f]!=="";
+        if(!pHas||ss>ps){
+          primary.slots[k][f]=val;
+          if(ss){primary.slotAt=primary.slotAt||{};primary.slotAt[key]=ss}
+        }
+      });
+    });
+  }
   // the sign-out template object merges key by key on its own stamps
   if(secondary.so){
     primary.so=primary.so||{};
