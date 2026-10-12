@@ -1,0 +1,35 @@
+/* Run with the JavaScriptCore harness supplying the application source. */
+function fn(name){const a=source.indexOf('function '+name+'('),line=source.slice(a,source.indexOf('\n',a));return line.endsWith('}')?line:source.slice(a,source.indexOf('\n}',a)+2)}
+const result=new Function(`
+let nccuCompact=true;const nccuSessionViews=new Map();let patient={id:'p',nccuView:'full'};
+const findAny=()=>patient,renderNccu=()=>{};
+const slotActiveKeys=r=>r.keys||[],slotDef=k=>({fields:k==='exam'?[['cur']]:[['goal'],['out24'],['shift']]});
+${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVal'].map(fn).join('\n')}
+const assert=(x,m)=>{if(!x)throw new Error(m)};
+assert(nccuIsCompact(patient),'New session did not start compact');
+toggleOneNccuCompact('p');assert(!nccuIsCompact(patient),'Card did not expand');
+patient={id:'p',nccuView:'compact'};assert(!nccuIsCompact(patient),'Remote snapshot collapsed expanded card');
+setNccuCompact(true);assert(nccuIsCompact(patient),'Compact all did not compact');
+setNccuCompact(false);assert(!nccuIsCompact(patient),'Expand all did not expand');
+toggleOneNccuCompact('p');assert(nccuIsCompact(patient),'Per-card Compact failed');
+const r={keys:['exam','drain'],exam:'AOx3',slots:{drain:{goal:'EVD at 10',out24:'100'}}};
+assert(!nccuReady(r),'Missing shift output was marked ready');
+r.slots.drain.shift='20';assert(nccuReady(r),'All filled boxes did not become ready');
+r.slots.drain.goal='  ';assert(!nccuReady(r),'Whitespace was counted as filled');
+return 'SO readiness / session view checks PASS';
+`)();
+report(result);
+const routing=new Function(`
+let writes=[];
+const slotVal=(r,k,f)=>((r.slots||{})[k]||{})[f]||'';
+const slotUpdate=(r,k,f,v)=>{r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};r.slots[k][f]=v;writes.push([k,f,v])};
+const SLOT_SEED=[],stampF=()=>{},sxNow=()=>1;
+${['soSlotMapping','syncTemplateSlots','routeDaytimeUpdate'].map(fn).join('\n')}
+const r={morningNotes:'original baseline'};
+routeDaytimeUpdate(r,'Concern for SIADH');
+if(r.slots.sodiumStudies.concern!=='Concern for SIADH'||r.slots.sodiumStudies.urineOsm!==undefined)throw new Error('SIADH update invented results');
+routeDaytimeUpdate(r,'Urine osm 650, urine sodium 72, serum osm 270');
+if(r.slots.sodiumStudies.urineOsm!=='650'||r.slots.sodiumStudies.urineNa!=='72'||r.slots.sodiumStudies.serumOsm!=='270'||r.morningNotes!=='original baseline')throw new Error('Urine studies were not mapped or baseline was changed');
+syncTemplateSlots(r,'BP goal','SBP <160');if(r.slots.bp.goal!=='SBP <160')throw new Error('Template did not populate corresponding board parameter');
+return 'Template mapping / daytime sodium routing checks PASS';
+`)();report(routing);
