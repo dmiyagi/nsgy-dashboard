@@ -886,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.249 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.250 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -4052,12 +4052,12 @@ function boardSort(a,b){
   }
   if(boardSortMode==="room"){
     const ar=boardRoomKey(a),br=boardRoomKey(b);
-    const c=String(ar).localeCompare(String(br),undefined,{numeric:true});
+    const c=compareRoomText(ar,br);
     return c||boardLast3Key(a).localeCompare(boardLast3Key(b))||sortCs(a,b);
   }
   if(boardSortMode==="last3"){
     const c=boardLast3Key(a).localeCompare(boardLast3Key(b));
-    return c||String(boardRoomKey(a)).localeCompare(String(boardRoomKey(b)),undefined,{numeric:true})||sortCs(a,b);
+    return c||compareRoomText(boardRoomKey(a),boardRoomKey(b))||sortCs(a,b);
   }
   return sortCs(a,b);
 }
@@ -5697,6 +5697,17 @@ function sortHandoffNotes(kind){
 function patientHandoffNotesSave(id,kind,el){
   const r=(S.rounds||[]).find(x=>x.id===id);if(!r)return;
   const key=handoffNotesKey(kind);if(r[key]===el.value&&!(kind==="previous"&&r.note))return;
+  // the first time a new morning baseline is typed today, yesterday rolls down
+  if(kind==="morning"&&r.soDayKey!==todayStr()&&!String(r.morningNotes||"").trim()){
+    r.soDayKey=todayStr();stampF(r,"soDayKey");   // first baseline of this card: nothing to roll
+  }
+  else if(kind==="morning"&&r.soDayKey!==todayStr()){
+    const before=soRollDay(r);
+    showToast("New day — yesterday's sign-out moved to Previous-day notes",()=>{
+      const rr=(S.rounds||[]).find(x=>x.id===id);if(!rr)return;
+      soRestoreDay(rr,before);renderRounds();renderNccu();flushAutosave();
+    },"Undo");
+  }
   r[key]=el.value;stampF(r,key);
   if(kind==="previous"&&r.note){r.note="";stampF(r,"note")}
   touch(r);autosave();
@@ -5704,7 +5715,73 @@ function patientHandoffNotesSave(id,kind,el){
 function patientHandoffNotesSaveNow(id,button){
   const area=button&&button.closest(".handoffnotes");if(!area)return;
   area.querySelectorAll("textarea[data-note-kind]").forEach(el=>patientHandoffNotesSave(id,el.dataset.noteKind,el));
-  flushAutosave();showToast("Sign-out notes saved on this device");
+  const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);
+  const n=r?soRefreshFromBaseline(r):0;
+  if(n)renderNccu();
+  flushAutosave();
+  showToast("Sign-out notes saved"+(n?" · "+n+" board value"+(n>1?"s":"")+" updated from the baseline":""));
+}
+// ---------- a new morning baseline starts a new sign-out day ----------
+// Yesterday's baseline and daytime updates move down into Previous-day notes,
+// and the board's values stay exactly where they were: a parameter the new
+// baseline does not mention is still true, so it keeps yesterday's value and
+// only the comparator ("was ___") is cleared.
+function soRollDay(r){
+  if(!r)return null;
+  const before={morningNotes:r.morningNotes,daytimeNotes:r.daytimeNotes,previousDayNotes:r.previousDayNotes,
+    note:r.note,soDayKey:r.soDayKey,slotPrev:r.slotPrev?JSON.parse(JSON.stringify(r.slotPrev)):undefined,
+    soSnap:r.soSnap?JSON.parse(JSON.stringify(r.soSnap)):undefined,soSnapDay:r.soSnapDay};
+  const carried=[String(r.morningNotes||"").trim(),String(r.daytimeNotes||"").trim()].filter(Boolean).join("\n\n");
+  if(carried&&carried!==String(r.previousDayNotes||"").trim()){r.previousDayNotes=carried;stampF(r,"previousDayNotes")}
+  if(r.note){r.note="";stampF(r,"note")}                      // folded into previous-day above
+  if(String(r.daytimeNotes||"").trim()){r.daytimeNotes="";stampF(r,"daytimeNotes")}
+  r.slotPrev={};stampF(r,"slotPrev");                         // yesterday's "was ___" is spent
+  r.soSnap={};r.soSnapDay=todayStr();                         // Δ tracking restarts this morning
+  r.soDayKey=todayStr();stampF(r,"soDayKey");
+  r.updatedAt=Date.now();
+  return before;
+}
+function soRestoreDay(r,before){
+  if(!r||!before)return;
+  ["morningNotes","daytimeNotes","previousDayNotes","note","soDayKey","slotPrev"].forEach(k=>{
+    if(before[k]===undefined)delete r[k];else r[k]=before[k];
+    stampF(r,k);
+  });
+  if(before.soSnap===undefined)delete r.soSnap;else r.soSnap=before.soSnap;
+  if(before.soSnapDay===undefined)delete r.soSnapDay;else r.soSnapDay=before.soSnapDay;
+  r.updatedAt=Date.now();
+}
+// update only the parameters the new baseline actually speaks to
+function soRefreshFromBaseline(r){
+  const txt=String((r&&r.morningNotes)||"");
+  if(!txt.trim())return 0;
+  let n=0;
+  SLOT_SEED.forEach(seed=>{
+    const m=txt.match(seed.re);if(!m)return;
+    const v=String(m[1]||m[0]).trim();if(!v)return;
+    if(slotVal(r,seed.k,seed.f)===v)return;
+    slotUpdate(r,seed.k,seed.f,v);n++;
+  });
+  if(n)r.updatedAt=Date.now();
+  return n;
+}
+// run when you leave the morning box, or tap Save notes
+function patientHandoffNotesRefresh(id,el){
+  const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!r)return;
+  if(el)patientHandoffNotesSave(id,"morning",el);
+  const n=soRefreshFromBaseline(r);
+  if(!n)return;
+  autosave();renderNccu();
+  showToast("Updated "+n+" board value"+(n>1?"s":"")+" from the baseline; the rest kept yesterday's");
+}
+function soRollDayManual(id){
+  const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!r)return;
+  const before=soRollDay(r);
+  renderRounds();renderNccu();flushAutosave();
+  showToast("Rolled yesterday's sign-out down to Previous-day notes",()=>{
+    const rr=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!rr)return;
+    soRestoreDay(rr,before);renderRounds();renderNccu();flushAutosave();
+  },"Undo");
 }
 function previousDayNotesText(r){
   const previous=String(r.previousDayNotes||""),legacy=String(r.note||"");
@@ -5714,9 +5791,11 @@ function patientHandoffNotesHtml(r){
   return '<div class="handoffnotes" aria-label="Patient sign-out notes"><h3>Sign-out notes</h3>'+
     [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
       const key=handoffNotesKey(kind),text=kind==="previous"?previousDayNotesText(r):r[key]||"";
-      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)">'+esc(text)+'</textarea>'+ (kind==="daytime"?(r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
+      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)"'+(kind==="morning"?' onblur="patientHandoffNotesRefresh(\''+r.id+'\',this)"':"")+'>'+esc(text)+'</textarea>'+ (kind==="daytime"?(r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
        (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':""):"")+'</div>';
-    }).join("")+'<div class="qbtns"><button type="button" onclick="event.stopPropagation();patientHandoffNotesSaveNow(\''+r.id+'\',this)">Save notes</button></div></div>';
+    }).join("")+'<div class="qbtns"><button type="button" onclick="event.stopPropagation();patientHandoffNotesSaveNow(\''+r.id+'\',this)">Save notes</button>'+
+      '<button type="button" title="Move this morning\'s notes down to Previous-day and start a clean day — board values are kept" '+
+      'onclick="event.stopPropagation();soRollDayManual(\''+r.id+'\')">↻ New day</button></div></div>';
 }
 
 function addFloorCardsFromRoundsInput(){
@@ -6735,11 +6814,25 @@ function roundExamPreset(id,kind){
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 let soCcOnly=false;
+function compareRoomText(left,right){
+  const a=String(left||"").trim().toUpperCase().match(/\d+|\D+/g)||[],b=String(right||"").trim().toUpperCase().match(/\d+|\D+/g)||[];
+  for(let i=0;i<Math.min(a.length,b.length);i++){
+    if(a[i]===b[i])continue;
+    if(/^\d+$/.test(a[i])&&/^\d+$/.test(b[i])){
+      const x=a[i].replace(/^0+/,"")||"0",y=b[i].replace(/^0+/,"")||"0";
+      const n=x.length-y.length||x.localeCompare(y);if(n)return n;
+    }else{const n=a[i].localeCompare(b[i]);if(n)return n}
+  }
+  return a.length-b.length;
+}
+function roomCardComparator(a,b){
+  const room=r=>r.label?roundRoom(r):(r.loc||roundRoom(r));
+  return compareRoomText(room(a),room(b))||initialsOf(a).localeCompare(initialsOf(b));
+}
 function teamRoomComparator(a,b){
   const team=roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
   if(team)return team;
-  const room=r=>roundRoom(r)||r.loc||r.label||"";
-  return String(room(a)).localeCompare(String(room(b)),undefined,{numeric:true})||initialsOf(a).localeCompare(initialsOf(b));
+  return roomCardComparator(a,b);
 }
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
@@ -6892,7 +6985,7 @@ function renderRounds(){
       ?(a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true})
       :(S.roundSort==="attg")
         ?(a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true})
-      :(a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true});
+      :roomCardComparator;
   const visible=S.rounds.filter(r=>!r.listMode||r.listMode==="rounds").filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp);
   const archived=visible.filter(roundArchived).slice().sort((a,b)=>(a.archiveUntil||0)-(b.archiveUntil||0));
   const list=visible.filter(r=>!roundArchived(r)).slice().sort(cmp);
@@ -6976,7 +7069,7 @@ function collapseChartChecks(compact){
   renderRounds();renderCal();save();
 }
 function renderRoundChartCheckList(){
-  const items=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).slice().sort((a,b)=>String(a.loc||"").localeCompare(String(b.loc||""),undefined,{numeric:true}));
+  const items=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).slice().sort(roomCardComparator);
   if(!items.length)return "";
   const k="chart-round-all";
   const all=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART");
@@ -10614,7 +10707,7 @@ function soComparator(){
   if(m==="initials")return (a,b)=>initialsOf(a).localeCompare(initialsOf(b));
   if(m==="team")return (a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
   if(m==="attg")return (a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true});
-  return (a,b)=>String(soLabel(a)).localeCompare(String(soLabel(b)),undefined,{numeric:true});
+  return roomCardComparator;
 }
 function nccuPatients(){
   const out=[],seen=new Set();
@@ -11927,7 +12020,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields","slotFieldsOff",
-  "soBoardOn","soExtra","soSuggestOff","soBoxOrder"];
+  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
