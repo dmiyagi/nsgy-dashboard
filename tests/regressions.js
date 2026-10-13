@@ -8,7 +8,7 @@ function extract(name) {
   if(firstLine.trim().endsWith('}'))return firstLine;
   return appSource.slice(start,appSource.indexOf('\n}',start)+2);
 }
-const names=['savedContentFingerprint','save','compactBoardForStartup','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','removePatientWork','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
+const names=['savedContentFingerprint','save','compactBoardForStartup','renderReadOnly','normalizeDeletionStamps','parseSyncDocument','mergeState','mergeWorkRecord','removePatientWork','workRemoved','mergeFields','mergeNamedList','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','chartNextDueMin','applyChartSeenSnooze','toggleAutoTimers','attachBoardTodo','boardVisible','spineMotorParts','examOptionKey','reconcileTaskList','examReplaceFinding','examIntactText','examStructFromText','examGivenFields','examVisibleFields','examDefaultFields','examAllFieldKeys','examFieldKeysForMode','examMotorKeys','examRecord','roundExamIntact','roundExamSave','renderExamCards','roundExamBuilderHtml','examPickHtml','examFieldWrap','examInputHtml','examSpineMotorHtml','spineExamWarningHtml','examCarryoverText','examPupilParts','examPupilHtml','isDressingRemoval','workflowSet','normalizeDressingChecklist','setChartAutoTimers','soExamFirst','autoTimersDisabled','roundAutoTimersOff','setRoundAutoTimers','handoffNotesRecord','handoffNotesKey','handoffNotesSave'];
 const optionConstants=(appSource.match(/const EX_[A-Z_]+_OPTS=[^\n]+/g)||[]).join("\n");
 const setup=`
 ${optionConstants}
@@ -170,6 +170,11 @@ const esc=t=>String(t||'');
 const workKey=t=>t.trim().toLowerCase(),wasDone=(r,t)=>false;
 const stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()},touch=r=>{r.updatedAt=Date.now()};
 const syncRoundTodosToBoard=(r,lines)=>boardTasks.push(...lines),renderRounds=()=>{},save=()=>{},autosave=()=>{},showToast=()=>{};
+const todayStr=()=>'2026-10-12',sxNow=()=>Date.now(),renderNccu=()=>{},findAny=id=>S.rounds.find(r=>r.id===id)||null;
+let soNotesBatch=false;const fieldStamp=(r,k)=>(r.fAt&&r.fAt[k])||r.updatedAt||0;
+const SLOT_SEED=[{k:'drain',f:'goal',re:/\\b(evd\\s*(?:at|@)\\s*[-\\d]+)/i}];
+const slotVal=(r,k,f)=>((r.slots||{})[k]||{})[f]||'';
+const slotUpdate=(r,k,f,v)=>{r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};r.slots[k][f]=v};
 `;
 const handoffChecks=`
 S.rounds[0].collapsed=false;sortHandoffNotes('morning');sortHandoffNotes('daytime');
@@ -194,7 +199,7 @@ patientHandoffNotesSaveNow('existing',{closest:()=>({querySelectorAll:()=>noteIn
 if(explicitWrites!==1||patient.daytimeNotes!=='Afternoon explicit'||patient.morningNotes!=='Morning explicit'||patient.previousDayNotes!=='Previous explicit')throw new Error('Explicit save did not persist all three patient note areas');
 return 'Handoff sorting checks PASS';
 `;
-const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','soRollDay','soRestoreDay','soRefreshFromBaseline','patientHandoffNotesRefresh','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 
@@ -242,7 +247,7 @@ if(typeof console!=='undefined')console.log(reliabilityResult);
 if(typeof report==='function')report(reliabilityResult);
 
 // Exercise the actual GET/merge/PATCH path with two saved device snapshots.
-const syncNames=['doSync','preserveLocalCardView','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','workRemoved','mergeFields','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];
+const syncNames=['doSync','preserveLocalCardView','parseSyncDocument','normalizeDeletionStamps','mergeState','mergeWorkRecord','workRemoved','mergeFields','mergeNamedList','fieldStamp','mergeWorkArray','mergeDoneList','mergeSxArray','mergeRoundCheckState','syncDoc'];
 const syncSetup=`
 const assert=(v,m)=>{if(!v)throw new Error(m)};
 const workKey=t=>String(t||'').trim().toLowerCase(),wasDone=(o,t)=>(o.doneKeys||[]).includes(workKey(t));

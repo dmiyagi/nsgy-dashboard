@@ -4,7 +4,7 @@ const result=new Function(`
 let nccuCompact=true;const nccuSessionViews=new Map();let patient={id:'p',nccuView:'full'};
 const findAny=()=>patient,renderNccu=()=>{};
 const slotActiveKeys=r=>r.keys||[],slotDef=k=>({fields:k==='exam'?[['cur']]:[['goal'],['out24'],['shift']]});
-${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVisibleFields','slotVal'].map(fn).join('\n')}
+${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVisibleFields','slotDefFields','slotCustom','slotVal'].map(fn).join('\n')}
 const assert=(x,m)=>{if(!x)throw new Error(m)};
 assert(nccuIsCompact(patient),'New session did not start compact');
 toggleOneNccuCompact('p');assert(!nccuIsCompact(patient),'Card did not expand');
