@@ -51,3 +51,12 @@ const consentResult=new Function(`${['consentCueText','hasMissingConsentCue'].ma
 for(const prob of ['OR 10/13 (consented)','OR 10/13 [consented]','OR 10/13','OR tomorrow','consented'])if(hasMissingConsentCue({prob}))throw new Error('Consent suggestion appeared without explicit missing consent');
 for(const prob of ['OR 10/13 (not consented)','OR tomorrow (not yet consented)','NOT CONSENTED'])if(!hasMissingConsentCue({prob}))throw new Error('Explicit missing consent was not suggested');
 return 'Explicit not-consented suggestion checks PASS';`)();report(consentResult);
+
+const evdResult=new Function(`
+const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,na:40}[k]});
+${['slotOrderIndex','slotSortedKeys','slotVal'].map(fn).join('\n')}
+const r={slotOrder:['exam','icp','drain','na'],slots:{drain:{goal:'EVD at 0',out24:'235',shift:'20'}}};
+const order=slotSortedKeys(r,['exam','icp','drain','na','drainOutput']);
+if(order.join(',')!=='exam,drain,icp,drainOutput,na')throw new Error('EVD, ICP and output order is incorrect');
+if(slotVal(r,'drainOutput','out24')!=='235'||slotVal(r,'drainOutput','shift')!=='20')throw new Error('Splitting output lost existing measurements');
+return 'EVD → ICP → output layout / saved values checks PASS';`)();report(evdResult);
