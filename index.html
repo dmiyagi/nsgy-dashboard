@@ -886,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.254 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.255 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3598,18 +3598,28 @@ function keepFocus(fn){return function(){
   }
 }}
 // background work (sync pulls, clock ticks) waits until the keyboard is down
-let _pendingRender=false;
+let _pendingRender=false,pendingRenderT=null;
+function deferPendingRender(){
+  clearTimeout(pendingRenderT);
+  // Wait out the tap guard, rather than waiting for the 15-second clock.
+  pendingRenderT=setTimeout(()=>{
+    pendingRenderT=null;
+    if(!_pendingRender||activeEdit())return;
+    renderAllSafe();
+  },Math.max(60,uiLockUntil-Date.now()+20));
+}
 function renderReadOnly(draw){
   const applying=syncApplying;syncApplying=true;
   try{draw();save()}finally{syncApplying=applying}
 }
 function renderAllSafe(){
-  if(uiBusy()){_pendingRender=true;return}
+  if(uiBusy()){_pendingRender=true;deferPendingRender();return}
+  clearTimeout(pendingRenderT);pendingRenderT=null;
   _pendingRender=false;renderReadOnly(()=>{renderAll();renderBlocks()});
 }
 document.addEventListener("focusout",()=>{
   flushAutosave();
-  setTimeout(()=>{if(_pendingRender&&!uiBusy())renderAllSafe()},60);
+  if(_pendingRender)deferPendingRender();
 });
 window.addEventListener("beforeunload",()=>{flushAutosave()});
 function touch(c){if(c)c.updatedAt=Date.now()}
@@ -12510,6 +12520,8 @@ async function doSync(auto){
     slotCustomScan(merged);                 // rows another device named arrive with it
     S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
+    // Show the fetched/merged cards before waiting for a possible upload.
+    renderAllSafe();
     const out=JSON.stringify(syncDoc());
     const remoteStr=JSON.stringify({consults:remote.consults||[],rounds:remote.rounds||[],formerWounds:remote.formerWounds||[],tomb:remote.tomb||{},day:remote.day,roundCycleAt:remote.roundCycleAt||0,round24:!!remote.round24,round24At:remote.round24At||0,boardAutoTimersOff:!!remote.boardAutoTimersOff,boardAutoTimersAt:remote.boardAutoTimersAt||0});
     const mergedStr=JSON.stringify({consults:merged.consults,rounds:merged.rounds,formerWounds:merged.formerWounds,tomb:merged.tomb,day:merged.day,roundCycleAt:merged.roundCycleAt,round24:merged.round24,round24At:merged.round24At,boardAutoTimersOff:!!merged.boardAutoTimersOff,boardAutoTimersAt:merged.boardAutoTimersAt||0});
@@ -13017,7 +13029,7 @@ document.getElementById("cap").addEventListener("keydown",e=>{if(e.key==="Enter"
 const bet=document.getElementById("bulkExportType");if(bet)bet.innerHTML=TYPE_SELECT_OPTS;
 compactBoardForStartup();
 renderAll();renderBlocks();
-boardClockTick(true);
+boardClockMinute=nowMin();
 lastSaved=JSON.stringify(S);localStorage.setItem(LS,lastSaved);
 syncApplying=false;
 attachSwipe("cards","consult");attachSwipe("rcards","round");attachSwipe("calcards","consult");attachSwipe("nccucards","nccu");
