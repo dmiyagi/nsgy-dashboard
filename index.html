@@ -886,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.250 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.251 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3469,6 +3469,7 @@ function normalizeDeletionStamps(doc){
 }
 function migrate(d){
   normalizeDeletionStamps(d);
+  slotCustomScan(d);                 // patient-named rows have to exist before anything renders
   d.round24=!!d.round24;
   d.round24At=d.round24At||0;
   d.boardAutoTimersOff=!!d.boardAutoTimersOff;
@@ -9325,12 +9326,16 @@ function sxAdd(id,text,role,sys){
   // "concern for SBO, made NPO" is a GI fact — put it in the GI parameter so it
   // reads under Systems instead of floating as a loose line
   if(!role&&(role2==="state"||role2==="delta")){
-    const slotK=SYS_SLOT[sys2];
+    // what the line says picks the row; the system tag only breaks ties. A row
+    // the patient does not have yet is brought out rather than overwriting an
+    // unrelated one.
+    const slotK=slotPickForText(r,t,sys2)||SYS_SLOT[sys2];
     const d=slotK?slotDef(slotK):null;
     if(d){
-      const was=slotVal(r,slotK,"cur");
+      const f=slotFieldForText(r,slotK,t);
+      const was=slotVal(r,slotK,f);
       if(was!==t){
-        slotUpdate(r,slotK,"cur",t);
+        slotUpdate(r,slotK,f,t);
         r.updatedAt=Date.now();
         return {role:role2,slot:slotK,slotLabel:d.l,t:t,was:was};
       }
@@ -9862,6 +9867,9 @@ const SO_SLOTS=[
   re:/foley|\bcic\b|void|retention|\btov\b|\bpvr\b|urolog|neurogenic bladder/i,
   fields:[["goal","Foley / voiding plan"],["cur","voiding status + PVR"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ {k:"heme",l:"Heme",order:85,group:"Systems",re:/\bheme\b|\bhb\b|hemoglobin|haemoglobin|\bplt\b|platelets?|\binr\b|coagulopathy|transfus/i,
+  fields:[["hbGoal","Hb goal"],["hb","Hb value"],["pltGoal","Plt goal"],["plt","Plt value"],["inrGoal","INR goal"],["inr","INR value"]],
+  fmt:v=>[["Hb",v.hbGoal,v.hb],["Plt",v.pltGoal,v.plt],["INR",v.inrGoal,v.inr]].filter(x=>x[1]||x[2]).map(([name,goal,value])=>name+": "+[goal?"goal "+goal:"",value?"current "+value:""].filter(Boolean).join(", ")).join("; ")},
  {k:"id",l:"ID",order:90,group:"Systems",
   re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
   fields:[["goal","antibiotic + day of course"],["tmax","Tmax"],["cur","cultures"]],
@@ -9881,33 +9889,33 @@ const SO_SLOTS=[
  // ---- rows that only appear when the sign-out template asks for them ----
  // These carry no detector of their own: a box switched on in the sign-out
  // editor is what puts them on the board (see SO_BOX_SLOTS).
- {k:"status",l:"POD / status",order:5,group:"",
+ {k:"status",l:"POD / status",order:5,group:"",pick:/\bpod\s*\d|post-?bleed|\bpbd\b|pre-?op|post-?trauma/i,
   fields:[["cur","POD / post-bleed day / pre-op status"]],fmt:v=>v.cur||""},
- {k:"neuroplan",l:"Neuro plan",order:29,group:"Neuro",
+ {k:"neuroplan",l:"Neuro plan",order:29,group:"Neuro",pick:/neuro ?checks?|q\d\s*h(?:r)?\s*checks?|escalation|call (?:for|me|house)/i,
   fields:[["goal","checks + escalation trigger"],["cur","current checks / events"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(" — ")},
- {k:"steroid",l:"Steroids",order:52,group:"Neuro",
+ {k:"steroid",l:"Steroids",order:52,group:"Neuro",pick:/dexamethasone|decadron|\bdex\b|solu-?medrol|hydrocort|prednisone|steroid/i,
   fields:[["goal","steroid + taper"],["cur","current dose / day of course"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"vasospasm",l:"Vasospasm / TCD",order:56,group:"Neuro",
+ {k:"vasospasm",l:"Vasospasm / TCD",order:56,group:"Neuro",pick:/vasospasm|\btcds?\b|velocit|nimodipine|triple-?h|angiogram/i,
   fields:[["goal","TCD / angio plan"],["cur","last velocities + exam"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"renal",l:"Renal",order:95,group:"Systems",
+ {k:"renal",l:"Renal",order:95,group:"Systems",pick:/\bcrrt\b|dialysis|\baki\b|creatinine|nephrolog|\besrd\b/i,
   fields:[["goal","renal plan / CRRT"],["cur","Cr + trend"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"skin",l:"Skin / wound",order:105,group:"Systems",
+ {k:"skin",l:"Skin / wound",order:105,group:"Systems",pick:/dressing|incision|staining|\bwound\b|dehisc|erythema|suture|staple|steri-?strip|decub|pressure (?:ulcer|injury)|sacral|skin breakdown|\bprs\b|plastics/i,
   fields:[["goal","wound care / turn plan"],["cur","site + stage"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"peds",l:"Peds / weight",order:112,group:"Systems",
+ {k:"peds",l:"Peds / weight",order:112,group:"Systems",pick:/\bkg\b|weight-?based|peds\b|pediatric/i,
   fields:[["cur","weight (kg)"],["goal","weight-based dosing"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"goc",l:"Goals of care",order:115,group:"Systems",
+ {k:"goc",l:"Goals of care",order:115,group:"Systems",pick:/goals? of care|\bdnr\b|\bdni\b|code status|comfort care|palliat|family meeting/i,
   fields:[["cur","code status"],["goal","family discussion / next step"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"family",l:"Family / collateral",order:117,group:"Systems",
+ {k:"family",l:"Family / collateral",order:117,group:"Systems",pick:/\bfamily\b|spouse|\bwife\b|husband|mother|father|daughter|\bson\b|collateral|\bhcp\b|next of kin/i,
   fields:[["cur","who to call"],["goal","what they have been told"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"trial",l:"Trial eligibility",order:118,group:"Systems",
+ {k:"trial",l:"Trial eligibility",order:118,group:"Systems",pick:/\btrial\b|enroll|consented? for|\breach\b|screen(?:ed|ing) for/i,
   fields:[["goal","trial + window"],["cur","screened / consented?"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")}
 ];
@@ -9997,7 +10005,110 @@ function routeDaytimeUpdate(r,text){
   }
   SLOT_SEED.forEach(seed=>{const m=text.match(seed.re);if(m)slotUpdate(r,seed.k,seed.f,(m[1]||m[0]).trim())});
 }
-function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||null}
+// ---------- rows you name yourself ----------
+// A patient can carry a parameter the standard board has no row for. The row
+// lives on the record; this registry is only so slotDef(k) stays a lookup.
+let SLOT_CUSTOM={};
+function slotCustomRow(d){
+  return {k:d.k,l:d.l,order:d.order||119,group:d.group||"Systems",custom:true,
+    fields:[["cur","what it is now"],["goal","plan / goal"]],
+    fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")};
+}
+function slotCustomRegister(r){
+  (r&&Array.isArray(r.slotRows)?r.slotRows:[]).forEach(d=>{if(d&&d.k&&d.l)SLOT_CUSTOM[d.k]=slotCustomRow(d)});
+}
+function slotCustomScan(st){
+  SLOT_CUSTOM={};
+  const S2=st||(typeof S!=="undefined"?S:null);if(!S2)return;
+  [].concat(S2.rounds||[],S2.consults||[],S2.formerWounds||[],S2.trash||[]).forEach(slotCustomRegister);
+}
+function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||SLOT_CUSTOM[k]||null}
+// name a new row and put it on this patient's board
+function slotAddCustomRow(r,name,group){
+  if(!r)return "";
+  const l=String(name||"").trim();if(!l)return "";
+  const existing=(r.slotRows||[]).find(d=>d.l.toLowerCase()===l.toLowerCase());
+  const k=existing?existing.k:("cx"+Math.random().toString(36).slice(2,7));
+  if(!existing){
+    r.slotRows=(r.slotRows||[]).concat([{k:k,l:l,group:group||"Systems",order:119}]);
+    stampF(r,"slotRows");
+  }
+  slotCustomRegister(r);
+  r.slotsOff=r.slotsOff||{};delete r.slotsOff[k];
+  r.slotsOn=r.slotsOn||{};r.slotsOn[k]=true;
+  stampF(r,"slotsOn");stampF(r,"slotsOff");
+  r.updatedAt=Date.now();
+  return k;
+}
+function slotAddCustomRowPrompt(id,text){
+  const r=findAny(id);if(!r)return;
+  const name=String(window.prompt("Name the new box — e.g. Wound / dressing, Ortho, Social","")||"").trim();
+  if(!name)return;
+  const k=slotAddCustomRow(r,name);
+  if(!k)return;
+  if(text)slotUpdate(r,k,slotFieldForText(r,k,text),text);
+  autosave();renderNccu();
+  showToast("Added "+name+" — use ↑↓ to move it where you read it",()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.slotRows=(rr.slotRows||[]).filter(d=>d.k!==k);stampF(rr,"slotRows");
+    if(rr.slots)delete rr.slots[k];
+    if(rr.slotsOn)delete rr.slotsOn[k];
+    slotCustomScan();rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+// ---------- which row (and which box in it) a written line belongs to ----------
+function slotPickForText(r,text,sys){
+  const t=String(text||"");if(!t.trim())return "";
+  const live=slotActiveKeys(r||{});
+  let best="",score=0;
+  const consider=(d,base)=>{
+    let sc=base;
+    if(live.indexOf(d.k)>=0)sc+=0.5;                       // a row already out wins ties
+    if(sys&&SYS_SLOT[sys]===d.k)sc+=1;                     // agrees with the system tag
+    if(sc>score||(sc===score&&best&&slotDef(best).order>d.order)){score=sc;best=d.k}
+  };
+  SO_SLOTS.forEach(d=>{
+    if(d.k==="exam")return;
+    if(d.pick&&d.pick.test(t))consider(d,2);
+    else if(d.re&&d.re.test(t))consider(d,1);
+  });
+  (r&&Array.isArray(r.slotRows)?r.slotRows:[]).forEach(d=>{
+    const re=new RegExp("\\b"+String(d.l).replace(/[.*+?^${}()|[\]\\]/g,"\\$&").split(/[\s/]+/)[0]+"\\b","i");
+    if(re.test(t))consider(slotCustomRow(d),2);
+  });
+  return score>=1?best:"";
+}
+// a plan reads differently from an observation, and neither should land on top
+// of the other: if both boxes are taken the line gets a box of its own
+function slotTextIsGoal(t){
+  // only the opening clause decides. "dressing with staining ... so will touch
+  // base with PRS" is a finding that happens to carry a plan, and belongs in
+  // the current box, not the goal box.
+  const head=String(t||"").split(/[,;]| so | but | and then /i)[0];
+  return /\b(?:plan|will|goal|target|keep|hold|restart|resume|start|stop|wean|taper|titrate|q\d|when|once|if|discuss|touch base|f\/?u|follow up|recheck|needs?|await)\b|[<>≥≤]/i.test(head);
+}
+function slotFieldForText(r,k,text){
+  const d=slotDef(k);if(!d)return "cur";
+  const names=slotVisibleFields(r,k).map(f=>f[0]);
+  const want=slotTextIsGoal(text)?"goal":"cur";
+  const free=f=>names.indexOf(f)>=0&&!String(slotVal(r,k,f)||"").trim();
+  const same=f=>names.indexOf(f)>=0&&String(slotVal(r,k,f)||"").trim()===String(text).trim();
+  if(same(want))return want;
+  if(free(want))return want;
+  const other=want==="goal"?"cur":"goal";
+  if(same(other))return other;
+  if(free(other))return other;
+  const spare=names.find(f=>!String(slotVal(r,k,f)||"").trim());
+  if(spare)return spare;
+  // every box in this row is spoken for — give the line its own, named for it
+  const word=(String(text).match(/[A-Za-z][A-Za-z-]{2,}/)||["note"])[0].toLowerCase();
+  const fk="x"+Math.random().toString(36).slice(2,7);
+  const kk=k==="drainOutput"?"drain":k;
+  r.slotFields=r.slotFields||{};
+  r.slotFields[kk]=slotCustom(r,kk).concat([{k:fk,l:word}]);
+  stampF(r,"slotFields");
+  return fk;
+}
 function slotAuto(r){
   const txt=slotText(r);
   return SO_SLOTS.filter(s=>{
@@ -10164,7 +10275,9 @@ function slotToggle(id,k){
 }
 function slotAddFromSelect(id,el){
   const k=el&&el.value;if(!k)return;
-  el.value="";slotToggle(id,k);
+  el.value="";
+  if(k==="__new"){slotAddCustomRowPrompt(id);return}
+  slotToggle(id,k);
 }
 // ---------- slot UI: one row per parameter, goal then current ----------
 function slotRowHtml(r,k,first,last){
@@ -10203,7 +10316,8 @@ function slotBoardHtml(r){
   html+='<div class="slotadd">'+slotRestoreFieldsHtml(r)+
     (rest.length?'<select onclick="event.stopPropagation()" onchange="slotAddFromSelect(\''+r.id+'\',this)">'+
       '<option value="">＋ add a parameter…</option>'+
-      rest.map(s=>'<option value="'+s.k+'">'+esc(s.l)+'</option>').join("")+'</select>':"")+
+      rest.map(s=>'<option value="'+s.k+'">'+esc(s.l)+'</option>').join("")+
+      '<option value="__new">＋ box with my own name…</option>'+'</select>':"")+
     '<button type="button" class="slotseed" title="Pull goals and values out of the sign-out notes" '+
       'onclick="event.stopPropagation();slotSeedFromNotes(\''+r.id+'\')">⤓ From notes</button>'+
     (Array.isArray(r.slotOrder)&&r.slotOrder.length?'<button type="button" class="slotseed" title="Back to the default order" '+
@@ -10381,34 +10495,44 @@ function sxSetSys(id,itemId,sys){
   },"Undo");
 }
 // push a captured line into the parameter box for its system
-function sxSlotFor(it){const k=SYS_SLOT[it&&it.sys];return k?slotDef(k):null}
+// what the line itself says comes first; the system tag is the fallback
+function sxSlotFor(r,it){
+  const k=slotPickForText(r,it&&it.t,it&&it.sys)||SYS_SLOT[it&&it.sys];
+  return k?slotDef(k):null;
+}
 function sxPushToSlot(id,itemId,slotK){
   const r=findAny(id);if(!r)return;
   const it=sxFind(r,itemId);if(!it)return;
-  const d=slotK?slotDef(slotK):sxSlotFor(it);
+  if(slotK==="__new"){slotAddCustomRowPrompt(id,it.t);return}
+  const d=slotK?slotDef(slotK):sxSlotFor(r,it);
   if(!d){showToast("Pick which box this belongs in");return}
-  const was=slotVal(r,d.k,"cur");
+  const f=slotFieldForText(r,d.k,it.t);
+  const was=slotVal(r,d.k,f);
   if(was===it.t){showToast("Already in "+d.l);return}
-  slotUpdate(r,d.k,"cur",it.t);
+  const fresh=slotActiveKeys(r).indexOf(d.k)<0;
+  slotUpdate(r,d.k,f,it.t);
   r.updatedAt=Date.now();renderNccu();flushAutosave();
-  showToast("→ "+d.l+(was?" (updated)":""),()=>{
+  showToast("→ "+d.l+(fresh?" (new row)":was?" (updated)":""),()=>{
     const rr=findAny(id);if(!rr)return;
-    if(rr.slots&&rr.slots[d.k]){if(was)rr.slots[d.k].cur=was;else delete rr.slots[d.k].cur}
-    if(rr.slotPrev)delete rr.slotPrev[d.k+".cur"];
+    if(rr.slots&&rr.slots[d.k]){if(was)rr.slots[d.k][f]=was;else delete rr.slots[d.k][f]}
+    if(rr.slotPrev)delete rr.slotPrev[d.k+"."+f];
+    if(fresh){rr.slotsOn=rr.slotsOn||{};delete rr.slotsOn[d.k]}
     rr.updatedAt=Date.now();renderNccu();flushAutosave();
   },"Undo");
 }
 function sxPushBtnHtml(r,it){
-  const d=sxSlotFor(it);
-  if(d)return '<button type="button" class="sxpush" title="Put this in the '+esc(d.l)+' box" '+
-    'onclick="event.stopPropagation();sxPushToSlot(\''+r.id+'\',\''+it.id+'\')">⤓</button>';
-  // no single destination — offer the rows this patient actually has
-  const keys=slotActiveKeys(r).filter(k=>k!=="exam");
-  if(!keys.length)return "";
+  const best=sxSlotFor(r,it);
+  const live=slotActiveKeys(r).filter(k=>k!=="exam"&&(!best||k!==best.k));
+  const rest=SO_SLOTS.filter(sl=>sl.k!=="exam"&&live.indexOf(sl.k)<0&&(!best||sl.k!==best.k));
+  const opt=(k,l)=>'<option value="'+k+'">'+esc(l)+'</option>';
   return '<select class="sxpushsel" title="Put this in a box" onclick="event.stopPropagation()" '+
     'onchange="const v=this.value;this.value=\'\';if(v)sxPushToSlot(\''+r.id+'\',\''+it.id+'\',v)">'+
     '<option value="">⤓</option>'+
-    keys.map(k=>'<option value="'+k+'">'+esc(slotDef(k).l)+'</option>').join("")+'</select>';
+    (best?opt(best.k,"→ "+best.l+(slotActiveKeys(r).indexOf(best.k)<0?" (new row)":"")):"")+
+    (live.length?'<optgroup label="On this board">'+live.map(k=>opt(k,slotDef(k).l)).join("")+'</optgroup>':"")+
+    (rest.length?'<optgroup label="Add a row">'+rest.map(sl=>opt(sl.k,sl.l)).join("")+'</optgroup>':"")+
+    '<optgroup label="New">'+opt("__new","＋ Box with my own name…")+'</optgroup>'+
+  '</select>';
 }
 function sxItemHtml(r,it){
   const stale=!it.derived&&it.day!==todayStr()&&it.keptOn!==todayStr();
@@ -12020,7 +12144,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields","slotFieldsOff",
-  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey"];
+  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
@@ -12236,6 +12360,7 @@ async function doSync(auto){
     const remoteSnapshot=JSON.parse(JSON.stringify(remote));
     const merged=mergeState(localHadChanges?S:{},remoteSnapshot);
     preserveLocalCardView(S,merged);
+    slotCustomScan(merged);                 // rows another device named arrive with it
     S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
     const out=JSON.stringify(syncDoc());
@@ -12324,6 +12449,7 @@ async function findAllSyncGists(){
 }
 function absorbRemote(remote){
   const m=mergeState(S,remote);
+  slotCustomScan(m);
   S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;S.round24=m.round24;S.round24At=m.round24At;S.boardAutoTimersOff=m.boardAutoTimersOff;S.boardAutoTimersAt=m.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
 }
 // if an earlier build ever made a second sync gist, pull its contents in rather
