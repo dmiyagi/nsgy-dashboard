@@ -886,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.248 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.249 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -10660,6 +10660,12 @@ function refreshNccuReady(id){
     badge.title=ready?'All sign-out boxes filled':'Fill every sign-out box to be ready';
   });
 }
+function saveSoCard(id){
+  if(!findAny(id))return;
+  flushAutosave();
+  if(hasSyncDirty())schedulePush(0);
+  showToast("Sign-out saved on this device");
+}
 function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuIsCompact(r);
@@ -10685,8 +10691,9 @@ function nccuCardHtml(r){
     (compact?'<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">Template fields</button></div>':"")+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
-    (compact?"":'<div class="cardbtns"><button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button>'+
-    '<button onclick="openSO(\''+r.id+'\')">Template fields</button></div>')+'</div>';
+    '<div class="cardbtns" style="display:flex;align-items:center">'+
+    (compact?"":'<button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button><button onclick="openSO(\''+r.id+'\')">Template fields</button>')+
+    '<button type="button" style="margin-left:auto" onpointerdown="event.preventDefault()" onclick="event.stopPropagation();saveSoCard(\''+r.id+'\')">Save</button></div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
 function nccuRemove(id){
