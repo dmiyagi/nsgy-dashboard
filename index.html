@@ -27,6 +27,8 @@ header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-f
 .apptitle{flex:1 1 0;min-width:0}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.noexam{cursor:pointer;color:var(--mut);border:1px solid var(--line)}
+.noexam.on{color:#68b4ff;border-color:#68b4ff;background:#153553}
 .buildmeta{font-size:10px;color:#7f8fa6;margin-top:2px;white-space:nowrap}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
 .gsearch{flex:1 1 220px;max-width:340px;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px}
@@ -886,7 +888,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.255 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.256 · 2026-10-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3656,7 +3658,7 @@ function sameBoardIdentityByLoc(a,b){
   }
   return aloc.toUpperCase()===bloc.toUpperCase();
 }
-function patientTag(c){const ab=patientLast3(c);return ab?'<span class="bg mod">'+esc(ab)+'</span>':""}
+function patientTag(c){const ab=patientLast3(c);return noExamBadge(c)+(ab?'<span class="bg mod">'+esc(ab)+'</span>':"")}
 function linkedCards(c){
   const gid=c&&c.linkGroupId;
   return (S.consults||[]).filter(x=>!x.closed&&x.id!==c.id&&((gid&&x.linkGroupId===gid)||(c.sourceId&&x.id===c.sourceId)||(x.sourceId&&x.sourceId===c.id)));
@@ -6914,13 +6916,25 @@ function roundCareBadges(r){
   return (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
+function noExamBadge(r){
+  return '<button type="button" class="bg noexam'+(r.noExamNow?' on':'')+'" aria-pressed="'+!!r.noExamNow+'" title="'+(r.noExamNow?'No exam needed now — tap to clear':'Mark: no need to see or examine now')+'" onclick="event.stopPropagation();toggleNoExamNow(\''+r.id+'\')">'+(r.noExamNow?'● No exam':'○ No exam')+'</button>';
+}
+function toggleNoExamNow(id){
+  const r=findAny(id);if(!r)return;
+  const linked=r.type==='CHART'&&r.roundId?findAny(r.roundId):r;
+  const on=!((linked||r).noExamNow),at=sxNow();
+  [r,linked,...(S.consults||[]).filter(c=>c.type==='CHART'&&c.roundId===(linked||r).id)].filter(Boolean).forEach(c=>{
+    c.noExamNow=on;c.fAt=c.fAt||{};c.fAt.noExamNow=at;c.updatedAt=at;
+  });
+  render();renderRounds();renderNccu();flushAutosave();
+}
 function roundIdentityBadges(r){
   const room=roundRoom(r),team=roundTeam(r),pt=roundPatient3(r),attg=roundAttg(r);
   return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+'">'+esc(room)+'</span>':"")+
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"")+
-    (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"");
+    (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"")+noExamBadge(r);
 }
 function chartCheckRoundProxy(c){
   const linked=chartCheckRound(c);
@@ -12261,7 +12275,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 }
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
-const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
+const MERGE_FIELDS=["noExamNow","exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields",
   "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows"];
