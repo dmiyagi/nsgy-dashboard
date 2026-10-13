@@ -886,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.251 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.252 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1647,6 +1647,7 @@ Lap approach to abdomen: look up SICU/TICU/Vascular/GS attending on call that da
   <div class="sheet presentsheet">
     <h2>▶︎ Sign-out — read straight down</h2>
     <p style="font-size:12px;color:var(--mut);margin-bottom:8px">Only filled fields appear, in sign-out order. Blank counts are shown but never read.</p>
+    <input id="presentSearch" type="search" placeholder="Search patient, room, team, or sign-out…" aria-label="Search sign-out presentation" oninput="renderPresent()" style="width:100%;margin-bottom:12px">
     <div class="presentbody" id="presentbody"></div>
     <div class="sheetbtns">
       <button class="btn sec" onclick="hidePresent()">Close</button>
@@ -8651,9 +8652,11 @@ function soClipboardText(r){
   return sxHasContent(r)?sxText(r):soSpeakText(r);
 }
 function soPresentPatients(){
-  return nccuPatients().filter(r=>sxHasContent(r)||soFilledPairs(r).length);
+  const q=String(document.getElementById("presentSearch")?.value||"").trim().toLowerCase();
+  return nccuPatients().filter(r=>(sxHasContent(r)||soFilledPairs(r).length)&&(!q||[soLabel(r),roundTeam(r),roundProblemText(r),sxText(r),soSpeakText(r)].join(" ").toLowerCase().includes(q)));
 }
 function openPresent(){
+  const search=document.getElementById("presentSearch");if(search)search.value="";
   const pts=soPresentPatients();
   if(!pts.length){showToast("Nothing filled in yet to present");return}
   pts.forEach(sxMarkRead);flushAutosave();
@@ -8672,11 +8675,11 @@ function renderPresent(){
   el.innerHTML=pts.map(r=>{
     const lines=sxHasContent(r)?sxAssemble(r):[{cls:"head",text:soLabel(r)}].concat(
       soFilledPairs(r).filter(p=>p[0]!=="One-liner").map(p=>({cls:"state",text:p[0]+": "+p[1]})));
-    const loops=sxByRole(r,"loop").filter(x=>!x.done).length;
+    const ready=nccuReady(r),team=roundTeam(r);
     return '<article class="pcard">'+
       lines.map(l=>l.cls==="head"
-        ? '<h3>'+esc(l.text)+(loops?'<span class="pgap">'+loops+' open</span>':'<span class="pgap done">ready</span>')+'</h3>'
-        : '<div class="pl '+l.cls+'">'+(l.label?'<b class="plab">'+esc(l.label)+':</b> '+esc(l.body||l.text):esc(l.text))+'</div>').join("")+
+        ? '<h3>'+esc(l.text)+(team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':'')+'<span class="pgap'+(ready?' done':'')+'">'+(ready?'ready':'Incomplete')+'</span></h3>'
+        : '<div class="pl '+l.cls+'">'+sxReadableLineHtml(r,l)+'</div>').join("")+
       '</article>';
   }).join("")||'<div class="empty">Nothing captured yet.</div>';
 }
@@ -8818,7 +8821,7 @@ function toggleNccuDiff(){nccuDiff=!nccuDiff;renderNccu()}
 // so tracking starts again from a clean slate
 function nccuSnapOf(r){return {snap:(r&&r.soSnap)?JSON.parse(JSON.stringify(r.soSnap)):null,day:r?r.soSnapDay:undefined}}
 function nccuApplySnap(r,st){if(!r||!st)return;if(st.snap)r.soSnap=st.snap;else delete r.soSnap;if(st.day===undefined)delete r.soSnapDay;else r.soSnapDay=st.day;r.updatedAt=Date.now()}
-function nccuResetOne(r){if(!r)return;r.soSnap={};r.soSnapDay=todayStr();r.updatedAt=Date.now()}
+function nccuResetOne(r){if(!r)return;r.soSnap={};r.soSnapDay=todayStr();slotActiveKeys(r).forEach(k=>slotVisibleFields(r,k).forEach(([f])=>{r.soSnap["slot:"+(k==="drainOutput"?"drain":k)+"."+f]=String(slotVal(r,k,f)||"")}));r.updatedAt=Date.now()}
 function nccuResetCard(id){
   const r=findAny(id);if(!r)return;
   const n=nccuChangeCount(r),before=nccuSnapOf(r);
@@ -10185,7 +10188,14 @@ function slotIsLive(r,k,f){
 }
 // what this field held before today's update
 function slotPrev(r,k,f){if(k==="drainOutput")k="drain";return (((r&&r.slotPrev)||{})[k+"."+f])||""}
+function slotCaptureChange(r,k,f){
+  if(r.soSnapDay!==todayStr()){r.soSnap={};r.soSnapDay=todayStr()}
+  r.soSnap=r.soSnap||{};
+  const key="slot:"+k+"."+f;
+  if(r.soSnap[key]===undefined)r.soSnap[key]=String(slotVal(r,k,f)||"");
+}
 function slotUpdate(r,k,f,v){
+  slotCaptureChange(r,k,f);
   r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
   const old=r.slots[k][f];
   if(old&&old!==v){r.slotPrev=r.slotPrev||{};r.slotPrev[k+"."+f]=old}
@@ -10199,6 +10209,7 @@ function slotSet(id,k,f,v){
   if(k==="drainOutput")k="drain";
   const r=findAny(id);if(!r)return;
   if(k==="diWatch")cleanDiWatchDuplicates(r);
+  slotCaptureChange(r,k,f);
   r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
   if(String(v||"").trim())r.slots[k][f]=v;else delete r.slots[k][f];
   r.slotAt=r.slotAt||{};r.slotAt[k+"."+f]=sxNow();
@@ -10387,7 +10398,7 @@ function sxAssemble(r){
   const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
   exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
-  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
+  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
   sxManagementThreads(r,exams).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
@@ -10651,10 +10662,30 @@ function sxQuickAddHtml(r,idPrefix){
     '<button type="button" onclick="event.stopPropagation();sxAddFromInput(\''+pid+'\',\''+r.id+'\')">Add lines</button></div>';
 }
 
+function sxReadableLineHtml(r,l){
+  const text=l.body||l.text;
+  let html=negHtml(text);
+  if(nccuDiff&&l.slotKey){
+    const k=l.slotKey,d=slotDef(k),vals={};let changed=false;
+    slotVisibleFields(r,k).forEach(([f])=>{
+      const cur=slotVal(r,k,f),key="slot:"+(k==="drainOutput"?"drain":k)+"."+f;
+      const snap=nccuBaseline(r),prev=snap[key]!==undefined?snap[key]:slotPrev(r,k,f);
+      vals[f]=prev!==""||snap[key]!==undefined?prev:cur;
+      if((snap[key]!==undefined||prev)&&prev!==cur)changed=true;
+    });
+    if(changed){
+      const base=sxPeriod(d.fmt(vals)||"");
+      html=nccuDiffParts(base,text).filter(p=>p.s!=="del").map(p=>nccuTokenHtml(p.t,p.s==="add")).join("");
+    }
+  }else if(nccuDiff&&l.cls!=="head"){
+    html=nccuFieldHtml(r,l.label||"Exam",text);
+  }
+  return (l.label?'<b class="plab">'+esc(l.label)+':</b> ':"")+html;
+}
 function sxPreviewHtml(r){
   const lines=sxAssemble(r);
   if(lines.length<=1&&!sxHasContent(r))return "";
-  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+(l.label?'<b class="plab">'+esc(l.label)+':</b> '+esc(l.body||l.text):esc(l.text))+'</div>').join("")+'</div>';
+  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+sxReadableLineHtml(r,l)+'</div>').join("")+'</div>';
 }
 function copySxCard(id){
   const r=findAny(id);if(!r)return;
@@ -10889,7 +10920,7 @@ function nccuCardHtml(r){
   const dx=roundPrimaryDxTag(r);
   const body=compact
     ? nccuCompactTodoHtml(r)
-    : (slotBoardHtml(r)+sxCardHtml(r)+sxPreviewHtml(r)+nccuNoteHtml(r));
+    : (sxPreviewHtml(r)+slotBoardHtml(r)+sxCardHtml(r)+nccuNoteHtml(r));
   const nChg=nccuDiff?nccuChangeCount(r):0;
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
