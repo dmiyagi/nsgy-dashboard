@@ -579,6 +579,15 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   font-family:var(--font);font-size:12.5px;padding:5px 8px}
 .sxtext:focus{outline:none;border-color:var(--acc)}
 .sxsys{flex:0 0 auto;font-size:10px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.sxsyssel{flex:0 0 auto;max-width:112px;background:var(--card);border:1px solid var(--line);border-radius:6px;
+  color:var(--mut);font-family:var(--font);font-size:10.5px;font-weight:700;padding:2px 3px}
+.sxsyssel:hover,.sxsyssel:focus{color:var(--text);border-color:var(--acc);outline:none}
+.sxpush{flex:0 0 auto;border:1px solid var(--teal);background:transparent;color:var(--teal);border-radius:6px;
+  font-size:11px;font-weight:800;padding:2px 7px;cursor:pointer;font-family:var(--font);line-height:1.3}
+.sxpush:hover{background:#173a3c}
+.sxpushsel{flex:0 0 auto;width:46px;background:transparent;border:1px solid var(--teal);border-radius:6px;
+  color:var(--teal);font-family:var(--font);font-size:11px;font-weight:800;padding:2px 2px}
+.sxpushsel:focus{outline:none}
 .sxdone{flex:0 0 auto;accent-color:var(--ok);width:15px;height:15px}
 .sxkeep,.sxdel{flex:0 0 auto;font-size:10px;font-weight:800;border:1px solid var(--line);background:transparent;
   color:var(--mut);border-radius:5px;padding:2px 6px;cursor:pointer;font-family:var(--font)}
@@ -641,6 +650,12 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .slotin{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
   font-family:var(--font);font-size:12.5px;padding:5px 8px}
 .slotin:focus{outline:none;border-color:var(--acc)}
+.tcexam{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
+.tcexam .tcexlab{font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+.tcexam select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--text);
+  font-family:var(--font);font-size:12px;padding:4px 6px;max-width:190px}
+.tcexam button{border:1px solid var(--teal);background:transparent;color:var(--teal);border-radius:7px;
+  font-size:11.5px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font)}
 .slotctl{display:flex;gap:1px;align-items:center}
 .slotctl button{border:none;background:transparent;color:var(--mut);font-size:12px;cursor:pointer;
   font-family:var(--font);line-height:1;padding:2px 3px}
@@ -871,7 +886,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.243 · 2026-10-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.248 · 2026-10-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -956,6 +971,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
       <button data-m="room" onclick="setSoSort('room')">Room</button>
       <button data-m="initials" onclick="setSoSort('initials')">Patient</button>
       <button data-m="team" onclick="setSoSort('team')">Team</button>
+      <button data-m="team-room" onclick="setSoSort('team-room')">Team → Room</button>
       <button data-m="attg" onclick="setSoSort('attg')">Attending</button>
     </span>
     <button class="btn sec sm" id="nccuDiffBtn" onclick="toggleNccuDiff()">Δ Changes</button>
@@ -1035,6 +1051,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
       <button data-m="room" onclick="setRoundSort('room')">Sort: room</button>
       <button data-m="initials" onclick="setRoundSort('initials')">Sort: patient</button>
       <button data-m="team" onclick="setRoundSort('team')">Sort: team</button>
+      <button data-m="team-room" onclick="setRoundSort('team-room')">Sort: team → room</button>
       <button data-m="attg" onclick="setRoundSort('attg')">Sort: attending</button>
     </span>
   </div>
@@ -4594,8 +4611,9 @@ function rowTap(e,id){
   if(e.target&&e.target.closest&&e.target.closest("button,input,select,textarea,a,label,.wf,.dlbtns,.steps,.step,.steptimer,.checks,.chk,.cardbtns,.badges,.next,.lastdone,.evsec,.evhead,.evitem,.evq,.evfind"))return;
   togCollapse(id);
 }
-function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;touch(c);render();renderRounds()}}
-function collapseAll(v){S.consults.forEach(c=>{if(!c.closed&&c.collapsed!==v){c.collapsed=v;touch(c)}});render()}
+function compactExamTrend(r){if(!r)return;r.examOpen=false;examHistOpen[r.id]=false}
+function togCollapse(id){const c=S.consults.find(x=>x.id===id);if(c){c.collapsed=!c.collapsed;if(c.collapsed)compactExamTrend(c);touch(c);render();renderRounds()}}
+function collapseAll(v){S.consults.forEach(c=>{if(!c.closed){if(v)compactExamTrend(c);if(c.collapsed!==v){c.collapsed=v;touch(c)}}});render();renderRounds();save()}
 function doneAction(id){
   const c=S.consults.find(x=>x.id===id);if(!c)return;
   if(c.type==="CONSULT"&&!requireConsultGate(c))return;
@@ -6717,6 +6735,12 @@ function roundExamPreset(id,kind){
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 let soCcOnly=false;
+function teamRoomComparator(a,b){
+  const team=roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
+  if(team)return team;
+  const room=r=>roundRoom(r)||r.loc||r.label||"";
+  return String(room(a)).localeCompare(String(room(b)),undefined,{numeric:true})||initialsOf(a).localeCompare(initialsOf(b));
+}
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
 function toggleFloorGroup(){S.roundGroupFloor=!S.roundGroupFloor;renderRounds();save()}
@@ -6739,8 +6763,8 @@ function chartCheckDotsHtml(c){
   ).join("")+'</span>';
 }
 function rColBtn(r){return '<button class="colbtn" onclick="togRoundCollapse(\''+r.id+'\')">▴ collapse</button>'}
-function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;r.updatedAt=Date.now();renderRounds();save()}}
-function collapseRounds(v){(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=v});S.rounds.forEach(r=>{if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
+function togRoundCollapse(id){const r=S.rounds.find(x=>x.id===id);if(r){r.collapsed=!r.collapsed;if(r.collapsed)compactExamTrend(r);r.updatedAt=Date.now();renderRounds();save()}}
+function collapseRounds(v){(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=v;if(v)compactExamTrend(c)});S.rounds.forEach(r=>{if(v)compactExamTrend(r);if(r.collapsed!==v){r.collapsed=v;r.updatedAt=Date.now()}});renderRounds();save()}
 function initialsOf(r){
   const ab=last3FromText(r.raw)||last3FromText(r.label);
   if(ab)return ab.toUpperCase();
@@ -6862,7 +6886,7 @@ function renderRounds(){
   const rt=document.getElementById("roundTimersBtn");if(rt){const off=roundAutoTimersOff();rt.classList.toggle("off",off);rt.classList.toggle("on",!off);rt.setAttribute("aria-pressed",String(!off));rt.innerHTML='<span class="sw"></span> Auto timers '+(off?"off":"on")+" for rounds"}
   const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
-  const cmp=(S.roundSort==="initials")
+  const cmp=S.roundSort==="team-room"?teamRoomComparator:(S.roundSort==="initials")
     ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
     :(S.roundSort==="team")
       ?(a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true})
@@ -6948,7 +6972,7 @@ function setChartAutoTimers(off){
   showToast("Chart-check auto timers "+(off?"off":"on")+" for all cards");
 }
 function collapseChartChecks(compact){
-  (S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=compact});
+  (S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART").forEach(c=>{c.collapsed=compact;if(compact)compactExamTrend(c)});
   renderRounds();renderCal();save();
 }
 function renderRoundChartCheckList(){
@@ -8874,6 +8898,11 @@ function toggleSoExtra(id,k){
   const on=!soExtraOn(r,k);
   r.soExtra[k]=on;
   if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[k];soPlaceNewBox(r,k)}
+  (SO_BOX_SLOTS[k]||[]).forEach(sk=>{
+    r.slotsOff=r.slotsOff||{};r.slotsOn=r.slotsOn||{};
+    if(on){delete r.slotsOff[sk];r.slotsOn[sk]=true}else{delete r.slotsOn[sk]}
+  });
+  stampF(r,"soExtra");stampF(r,"slotsOn");stampF(r,"slotsOff");
   r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
   showToast(on?("Added "+k):("Removed "+k),()=>{
     const rr=findAny(id);if(!rr)return;
@@ -8977,6 +9006,12 @@ function toggleSoBoardBox(id,key){
     if(on){r.soSuggestOff=r.soSuggestOff||{};delete r.soSuggestOff[opt.extra]}
   }
   if(on)soPlaceNewBox(r,soBoxFieldFor(r,opt));
+  // the board's rows follow the boxes: clear any hand override for them
+  (SO_BOX_SLOTS[key]||[]).forEach(k=>{
+    r.slotsOff=r.slotsOff||{};r.slotsOn=r.slotsOn||{};
+    delete r.slotsOff[k];delete r.slotsOn[k];
+  });
+  stampF(r,"soBoardOn");stampF(r,"slotsOn");stampF(r,"slotsOff");
   r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
 }
 function soBoxTemplateMenuHtml(r){
@@ -9749,8 +9784,105 @@ const SO_SLOTS=[
  {k:"dispo",l:"Dispo",order:120,group:"Systems",
   re:/dispo|discharge|rehab|\bsnf\b|placement|\bpt\/ot\b|home with|barrier/i,
   fields:[["goal","destination + criteria"],["cur","what is holding them"]],
-  fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")}
+ fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
+ // ---- rows that only appear when the sign-out template asks for them ----
+ // These carry no detector of their own: a box switched on in the sign-out
+ // editor is what puts them on the board (see SO_BOX_SLOTS).
+ {k:"status",l:"POD / status",order:5,group:"",
+  fields:[["cur","POD / post-bleed day / pre-op status"]],fmt:v=>v.cur||""},
+ {k:"neuroplan",l:"Neuro plan",order:29,group:"Neuro",
+  fields:[["goal","checks + escalation trigger"],["cur","current checks / events"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" — ")},
+ {k:"steroid",l:"Steroids",order:52,group:"Neuro",
+  fields:[["goal","steroid + taper"],["cur","current dose / day of course"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"vasospasm",l:"Vasospasm / TCD",order:56,group:"Neuro",
+  fields:[["goal","TCD / angio plan"],["cur","last velocities + exam"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"renal",l:"Renal",order:95,group:"Systems",
+  fields:[["goal","renal plan / CRRT"],["cur","Cr + trend"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"skin",l:"Skin / wound",order:105,group:"Systems",
+  fields:[["goal","wound care / turn plan"],["cur","site + stage"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"peds",l:"Peds / weight",order:112,group:"Systems",
+  fields:[["cur","weight (kg)"],["goal","weight-based dosing"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"goc",l:"Goals of care",order:115,group:"Systems",
+  fields:[["cur","code status"],["goal","family discussion / next step"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"family",l:"Family / collateral",order:117,group:"Systems",
+  fields:[["cur","who to call"],["goal","what they have been told"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ {k:"trial",l:"Trial eligibility",order:118,group:"Systems",
+  fields:[["goal","trial + window"],["cur","screened / consented?"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")}
 ];
+// ---------- the sign-out editor's boxes and the board's rows are one thing ----------
+// A box switched on in the template puts its row on the fill-out board, and a
+// row switched off on the board switches the box back off.
+const SO_BOX_SLOTS={
+  // the "Boxes:" chips in the sign-out editor
+  evd:["drain","icp","drainOutput"],drain:["drain","drainOutput"],vent:["resp"],
+  neuroplan:["neuroplan"],na:["na"],bp:["bp"],abx:["id"],steroid:["steroid"],
+  asm:["asm"],ac:["ac"],dispo:["dispo"],
+  // the "+ Add box" chips
+  "POD":["status"],"Post-bleed day":["status"],"Post-trauma status":["status"],"Pre-op status":["status"],
+  "Neuro plan":["neuroplan"],"Drain":["drain","drainOutput"],"Antibiotics":["id"],"Steroids":["steroid"],
+  "AC / antiplatelet":["ac"],"Seizures / ASM":["asm"],"ID / cultures":["id"],"Vasospasm / TCD":["vasospasm"],
+  "Endocrine / DI":["endo","diWatch"],"Hemodynamics / pressors":["bp"],"Airway / trach":["resp"],
+  "Goals of care":["goc"],"Family / collateral":["family"],"Dispo barriers":["dispo"],
+  "Trial eligibility":["trial"],"Peds / weight":["peds"],"Pressure injury / skin":["skin"],"Renal / CRRT":["renal"]
+};
+// rows the template is asking for right now
+function slotKeysFromBoxes(r){
+  if(!r)return [];
+  const out=[],push=k=>{if(slotDef(k)&&out.indexOf(k)<0)out.push(k)};
+  SO_OPTIONAL_BOXES.forEach(opt=>{
+    if(!soBoxFieldFor(r,opt))return;
+    if(soBoardOptionalOn(r,opt))(SO_BOX_SLOTS[opt.key]||[]).forEach(push);
+  });
+  soExtraActive(r).forEach(b=>(SO_BOX_SLOTS[b.k]||[]).forEach(push));
+  return out;
+}
+// rows whose only template box you unticked by hand. A box whose detector
+// simply did not fire is not an instruction to hide anything: the board reads
+// more text than the box does (notes, sign-out lines), so only an explicit
+// untick takes a row away.
+function slotKeysBoxOff(r){
+  if(!r||!r.soBoardOn)return [];
+  const offs={},ons={};
+  SO_OPTIONAL_BOXES.forEach(opt=>{
+    if(!soBoxFieldFor(r,opt)||r.soBoardOn[opt.key]===undefined)return;
+    const on=!!r.soBoardOn[opt.key];
+    (SO_BOX_SLOTS[opt.key]||[]).forEach(k=>{(on?ons:offs)[k]=true});
+  });
+  return Object.keys(offs).filter(k=>!ons[k]);
+}
+// hiding a row on the board unticks the box that put it there
+function soBoxesOffForSlot(r,k){
+  SO_OPTIONAL_BOXES.forEach(opt=>{
+    const mapped=SO_BOX_SLOTS[opt.key]||[];
+    if(mapped.indexOf(k)<0||!soBoxFieldFor(r,opt))return;
+    const live=slotActiveKeys(r);
+    if(mapped.some(x=>x!==k&&live.indexOf(x)>=0))return;   // another row still needs it
+    r.soBoardOn=r.soBoardOn||{};r.soBoardOn[opt.key]=false;
+    if(opt.extra&&r.soExtra)r.soExtra[opt.extra]=false;
+  });
+  Object.keys(SO_BOX_SLOTS).forEach(label=>{
+    if(!/^[A-Z]/.test(label)||(SO_BOX_SLOTS[label]||[]).indexOf(k)<0)return;
+    if(!soExtraOn(r,label))return;
+    const mapped=SO_BOX_SLOTS[label],live=slotActiveKeys(r);
+    if(mapped.some(x=>x!==k&&live.indexOf(x)>=0))return;
+    r.soExtra=r.soExtra||{};r.soExtra[label]=false;
+  });
+}
+function soBoxOnForSlot(r,k){
+  SO_OPTIONAL_BOXES.forEach(opt=>{
+    if((SO_BOX_SLOTS[opt.key]||[]).indexOf(k)<0||!soBoxFieldFor(r,opt))return;
+    r.soBoardOn=r.soBoardOn||{};r.soBoardOn[opt.key]=true;
+  });
+}
 function soSlotMapping(label){
   const groups=[[/^di watch$/i,"diWatch","uop"],[/^exam/i,"exam","cur"],[/evd|drains?/i,"drain","goal"],[/icp/i,"icp","cur"],[/na goal|sodium/i,"na","goal"],[/bp goal|blood pressure|map goal/i,"bp","goal"],[/seizure|asm|ltm/i,"asm","goal"],[/anticoag/i,"ac","goal"],[/^id|antibiotic|infection/i,"id","goal"],[/renal|di watch/i,"gu","cur"],[/nutrition|diet/i,"gi","goal"]];
   const match=groups.find(([re])=>re.test(label));return match?{k:match[1],f:match[2]}:null;
@@ -9822,8 +9954,12 @@ function slotResetOrder(id){
 }
 function slotActiveKeys(r){
   const off=(r&&r.slotsOff)||{},on=(r&&r.slotsOn)||{};
-  const keys=slotAuto(r).filter(k=>!off[k]);
+  // a box switched off in the sign-out editor takes its row off the board too
+  const boxOff={};slotKeysBoxOff(r).forEach(k=>{if(!on[k])boxOff[k]=true});
+  const keys=slotAuto(r).filter(k=>!off[k]&&!boxOff[k]);
   Object.keys(on).forEach(k=>{if(on[k]&&keys.indexOf(k)<0&&slotDef(k))keys.push(k)});
+  // ...and a box switched on puts its row there
+  slotKeysFromBoxes(r).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
   // a slot you have already filled stays, whatever the detectors now say
   const vals=(r&&r.slots)||{};
   Object.keys(vals).forEach(k=>{
@@ -9926,9 +10062,10 @@ function slotToggle(id,k){
   const r=findAny(id);if(!r)return;
   const on=slotActiveKeys(r).indexOf(k)>=0;
   r.slotsOff=r.slotsOff||{};r.slotsOn=r.slotsOn||{};
-  if(on){r.slotsOff[k]=true;delete r.slotsOn[k]}
-  else{delete r.slotsOff[k];r.slotsOn[k]=true}
-  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  if(on){r.slotsOff[k]=true;delete r.slotsOn[k];soBoxesOffForSlot(r,k)}
+  else{delete r.slotsOff[k];r.slotsOn[k]=true;soBoxOnForSlot(r,k)}
+  stampF(r,"slotsOn");stampF(r,"slotsOff");stampF(r,"soBoardOn");stampF(r,"soExtra");
+  r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();if(soId===id)buildSOFields();flushAutosave();
   const d=slotDef(k);
   showToast((on?"Removed ":"Added ")+(d?d.l:k));
 }
@@ -10128,6 +10265,58 @@ function sxRoleSelectHtml(id,it){
     SX_ROLES.map(ro=>'<option value="'+ro.k+'" '+(it.role===ro.k?"selected":"")+'>'+esc(ro.l)+'</option>').join("")+
   '</select>';
 }
+// The system tag decides which parameter row a line belongs to, so it has to
+// be changeable — inference will not always get it right.
+function sxSysSelectHtml(id,it){
+  const cur=it.sys||"neuro";
+  return '<select class="sxsyssel" title="Which system this belongs to" onclick="event.stopPropagation()" '+
+    'onchange="sxSetSys(\''+id+'\',\''+it.id+'\',this.value)">'+
+    SX_SYSTEMS.map(sy=>'<option value="'+sy[0]+'"'+(sy[0]===cur?" selected":"")+'>'+esc(sy[1])+'</option>').join("")+
+    '</select>';
+}
+function sxSetSys(id,itemId,sys){
+  const r=findAny(id);if(!r)return;
+  const it=sxFind(r,itemId);if(!it)return;
+  const before=it.sys;
+  it.sys=sys;it.ts=sxNow();
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  const slotK=SYS_SLOT[sys],d=slotK?slotDef(slotK):null;
+  showToast("Filed under "+(SX_SYS[sys]||sys)+(d?" — ⤓ to put it in "+d.l:""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    const x=sxFind(rr,itemId);if(x)x.sys=before;
+    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+// push a captured line into the parameter box for its system
+function sxSlotFor(it){const k=SYS_SLOT[it&&it.sys];return k?slotDef(k):null}
+function sxPushToSlot(id,itemId,slotK){
+  const r=findAny(id);if(!r)return;
+  const it=sxFind(r,itemId);if(!it)return;
+  const d=slotK?slotDef(slotK):sxSlotFor(it);
+  if(!d){showToast("Pick which box this belongs in");return}
+  const was=slotVal(r,d.k,"cur");
+  if(was===it.t){showToast("Already in "+d.l);return}
+  slotUpdate(r,d.k,"cur",it.t);
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast("→ "+d.l+(was?" (updated)":""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    if(rr.slots&&rr.slots[d.k]){if(was)rr.slots[d.k].cur=was;else delete rr.slots[d.k].cur}
+    if(rr.slotPrev)delete rr.slotPrev[d.k+".cur"];
+    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
+function sxPushBtnHtml(r,it){
+  const d=sxSlotFor(it);
+  if(d)return '<button type="button" class="sxpush" title="Put this in the '+esc(d.l)+' box" '+
+    'onclick="event.stopPropagation();sxPushToSlot(\''+r.id+'\',\''+it.id+'\')">⤓</button>';
+  // no single destination — offer the rows this patient actually has
+  const keys=slotActiveKeys(r).filter(k=>k!=="exam");
+  if(!keys.length)return "";
+  return '<select class="sxpushsel" title="Put this in a box" onclick="event.stopPropagation()" '+
+    'onchange="const v=this.value;this.value=\'\';if(v)sxPushToSlot(\''+r.id+'\',\''+it.id+'\',v)">'+
+    '<option value="">⤓</option>'+
+    keys.map(k=>'<option value="'+k+'">'+esc(slotDef(k).l)+'</option>').join("")+'</select>';
+}
 function sxItemHtml(r,it){
   const stale=!it.derived&&it.day!==todayStr()&&it.keptOn!==todayStr();
   const fresh=sxIsNew(r,it);
@@ -10149,7 +10338,7 @@ function sxItemHtml(r,it){
     sxRoleSelectHtml(r.id,it)+sxMoveButtons(r,it)+
     (it.role==="loop"?'<input type="checkbox" class="sxdone" '+(it.done?"checked":"")+' title="close this loop" onchange="event.stopPropagation();sxToggleDone(\''+r.id+'\',\''+it.id+'\')">':"")+
     '<input class="sxtext" value="'+esc(it.t)+'" oninput="sxEdit(\''+r.id+'\',\''+it.id+'\',this)" onclick="event.stopPropagation()">'+
-    (it.sys&&it.sys!=="neuro"?'<span class="sxsys">'+esc(SX_SYS[it.sys]||it.sys)+'</span>':"")+
+    sxSysSelectHtml(r.id,it)+sxPushBtnHtml(r,it)+
     (ago?'<span class="sxago">'+esc(ago)+'</span>':"")+
     (stale?'<button type="button" class="sxkeep" title="still management-defining — keep it" onclick="event.stopPropagation();sxKeep(\''+r.id+'\',\''+it.id+'\')">keep</button>':"")+
     '<button type="button" class="sxdel" title="Drop this line (Undo available)" onclick="event.stopPropagation();sxRemove(\''+r.id+'\',\''+it.id+'\')">Drop</button>'+
@@ -10421,6 +10610,7 @@ function setSoSort(m){
 }
 function soComparator(){
   const m=soSortMode()==="rounds"?(S.roundSort||"room"):soSortMode();
+  if(m==="team-room")return teamRoomComparator;
   if(m==="initials")return (a,b)=>initialsOf(a).localeCompare(initialsOf(b));
   if(m==="team")return (a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
   if(m==="attg")return (a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true});
@@ -10782,13 +10972,57 @@ function tcFillSection(p,k){
   const label=(TC_SECTIONS.find(x=>x.k===k)||{}).label||k;
   showToast("Filled "+label,()=>{tcSet(p,k,before);tcAfterEdit(p)},"Undo");
 }
+const TC_EXAM_MODES=[["basic","Cranial"],["four","Cranial (R/L)"],["spine","Spine"],
+  ["intubated","Intubated"],["pediatric","Pediatric"]];
+const TC_EXAM_LIMBS=[["bilateral","Bilateral (BUE / BLE)"],["unilateral","Separate R / L limbs"]];
+// the mode decides the default limbs, the way it does on a Rounds card
+function tcExamDefaultLimbs(mode){return (mode==="spine"||mode==="four")?"unilateral":"bilateral"}
+const tcExamPick={};
+function tcExamMode(p){return (tcExamPick[p]&&tcExamPick[p].mode)||"basic"}
+function tcExamLimbs(p){
+  const st=tcExamPick[p]||{};
+  return st.limbs||tcExamDefaultLimbs(tcExamMode(p));
+}
+function tcExamSet(p,what,v){
+  tcExamPick[p]=tcExamPick[p]||{};
+  tcExamPick[p][what]=v;
+  if(what==="mode")delete tcExamPick[p].limbs;   // follow the new mode's default
+  const host=document.getElementById(p+"_exammode");
+  if(host)host.parentNode.innerHTML=tcExamChooserInner(p);
+}
+function tcExamBaseText(p){
+  const mode=tcExamMode(p),limbs=tcExamLimbs(p);
+  if(mode==="pediatric")return TC_BABY_EXAM;
+  if(mode==="spine")
+    return "Spine motor order: Delt/Bi/Tri/WE/FF/FA · IP/Quad/AT/EHL/Gastroc\n"+
+      examIntactText("spine",limbs)+"\nno hoffmans\nno clonus";
+  if(mode==="intubated")return "Intubated/sedated\nPupils ___\n+ corneals, + cough\n"+examIntactText("basic",limbs).split("\n").slice(3).join("\n");
+  return examIntactText(mode,limbs);
+}
+function tcExamChooserInner(p){
+  const mode=tcExamMode(p),limbs=tcExamLimbs(p);
+  const sel=(id,opts,cur,what)=>'<select id="'+p+'_'+id+'" onchange="tcExamSet(\''+p+'\',\''+what+'\',this.value)">'+
+    opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?" selected":"")+'>'+esc(o[1])+'</option>').join("")+'</select>';
+  return '<span class="tcexlab">Base exam</span>'+sel("exammode",TC_EXAM_MODES,mode,"mode")+
+    sel("examlimbs",TC_EXAM_LIMBS,limbs,"limbs")+
+    '<button type="button" onclick="tcExamInsert(\''+p+'\')">⤓ Insert</button>';
+}
+function tcExamChooserHtml(p){return '<div class="tcexam">'+tcExamChooserInner(p)+'</div>'}
+function tcExamInsert(p){
+  const base=tcExamBaseText(p);
+  const before=tcGet(p,"exam");
+  if(before.trim()&&!window.confirm("Replace the exam already in this field?"))return;
+  tcSet(p,"exam",base);tcAfterEdit(p);
+  showToast("Base exam inserted",()=>{tcSet(p,"exam",before);tcAfterEdit(p)},"Undo");
+}
 function tcBodyHtml(p){
   const fld=sec=>{
     const id=p+"_"+sec.k;
     const field=sec.tag==="input"
       ? '<input type="text" id="'+id+'" placeholder="Type anything here…">'
       : '<textarea id="'+id+'" style="min-height:'+(sec.h||60)+'px" placeholder="Type anything here…"></textarea>';
-    return '<div class="fld"><label>'+esc(sec.label)+'</label>'+field+
+    return '<div class="fld"><label>'+esc(sec.label)+'</label>'+
+      (sec.k==="exam"?tcExamChooserHtml(p):"")+field+
       '<div class="qbtns"><button type="button" class="tcfill" onclick="tcFillSection(\''+p+'\',\''+sec.k+'\')">✦ Suggest</button>'+
       '<button type="button" class="tcclear" onclick="tcClearSection(\''+p+'\',\''+sec.k+'\')">✕ Clear</button></div></div>';
   };
@@ -11685,7 +11919,8 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 // its own stamp in `fAt`; without one we fall back to the record stamp.
 const MERGE_FIELDS=["exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
-  "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields"];
+  "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields","slotFieldsOff",
+  "soBoardOn","soExtra","soSuggestOff","soBoxOrder"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){

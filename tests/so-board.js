@@ -60,3 +60,13 @@ const order=slotSortedKeys(r,['exam','icp','drain','na','drainOutput']);
 if(order.join(',')!=='exam,drain,icp,drainOutput,na')throw new Error('EVD, ICP and output order is incorrect');
 if(slotVal(r,'drainOutput','out24')!=='235'||slotVal(r,'drainOutput','shift')!=='20')throw new Error('Splitting output lost existing measurements');
 return 'EVD → ICP → output layout / saved values checks PASS';`)();report(evdResult);
+
+const compactExamResult=new Function(`
+const examHistOpen={r:true};let S={rounds:[{id:'r',collapsed:false,examOpen:true}],consults:[{id:'c',type:'CHART',collapsed:false,examOpen:true}]};
+const renderRounds=()=>{},renderCal=()=>{},save=()=>{};
+${['compactExamTrend','togRoundCollapse','collapseRounds','collapseChartChecks'].map(fn).join('\n')}
+togRoundCollapse('r');if(!S.rounds[0].collapsed||S.rounds[0].examOpen||examHistOpen.r)throw new Error('Card Compact did not close exam panels');
+togRoundCollapse('r');if(S.rounds[0].examOpen)throw new Error('Reopening card reopened exam trend');
+S.rounds[0].examOpen=true;collapseRounds(true);if(S.rounds[0].examOpen||S.consults[0].examOpen)throw new Error('Compact all did not close exam trends');
+S.consults[0].examOpen=true;collapseChartChecks(true);if(S.consults[0].examOpen)throw new Error('Chart Compact did not close exam trend');
+return 'Compact card / exam trend checks PASS';`)();report(compactExamResult);
