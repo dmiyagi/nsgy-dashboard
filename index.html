@@ -888,7 +888,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.256 · 2026-10-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.257 · 2026-10-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1021,10 +1021,8 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 	Call MRI
 	Pre-op labs"></textarea>
     <div class="roundentrytools" aria-label="Rounds input actions">
-      <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
-      <button class="btn sec sm" onclick="addFloorCardsFromRoundsInput()">＋ Floor cards</button>
-      <button class="btn sec sm" onclick="addChartChecksFromRoundsInput()">＋ Chart check</button>
-      <button class="btn sec sm" onclick="addWoundChecksFromRoundsInput()">＋ Wound check</button>
+      <select id="roundInputDestination" aria-label="Patient destination"><option value="rounds">Rounds</option><option value="floor">Floor cards</option><option value="chart">Chart check</option><option value="wound">Wound check</option></select>
+      <button class="btn" onclick="addPatientsToSelectedList()">⇣ Add to selected list</button>
     </div>
   </div>
   <div class="roundtoolbar" aria-label="Rounds tools">
@@ -5822,6 +5820,17 @@ function patientHandoffNotesHtml(r){
       'onclick="event.stopPropagation();soRollDayManual(\''+r.id+'\')">↻ New day</button></div></div>';
 }
 
+function addPatientsToSelectedList(){
+  const mode=document.getElementById("roundInputDestination").value;
+  if(mode==="chart")addChartChecksFromRoundsInput();
+  else if(mode==="wound")addWoundChecksFromRoundsInput();
+  else if(mode==="floor")addFloorCardsFromRoundsInput();
+  else parseRounds();
+}
+function selectInputRoundsOnly(r){
+  r.listMode="rounds";stampF(r,"listMode");
+  (S.consults||[]).filter(c=>c.type==="CHART"&&c.roundId===r.id).forEach(c=>{c.listHidden=true;stampF(c,"listHidden");touch(c)});
+}
 function addFloorCardsFromRoundsInput(){
   const box=document.getElementById("dropbox");if(!box||!box.value.trim())return;
   const blocks=parseBlocks(box.value);parseRounds();
@@ -5837,7 +5846,9 @@ function parseRounds(){
     const label=roundLabel(b.main);
     const steps=b.subs.map(t=>({t:t,done:false}));
     const ex=findRoundLike(label,b.main);
-    if(ex){                                    // same room + last-three label → merge, don't duplicate
+    if(ex){
+      selectInputRoundsOnly(ex);             // selected destination only
+      // same room + last-three label → merge, don't duplicate
       if(b.main&&!ex.raw.includes(b.main))ex.raw=(ex.raw+" · "+b.main).trim();
       ex.steps=ex.steps||[];
       steps.forEach(s=>{if(!ex.steps.some(x=>x.t===s.t))ex.steps.push(s)});
@@ -5849,6 +5860,7 @@ function parseRounds(){
     }
     const nr={id:"r"+uid(),raw:b.main,label:label,tags:normalizeRoundTags(roundTags(b.main)),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:steps,collapsed:true,created:Date.now(),updatedAt:Date.now()};
     S.rounds.push(nr);
+    selectInputRoundsOnly(nr);
     syncRoundTodosToBoard(nr,steps.map(s=>s.t));
   });
   document.getElementById("dropbox").value="";
@@ -7431,7 +7443,6 @@ function addChartChecksFromRoundsInput(){
   blocks.forEach(b=>{
     const label=roundLabel(b.main);
     let r=findRoundLike(label,b.main);
-    const temp=!r;
     if(!r){
       r={id:"r"+uid(),raw:b.main,label:label,tags:normalizeRoundTags(roundTags(b.main)),team:teamFromText(b.main),attg:attgFromText(b.main),soT:detectTmpl(b.main),so:{},seen:false,plan:"",steps:(b.subs||[]).map(t=>({t:t,done:false})),collapsed:true,created:Date.now(),updatedAt:Date.now()};
       S.rounds.push(r);
@@ -7444,7 +7455,7 @@ function addChartChecksFromRoundsInput(){
     }
     const res=roundChartCardFor(r);
     if(res&&res.isNew)made++;else refreshed++;
-    if(temp)S.rounds=S.rounds.filter(x=>x.id!==r.id);
+    r.listMode=r.woundListed?"wound":"chart";stampF(r,"listMode");touch(r);
   });
   clearRoundsInput();
   render();renderRounds();renderNccu();save();
@@ -12275,7 +12286,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 }
 // Fields edited independently on two devices must both survive. Each carries
 // its own stamp in `fAt`; without one we fall back to the record stamp.
-const MERGE_FIELDS=["noExamNow","exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
+const MERGE_FIELDS=["listMode","listHidden","noExamNow","exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields",
   "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows"];
