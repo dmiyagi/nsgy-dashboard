@@ -27,8 +27,11 @@ header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-f
 .apptitle{flex:1 1 0;min-width:0}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.noexam{cursor:pointer;color:var(--mut);border:1px solid var(--line)}
-.noexam.on{color:#68b4ff;border-color:#68b4ff;background:#153553}
+button.bg.noexam{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;padding:0;border-radius:50%;background:#05080d;color:#637189;border:1px solid #35445b;vertical-align:middle}
+button.bg.noexam .noexamlight{width:8px;height:8px;border-radius:50%;background:#35445b}
+button.bg.noexam.on{background:#05080d;border-color:#58b1ff;box-shadow:0 0 5px #2997ff55}
+button.bg.noexam.on .noexamlight{background:#58b1ff;box-shadow:0 0 7px #2997ff}
+button.bg.noexam:focus-visible{outline:2px solid #58b1ff;outline-offset:3px}
 .buildmeta{font-size:10px;color:#7f8fa6;margin-top:2px;white-space:nowrap}
 .hpills{display:flex;gap:6px;margin-left:auto;align-items:center}
 .gsearch{flex:1 1 220px;max-width:340px;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--font);font-size:13px;padding:7px 10px}
@@ -888,7 +891,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.257 · 2026-10-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.258 · 2026-10-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6929,7 +6932,7 @@ function roundCareBadges(r){
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"");
 }
 function noExamBadge(r){
-  return '<button type="button" class="bg noexam'+(r.noExamNow?' on':'')+'" aria-pressed="'+!!r.noExamNow+'" title="'+(r.noExamNow?'No exam needed now — tap to clear':'Mark: no need to see or examine now')+'" onclick="event.stopPropagation();toggleNoExamNow(\''+r.id+'\')">'+(r.noExamNow?'● No exam':'○ No exam')+'</button>';
+  return '<button type="button" class="bg noexam'+(r.noExamNow?' on':'')+'" aria-label="No exam needed now" aria-pressed="'+!!r.noExamNow+'" title="'+(r.noExamNow?'No exam needed now — tap to clear':'Mark: no need to see or examine now')+'" onclick="event.stopPropagation();toggleNoExamNow(\''+r.id+'\')"><span class="noexamlight" aria-hidden="true"></span></button>';
 }
 function toggleNoExamNow(id){
   const r=findAny(id);if(!r)return;
