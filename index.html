@@ -891,7 +891,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.258 · 2026-10-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.259 · 2026-10-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1024,8 +1024,10 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 	Call MRI
 	Pre-op labs"></textarea>
     <div class="roundentrytools" aria-label="Rounds input actions">
-      <select id="roundInputDestination" aria-label="Patient destination"><option value="rounds">Rounds</option><option value="floor">Floor cards</option><option value="chart">Chart check</option><option value="wound">Wound check</option></select>
-      <button class="btn" onclick="addPatientsToSelectedList()">⇣ Add to selected list</button>
+      <button class="btn" onclick="parseRounds()">⇣ Sort into patients</button>
+      <button class="btn" onclick="addFloorCardsFromRoundsInput()">＋ Floor cards</button>
+      <button class="btn" onclick="addChartChecksFromRoundsInput()">＋ Chart check</button>
+      <button class="btn" onclick="addWoundChecksFromRoundsInput()">＋ Wound check</button>
     </div>
   </div>
   <div class="roundtoolbar" aria-label="Rounds tools">
@@ -5823,13 +5825,6 @@ function patientHandoffNotesHtml(r){
       'onclick="event.stopPropagation();soRollDayManual(\''+r.id+'\')">↻ New day</button></div></div>';
 }
 
-function addPatientsToSelectedList(){
-  const mode=document.getElementById("roundInputDestination").value;
-  if(mode==="chart")addChartChecksFromRoundsInput();
-  else if(mode==="wound")addWoundChecksFromRoundsInput();
-  else if(mode==="floor")addFloorCardsFromRoundsInput();
-  else parseRounds();
-}
 function selectInputRoundsOnly(r){
   r.listMode="rounds";stampF(r,"listMode");
   (S.consults||[]).filter(c=>c.type==="CHART"&&c.roundId===r.id).forEach(c=>{c.listHidden=true;stampF(c,"listHidden");touch(c)});
