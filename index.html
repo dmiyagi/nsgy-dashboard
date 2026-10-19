@@ -27,6 +27,28 @@ header{position:sticky;top:0;z-index:50;background:rgba(13,19,30,.95);backdrop-f
 .apptitle{flex:1 1 0;min-width:0}
 header h1{font-size:16px;font-weight:700;letter-spacing:.3px}
 header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pacebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;padding:7px 10px;border:1px solid var(--line);border-left-width:4px;border-radius:9px;background:var(--card2);font-size:12.5px}
+.pacebar .pacehead{font-weight:700;letter-spacing:.2px}
+.pacebar .pacebody{color:#c8d3e4}
+.pacebar button{margin-left:auto;background:transparent;border:1px solid var(--line);color:inherit;border-radius:999px;padding:2px 9px;font-size:12px;cursor:pointer}
+.pacebar button+button{margin-left:0}
+.pacebar .pacex{border-color:transparent;color:#7f8fa6;padding:2px 6px}
+.pacebar.ok{border-left-color:var(--ok)}
+.pacebar.ok .pacehead{color:var(--ok)}
+.pacebar.due{border-left-color:#58b1ff}
+.pacebar.due .pacehead{color:#58b1ff}
+.pacebar.warn{border-left-color:var(--e2)}
+.pacebar.warn .pacehead{color:var(--e2)}
+.pacebar.late{border-left-color:var(--e3)}
+.pacebar.late .pacehead{color:var(--e3)}
+.pacebar.sit{border-left-color:#b78cff}
+.pacebar.sit .pacehead{color:#c7a6ff}
+.pacebar.protect{border-left-color:#b78cff;background:#1a1430}
+.pacebar.protect .pacehead{color:#c7a6ff}
+.pacebar.off{padding:2px 6px;border:0;background:transparent}
+.pacebar.off .pacemore{margin:0;border-color:transparent;color:#7f8fa6}
+.qbtns.examsave{margin:6px 0 2px}
+.qbtns.examsave .primary{border-color:var(--acc);color:var(--acc)}
 button.bg.noexam{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;padding:0;border-radius:50%;background:#05080d;color:#637189;border:1px solid #35445b;vertical-align:middle}
 button.bg.noexam .noexamlight{width:8px;height:8px;border-radius:50%;background:#35445b}
 button.bg.noexam.on{background:#05080d;border-color:#58b1ff;box-shadow:0 0 5px #2997ff55}
@@ -891,7 +913,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.259 · 2026-10-13</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.261 · 2026-10-18</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1018,6 +1040,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
 
 <!-- ============ ROUNDS ============ -->
 <section class="view" id="view-rounds">
+  <div id="pacebar"></div>
   <div class="roundentry">
     <textarea id="dropbox" class="evta" style="min-height:110px;width:100%" placeholder="Example: Loc/Bed + 3-4 letters of last name + handoff one-liner
 B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
@@ -1041,6 +1064,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
       <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
       <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show AM seen, Chart AM, Chart PM, Seen PM, and Chart Night">◑ 24 hr</button>
       <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
+      <button class="btn sec sm" id="soAllBtn" onclick="toggleSoAll()" title="Put every rounds patient and chart check on the SO board">● SO all</button>
       <button class="btn sec sm autotimer" id="roundTimersBtn" onclick="setRoundAutoTimers(!roundAutoTimersOff())">Auto timers</button>
       <button class="btn sec sm" id="floorGroupBtn" onclick="toggleFloorGroup()">Floors</button>
     </div>
@@ -1066,6 +1090,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
 <!-- ============ DAY ============ -->
 <section class="view" id="view-day">
   <div class="banner">Daily rhythm from the intern boot camp. Checkboxes reset each day. The current block is highlighted — consults layered on top of this never stop.</div>
+  <div id="pacebarday"></div>
   <div id="blocks"></div>
 </section>
 
@@ -2278,6 +2303,9 @@ const PLAN_LIB=[
  {id:"sah-unsec",n:"Unsecured SAH",
   re:t=>isAneurysmalSAHText(t)&&!securedAneurysmText(t),
   short:"Unsecured SAH: NCCU, NVIR angio <24h, radial a-line, q1h checks, Keppra 500 BID until secured, EuNa 135-145, HOB>30, SBP 100-140 (nicardipine prn), EVD at 10, no ASA/AC x2wk, TCDs x14d, nimodipine x21d",
+  abbr:["NCCU","NVIR angio <24h","L radial a-line","q1h checks","keppra 500 bid until secured","EuNa",
+    "HOB>30","EVD at 10 until secured","SBP 100-140, nicardipine prn","no ASA/NSAIDs/AC x2wk",
+    "TCDs x14d","nimodipine x21d","DVT ppx 24h from stable scan"],
   full:["Please admit to NCCU",
     "Please consult NVIR for angiogram within 24 hours",
     "Please place left-sided radial arterial line; if unable, right-sided radial arterial line",
@@ -2295,6 +2323,8 @@ const PLAN_LIB=[
  {id:"sah-sec",n:"Secured SAH",
   re:t=>isAneurysmalSAHText(t)&&securedAneurysmText(t),
   short:"Secured SAH: NCCU, q1h checks, EuNa 135-145, HOB>30, SBP 100-200, EVD at 5, no ASA/AC x2wk, TCDs x14d, nimodipine x21d, DVT ppx 24h from stable scan",
+  abbr:["NCCU","q1h checks","EuNa","HOB>30","EVD at 5","SBP 100-200","no ASA/NSAIDs/AC x2wk",
+    "TCDs x14d","nimodipine x21d","DVT ppx 24h from stable scan"],
   full:["Please admit to NCCU",
     "Neuro Checks: Q1h",
     "Sodium Goal: Eunatremia (Na 135-145) ***",
@@ -2309,6 +2339,9 @@ const PLAN_LIB=[
  {id:"sdh",n:"SDH / traumatic ICH",
   re:t=>/\bsdh\b|subdural|\bedh\b|epidural haematoma|epidural hematoma|contusion/i.test(t||""),
   short:"SDH: repeat CTH 6h, Keppra 500 BID x7d, EuNa 135-145, SBP 100-160, HOB>30, hold AC/AP (restart 14d from stable scan), no dextrose IVF, DVT ppx 24h from stable CT",
+  abbr:["CTH 6h from last","keppra 500 bid x7","EuNa","SBP 100-160, prn labetalol",
+    "ATC tylenol, prn oxy; no NSAIDs x14d","HOB>30","hold AC/AP, restart 14d from stable scan",
+    "NS only, no dextrose","DVT ppx 24h after stable CTH","dispo pending repeat CTH"],
   full:["Imaging: Please obtain repeat CTH 6 hours from previous",
     "AEDs: Keppra 500 BID x7d ***",
     "Sodium Goal: Eunatremia (Na 135-145) ***",
@@ -2321,6 +2354,10 @@ const PLAN_LIB=[
  {id:"pituitary",n:"Suprasellar / pituitary mass",
   re:t=>pituitaryText(t),
   short:"Suprasellar mass: admit BB7, MRI pit protocol w/wo + CT w/wo, ophtho + endocrine consults, full pit panel (prolactin, stat + AM cortisol/ACTH, TSH/fT4, LH/FSH, testosterone, IGF-1, GH), expedited TTE, hold ASA81 + DVT ppx, SBP 100-140, NPO at midnight if no hemorrhage",
+  abbr:["BB7","MRI brain/pit w/wo, pit protocol","CT w/wo","ophtho",
+    "endo: prolactin, stat + AM cortisol/ACTH, TSH/fT4, LH/FSH, testosterone, IGF-1, GH",
+    "exped TTE","hold ASA81","normotn 100-140","hold DVT ppx","NPO at midnight if no bleed",
+    "pre-op EKG/CXR/UA/coags","pulse ox + tele"],
   full:["#Neuro",
     "Admit to BB7",
     "MRI brain/pituitary w/wo contrast, pituitary protocol; sedation if claustrophobia",
@@ -2341,6 +2378,8 @@ const PLAN_LIB=[
  {id:"carotid",n:"Carotid stenosis",
   re:t=>carotidText(t),
   short:"Carotid: CTA + carotid US (grade 0-49 mild / 50-69 mod / 70-99 severe), MRI brain (stroke vs TIA), TTE for cardioembolic source; continue ASA, load Plavix + P2Y12 at 24h (Brilinta if nonresponder)",
+  abbr:["CTA + carotid US","MRI brain (stroke vs TIA)","TTE","continue ASA",
+    "plavix load, P2Y12 at 24h; brilinta if nonresponder","OR ***"],
   full:["Imaging: CTA — stenosis? high-risk features include ulcerated plaque",
     "Imaging: Carotid ultrasound — stenosis?",
     "Imaging: MRI brain — stroke vs TIA; MRA if concern for intramural thrombus or dissection",
@@ -2352,6 +2391,9 @@ const PLAN_LIB=[
  {id:"postop-cranial",n:"Post-op cranial",
   re:t=>/post-?op|craniotomy|crani\b|resection|s\/p (?:crani|resect)/i.test(t||"")&&!spineTraumaText(t||""),
   short:"Post-op crani: q1h checks, Keppra 500 BID x7d, dex taper (PPI + ISS if >10mg/d), EuNa 135-145, HOB per attending, SBP<140, MRI post-op, periop abx, DVT ppx POD1",
+  abbr:["q1h checks","keppra 500 bid x7","dex taper, PPI + ISS while >10mg/d","EuNa",
+    "ATC tylenol, prn oxy","HOB ***","SBP<140, prn labetalol","MRI ***","incision care ***",
+    "lovenox ppx POD1","periop abx"],
   full:["Neuro Checks: q1 hour ***",
     "AEDs: Keppra 500 BID for 7 days ***",
     "Steroids: dex taper to *** over *** days; PPI and ISS while on >10mg/day dex ***",
@@ -2369,6 +2411,9 @@ const PLAN_LIB=[
  {id:"postop-spine",n:"Post-op spine",
   re:t=>/post-?op|fusion|lami|discectomy|acdf|tlif|plif|corpectomy/i.test(t||"")&&spineTraumaText(t||""),
   short:"Post-op spine: q4h checks, ATC tylenol + celebrex x5d + robaxin, prn oxycodone, no steroids, blake to suction, activity as tolerated, brace ***, periop abx, normotension",
+  abbr:["q4h checks","ATC tylenol, celebrex x5d, ATC robaxin, prn oxy, lido patch","no steroids",
+    "blake to suction","activity as tolerated","brace ***","therapy orders","incision care ***",
+    "periop abx","MAP normotn"],
   full:["Neuro Checks: q4 hours ***",
     "Analgesia: ATC tylenol, celebrex x5d, ATC robaxin, prn oxycodone, breakthrough morphine, lidocaine patches ATC ***",
     "Steroids: None indicated ***",
@@ -2388,6 +2433,62 @@ function planMatches(txt){
   return PLAN_LIB.filter(pl=>{try{return pl.re(t)}catch(e){return false}});
 }
 function planById(id){return PLAN_LIB.find(p=>p.id===id)||null}
+// ---------- protocols, written the way they get texted ----------
+// "Sodium Goal: Eunatremia (Na 135-145) ***" is EuNa. Each plan carries its own
+// abbreviated form; this compressor covers protocol text typed or pasted in.
+const PLAN_ABBREV=[
+ [/^sodium goal:.*?(na\s*>\s*1\d{2})/i,(m)=>m[1].replace(/\s+/g,"")],
+ [/^sodium goal:/i,()=>"EuNa"],
+ [/^neuro ?checks?:\s*q\s*(\d+)\s*(?:h|hour|hr)s?/i,m=>"q"+m[1]+"h checks"],
+ [/^aeds?:\s*/i,m=>null],
+ [/^bp goal:\s*(\d{2,3})\s*-\s*(\d{2,3})/i,m=>"SBP "+m[1]+"-"+m[2]],
+ [/^bp goal:\s*(sbp\s*[<>]\s*\d{2,3})/i,m=>m[1].replace(/\s+/g,"")],
+ [/^map goal:\s*/i,m=>null],
+ [/^analgesia:\s*/i,()=>"ATC tylenol, prn oxy"],
+ [/^activity:.*?hob\s*>?\s*(\d+)/i,m=>"HOB>"+m[1]],
+ [/^activity:\s*/i,m=>null],
+ [/^drains?:\s*(?:[lr]\s+)?evd at (\d+)/i,m=>"EVD at "+m[1]],
+ [/^drains?:\s*/i,m=>null],
+ [/^(?:anticoagulation\/antiplatelets?|antiplatelet\/anticoagulation):.*?(?:2 weeks|x2wk)/i,()=>"no ASA/AC x2wk"],
+ [/^(?:anticoagulation\/antiplatelets?|antiplatelet\/anticoagulation):\s*hold/i,()=>"hold AC/AP"],
+ [/^steroids?:\s*none/i,()=>"no steroids"],
+ [/^steroids?:\s*/i,()=>"dex taper, PPI + ISS while >10mg/d"],
+ [/^dvt prophylaxis:\s*start (lovenox|sch)[^,.;]*?pod\s*(\d)/i,m=>m[1].toLowerCase()+" ppx POD"+m[2]],
+ [/^abx:\s*/i,m=>null],
+ [/^(?:imaging|protocol|dispo|labs|bracing|therapy orders|incision care|other|grading|anatomy to document):\s*/i,m=>null],
+ [/^please admit to\s+(.*)$/i,m=>m[1]],
+ [/^admit to\s+(.*)$/i,m=>m[1]],
+ [/^please consult nvir.*$/i,()=>"NVIR angio <24h"],
+ [/^please place (?:left|l)-?sided radial.*$/i,()=>"L radial a-line"],
+ [/ok to start dvt ppx\s*(\d+)\s*h(?:ou)?rs? from .*stable.*$/i,m=>"DVT ppx "+m[1]+"h from stable scan"]
+];
+function abbrevPlanLine(line){
+  let t=String(line||"").replace(/\*\*\*/g,"").replace(/^[\s\-•]+/,"").replace(/\s{2,}/g," ").trim();
+  if(!t||/^#/.test(t))return "";
+  for(const [re,fn] of PLAN_ABBREV){
+    const m=t.match(re);
+    if(!m)continue;
+    const v=fn(m);
+    if(v)return v.trim();
+    t=t.replace(re,"").trim();                 // label dropped, value kept
+    break;
+  }
+  return t.replace(/[;,]\s*$/,"").trim();
+}
+function planAbbrLines(id){
+  const p=planById(id);if(!p)return [];
+  if(Array.isArray(p.abbr))return p.abbr.slice();
+  return (p.full||[]).map(abbrevPlanLine).filter(Boolean);
+}
+function planAbbrText(id){return planAbbrLines(id).join("\n")}
+// the abbreviated plan for whatever the text describes
+function planAbbrForText(txt){
+  const seen={},out=[];
+  planMatches(txt).forEach(pl=>planAbbrLines(pl.id).forEach(l=>{
+    const k=l.toLowerCase();if(!seen[k]){seen[k]=1;out.push(l)}
+  }));
+  return out;
+}
 function planShortText(id){const p=planById(id);return p?p.short:""}
 function planFullText(id){
   const p=planById(id);if(!p)return "";
@@ -5348,7 +5449,84 @@ function todayStr(){return new Date().toDateString()}
 function ensureDay(){if(S.day.date!==todayStr()){S.day={date:todayStr(),checks:{},at:{}}}S.day.at=S.day.at||{}}
 function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes()}
 function bmin(s){const[a,b]=s.split(":");return +a*60+ +b}
+// ---------- where you should be by now ----------
+// Two fixed points in the day: everyone seen with plans communicated by 10,
+// and a protected block at noon. The bar says which one is in play and what
+// is still between you and it.
+const PACE_SEEN_BY=10*60;          // 10:00
+const PACE_SIT_AT=12*60;           // 12:00
+const PACE_SIT_MINS=[30,45,60];
+function paceCounts(){
+  const list=(S.rounds||[]).filter(r=>r&&!r.closed);
+  let seen=0,planless=0;
+  list.forEach(r=>{
+    if((r.chartChecks||{}).am||r.seen)seen++;
+    const hasPlan=String(r.plan||"").trim()||(r.steps||[]).length||String(r.morningNotes||"").trim();
+    if(!hasPlan)planless++;
+  });
+  return {total:list.length,seen:seen,unseen:list.length-seen,planless:planless};
+}
+function protectLeftMs(){
+  const until=(S.protect||{}).until||0;
+  return until>Date.now()?until-Date.now():0;
+}
+function fmtLeft(ms){
+  const m=Math.floor(ms/60000),ss=Math.floor((ms%60000)/1000);
+  return m+":"+String(ss).padStart(2,"0");
+}
+function protectStart(mins){
+  S.protect={until:Date.now()+mins*60000,mins:mins,startedAt:Date.now()};
+  save();renderPace();
+  showToast("Protected "+mins+" min — the list will keep",()=>{S.protect=null;save();renderPace()},"Undo");
+}
+function protectEnd(){
+  const was=S.protect;
+  S.protect=null;save();renderPace();
+  showToast("Protected block ended",()=>{S.protect=was;save();renderPace()},"Undo");
+}
+function paceDismiss(){ensureDay();S.day.paceOff=true;save();renderPace()}
+function paceShow(){ensureDay();S.day.paceOff=false;save();renderPace()}
+function paceState(){
+  const n=nowMin(),c=paceCounts(),left=protectLeftMs();
+  if(left)return {lv:"protect",head:"Protected block",body:fmtLeft(left)+" left — critical care only",c:c};
+  if(n<PACE_SEEN_BY){
+    const mins=PACE_SEEN_BY-n;
+    const owed=c.unseen+c.planless;
+    if(!owed&&c.total)return {lv:"ok",head:"On pace",body:"everyone seen, plans out — "+Math.floor(mins/60)+"h "+(mins%60)+"m to 10:00",c:c};
+    return {lv:mins<=60&&owed?"warn":"due",head:"By 10:00",
+      body:[c.unseen?c.unseen+" to see":"",c.planless?c.planless+" without a plan":""].filter(Boolean).join(" · ")+
+        " · "+(mins>=60?Math.floor(mins/60)+"h ":"")+(mins%60)+"m left",c:c};
+  }
+  if(c.unseen||c.planless)
+    return {lv:"late",head:"10:00 check — behind",
+      body:[c.unseen?c.unseen+" not seen":"",c.planless?c.planless+" plan not communicated":""].filter(Boolean).join(" · "),c:c};
+  if(n>=PACE_SIT_AT-15&&n<PACE_SIT_AT+150)
+    return {lv:"sit",head:"Sit down",body:"everyone seen — take the protected block",c:c,sit:true};
+  return {lv:"ok",head:"Caught up",body:c.total?"all "+c.total+" seen, plans out":"no patients on the list",c:c};
+}
+function paceBarHtml(){
+  ensureDay();
+  if(S.day.paceOff)return '<div class="pacebar off"><button type="button" class="pacemore" onclick="paceShow()">▸ Show pace</button></div>';
+  const st=paceState();
+  // the protected block is offered once the morning is actually done, not as a
+  // way out of being behind
+  const sit=!protectLeftMs()&&(st.sit||(st.lv==="ok"&&nowMin()>=PACE_SIT_AT-15));
+  return '<div class="pacebar '+st.lv+'">'+
+    '<span class="pacehead">'+esc(st.head)+'</span>'+
+    '<span class="pacebody">'+esc(st.body)+'</span>'+
+    (protectLeftMs()?'<button type="button" onclick="protectEnd()">End early</button>':
+      (sit?PACE_SIT_MINS.map(m=>'<button type="button" title="No pages except critical care for '+m+' minutes" onclick="protectStart('+m+')">'+m+' min</button>').join(""):""))+
+    '<button type="button" class="pacex" title="Hide for today" onclick="paceDismiss()">✕</button>'+
+  '</div>';
+}
+function renderPace(){
+  ["pacebar","pacebarday"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=paceBarHtml();
+  });
+}
 function renderBlocks(){
+  renderPace();
   ensureDay();
   const n=nowMin();
   document.getElementById("blocks").innerHTML=BLOCKS.map(bl=>{
@@ -6101,8 +6279,11 @@ function examRecord(id){return (S.rounds||[]).find(r=>r.id===id)||(S.consults||[
 function renderExamCards(id){if((S.consults||[]).some(c=>c.id===id))render();else renderRounds()}
 function examIntactText(mode,limbs){
   if(mode==="spine"){
+    // written the way it is read on rounds: the muscle order above the scores
     const upper="5/5/5/5/5/5",lower="5/5/5/5/5";
-    return limbs==="bilateral"?"BUE: "+upper+"\nBLE: "+lower:"RUE: "+upper+"\nLUE: "+upper+"\nRLE: "+lower+"\nLLE: "+lower;
+    const ue=limbs==="bilateral"?["BUE: "+upper]:["RUE: "+upper,"LUE: "+upper];
+    const le=limbs==="bilateral"?["BLE: "+lower]:["RLE: "+lower,"LLE: "+lower];
+    return ["Delt/Bi/Tri/WE/FF/FA"].concat(ue,["IP/Quad/AT/EHL/Gastroc"],le,["no hoffmans","no clonus"]).join("\n");
   }
   const motor=limbs==="unilateral"?"RUE 5/5\nLUE 5/5\nRLE 5/5\nLLE 5/5":"BUE 5/5\nBLE 5/5";
   return "AOx3\nPERRL\nEOMI\n"+motor;
@@ -6294,7 +6475,11 @@ function examStructFromText(t){
   });
   const derm=s.match(/\b(?:dermatome|sensory level|sensation)\b\s*:?\s*([^;\n]+)/i);
   if(derm&&!/^decreased sensation$/i.test(out.sens))out.dermSens=derm[1].trim();
-  if(/\b-\s*hoffmans?\b/i.test(s)&&/\b-\s*clonus\b/i.test(s))out.reflex="- hoffmans, - clonus";
+  const noHoff=/\b(?:-|no)\s*hoffmans?\b/i.test(s),noClon=/\b(?:-|no)\s*clonus\b/i.test(s);
+  if(noHoff&&noClon)out.reflex="- hoffmans, - clonus";
+  else if(noHoff&&!/\+\s*clonus/i.test(s))out.reflex="- hoffmans";
+  else if(noClon&&!/\+\s*hoffmans?/i.test(s))out.reflex="- clonus";
+  else if(/\b-\s*hoffmans?\b/i.test(s)&&/\b-\s*clonus\b/i.test(s))out.reflex="- hoffmans, - clonus";
   else if(/\+\s*hoffmans?\b/i.test(s)&&/\+\s*clonus\b/i.test(s))out.reflex="+ hoffmans, + clonus";
   else if(/\b-\s*hoffmans?\b/i.test(s))out.reflex="- hoffmans";
   else if(/\b-\s*clonus\b/i.test(s))out.reflex="- clonus";
@@ -6537,15 +6722,20 @@ function roundExamHtml(r){
   const nHist=(r.examHist||[]).length;
   const hasAny=!!String(cur||"").trim()||nHist>0;
   return '<div class="fld"><label>Current exam</label><textarea class="evta" id="rexam_'+r.id+'" placeholder="Current exam..." style="min-height:84px;margin-top:6px" oninput="roundExamInput(\''+r.id+'\',this)" onpaste="roundExamPaste(\''+r.id+'\',this)" onblur="roundExamSave(\''+r.id+'\',this,false)">'+esc(cur)+'</textarea></div>'+
+    // Save sits with the box it saves, so it is still there when the trend
+    // panel below is closed
+    '<div class="qbtns examsave">'+
+      '<button type="button" class="primary" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
+      (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
+      (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
+      (hasAny?'<button type="button" class="xbtn" onclick="clearRoundExamAll(\''+r.id+'\')">✕ Clear all'+(nHist?" ("+(nHist+1)+")":"")+'</button>':"")+
+    '</div>'+
     '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
     roundExamBuilderHtml(r,cur)+
     '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
     examChipsHtml(r.id)+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'intubated\')">Intubated</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
-      (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
-      (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
-      (hasAny?'<button type="button" class="xbtn" onclick="clearRoundExamAll(\''+r.id+'\')">✕ Clear all'+(nHist?" ("+(nHist+1)+")":"")+'</button>':"")+
     '</div>'+
     roundExamHistoryHtml(r)+
     '</details>';
@@ -6870,6 +7060,47 @@ function teamRoomComparator(a,b){
 }
 function setRoundSort(m){S.roundSort=m;renderRounds();save()}
 function toggleSoCcFilter(){soCcOnly=!soCcOnly;renderRounds()}
+// every rounds patient and every open chart check, on the SO board in one tap
+function soAllTargets(){
+  const rounds=(S.rounds||[]).filter(Boolean);
+  const charts=(S.consults||[]).filter(c=>c&&c.type==="CHART"&&!c.closed);
+  return {rounds:rounds,charts:charts,all:rounds.concat(charts)};
+}
+function soAllOn(){
+  const all=soAllTargets().all;
+  return all.length>0&&all.every(x=>x.nccuSO);
+}
+function markSoAll(on){
+  const t=soAllTargets();
+  if(!t.all.length){showToast("No rounds patients or chart checks yet");return}
+  const before=t.all.map(x=>({id:x.id,nccuSO:!!x.nccuSO,soCcResp:!!x.soCcResp,soT:x.soT}));
+  let n=0;
+  t.rounds.forEach(r=>{
+    if(!!r.nccuSO===on)return;
+    r.nccuSO=on;r.soCcResp=on;
+    if(on&&!r.soT)r.soT=detectTmpl([r.raw,r.label].filter(Boolean).join(" "));
+    r.updatedAt=Date.now();syncLinkedSo(r);n++;
+  });
+  t.charts.forEach(c=>{
+    if(!!c.nccuSO===on)return;
+    c.nccuSO=on;
+    if(!on)c.soCcResp=false;
+    if(on&&!c.soT)c.soT=detectTmpl([c.prob,c.loc,c.note].filter(Boolean).join(" "))||"floor";
+    touch(c);syncLinkedSo(c);n++;
+  });
+  render();renderRounds();renderNccu();flushAutosave();
+  if(!n){showToast(on?"All of them are already on the SO board":"None of them are on the SO board");return}
+  showToast((on?"Added ":"Removed ")+n+(on?" to":" from")+" the SO board",()=>{
+    before.forEach(b=>{
+      const x=findAny(b.id);if(!x)return;
+      x.nccuSO=b.nccuSO;x.soCcResp=b.soCcResp;
+      if(b.soT===undefined)delete x.soT;else x.soT=b.soT;
+      x.updatedAt=Date.now();syncLinkedSo(x);
+    });
+    render();renderRounds();renderNccu();flushAutosave();
+  },"Undo");
+}
+function toggleSoAll(){markSoAll(!soAllOn())}
 function toggleFloorGroup(){S.roundGroupFloor=!S.roundGroupFloor;renderRounds();save()}
 function toggleRoundFloor(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
@@ -7006,6 +7237,7 @@ function roundRowCard(r){
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
     roundStageBox(r)+
     chartDotsHtml(r)+
+    noExamBadge(r)+
     roundTodoIndicator(r)+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
     (r.worry?'<span class="bg warn">!</span>':"")+
@@ -7017,11 +7249,19 @@ function roundRowCard(r){
     '<span class="car">▸</span></div></div>';
 }
 function renderRounds(){
+  renderPace();
   S.rounds=S.rounds||[];
   const el=document.getElementById("rcards");if(!el)return;
   const sb=document.getElementById("rsort");
   if(sb)Array.from(sb.children).forEach(b=>b.classList.toggle("on",b.dataset.m===(S.roundSort||"room")));
   const sf=document.getElementById("soCcFilterBtn");if(sf)sf.classList.toggle("on",soCcOnly);
+  const sa=document.getElementById("soAllBtn");
+  if(sa){
+    const on=soAllOn();
+    sa.classList.toggle("on",on);
+    sa.textContent=on?"● SO all off":"● SO all";
+    sa.title=on?"Take every rounds patient and chart check off the SO board":"Put every rounds patient and chart check on the SO board";
+  }
   const rt=document.getElementById("roundTimersBtn");if(rt){const off=roundAutoTimersOff();rt.classList.toggle("off",off);rt.classList.toggle("on",!off);rt.setAttribute("aria-pressed",String(!off));rt.innerHTML='<span class="sw"></span> Auto timers '+(off?"off":"on")+" for rounds"}
   const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
@@ -11168,11 +11408,14 @@ const TC_CNS_EXAM=[
  "SILT"
 ].join("\n");
 const TC_SPINE_EXAM=[
- "Spine motor order: RUE/LUE Delt/Bi/Tri/WE/FF/FA; RLE/LLE IP/Quad/AT/EHL/Gastroc",
+ "Delt/Bi/Tri/WE/FF/FA",
  "RUE: 5/5/5/5/5/5",
  "LUE: 5/5/5/5/5/5",
+ "IP/Quad/AT/EHL/Gastroc",
  "RLE: 5/5/5/5/5",
  "LLE: 5/5/5/5/5",
+ "no hoffmans",
+ "no clonus",
  "Sensation: RUE +; LUE +; RLE +; LLE +; dermatome/level ___",
  "DRE: ___"
 ].join("\n");
@@ -11231,8 +11474,53 @@ function tcMergeCsv(cur,add){
   String(add||"").split(",").map(s=>s.trim()).filter(Boolean).forEach(x=>{if(!out.some(y=>y.toLowerCase()===x.toLowerCase()))out.push(x)});
   return out.join(", ");
 }
+// ---------- what you actually wrote wins ----------
+// Free text often already says "HPI: ... Plan: ...". Those blocks are kept word
+// for word; only the sections you left out get filled in.
+const TC_HEAD=[
+ ["hpi",/^(?:hpi|history|h&p|subjective|s)\s*[:\-–]/i],
+ ["exam",/^(?:exam|pe|physical(?: exam)?|neuro exam|objective|o)\s*[:\-–]/i],
+ ["img",/^(?:imaging|images|ct|cth|cta|mri|xr|x-?ray|films?|radiology)\s*[:\-–]/i],
+ ["labs",/^(?:labs?|laboratory|studies)\s*[:\-–]/i],
+ ["acap",/^(?:ac\/?ap|anticoagulation(?:\/antiplatelets?)?|antiplatelets?|blood thinners?)\s*[:\-–]/i],
+ ["plan",/^(?:plan|a\/p|a&p|assessment(?: and plan)?|recs?|recommendations?|impression and plan)\s*[:\-–]/i],
+ ["title",/^(?:title|dx|diagnosis|problem)\s*[:\-–]/i]
+];
+function tcWritten(text){
+  const found={};
+  let cur="";
+  String(text||"").split(/\r?\n/).forEach(raw=>{
+    const line=raw.trim();
+    if(!line){if(cur)found[cur]+="\n";return}
+    const hit=TC_HEAD.find(([,re])=>re.test(line));
+    if(hit){
+      cur=hit[0];
+      const rest=line.replace(hit[1],"").trim();
+      found[cur]=(found[cur]?found[cur]+"\n":"")+rest;
+      return;
+    }
+    if(cur)found[cur]+=(found[cur]?"\n":"")+line;
+  });
+  Object.keys(found).forEach(k=>{
+    found[k]=found[k].split(/\n/).map(x=>x.trim()).filter(Boolean).join("\n");
+    if(!found[k])delete found[k];
+  });
+  return found;
+}
+// the part of the free text that is not inside a labelled block
+function tcProseOf(text,written){
+  if(!Object.keys(written||{}).length)return String(text||"");
+  const lines=[];let inside=false;
+  String(text||"").split(/\r?\n/).forEach(raw=>{
+    const line=raw.trim();
+    if(TC_HEAD.some(([,re])=>re.test(line))){inside=true;return}
+    if(!inside)lines.push(raw);
+  });
+  return lines.join("\n").trim()||String(text||"");
+}
 function tcExtract(text){
   const out={};
+  const written=tcWritten(text);
   let am=text.match(/(\d{1,3})\s*(?:yo|y\/?o|year[- ]old)\s*,?\s*(male|female|m|f)\b/i);
   if(!am)am=text.match(/(\d{1,3})\s?([MF])(?![A-Za-z])/);
   if(am)out.ageSex=am[1]+(/^m/i.test(am[2])?"M":"F");
@@ -11271,22 +11559,47 @@ function tcExtract(text){
   // problem = first sentence, stripped of age/sex prefix
   let prob=sents[0]||"";
   if(am)prob=prob.replace(am[0],"");
-  TC_MEDS.forEach(p=>{prob=prob.replace(new RegExp("(?:on\\s+|with\\s+|w/\\s*)?(?:"+p[0].source+")[a-z]*","gi"),"")});
-  TC_PMH.forEach(p=>{prob=prob.replace(new RegExp("(?:on\\s+|with\\s+|w/\\s*)?(?:"+p[0].source+")[a-z]*[^,.;]*","gi"),"")});
-  prob=prob.replace(/\s{2,}/g," ").replace(/,\s*(?=,)/g,"").replace(/^[\s,–—-]+|[\s,–—-]+$/g,"").replace(/^(and|with|w\/)\s+/i,"").replace(/(,\s*)+/g,", ");
+  TC_MEDS.forEach(p=>{prob=prob.replace(new RegExp("(?:\\bon\\s+|\\bwith\\s+|\\bw/\\s*)?(?:"+p[0].source+")[a-z]*","gi"),"")});
+  TC_PMH.forEach(p=>{prob=prob.replace(new RegExp("(?:\\bon\\s+|\\bwith\\s+|\\bw/\\s*|\\bknown\\s+)?(?:"+p[0].source+")[a-z]*[^,.;]*","gi"),"")});
+  prob=prob.replace(/\s{2,}/g," ").replace(/,\s*(?=,)/g,"").replace(/^[\s,–—-]+|[\s,–—-]+$/g,"").replace(/^(and|with|w\/)\s+/i,"").replace(/(,\s*)+/g,", ")
+    .replace(/^(?:p\/?w|presents? with|presenting with|here with|c\/?o)\s+/i,"")    // the sentence already says p/w
+    .replace(/^[\s,–—-]+/,"");                 // stripping a PMH can leave the comma behind
   const medsPart=meds.length?" on "+meds.join("/"):"";
   const pmhPart=pmh.length?" w/ "+pmh.join(", "):(meds.length?"":" w/ [relevant PMH]");
-  out.hpi=(out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".";
+  out.hpi=((out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".")
+    .replace(/\bp\/w\b([^]*?)[,;]?\s*\bp\/w\b\s*/i,"p/w$1 ")   // one p/w per sentence
+    .replace(/\s{2,}/g," ").replace(/\s+([,.])/g,"$1");
   // plan
-  const plan=[];
-  if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){plan.push("CTH 4-6 hrs or exam decline");plan.push("SBP <140, EuNa")}
-  if(meds.length)plan.push("Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
-  if(/fusion|lami|stenosis|radiculopath|spine|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))plan.push("MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
-  if(/fever|infect|abscess|osteo|wound/i.test(text))plan.push("ESR/CRP, blood cx; MRI w/ contrast if deep infection concern");
-  if(/shunt|\bvps\b/i.test(text))plan.push("Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
-  if(/seizure|postictal/i.test(text))plan.push("Keppra; ASM levels");
-  if(/fall/i.test(text))plan.push("Fall/medical workup per primary");
-  out.plan=plan.join("\n");
+  // each generic line carries the topic it covers, so a protocol that already
+  // speaks to that topic replaces it instead of repeating it
+  const plan=[],topic=[];
+  const addPlan=(tp,l)=>{plan.push(l);topic.push(tp)};
+  if(/\bsdh\b|\bedh\b|\bich\b|hemorrhage|hematoma/i.test(text)){addPlan("imaging","CTH 4-6 hrs or exam decline");addPlan("bp","SBP <140, EuNa")}
+  if(meds.length)addPlan("ac","Hold "+meds.join("/")+"; check INR/coags/plt; reverse if indicated");
+  if(/fusion|lami|stenosis|radiculopath|spine|fracture|\bfx\b|facet|dens|odontoid|hangman|jefferson|TAL|PLC/i.test(text)&&!/\bsdh\b|\bich\b/i.test(text))addPlan("imaging","MRI [region] w/wo; serial motor exam, escalate for progression or bowel/bladder change");
+  if(/fever|infect|abscess|osteo|wound/i.test(text))addPlan("id","ESR/CRP, blood cx; MRI w/ contrast if deep infection concern");
+  if(/shunt|\bvps\b/i.test(text))addPlan("shunt","Shunt series + CTH; compare with last confirmed-failure imaging; verify valve setting");
+  if(/seizure|postictal/i.test(text))addPlan("asm","Keppra; ASM levels");
+  if(/fall/i.test(text))addPlan("fall","Fall/medical workup per primary");
+  // the protocol for this diagnosis, in its abbreviated form, leads
+  const proto=planAbbrForText(text);
+  const protoText=proto.join(" ");
+  const covered={imaging:/\bcth?\b|\bmri\b|\bct\b|imaging/i,bp:/\bsbp\b|\bmap\b|normotn/i,
+    asm:/keppra|aed|asm|depakote|vpa\b/i,ac:/\bac\/ap\b|asa|anticoag|plavix|lovenox|hold ac/i,
+    id:/abx|antibiotic|vanc|ancef/i,shunt:/shunt/i,fall:/$^/};
+  const extra=plan.filter((l,i)=>{
+    const re=covered[topic[i]];
+    if(re&&proto.length&&re.test(protoText))return false;
+    return !proto.some(x=>x.toLowerCase().indexOf(l.toLowerCase().slice(0,18))>=0);
+  });
+  out.planSuggested=proto.concat(extra).join("\n");
+  out.plan=out.planSuggested;
+  // anything written under a heading is kept exactly as written
+  Object.keys(written).forEach(k=>{out[k]=written[k];out.written=(out.written||[]).concat([k])});
+  if(written.hpi||written.plan){
+    const prose=tcProseOf(text,written);
+    if(!written.title&&prose.trim())out.title=tcExtract(prose+" ").title;
+  }
   return out;
 }
 let tcFromId=null;
@@ -11321,13 +11634,7 @@ function tcSuggestFor(p,k){
   if(k==="acap")return tcExtract(src).acap||"AC/AP: none known / last dose ___";
   const o=tcExtract(tcSrcText(p)||src);
   if(k==="img")return o.img||"[modality w/ finding vs prior]";
-  if(k==="plan"){
-    const hits=planMatches(src);
-    const proto=hits.map(h=>h.short);
-    const base=o.plan?o.plan.split("\n").filter(Boolean):[];
-    const merged=proto.concat(base.filter(b=>!proto.some(x=>x.toLowerCase().indexOf(b.toLowerCase())>=0)));
-    return merged.join("\n");
-  }
+  if(k==="plan")return o.planSuggested||o.plan||"";
   return o[k]||"";
 }
 function tcFillSection(p,k){
@@ -11390,6 +11697,7 @@ function tcBodyHtml(p){
       : '<textarea id="'+id+'" style="min-height:'+(sec.h||60)+'px" placeholder="Type anything here…"></textarea>';
     return '<div class="fld"><label>'+esc(sec.label)+'</label>'+
       (sec.k==="exam"?tcExamChooserHtml(p):"")+field+
+      (sec.k==="plan"?'<div id="'+p+'_plansugg"></div>':"")+
       '<div class="qbtns"><button type="button" class="tcfill" onclick="tcFillSection(\''+p+'\',\''+sec.k+'\')">✦ Suggest</button>'+
       '<button type="button" class="tcclear" onclick="tcClearSection(\''+p+'\',\''+sec.k+'\')">✕ Clear</button></div></div>';
   };
@@ -11421,14 +11729,51 @@ function tcParseInto(p){
   const src=tcSrcText(p);
   if(!src.trim())return false;
   const o=tcExtract(src);
-  tcSet(p,"title",o.title||"");
-  tcSet(p,"hpi",o.hpi||"");
-  tcSet(p,"exam",o.exam||tcSuggestedExam(src));
-  tcSet(p,"img",o.img||"[modality w/ finding vs prior]");
-  tcSet(p,"labs",tcMergeCsv(o.labs,tcRelevantLabs(src)));
-  tcSet(p,"acap",o.acap||"");
-  tcSet(p,"plan",o.plan||"");
+  const wrote=o.written||[];
+  // a box you have already filled is only replaced by something the free text
+  // actually said under that heading — never by a generated line
+  const put=(k,v)=>{
+    if(wrote.indexOf(k)>=0){tcSet(p,k,o[k]);return}
+    if(String(tcGet(p,k)||"").trim())return;
+    tcSet(p,k,v||"");
+  };
+  put("title",o.title||"");
+  put("hpi",o.hpi||"");
+  put("exam",o.exam||tcSuggestedExam(src));
+  put("img",o.img||"[modality w/ finding vs prior]");
+  put("labs",tcMergeCsv(o.labs,tcRelevantLabs(src)));
+  put("acap",o.acap||"");
+  put("plan",o.plan||"");
+  tcRenderPlanSuggest(p);
   return true;
+}
+// the protocols that fit what is written, offered rather than imposed
+function tcPlanSuggestHtml(p){
+  const src=[tcSrcText(p),tcGet(p,"title"),tcGet(p,"hpi"),tcGet(p,"img")].filter(Boolean).join(" ");
+  const hits=planMatches(src);
+  if(!hits.length)return "";
+  return '<div class="chips tcplanchips"><span class="ssl">Plans:</span>'+
+    hits.map(h=>'<button type="button" title="Add the abbreviated '+esc(h.n)+' plan" '+
+      'onclick="tcAddPlan(\''+p+'\',\''+h.id+'\')">✦ '+esc(h.n)+'</button>').join("")+
+    hits.map(h=>'<button type="button" class="tcclear" title="Copy the one-line '+esc(h.n)+' plan" '+
+      'onclick="copyPlanShort(\''+h.id+'\')">⧉ '+esc(h.n)+' one-liner</button>').join("")+
+  '</div>';
+}
+function tcRenderPlanSuggest(p){
+  const el=document.getElementById(p+"_plansugg");
+  if(el)el.innerHTML=tcPlanSuggestHtml(p);
+}
+// append the abbreviated protocol without disturbing what is already there
+function tcAddPlan(p,id){
+  const lines=planAbbrLines(id);
+  if(!lines.length)return;
+  const before=tcGet(p,"plan");
+  const have=before.split(/\n/).map(x=>x.trim().toLowerCase()).filter(Boolean);
+  const add=lines.filter(l=>have.indexOf(l.toLowerCase())<0);
+  if(!add.length){showToast("Already in the plan");return}
+  tcSet(p,"plan",[before.trim(),add.join("\n")].filter(Boolean).join("\n"));
+  tcAfterEdit(p);
+  showToast("Added "+(planById(id)||{}).n+" plan",()=>{tcSet(p,"plan",before);tcAfterEdit(p)},"Undo");
 }
 // score lines come from this builder's own aids, not another panel's
 function tcFormatFor(p){
@@ -11458,6 +11803,7 @@ function tcFlagTextFor(p){
   return card.concat(own).join(" ");
 }
 function tcRenderFlags(p){
+  tcRenderPlanSuggest(p);
   renderTextConsultFlags(p+"_flags",tcFlagTextFor(p));
   renderGcsAid(p,p+"_gcs",false);renderHhAid(p,p+"_hh",false);renderIchAid(p,p+"_ich",false);renderAoAid(p,p+"_ao",false);renderTlicsAid(p,p+"_tlics",false);renderSinsAid(p,p+"_sins",false);renderPhasesAid(p,p+"_phases",false);
 }
@@ -12730,6 +13076,7 @@ document.addEventListener("visibilitychange",()=>{
 let boardClockMinute=null;
 function boardClockTick(force){
   const m=nowMin();
+  if(protectLeftMs())renderPace();            // the countdown moves every tick
   if(!force&&m===boardClockMinute)return;
   boardClockMinute=m;
   renderReadOnly(()=>{renderAll();renderBlocks()});
