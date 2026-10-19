@@ -390,7 +390,14 @@ button.rdone.finaldone{background:#123527}
 .nccucard{border-left-color:var(--e3)}
 .nccucard .badges .primarydx{flex:0 0 auto}
 .nccucard .state{overflow:hidden;text-overflow:ellipsis}
-.nccucard.compact .state{white-space:nowrap}
+.nccucard.compact{padding:7px 10px}
+.nccucard.compact .crow{padding:0;background:none;border:none;margin:0;min-height:26px}
+.nccucard.compact .crow .bg{flex:0 0 auto}
+.nccucard.compact .rprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:40px;font-size:13px}
+.nccucard.compact .car{margin-left:auto;color:var(--mut);flex:0 0 auto}
+.nccucard.compact .nccunext{display:flex;align-items:center;gap:6px;margin:5px 0 0;padding-left:2px}
+.nccucard.compact .nccunext .ract{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px;font-size:12.5px}
+.nccucard.compact .webtrash{top:6px}
 .nccugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:9px}
 .nccusec{margin-top:10px}
 .nccusec h4{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut);margin:0 0 5px}
@@ -913,7 +920,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.261 · 2026-10-18</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.263 · 2026-10-18</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5925,7 +5932,7 @@ function patientHandoffNotesSaveNow(id,button){
 // and the board's values stay exactly where they were: a parameter the new
 // baseline does not mention is still true, so it keeps yesterday's value and
 // only the comparator ("was ___") is cleared.
-function soRollDay(r){
+function soRollDay(r,clearMorning){
   if(!r)return null;
   const before={morningNotes:r.morningNotes,daytimeNotes:r.daytimeNotes,previousDayNotes:r.previousDayNotes,
     note:r.note,soDayKey:r.soDayKey,slotPrev:r.slotPrev?JSON.parse(JSON.stringify(r.slotPrev)):undefined,
@@ -5940,6 +5947,9 @@ function soRollDay(r){
   if(carried&&carried!==String(r.previousDayNotes||"").trim()){r.previousDayNotes=carried;stampF(r,"previousDayNotes")}
   if(r.note){r.note="";stampF(r,"note")}                      // folded into previous-day above
   if(dayIsOld){r.daytimeNotes="";stampF(r,"daytimeNotes")}
+  // ↻ New day empties the morning box as well, ready for today's baseline;
+  // when a new baseline is being typed the caller is about to fill it instead
+  if(clearMorning&&String(r.morningNotes||"").trim()){r.morningNotes="";stampF(r,"morningNotes")}
   r.slotPrev={};stampF(r,"slotPrev");                         // yesterday's "was ___" is spent
   r.soSnap={};r.soSnapDay=todayStr();                         // Δ tracking restarts this morning
   r.soDayKey=todayStr();stampF(r,"soDayKey");
@@ -5981,9 +5991,9 @@ function patientHandoffNotesRefresh(id,el){
 }
 function soRollDayManual(id){
   const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!r)return;
-  const before=soRollDay(r);
+  const before=soRollDay(r,true);
   renderRounds();renderNccu();flushAutosave();
-  showToast("Rolled yesterday's sign-out down to Previous-day notes",()=>{
+  showToast("New day — yesterday moved down, morning baseline cleared",()=>{
     const rr=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!rr)return;
     soRestoreDay(rr,before);renderRounds();renderNccu();flushAutosave();
   },"Undo");
@@ -6726,18 +6736,19 @@ function roundExamHtml(r){
     // panel below is closed
     '<div class="qbtns examsave">'+
       '<button type="button" class="primary" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
+      '<button type="button" onclick="toggleExamFields(\''+r.id+'\')" title="'+(r.examOpen?'Hide the exam fields':'Open the exam fields and trend')+'">'+(r.examOpen?'⤡ Hide fields':'⤢ Fields')+'</button>'+
       (String(cur||"").trim()?'<button type="button" onclick="copyRoundExam(\''+r.id+'\')">⧉ Copy exam</button>':"")+
       (String(cur||"").trim()?'<button type="button" class="xbtn" onclick="clearRoundExam(\''+r.id+'\')">✕ Clear</button>':"")+
       (hasAny?'<button type="button" class="xbtn" onclick="clearRoundExamAll(\''+r.id+'\')">✕ Clear all'+(nHist?" ("+(nHist+1)+")":"")+'</button>':"")+
     '</div>'+
     '<details class="moredet" '+(r.examOpen?'open':'')+' ontoggle="roundExamToggle(\''+r.id+'\',this.open)"><summary>Exam trend</summary>'+
+    roundExamHistoryHtml(r)+                      // the last exams read first
     roundExamBuilderHtml(r,cur)+
     '<div class="qbtns"><button type="button" onclick="roundExamBuildApply(\''+r.id+'\',true)">Apply + save structured exam</button></div>'+
     examChipsHtml(r.id)+
     '<div class="qbtns"><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'neuro\')">Neuro</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'intubated\')">Intubated</button><button type="button" onclick="roundExamPreset(\''+r.id+'\',\'spine\')">Spine</button>'+
       '<button type="button" onpointerdown="event.preventDefault()" onclick="roundExamSave(\''+r.id+'\',document.getElementById(\'rexam_'+r.id+'\'),true)">Save exam</button>'+
     '</div>'+
-    roundExamHistoryHtml(r)+
     '</details>';
 }
 // clearing the box only; the saved trend is left alone
@@ -6787,6 +6798,11 @@ function delRoundExamHist(id,i){
     rr.examHist=rr.examHist||[];rr.examHist.splice(i,0,removed);
     rr.prevExam=roundPrevExamText(rr);rr.updatedAt=Date.now();renderExamCards(id);flushAutosave();
   },"Undo");
+}
+function toggleExamFields(id){
+  const r=examRecord(id);if(!r)return;
+  r.examOpen=!r.examOpen;
+  r.updatedAt=Date.now();renderExamCards(id);autosave();
 }
 function roundExamToggle(id,on){const r=examRecord(id);if(r){r.examOpen=!!on;r.updatedAt=Date.now();save()}}
 function roundPrevExamText(r){
@@ -7028,7 +7044,7 @@ function roundExamSave(id,el,explicit){
   }else{
     r.exam="";
   }
-  r.examOpen=true;
+  // saving is not a request to open the field builder — the Fields button is
   r.updatedAt=Date.now();renderExamCards(id);save();
   if(explicit)showToast((r.examHist||[]).length>beforeHist?"Exam saved to trend":"Exam saved");
 }
@@ -11270,29 +11286,48 @@ function nccuCardHtml(r){
   const one=(r.so&&r.so["One-liner"])||roundProblemText(r)||r.prob||r.raw||"";
   const compact=nccuIsCompact(r);
   const dx=roundPrimaryDxTag(r);
-  const body=compact
-    ? nccuCompactTodoHtml(r)
-    : (sxPreviewHtml(r)+slotBoardHtml(r)+sxCardHtml(r)+nccuNoteHtml(r));
+  const body=sxPreviewHtml(r)+slotBoardHtml(r)+sxCardHtml(r)+nccuNoteHtml(r);
   const nChg=nccuDiff?nccuChangeCount(r):0;
+  const chg=nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"";
+  const ready=(function(){
+    const st=sxNeedsRecompress(r);
+    if(st)return '<span class="bg gapbadge" title="carried from a previous day — keep or drop">'+st+' to recompress</span>';
+    const loops=sxByRole(r,"loop").filter(x=>!x.done).length;
+    if(loops)return '<span class="bg loopbadge" title="open loops to hand off">'+loops+' open</span>';
+    return '<span data-ready class="bg gapbadge'+(nccuReady(r)?' done':'')+'" title="Fill every sign-out box to be ready">'+(nccuReady(r)?'✓':'Incomplete')+'</span>';
+  })();
+  // compact reads like a rounds row: one line, the signal badges, the one-liner
+  if(compact){
+    const cond=sxConditions(r).slice(0,1).map(c=>'<span class="bg c">'+esc(c.l)+'</span>').join("");
+    return '<div class="card nccucard compact crowwrap hastrash" data-id="'+r.id+'">'+
+      '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
+      '<div class="crow" onclick="toggleOneNccuCompact(\''+r.id+'\')">'+
+        (S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+
+        '<span class="bg warn">SO</span>'+
+        (dx?'<span class="bg primarydx">'+esc(dx)+'</span>':cond)+
+        ready+chg+
+        '<span class="rprob">'+esc(one)+'</span>'+
+        '<span class="car">▸</span>'+
+      '</div>'+
+      nccuCompactTodoHtml(r)+
+    '</div>';
+  }
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
     '<div class="nccucardhead"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+
     sxConditions(r).slice(0,3).map(c=>'<span class="bg c">'+esc(c.l)+'</span>').join("")+
-    (compact&&dx?'<span class="bg primarydx">'+esc(dx)+'</span>':"")+
     (function(){
       const st=sxNeedsRecompress(r);
       if(st)return '<span class="bg gapbadge" title="carried from a previous day — keep or drop">'+st+' to recompress</span>';
       const loops=sxByRole(r,"loop").filter(x=>!x.done).length;
       if(loops)return '<span class="bg loopbadge" title="open loops to hand off">'+loops+' open</span>';
       return '<span data-ready class="bg gapbadge'+(nccuReady(r)?' done':'')+'" title="Fill every sign-out box to be ready">'+(nccuReady(r)?'✓ ready':'Incomplete')+'</span>';
-    })()+
-    (nChg?'<button class="bg chgbadge chgreset" title="Reset change tracking for this card" onclick="event.stopPropagation();nccuResetCard(\''+r.id+'\')">Δ'+nChg+' ✕</button>':"")+'</div>'+
+    })()+chg+'</div>'+
     '<button type="button" class="btn sec sm nccucompacttoggle" onclick="event.stopPropagation();toggleOneNccuCompact(\''+r.id+'\')">'+(compact?'Expand':'Compact')+'</button></div>'+
-    (compact?'<div class="cardbtns"><button onclick="openSO(\''+r.id+'\')">Template fields</button></div>':"")+
     '<div class="state" style="color:#c8d3e4">'+esc(one)+'</div>'+
     body+
     '<div class="cardbtns" style="display:flex;align-items:center">'+
-    (compact?"":'<button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button><button onclick="openSO(\''+r.id+'\')">Template fields</button>')+
+    '<button onclick="copySxCard(\''+r.id+'\')">⧉ Copy</button><button onclick="openSO(\''+r.id+'\')">Template fields</button>'+
     '<button type="button" style="margin-left:auto" onpointerdown="event.preventDefault()" onclick="event.stopPropagation();saveSoCard(\''+r.id+'\')">Save</button></div></div>';
 }
 // removing a card from the NCCU list is undoable, by ✕ or by swipe
@@ -11566,7 +11601,20 @@ function tcExtract(text){
     .replace(/^[\s,–—-]+/,"");                 // stripping a PMH can leave the comma behind
   const medsPart=meds.length?" on "+meds.join("/"):"";
   const pmhPart=pmh.length?" w/ "+pmh.join(", "):(meds.length?"":" w/ [relevant PMH]");
-  out.hpi=((out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+".")
+  // everything else you wrote that is not exam, imaging or labs is the story,
+  // and it follows the one-liner rather than being dropped
+  const labsRe=/\b(?:na|inr|plt|wbc|hgb|cr|sbp|bp)\b\s*:?[\s=]*\d/i;
+  const headOnly=/^(?:exam|imaging|labs?|plan|hpi|a\/p)\s*:?\s*$/i;
+  const story=rest.filter(x=>{
+    if(!x||x===sents[0])return false;
+    if(headOnly.test(x))return false;
+    if(examRe.test(x)||imgRe.test(x))return false;
+    if(labsRe.test(x))return false;
+    if(prob&&prob.toLowerCase().indexOf(x.toLowerCase())>=0)return false;
+    return /[a-z]{3}/i.test(x);
+  }).map(x=>x.replace(/^[\s,;-]+/,"").replace(/^(.)/,(m)=>m.toUpperCase()));
+  out.hpi=((out.ageSex||"[Age/Sex]")+medsPart+pmhPart+" p/w "+(prob||"[problem]")+"."+
+    (story.length?" "+story.join(". ")+".":""))
     .replace(/\bp\/w\b([^]*?)[,;]?\s*\bp\/w\b\s*/i,"p/w$1 ")   // one p/w per sentence
     .replace(/\s{2,}/g," ").replace(/\s+([,.])/g,"$1");
   // plan
@@ -11641,7 +11689,7 @@ function tcFillSection(p,k){
   const v=tcSuggestFor(p,k);
   if(!String(v||"").trim()){showToast("Nothing to suggest yet — add some free text first");return}
   const before=tcGet(p,k);
-  tcSet(p,k,v);
+  tcSet(p,k,v);tcAutoNote(p,k,v);
   tcAfterEdit(p);
   const label=(TC_SECTIONS.find(x=>x.k===k)||{}).label||k;
   showToast("Filled "+label,()=>{tcSet(p,k,before);tcAfterEdit(p)},"Undo");
@@ -11725,6 +11773,30 @@ function tcCardText(p){
   return c?[c.prob,c.state,c.note].filter(Boolean).join(". "):"";
 }
 function tcSrcText(p){return (tcGet(p,"src")||"").trim()||tcCardText(p)}
+// What the parser last wrote into each box. A box still holding that value is
+// the parser's to update; the moment you edit it, it is yours.
+const tcAuto={};
+function tcAutoNote(p,k,v){tcAuto[p]=tcAuto[p]||{};tcAuto[p][k]=String(v||"").trim()}
+function tcAutoOwns(p,k){
+  const cur=String(tcGet(p,k)||"").trim();
+  if(!cur)return true;
+  return cur===String(((tcAuto[p]||{})[k])||"").trim();
+}
+// the title and the one-liner follow the free text while you type
+function tcAutoFill(p){
+  const src=tcSrcText(p);
+  if(!src.trim())return;
+  let o;
+  try{o=tcExtract(src)}catch(e){return}
+  ["title","hpi"].forEach(k=>{
+    const want=String(o[k]||"").trim();
+    if(!want||!tcAutoOwns(p,k))return;
+    const el=tcEl(p,k);
+    if(el&&document.activeElement===el)return;      // never type under the cursor
+    if(String(tcGet(p,k)||"").trim()!==want)tcSet(p,k,want);
+    tcAutoNote(p,k,want);
+  });
+}
 function tcParseInto(p){
   const src=tcSrcText(p);
   if(!src.trim())return false;
@@ -11733,9 +11805,9 @@ function tcParseInto(p){
   // a box you have already filled is only replaced by something the free text
   // actually said under that heading — never by a generated line
   const put=(k,v)=>{
-    if(wrote.indexOf(k)>=0){tcSet(p,k,o[k]);return}
-    if(String(tcGet(p,k)||"").trim())return;
-    tcSet(p,k,v||"");
+    if(wrote.indexOf(k)>=0){tcSet(p,k,o[k]);tcAutoNote(p,k,o[k]);return}
+    if(!tcAutoOwns(p,k))return;                     // you have edited this one
+    tcSet(p,k,v||"");tcAutoNote(p,k,v||"");
   };
   put("title",o.title||"");
   put("hpi",o.hpi||"");
@@ -11809,6 +11881,7 @@ function tcRenderFlags(p){
 }
 // every edit lands on the same card object, so both views stay in step
 function tcAfterEdit(p){
+  tcAutoFill(p);
   tcRenderFlags(p);
   tcAutoReady(p);
   tcStore(p);
