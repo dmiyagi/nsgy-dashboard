@@ -920,7 +920,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.263 · 2026-10-18</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.264 · 2026-10-18</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -7294,8 +7294,12 @@ function renderRounds(){
   autoScheduleRoundDateTasksFor(visible);
   const rc=document.getElementById("roundcount");if(rc)rc.textContent=list.length+" patient"+(list.length===1?"":"s")+(archived.length?" · "+archived.length+" archived":"");
   const chartItems=(S.consults||[]).filter(c=>!c.closed&&!c.listHidden&&c.type==="CHART"&&matchSearch(c)).map(c=>Object.assign(chartCheckRoundProxy(c),{_chartCard:c})).filter(r=>!soCcOnly||r.soCcResp);
+  const woundMix=S.roundGroupFloor?[]:woundMixRows();
+  const woundItems=woundMix.map(([w,former])=>Object.assign({},w,{_woundCard:w,_woundFormer:former}));
+  const woundMixed=new Set(woundMix.map(([w])=>w.id));
   const renderRoundList=arr=>arr.map(r=>{
     if(r._chartCard)return chartCheckListRow(r._chartCard);
+    if(r._woundCard)return woundRow(r._woundCard,r._woundFormer);
     if(REDIT.has(r.id)){
       return '<div class="card'+(roundIsFloor(r)?' floorcard':'')+'" style="border-left-color:'+(roundIsFloor(r)?'#5aa7ff':'var(--e1)')+'">'+
        '<div class="fld"><label>Room / bed / label</label><input type="text" id="re_lab_'+r.id+'" value="'+esc(roundEditVal(r,"label"))+'" oninput="roundEditInput(\''+r.id+'\')"></div>'+
@@ -7336,10 +7340,13 @@ function renderRounds(){
     mainHtml=(other.length?renderRoundList(other):'<div class="empty" style="padding:14px 10px">No ICU/ED/other patients in this view.</div>')+
       (floors.length?'<details class="closedsec floorsec" open><summary>Floor patients ('+floors.length+')</summary>'+renderRoundList(floors)+'</details>':"");
   }else{
-    const mixed=list.concat(S.roundGroupFloor?[]:chartItems).sort(cmp);
+    // chart checks and wound checks belong in the same ordered list as the
+    // patients when the floors are not being grouped
+    const mixed=list.concat(S.roundGroupFloor?[]:chartItems,woundItems).sort(cmp);
     mainHtml=mixed.length?renderRoundList(mixed):'<div class="empty">Paste your list above and hit Sort — each line becomes a rounding card.</div>';
   }
-  el.innerHTML=mainHtml+renderRoundArchive(archived)+(S.roundGroupFloor?renderRoundChartCheckList():"")+renderRoundWoundList(visible.concat(S.rounds.filter(r=>r.listMode==="wound"&&matchSearch(r))))+trashHtml("round");
+  el.innerHTML=mainHtml+renderRoundArchive(archived)+(S.roundGroupFloor?renderRoundChartCheckList():"")+
+    renderRoundWoundList(visible.concat(S.rounds.filter(r=>r.listMode==="wound"&&matchSearch(r))),woundMixed)+trashHtml("round");
 }
 function roundAutoTimersOff(){return !!((S.consults||[]).find(c=>c.type==="HANDOFF_NOTES")||{}).roundAutoTimersOff}
 function setRoundAutoTimers(off){
@@ -7765,7 +7772,22 @@ function woundPatientKey(r){
   if(room&&pt)return room+"|"+pt;
   return String(roundIdentityText(r)||r.label||"").toLowerCase().replace(/\s+/g," ").trim();
 }
-function renderRoundWoundList(list){
+// the wound checks that are due right now, in the order they are read
+function woundMixRows(){
+  const rows=[],seen={};
+  (S.rounds||[]).filter(r=>r.listMode==="wound"&&matchSearch(r)).filter(woundRoundCandidate).filter(woundDueFilter).forEach(r=>{
+    const k=woundPatientKey(r);if(k)seen[k]=true;
+    rows.push([r,false]);
+  });
+  (S.formerWounds||[]).filter(matchSearch).filter(woundDueFilter).forEach(r=>{
+    const k=woundPatientKey(r);
+    if(k&&seen[k])return;
+    if(k)seen[k]=true;
+    rows.push([r,true]);
+  });
+  return rows.sort((a,b)=>woundSort(a[0],b[0]));
+}
+function renderRoundWoundList(list,alreadyShown){
   const rows=[],seen={};
   (list||[]).filter(woundRoundCandidate).filter(woundDueFilter).forEach(r=>{
     const k=woundPatientKey(r);if(k)seen[k]=true;
@@ -7784,9 +7806,13 @@ function renderRoundWoundList(list){
   const made=allRows.reduce((n,[r,former])=>n+(autoScheduleWoundDateTask(r,former)?1:0),0);
   if(made)autosave();
   rows.sort((a,b)=>woundSort(a[0],b[0]));
+  // anything already standing in the list above is not repeated here
+  const shown=alreadyShown||new Set();
+  const left=rows.filter(([r])=>!shown.has(r.id));
+  if(shown.size&&!left.length&&allRows.length===rows.length)return "";
   const k="wound-round-all";
-  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+rows.length+'/'+allRows.length+')</summary>'+woundControlsHtml("round",allRows.length,rows.length)+
-    (rows.length?rows.map(([r,former])=>woundRow(r,former)).join(""):'<div class="empty">No due wound checks. Tap Show all to view hidden future checks.</div>')+
+  return '<details class="closedsec'+(S.woundCompact?' woundcompact':'')+'"'+woundSecAttr(k)+'><summary>Suture / Staples / Incision Checks ('+left.length+'/'+allRows.length+')</summary>'+woundControlsHtml("round",allRows.length,rows.length)+
+    (left.length?left.map(([r,former])=>woundRow(r,former)).join(""):'<div class="empty">'+(shown.size?'Every due wound check is in the list above.':'No due wound checks. Tap Show all to view hidden future checks.')+'</div>')+
     '</details>';
 }
 function renderFormerWounds(scope){
@@ -11232,10 +11258,18 @@ function soComparator(){
   if(m==="attg")return (a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true});
   return roomCardComparator;
 }
+// The SO board is a view of the people you are actually carrying: a patient
+// moved off the rounds list (to the wound list) or off the board drops out of
+// it, and comes back with them — the SO flag itself is left alone.
+function soOnActiveList(r){
+  if(!r)return false;
+  if((S.rounds||[]).indexOf(r)>=0)return !r.listMode||r.listMode==="rounds";
+  return !r.closed&&!r.listHidden;
+}
 function nccuPatients(){
   const out=[],seen=new Set();
-  (S.rounds||[]).filter(r=>r.nccuSO).forEach(r=>{out.push(r);seen.add(r.id)});
-  (S.consults||[]).filter(c=>c.nccuSO&&!c.closed&&!seen.has(c.roundId||c.id)).forEach(c=>out.push(c));
+  (S.rounds||[]).filter(r=>r.nccuSO&&soOnActiveList(r)).forEach(r=>{out.push(r);seen.add(r.id)});
+  (S.consults||[]).filter(c=>c.nccuSO&&soOnActiveList(c)&&!seen.has(c.roundId||c.id)).forEach(c=>out.push(c));
   return out.sort(soComparator());
 }
 function nccuCompactTodoHtml(r){

@@ -31,6 +31,9 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Wound checks in the rounds list (v0.0.264):** with **Floors** ungrouped, due suture/staple/incision checks now sit in the main rounds list, sorted in with the patients and chart checks by room (or whichever sort is on), each keeping its own row controls. They are not repeated in the section below — it holds only what is not due, and disappears when there is nothing left in it. Turning **Floors** on restores the old grouping, with wound checks in their own section.
+- **The SO board follows the active list (v0.0.264):** a sign-out card now shows only while its patient is actually on Rounds or the Board. Move someone to the wound list, hide them from the board, or close them and they drop off the SO board; bring them back and they return with their sign-out intact — the SO flag itself is never changed.
+
 - **Compact SO cards read like rounds rows (v0.0.263):** a compact sign-out card is now a single line — room, team, patient, attending, SO, the primary diagnosis, the readiness badge, then the one-liner — with the next open to-do underneath only when there is one. Template fields, Copy and Save live on the expanded card, where they are used. Tap the row to expand, as on Rounds.
 - **↻ New day clears the morning box (v0.0.263):** rolling the day now empties **Morning baseline** as well as moving yesterday's baseline and daytime notes down to Previous-day, so you are typing today's into an empty box instead of editing yesterday's. Board values are untouched and the toast still offers Undo. Typing a new baseline on a new day behaves as before — what you type is kept.
 
