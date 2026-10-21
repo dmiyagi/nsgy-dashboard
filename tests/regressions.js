@@ -175,6 +175,8 @@ const stampF=(r,k)=>{r.fAt=r.fAt||{};r.fAt[k]=Date.now()},touch=r=>{r.updatedAt=
 const syncRoundTodosToBoard=(r,lines)=>boardTasks.push(...lines),renderRounds=()=>{},save=()=>{},autosave=()=>{},showToast=()=>{};
 const todayStr=()=>'2026-10-12',sxNow=()=>Date.now(),renderNccu=()=>{},findAny=id=>S.rounds.find(r=>r.id===id)||null;
 let soNotesBatch=false;const fieldStamp=(r,k)=>(r.fAt&&r.fAt[k])||r.updatedAt||0;
+const sxAll=r=>r.sx||[],sxHasContent=r=>!!(r.sx&&r.sx.length);
+const routeDaytimeUpdate=()=>{};
 const SLOT_SEED=[{k:'drain',f:'goal',re:/\\b(evd\\s*(?:at|@)\\s*[-\\d]+)/i}];
 const slotVal=(r,k,f)=>((r.slots||{})[k]||{})[f]||'';
 const slotUpdate=(r,k,f,v)=>{r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};r.slots[k][f]=v};
@@ -202,7 +204,7 @@ patientHandoffNotesSaveNow('existing',{closest:()=>({querySelectorAll:()=>noteIn
 if(explicitWrites!==1||patient.daytimeNotes!=='Afternoon explicit'||patient.morningNotes!=='Morning explicit'||patient.previousDayNotes!=='Previous explicit')throw new Error('Explicit save did not persist all three patient note areas');
 return 'Handoff sorting checks PASS';
 `;
-const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','soRollDay','soRestoreDay','soRefreshFromBaseline','patientHandoffNotesRefresh','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','soRollDay','soRestoreDay','lastMatch','soRefreshFromText','soRefreshFromBaseline','soRefreshFromDaytime','patientHandoffNotesRefresh','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 

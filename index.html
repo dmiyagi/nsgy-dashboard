@@ -47,6 +47,7 @@ header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;t
 .pacebar.protect .pacehead{color:#c7a6ff}
 .pacebar.off{padding:2px 6px;border:0;background:transparent}
 .pacebar.off .pacemore{margin:0;border-color:transparent;color:#7f8fa6}
+.notehint{font-size:10.5px;color:var(--mut);margin:3px 0 0;letter-spacing:.2px}
 .qbtns.examsave{margin:6px 0 2px}
 .qbtns.examsave .primary{border-color:var(--acc);color:var(--acc)}
 button.bg.noexam{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;padding:0;border-radius:50%;background:#05080d;color:#637189;border:1px solid #35445b;vertical-align:middle}
@@ -930,7 +931,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.266 · 2026-10-20</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.268 · 2026-10-20</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5937,9 +5938,10 @@ function patientHandoffNotesSaveNow(id,button){
   finally{soNotesBatch=false}
   const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);
   const n=r?soRefreshFromBaseline(r):0;
-  if(n)renderNccu();
+  const d=r?soRefreshFromDaytime(r):0;
+  if(n+d)renderNccu();
   flushAutosave();
-  showToast("Sign-out notes saved"+(n?" · "+n+" board value"+(n>1?"s":"")+" updated from the baseline":""));
+  showToast("Sign-out notes saved"+((n+d)?" · "+(n+d)+" box"+((n+d)>1?"es":"")+" updated":""));
 }
 // ---------- a new morning baseline starts a new sign-out day ----------
 // Yesterday's baseline and daytime updates move down into Previous-day notes,
@@ -5980,13 +5982,15 @@ function soRestoreDay(r,before){
   if(before.soSnapDay===undefined)delete r.soSnapDay;else r.soSnapDay=before.soSnapDay;
   r.updatedAt=Date.now();
 }
-// update only the parameters the new baseline actually speaks to
-function soRefreshFromBaseline(r){
-  const txt=String((r&&r.morningNotes)||"");
-  if(!txt.trim())return 0;
+// update only the parameters a note actually speaks to. Anything it does not
+// mention keeps the value it had, and whatever it changes keeps the old value
+// as the comparator, so Δ Changes shows the move.
+function soRefreshFromText(r,txt){
+  const t=String(txt||"");
+  if(!t.trim())return 0;
   let n=0;
   SLOT_SEED.forEach(seed=>{
-    const m=txt.match(seed.re);if(!m)return;
+    const m=lastMatch(t,seed.re);if(!m)return;
     const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();if(!v)return;
     if(slotVal(r,seed.k,seed.f)===v)return;
     slotUpdate(r,seed.k,seed.f,v);n++;
@@ -5994,14 +5998,41 @@ function soRefreshFromBaseline(r){
   if(n)r.updatedAt=Date.now();
   return n;
 }
+// a note written through the day says a thing more than once; the last time
+// it was said is the one that is true now
+function lastMatch(text,re){
+  const g=new RegExp(re.source,re.flags.replace(/[gy]/g,"")+"g");
+  let m,last=null;
+  while((m=g.exec(text))){last=m;if(m.index===g.lastIndex)g.lastIndex++}
+  return last;
+}
+function soRefreshFromBaseline(r){return soRefreshFromText(r,r&&r.morningNotes)}
+// what you are told during the day files into the same boxes, as an update
+function soRefreshFromDaytime(r){
+  if(!r)return 0;
+  const txt=String(r.daytimeNotes||"");
+  if(!txt.trim())return 0;
+  const before=JSON.parse(JSON.stringify(r.slots||{}));
+  routeDaytimeUpdate(r,txt);          // this already writes what it recognises
+  soRefreshFromText(r,txt);
+  let n=0;
+  Object.keys(r.slots||{}).forEach(k=>Object.keys(r.slots[k]||{}).forEach(f=>{
+    if(String((before[k]||{})[f]||"")!==String(r.slots[k][f]||""))n++;
+  }));
+  if(n)r.updatedAt=Date.now();
+  return n;
+}
 // run when you leave the morning box, or tap Save notes
-function patientHandoffNotesRefresh(id,el){
+function patientHandoffNotesRefresh(id,el,kind){
   const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!r)return;
-  if(el)patientHandoffNotesSave(id,"morning",el);
-  const n=soRefreshFromBaseline(r);
+  const which=kind||"morning";
+  if(el)patientHandoffNotesSave(id,which,el);
+  const n=which==="daytime"?soRefreshFromDaytime(r):soRefreshFromBaseline(r);
   if(!n)return;
   autosave();renderNccu();
-  showToast("Updated "+n+" board value"+(n>1?"s":"")+" from the baseline; the rest kept yesterday's");
+  showToast(which==="daytime"
+    ? "Filed "+n+" update"+(n>1?"s":"")+" into the sign-out boxes"
+    : "Updated "+n+" board value"+(n>1?"s":"")+" from the baseline; the rest kept yesterday's");
 }
 function soRollDayManual(id){
   const r=(S.rounds||[]).find(x=>x.id===id)||findAny(id);if(!r)return;
@@ -6020,8 +6051,8 @@ function patientHandoffNotesHtml(r){
   return '<div class="handoffnotes" aria-label="Patient sign-out notes"><h3>Sign-out notes</h3>'+
     [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
       const key=handoffNotesKey(kind),text=kind==="previous"?previousDayNotesText(r):r[key]||"";
-      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)"'+(kind==="morning"?' onblur="patientHandoffNotesRefresh(\''+r.id+'\',this)"':"")+'>'+esc(text)+'</textarea>'+ (kind==="daytime"?(r.nccuSO?'<div class="sxfromrounds"><span class="ssl">→ sign-out</span>'+sxQuickAddHtml(r,"r")+
-       (sxHasContent(r)?'<span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':""):"")+'</div>';
+      return '<div class="fld"><label>'+label+'</label><textarea class="evta" data-note-kind="'+kind+'" rows="2" style="width:100%;height:48px;min-height:48px;resize:vertical" oninput="patientHandoffNotesSave(\''+r.id+'\',\''+kind+'\',this)"'+((kind==="morning"||kind==="daytime")?' onblur="patientHandoffNotesRefresh(\''+r.id+'\',this,\''+kind+'\')"':"")+'>'+esc(text)+'</textarea>'+ (kind==="daytime"?'<div class="notehint">Type what you are told through the day — it files into the sign-out boxes when you tap away'+
+         (sxHasContent(r)?' · <span class="sxcount">'+sxAll(r).length+' line'+(sxAll(r).length>1?"s":"")+'</span>':"")+'</div>':"")+'</div>';
     }).join("")+'<div class="qbtns"><button type="button" onclick="event.stopPropagation();patientHandoffNotesSaveNow(\''+r.id+'\',this)">Save notes</button>'+
       '<button type="button" title="Move this morning\'s notes down to Previous-day and start a clean day — board values are kept" '+
       'onclick="event.stopPropagation();soRollDayManual(\''+r.id+'\')">↻ New day</button></div></div>';
@@ -8224,6 +8255,11 @@ function roundCalendarDates(r){
 }
 function autoScheduleRoundDateTask(r,d){
   if(!r||!d||!d.iso)return null;
+  // A date in a one-liner is history, not an order. Only a dated *task*
+  // ("staples out 10/22") becomes a card; adding a patient to rounds never
+  // manufactures a chart check — those are asked for, from the card or the
+  // Chart check button.
+  if(!d.label)return null;
   if(r.suppressedRoundDates&&r.suppressedRoundDates[d.iso])return null;
   const iso=d.iso+"T06:00:00",loc=String(r.label||roundIdentityText(r)||"");
   // A task is matched by the date in the card that made it, not by the time it
@@ -10779,12 +10815,13 @@ function slotBoardHtml(r){
 // (151)" and "had Tmax 101.5" all have to land somewhere.
 const SLOT_SEED=[
  // sodium
- {k:"na",f:"cur",re:/\b(?:na|sodium)\s*(?:of|was|is|=|:)?\s*(1[0-6]\d)\b(?!\s*[-–]\s*\d)/i},
+ {k:"na",f:"cur",re:/\b(?:na|sodium)\s*(?:of|was|is|now|at|up to|down to|today|=|:)?\s*(1[0-6]\d)\b(?!\s*[-–]\s*\d)/i},
  {k:"na",f:"cur",re:/\b(?:euna|eunatremia|goal na)[^0-9\n]{0,12}\(?(1[0-6]\d)\)?/i},
  {k:"na",f:"goal",re:/\b(eunatremia|euna\b|goal na\s*[><]?\s*\d{3}|na goal\s*[><]?\s*\d{3}|goal na[^,.;\n]*)/i,
   fmt:m=>/euna/i.test(m[1])?"EuNa":m[1].trim()},
  // blood pressure
- {k:"bp",f:"goal",re:/\b(sbp\s*[<>]\s*\d{2,3}|map\s*[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3}|normotn\w*|normotensi\w*)/i},
+ {k:"bp",f:"goal",re:/\b((?:goal\s*)?sbp\s*(?:goal\s*)?[<>]\s*\d{2,3}|(?:goal\s*)?map\s*(?:goal\s*)?[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3}|normotn\w*|normotensi\w*)/i,
+  fmt:m=>m[1].replace(/\s*goal\s*/i," ").replace(/\s+/g," ").trim()},
  {k:"bp",f:"cur",re:/\b(cardene|nicardipine|labetalol|norepi|pressors?|levophed|neo\b)[^,.;\n]*/i},
  {k:"bp",f:"cur",re:/(?:^|[\s,(])(\d{2,3}\/\d{2,3})(?:[\s,.)]|$)/},
  // drains and pressure
