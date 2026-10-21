@@ -148,6 +148,8 @@ section.view.active{display:block}
 .webtrash:hover{border-color:var(--e3);color:var(--e3)}
 .card.hastrash{padding-right:46px}
 .card.floorcard{background:linear-gradient(90deg,rgba(130,207,255,.16),rgba(29,44,64,.70) 42%,var(--card) 100%);border-color:#3f6b92}
+.card.chartcard{background:linear-gradient(90deg,rgba(63,214,143,.15),rgba(27,48,41,.65) 42%,var(--card) 100%);border-color:#3b7a61}
+.card.chartcard:not([style*="border-left-color"]){border-left-color:#52c08d}
 .bg.floor{border-color:#82cfff;color:#b8e4ff;background:rgba(130,207,255,.14)}
 .floorsec{border-top:1px solid #31527d;margin-top:12px;padding-top:4px}
 .floorsec>summary{color:#8fc1ff!important;font-weight:800}
@@ -585,7 +587,9 @@ details.planbox .sgs{font-size:11px;color:var(--mut)}
 /* ---- sign-out as captured facts ---- */
 .sxbody{margin-top:8px}
 .sxlist{display:flex;flex-direction:column;gap:2px}
-.sxrow{display:flex;align-items:center;gap:6px;padding:2px 0}
+.sxrow{display:flex;align-items:flex-start;gap:6px;padding:2px 0}
+.sxrow>*{flex-shrink:0}
+.sxrow .sxrole,.sxrow .sxdone,.sxrow .sxago{margin-top:3px}
 .sxrow.done{opacity:.5}
 .sxrow.done .sxtext{text-decoration:line-through}
 .sxrow.stale .sxtext{border-style:dashed;color:var(--mut)}
@@ -610,7 +614,8 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxrow.s-msk{border-left:3px solid #adb5bd;padding-left:5px;background:rgba(173,181,189,.04);border-radius:7px}
 .sxrow.s-rehab{border-left:3px solid var(--ok);padding-left:5px;background:rgba(63,214,143,.04);border-radius:7px}
 .sxtext{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
-  font-family:var(--font);font-size:12.5px;padding:5px 8px}
+  font-family:var(--font);font-size:12.5px;padding:5px 8px;line-height:1.38;resize:vertical;overflow:hidden;
+  white-space:pre-wrap;word-break:break-word}
 .sxtext:focus{outline:none;border-color:var(--acc)}
 .sxsys{flex:0 0 auto;font-size:10px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
 .sxsyssel{flex:0 0 auto;max-width:112px;background:var(--card);border:1px solid var(--line);border-radius:6px;
@@ -656,7 +661,7 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .bg.loopbadge{background:#2b1d45;color:var(--purp);border:1px solid var(--purp)}
 .sxrow.live .sxrole{background:#12233a;border-style:dashed}
 .sxtext.livetext{flex:1;min-width:0;background:transparent;border:1px dashed var(--line);border-radius:7px;
-  color:#c8d3e4;font-size:12.5px;padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  color:#c8d3e4;font-size:12.5px;padding:5px 8px;line-height:1.38;white-space:pre-wrap;word-break:break-word}
 .sxrow.fresh .sxtext,.sxrow.fresh .livetext{border-color:var(--ok)}
 .sxago{flex:0 0 auto;font-size:10px;color:var(--mut);white-space:nowrap}
 .sxadd.quick{margin-top:6px;flex-wrap:wrap;align-items:center}.sxadd.quick textarea{flex:1 1 220px;resize:vertical}.sxadd.quick select{flex:0 0 auto}.sxdel{min-height:32px;padding:4px 8px!important}
@@ -732,6 +737,11 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   padding:9px 11px;margin:10px 0;font-size:13px;line-height:1.55;white-space:pre-wrap;color:#d9e2ef}
 #sweepbody .sxadd input{font-size:15px;padding:9px 11px}
 .presentbody .pl{font-size:inherit;line-height:1.6;padding:2px 0}
+.presentbody .pl.update{color:#ffe0a3;background:rgba(255,161,62,.13);border-left:3px solid var(--e2);
+  border-radius:6px;padding:3px 8px;margin:3px 0}
+.presentbody .pl.update .plab{color:var(--e2)}
+.sxpreview .pl.update{color:#ffe0a3;background:rgba(255,161,62,.12);border-left:3px solid var(--e2);border-radius:6px;padding:2px 7px}
+.sxrow.dayupdate .sxtext{border-color:var(--e2);background:rgba(255,161,62,.10);color:#ffe9c9}
 .presentbody .pl.delta{color:var(--e1)}
 .presentbody .pl.goal{color:var(--teal)}
 .presentbody .pl.constraint{color:var(--e2)}
@@ -920,7 +930,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.264 · 2026-10-18</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.266 · 2026-10-20</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3586,6 +3596,8 @@ function migrate(d){
   slotCustomScan(d);                 // patient-named rows have to exist before anything renders
   d.round24=!!d.round24;
   d.round24At=d.round24At||0;
+  d.roundGroupFloor=!!d.roundGroupFloor;
+  d.roundGroupFloorAt=d.roundGroupFloorAt||0;
   d.boardAutoTimersOff=!!d.boardAutoTimersOff;
   d.boardAutoTimersAt=d.boardAutoTimersAt||0;
   BOARD_AUTO_TIMERS_OFF=d.boardAutoTimersOff;
@@ -5464,7 +5476,9 @@ const PACE_SEEN_BY=10*60;          // 10:00
 const PACE_SIT_AT=12*60;           // 12:00
 const PACE_SIT_MINS=[30,45,60];
 function paceCounts(){
-  const list=(S.rounds||[]).filter(r=>r&&!r.closed);
+  // only the people on the rounds list — wound checks and chart checks are
+  // their own work, not the morning round
+  const list=(S.rounds||[]).filter(r=>r&&!r.closed&&(!r.listMode||r.listMode==="rounds")&&r.type!=="CHART");
   let seen=0,planless=0;
   list.forEach(r=>{
     if((r.chartChecks||{}).am||r.seen)seen++;
@@ -5973,7 +5987,7 @@ function soRefreshFromBaseline(r){
   let n=0;
   SLOT_SEED.forEach(seed=>{
     const m=txt.match(seed.re);if(!m)return;
-    const v=String(m[1]||m[0]).trim();if(!v)return;
+    const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();if(!v)return;
     if(slotVal(r,seed.k,seed.f)===v)return;
     slotUpdate(r,seed.k,seed.f,v);n++;
   });
@@ -6332,7 +6346,7 @@ function examDefaultFields(mode,limbs){
   if(mode==="pediatric")return ["mental","pup","moves"];
   return ["ox","pup","face"].concat(motor,["drift","sens"]);
 }
-function examAllFieldKeys(){return ["ox","mental","eye","pup","eomi","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves","comment","extra"]}
+function examAllFieldKeys(){return ["ox","mental","eye","pup","eomi","gaze","corneal","cough","face","cmd","mod","skin","bue","ble","bueSp","bleSp","rueSp","lueSp","rleSp","lleSp","rue","lue","rle","lle","delt","bi","tri","we","ff","fa","spl","ucmt","lcmt","reflex","dre","rueSens","lueSens","rleSens","lleSens","dermSens","drift","sens","fontanelle","sutures","hc","moves","lines","comment","extra"]}
 function examFieldKeysForMode(mode){return examAllFieldKeys()}
 function examGivenFields(values){
   return examAllFieldKeys().filter(k=>{
@@ -6382,7 +6396,7 @@ function roundExamDropField(id,k){
   r.examFieldsCustom=true;r.examFieldLayout="custom";r.examOpen=true;r.updatedAt=Date.now();renderExamCards(id);save();
 }
 function examStructFromText(t){
-  const s=String(t||"").replace(/\b((?:A)?Ox)O\b/gi,(_,prefix)=>prefix+"0"), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",pupilR:"",pupilL:"",eomi:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",dre:"",rueSens:"",lueSens:"",rleSens:"",lleSens:"",dermSens:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",comment:"",ucmt:"",lcmt:"",extra:""};
+  const s=String(t||"").replace(/\b((?:A)?Ox)O\b/gi,(_,prefix)=>prefix+"0"), out={mode:"basic",ox:"",mental:"",eye:"",cmd:"",mod:"",pup:"",pupilR:"",pupilL:"",eomi:"",gaze:"",cough:"",corneal:"",face:"",skin:"",bue:"",ble:"",bueSp:"",bleSp:"",rueSp:"",lueSp:"",rleSp:"",lleSp:"",rue:"",lue:"",rle:"",lle:"",delt:"",bi:"",tri:"",we:"",ff:"",fa:"",spu:"",spl:"",reflex:"",dre:"",rueSens:"",lueSens:"",rleSens:"",lleSens:"",dermSens:"",drift:"",sens:"",fontanelle:"",sutures:"",hc:"",moves:"",lines:"",comment:"",ucmt:"",lcmt:"",extra:""};
   const ox=s.match(/\b(?:A\+O|A&O|AO|Ox)\s*x?\s*([0-4])\b/i);if(ox)out.ox=/A\+O/i.test(ox[0])?"A+Ox"+ox[1]:"Ox"+ox[1];
   if(ox){const rest=s.slice(ox.index+ox[0].length).split(/[\n,;]/)[0];if(/^\s+(?:in|with|via|using)\b/i.test(rest))out.ox+=rest}
   EX_MENTAL_OPTS.slice(1).forEach(o=>{if(!out.mental&&s.toLowerCase().includes(o.toLowerCase()))out.mental=o});
@@ -6425,6 +6439,8 @@ function examStructFromText(t){
   else if(/\b(?:left|L)\s+(?:facial\s+)?droop\b|\b(?:facial\s+)?droop\s+(?:on\s+)?(?:left|L)\b/i.test(s))out.face="L facial droop";
   else if(/\b(?:right|R)\s+(?:facial\s+)?droop\b|\b(?:facial\s+)?droop\s+(?:on\s+)?(?:right|R)\b/i.test(s))out.face="R facial droop";
   else if(/\bface asymmetric\b|\bfacial droop\b/i.test(s))out.face=/facial droop/i.test(s)?"facial droop":"Face asymmetric";
+  const linesM=s.match(/^\s*(?:lines?|lines\s*\/\s*drains?)\s*[:\-]\s*(.+)$/im);
+  if(linesM)out.lines=linesM[1].trim();
   if(/\bWarm well perfused\b/i.test(s))out.skin="Warm well perfused";
   else if(/\bIncision clean dry and intact\b|\bincision CDI\b|\bCDI incision\b/i.test(s))out.skin="Incision clean dry and intact";
   const af=s.match(/\banterior fontanelle\s*:?\s*(soft and flat|full|bulging|sunken)\b/i);if(af)out.fontanelle=af[1].toLowerCase();
@@ -6566,10 +6582,11 @@ function roundExamBuilderHtml(r,cur){
     sutures:()=>examPickHtml(id,"sutures","Sutures",EX_SUTURE_OPTS,v.sutures,false,true),
     hc:()=>examInputHtml(id,"hc","Head circ",v.hc,"cm",false,true),
     moves:()=>examPickHtml(id,"moves","Spontaneous movement",EX_MOVES_OPTS,v.moves,true,true),
+    lines:()=>examInputHtml(id,"lines","Lines / drains",v.lines,"EVD R · a-line L radial · CVL RIJ · Foley · JP",true,true),
     comment:()=>examInputHtml(id,"comment","Comment",v.comment,"follows, pain-limited, baseline ___",true,true),
     extra:()=>examInputHtml(id,"extra","Extra","", "other exam details", true,true)
   };
-  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",eomi:"Eye movements",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE motor",lueSp:"LUE motor",rleSp:"RLE motor",lleSp:"LLE motor",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",dre:"DRE",rueSens:"RUE sensation",lueSens:"LUE sensation",rleSens:"RLE sensation",lleSens:"LLE sensation",dermSens:"Dermatome / level",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
+  const labels={ox:"Orient",mental:"Mental status",eye:"Eyes",cmd:"Commands",mod:"Modifier",pup:"Pupils",eomi:"Eye movements",gaze:"Gaze/track",cough:"Cough",corneal:"Corneals",face:"Face",skin:"Skin",lines:"Lines / drains",bue:"BUE",ble:"BLE",bueSp:"BUE spine",bleSp:"BLE spine",rueSp:"RUE motor",lueSp:"LUE motor",rleSp:"RLE motor",lleSp:"LLE motor",rue:"RUE single",lue:"LUE single",rle:"RLE single",lle:"LLE single",delt:"Delt",bi:"Bi",tri:"Tri",we:"WE",ff:"FF",fa:"FA",spl:"Lower motor",ucmt:"Upper comment",lcmt:"Lower comment",reflex:"Reflexes",dre:"DRE",rueSens:"RUE sensation",lueSens:"LUE sensation",rleSens:"RLE sensation",lleSens:"LLE sensation",dermSens:"Dermatome / level",drift:"Drift",sens:"Sensation",fontanelle:"Fontanelle",sutures:"Sutures",hc:"Head circumference",moves:"Spontaneous movement",comment:"Comment",extra:"Extra"};
   const all=Object.keys(defs).filter(k=>examFieldKeysForMode(v.mode).includes(k));
   const fields=examVisibleFields(r,v.mode,defs,v);
   const addOpts=all.filter(k=>!fields.includes(k)).map(k=>'<option value="'+k+'">'+esc(labels[k]||k)+'</option>').join("");
@@ -6697,6 +6714,8 @@ function roundExamBuildApply(id,explicit){
   if(drift)lines.push(drift);
   if(sens)lines.push(sens);
   if(skin)lines.push("Skin: "+skin);
+  const linesVal=exVal(id,"lines");
+  if(linesVal)lines.push("Lines: "+linesVal);
   if(comment)lines.push(comment);
   if(extra)lines.push(extra);
   const oldEl=document.getElementById("rexam_"+id);
@@ -7054,7 +7073,17 @@ function roundExamPreset(id,kind){
 const TYPE_SELECT_OPTS=Object.keys(TYPES).map(k=>'<option value="'+k+'"'+(k==="CHART"?" selected":"")+'>'+TYPES[k].i+" "+TYPES[k].l+'</option>').join("");
 const REDIT=new Set();
 let soCcOnly=false;
+// ED consults are seen last, and the other services' ICUs after them, so the
+// list walks the floors first and the trips out at the end
+function roomUnitRank(room){
+  const u=String(room||"").trim().toUpperCase();
+  if(/^(?:ED|ER)(?![A-Z])/.test(u))return 2;        // "ED", "ED 3", "ER12"
+  if(/^(?:TICU|SICU|MICU|CTIC|RICU)(?![A-Z])/.test(u))return 3;
+  return 1;
+}
 function compareRoomText(left,right){
+  const rank=roomUnitRank(left)-roomUnitRank(right);
+  if(rank)return rank;
   const a=String(left||"").trim().toUpperCase().match(/\d+|\D+/g)||[],b=String(right||"").trim().toUpperCase().match(/\d+|\D+/g)||[];
   for(let i=0;i<Math.min(a.length,b.length);i++){
     if(a[i]===b[i])continue;
@@ -7117,7 +7146,11 @@ function markSoAll(on){
   },"Undo");
 }
 function toggleSoAll(){markSoAll(!soAllOn())}
-function toggleFloorGroup(){S.roundGroupFloor=!S.roundGroupFloor;renderRounds();save()}
+function toggleFloorGroup(){
+  S.roundGroupFloor=!S.roundGroupFloor;
+  S.roundGroupFloorAt=Date.now();          // the list opens the way you left it
+  renderRounds();save();
+}
 function toggleRoundFloor(id){
   const r=S.rounds.find(x=>x.id===id);if(!r)return;
   r.isFloor=roundIsFloor(r)?false:true;
@@ -7434,7 +7467,7 @@ function chartCheckListRow(c){
   const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
   const nccu=(c.nccuSO||r.nccuSO)?'<span class="bg warn">SO</span>':"";
   if(!open){
-    return '<div class="card crowwrap hastrash" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
+    return '<div class="card crowwrap chartcard hastrash" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
       trashBtn(c.id,"chart")+
       '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
         chartCheckStageBox(c)+chartCheckDotsHtml(c)+
@@ -7448,7 +7481,7 @@ function chartCheckListRow(c){
         chartCheckMiniButtons(c)+
         '<span class="car">▸</span></div></div>';
   }
-  return '<div class="card hastrash E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
+  return '<div class="card hastrash chartcard E0" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
     trashBtn(c.id,"chart")+
     '<div class="crow" onclick="togCollapse(\''+c.id+'\')">'+
       chartCheckDotsHtml(c)+
@@ -8193,9 +8226,15 @@ function autoScheduleRoundDateTask(r,d){
   if(!r||!d||!d.iso)return null;
   if(r.suppressedRoundDates&&r.suppressedRoundDates[d.iso])return null;
   const iso=d.iso+"T06:00:00",loc=String(r.label||roundIdentityText(r)||"");
-  const sameDay=(S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&String(c.snoozeISO||"").slice(0,10)===d.iso&&(c.autoRoundDate||c.type==="WOUND")&&(!d.label||c.prob===d.label));
+  // A task is matched by the date in the card that made it, not by the time it
+  // currently sits at — otherwise snoozing one just made a fresh copy of it
+  // back on the original date.
+  const key=d.iso+(d.label?"|"+String(d.label).toLowerCase():"");
+  const sameDay=(S.consults||[]).some(c=>!c.closed&&c.roundId===r.id&&(c.autoRoundDate||c.type==="WOUND")&&
+    (c.autoDateKey?c.autoDateKey===key
+      :(String(c.snoozeISO||"").slice(0,10)===d.iso&&(!d.label||c.prob===d.label))));
   if(sameDay)return null;
-  const t=blankC();t.type=d.label?"PROC":"CHART";t.loc=loc;t.prob=d.label||roundProblemText(r)||"Chart check";t.roundId=r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.autoRoundDate=true;t.dateContext=d.excerpt||d.raw;t.note=roundProblemText(r);t.updatedAt=Date.now();
+  const t=blankC();t.type=d.label?"PROC":"CHART";t.loc=loc;t.prob=d.label||roundProblemText(r)||"Chart check";t.roundId=r.id;t.owner="me";t.E=0;t.snoozeISO=iso;t.autoRoundDate=true;t.autoDateKey=key;t.dateContext=d.excerpt||d.raw;t.note=roundProblemText(r);t.updatedAt=Date.now();
   S.consults.push(t);
   return t;
 }
@@ -8230,7 +8269,9 @@ function autoScheduleBoardDateTask(c,d){
   const key=boardAutoDateKey(d);
   if(c.autoDatedOff&&c.autoDatedOff[key])return null;
   const iso=d.iso+"T06:00:00";
-  const exists=(S.consults||[]).some(x=>!x.closed&&x.autoBoardDate&&x.sourceId===c.id&&String(x.snoozeISO||"").slice(0,10)===d.iso&&String(x.prob||"").trim().toLowerCase()===String(d.label||"").toLowerCase());
+  const exists=(S.consults||[]).some(x=>!x.closed&&x.autoBoardDate&&x.sourceId===c.id&&
+    (x.autoDateKey?x.autoDateKey===key
+      :(String(x.snoozeISO||"").slice(0,10)===d.iso&&String(x.prob||"").trim().toLowerCase()===String(d.label||"").toLowerCase())));
   if(exists)return null;
   const t=blankC();t.type="PROC";t.loc=c.loc||"";t.prob=d.label;t.sourceId=c.id;t.roundId=c.roundId||null;t.owner=c.owner||"me";t.team=c.team||"";t.attg=c.attg||"";t.snoozeISO=iso;t.autoBoardDate=true;t.autoDateKey=key;t.dateContext=d.excerpt||d.raw;t.note=boardDateSourceText(c);t.updatedAt=Date.now();
   applyTypeDefaults(t,"PROC",{fresh:true});
@@ -8261,9 +8302,11 @@ function autoScheduleWoundDateTask(r,former){
   const iso=date+"T04:00:00";
   const loc=String(r.label||roundIdentityText(r)||"");
   const prob=woundTargetTag(r)+" check / removal";
-  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&c.snoozeISO===iso&&((c.autoWoundDate&&c.sourceId===r.id)||(!former&&c.roundId===r.id)||String(c.loc||"")===loc));
+  const exists=(S.consults||[]).some(c=>!c.closed&&c.type==="WOUND"&&
+    (c.autoDateKey?c.autoDateKey===date:c.snoozeISO===iso)&&
+    ((c.autoWoundDate&&c.sourceId===r.id)||(!former&&c.roundId===r.id)||String(c.loc||"")===loc));
   if(exists)return null;
-  const t=blankC();t.type="WOUND";t.loc=loc;t.prob=prob;t.roundId=former?null:r.id;t.sourceId=r.id;t.autoWoundDate=true;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=[woundOneLiner(r),r.woundNote].filter(Boolean).join(" · ");t.updatedAt=Date.now();
+  const t=blankC();t.type="WOUND";t.loc=loc;t.prob=prob;t.roundId=former?null:r.id;t.sourceId=r.id;t.autoWoundDate=true;t.autoDateKey=date;t.owner="me";t.E=0;t.snoozeISO=iso;t.note=[woundOneLiner(r),r.woundNote].filter(Boolean).join(" · ");t.updatedAt=Date.now();
   S.consults.push(t);
   if(!r.woundNextDate)r.woundNextDate=date;
   return t;
@@ -9998,7 +10041,12 @@ function sxDerived(r){
   const hide=r.sxHide||{};
   const stored=sxActive(r).map(x=>x.t.toLowerCase().trim());
   const out=[];
-  [["morningNotes","Morning baseline"],["daytimeNotes","NEW — daytime information"]].forEach(([key,label])=>{if(r[key]&&!hide["@"+key])out.push({id:"@"+key,t:label+": "+r[key],role:key==="morningNotes"?"state":"delta",sys:"neuro",derived:key,ts:fieldStamp(r,key),live:label})});
+  // if the note already opens with its own label, do not say it twice
+  const sayOnce=(label,text)=>{
+    const t=String(text||"").replace(/^\s*(?:morning baseline|baseline|new\s*[—–-]?\s*daytime information|daytime|afternoon)\s*[:\-–]?\s*/i,"").trim();
+    return label+": "+(t||String(text||"").trim());
+  };
+  [["morningNotes","Morning baseline"],["daytimeNotes","NEW — daytime information"]].forEach(([key,label])=>{if(r[key]&&!hide["@"+key])out.push({id:"@"+key,t:sayOnce(label,r[key]),role:key==="morningNotes"?"state":"delta",sys:"neuro",derived:key,ts:fieldStamp(r,key),live:label})});
   const exam=String(r.exam||"").trim();
   if(exam&&!hide["@exam"]&&!stored.some(t=>t===exam.toLowerCase()))
     out.push({id:"@exam",t:exam,role:"state",sys:"neuro",derived:"exam",
@@ -10336,14 +10384,14 @@ function syncTemplateSlots(r,label,text){
   }
   slotUpdate(r,map.k,map.f,text);
   if(map.k!=="diWatch"&&/siadh|urine\s+(?:osm|sodium|na)/i.test(text))routeDaytimeUpdate(r,text);
-  SLOT_SEED.forEach(seed=>{const m=String(text).match(seed.re);if(m&&seed.k===map.k)slotUpdate(r,seed.k,seed.f,(m[1]||m[0]).trim())});
+  SLOT_SEED.forEach(seed=>{const m=String(text).match(seed.re);if(m&&seed.k===map.k)slotUpdate(r,seed.k,seed.f,String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim())});
 }
 function routeDaytimeUpdate(r,text){
   if(/\bsiadh\b|urine\s+(?:osm|sodium|na)/i.test(text)){
     if(/\bsiadh\b|concern|hyponatr|hypernatr/i.test(text))slotUpdate(r,"sodiumStudies","concern",text);
     [["urineOsm",/urine\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["urineNa",/urine\s+(?:na|sodium)\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["serumOsm",/serum\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i]].forEach(([f,re])=>{const m=text.match(re);if(m)slotUpdate(r,"sodiumStudies",f,m[1])});
   }
-  SLOT_SEED.forEach(seed=>{const m=text.match(seed.re);if(m)slotUpdate(r,seed.k,seed.f,(m[1]||m[0]).trim())});
+  SLOT_SEED.forEach(seed=>{const m=text.match(seed.re);if(m)slotUpdate(r,seed.k,seed.f,String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim())});
 }
 // ---------- rows you name yourself ----------
 // A patient can carry a parameter the standard board has no row for. The row
@@ -10726,18 +10774,48 @@ function slotBoardHtml(r){
   return html;
 }
 // ---- seed slots from what was written in the morning notes ----
+// How a written note turns into box values. These are deliberately loose — a
+// sign-out is typed in a hurry, so "EVD go to 5", "ICPs 5-12", "Goal EuNa
+// (151)" and "had Tmax 101.5" all have to land somewhere.
 const SLOT_SEED=[
- {k:"na",f:"cur",re:/\bna\s*(?:of|=|:)?\s*(1[0-6]\d)\b(?!\s*[-–])/i},
- {k:"na",f:"goal",re:/\b(eunatremia|euna\b|goal na[^,.;]*)/i},
- {k:"bp",f:"goal",re:/\b(sbp\s*[<>]\s*\d{2,3}|map\s*[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3})/i},
- {k:"bp",f:"cur",re:/\b(cardene|nicardipine|labetalol|norepi|pressors?)\b/i},
- {k:"asm",f:"goal",re:/\b(keppra[^,.;]*|vimpat[^,.;]*|dilantin[^,.;]*|depakote[^,.;]*)/i},
- {k:"ac",f:"cur",re:/\b(aspirin[^,.;]*|asa\s*\d+|eliquis|apixaban|plavix|heparin|lovenox|coumadin|warfarin)\b/i},
- {k:"drain",f:"goal",re:/\b(evd\s*(?:at|@)\s*[-\d]+|lumbar drain\s*(?:at|@)\s*[-\d]+)/i},
- {k:"drain",f:"out24",re:/output\s*(\d{1,4})/i},
- {k:"id",f:"goal",re:/\b(vanc[^,.;]*|ceftriaxone[^,.;]*|cefepime[^,.;]*|zosyn[^,.;]*)/i},
- {k:"gu",f:"goal",re:/\b(foley[^,.;]*|cic[^,.;]*|trial of void)/i},
- {k:"dispo",f:"goal",re:/\b(home [^,.;]*|rehab[^,.;]*|discharge [^,.;]*)/i}
+ // sodium
+ {k:"na",f:"cur",re:/\b(?:na|sodium)\s*(?:of|was|is|=|:)?\s*(1[0-6]\d)\b(?!\s*[-–]\s*\d)/i},
+ {k:"na",f:"cur",re:/\b(?:euna|eunatremia|goal na)[^0-9\n]{0,12}\(?(1[0-6]\d)\)?/i},
+ {k:"na",f:"goal",re:/\b(eunatremia|euna\b|goal na\s*[><]?\s*\d{3}|na goal\s*[><]?\s*\d{3}|goal na[^,.;\n]*)/i,
+  fmt:m=>/euna/i.test(m[1])?"EuNa":m[1].trim()},
+ // blood pressure
+ {k:"bp",f:"goal",re:/\b(sbp\s*[<>]\s*\d{2,3}|map\s*[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3}|normotn\w*|normotensi\w*)/i},
+ {k:"bp",f:"cur",re:/\b(cardene|nicardipine|labetalol|norepi|pressors?|levophed|neo\b)[^,.;\n]*/i},
+ {k:"bp",f:"cur",re:/(?:^|[\s,(])(\d{2,3}\/\d{2,3})(?:[\s,.)]|$)/},
+ // drains and pressure
+ {k:"drain",f:"goal",re:/\b((?:[lr]\s+)?(?:evd|lumbar drain|ld|edv)\b[^,.;\n]{0,24}?(?:at|@|to|open at|go to|set at)\s*-?\d+)/i,
+  fmt:m=>m[1].replace(/\s+/g," ").trim()},
+ {k:"drain",f:"out24",re:/\boutput\s*(?:of|was|is)?\s*(\d{1,4})/i},
+ {k:"drain",f:"shift",re:/\b(\d{1,4})\s*(?:ml\s*)?(?:last|this)\s*shift/i},
+ {k:"icp",f:"cur",re:/\bicps?\s*(?:max|of|were|was|are|is|=|:|up to)?\s*(\d{1,2}\s*(?:-\s*\d{1,2})?)\b/i,
+  fmt:m=>m[1].replace(/\s+/g,"")},
+ {k:"icp",f:"goal",re:/\bicp\s*(?:goal\s*)?([<≤]\s*\d{1,2})/i,fmt:m=>m[1].replace(/\s+/g,"")},
+ // seizure meds, anticoagulation, steroids
+ {k:"asm",f:"goal",re:/\b(keppra[^,.;\n]*|levetiracetam[^,.;\n]*|vimpat[^,.;\n]*|lacosamide[^,.;\n]*|dilantin[^,.;\n]*|depakote[^,.;\n]*|valproate[^,.;\n]*)/i},
+ {k:"ac",f:"cur",re:/\b(aspirin[^,.;\n]*|asa\s*\d+|eliquis|apixaban|plavix|heparin[^,.;\n]*|lovenox[^,.;\n]*|coumadin|warfarin)/i},
+ {k:"ac",f:"goal",re:/\b((?:before|after|prior to)?\s*(?:we\s*)?(?:do|start|restart|resume|hold)\s*(?:the\s*)?anticoag\w*[^,.;\n]*)/i,
+  fmt:m=>m[1].replace(/\s+/g," ").trim()},
+ {k:"steroid",f:"goal",re:/\b((?:dex|decadron|dexamethasone|solu-?medrol|hydrocort\w*|prednisone)[^,.;\n]*)/i},
+ // infection
+ {k:"id",f:"goal",re:/\b((?:vanc|ceftriaxone|cefepime|zosyn|ancef|cefazolin|flagyl|metronidazole|meropenem|bactrim)[^,.;\n]*)/i},
+ {k:"id",f:"tmax",re:/\btmax\s*(?:of|was|is)?\s*(\d{2,3}(?:\.\d)?)/i},
+ {k:"id",f:"cur",re:/\b((?:blood|csf|urine|sputum|wound)\s*(?:cx|cultures?)[^,.;\n]*|cultures?[^,.;\n]*|\bngtd\b[^,.;\n]*)/i,
+  fmt:m=>m[1].replace(/\s+/g," ").trim()},
+ // imaging and the rest
+ {k:"imaging",f:"cur",re:/\b((?:mri|cth?|cta|ctv|angio\w*|x-?ray|tcds?|shunt series)[^,.;\n]{0,40}?(?:neg\w*|negative|stable|unchanged|improved|no change)[^,.;\n]*)/i,
+  fmt:m=>m[1].replace(/\s+/g," ").trim()},
+ {k:"imaging",f:"goal",re:/\b((?:repeat|pending|f\/?u|follow-?up|get|obtain)\s+(?:mri|cth?|cta|ctv|angio\w*|x-?ray|kub)[^,.;\n]*)/i},
+ {k:"resp",f:"cur",re:/\b(fio2[^,.;\n]*|intubated[^,.;\n]*|trach\w*[^,.;\n]*|desat\w*[^,.;\n]*|on\s*\d+\s*l\s*(?:nc|nasal)[^,.;\n]*)/i},
+ {k:"resp",f:"goal",re:/\b((?:extubat|sbt|wean)\w*[^,.;\n]*)/i},
+ {k:"gi",f:"goal",re:/\b(npo[^,.;\n]*|tube feeds?[^,.;\n]*|diet[^,.;\n]*)/i},
+ {k:"gu",f:"goal",re:/\b(foley[^,.;\n]*|cic[^,.;\n]*|trial of void)/i},
+ {k:"bowel",f:"cur",re:/\b(?:last\s*)?bm\s*(?:was|on|:)?\s*([^,.;\n]{1,24})/i},
+ {k:"dispo",f:"goal",re:/\b(home [^,.;\n]*|rehab[^,.;\n]*|discharge [^,.;\n]*|snf[^,.;\n]*)/i}
 ];
 function slotSeedFromNotes(id){
   const r=findAny(id);if(!r)return;
@@ -10749,7 +10827,7 @@ function slotSeedFromNotes(id){
     if(slotVal(r,seed.k,seed.f))return;             // never overwrite what you typed
     const m=txt.match(seed.re);
     if(!m)return;
-    const v=(m[1]||m[0]).trim();
+    const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();
     if(!v)return;
     r.slots=r.slots||{};r.slots[seed.k]=r.slots[seed.k]||{};
     r.slots[seed.k][seed.f]=v;
@@ -10779,6 +10857,13 @@ function slotSeedFromNotes(id){
     rr.slots=before;rr.updatedAt=Date.now();renderNccu();flushAutosave();
   },"Undo");
 }
+// what changed since this morning, said on its own
+function sxDaytimeItems(r){
+  return sxAll(r).filter(x=>x.derived==="daytimeNotes");
+}
+function sxDaytimeText(x){
+  return String(x&&x.t||"").replace(/^\s*NEW\s*[—–-]\s*daytime information\s*:?\s*/i,"").trim();
+}
 function sxAssemble(r){
   const lines=[];
   const ctx=sxByRole(r,"context").map(x=>sxClause(x.t)).join("; ");
@@ -10788,7 +10873,12 @@ function sxAssemble(r){
   exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
   slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
-  sxManagementThreads(r,exams).forEach(l=>lines.push(l));
+  const day=sxDaytimeItems(r);
+  sxManagementThreads(r,exams.concat(day)).forEach(l=>lines.push(l));
+  day.forEach(x=>{
+    const t=sxDaytimeText(x);
+    if(t)lines.push({cls:"update",label:"This afternoon",text:sxPeriod(sxClause(t))});
+  });
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
   return lines;
@@ -10939,13 +11029,22 @@ function sxPushBtnHtml(r,it){
     '<optgroup label="New">'+opt("__new","＋ Box with my own name…")+'</optgroup>'+
   '</select>';
 }
+// a captured line is as tall as what it says, so nothing is cut off
+function sxGrow(el){
+  if(!el||!el.style)return;
+  el.style.height="auto";
+  el.style.height=Math.min(el.scrollHeight,260)+"px";
+}
+function sxGrowAll(root){
+  (root||document).querySelectorAll("textarea.sxtext").forEach(sxGrow);
+}
 function sxItemHtml(r,it){
   const stale=!it.derived&&it.day!==todayStr()&&it.keptOn!==todayStr();
   const fresh=sxIsNew(r,it);
   const ago=sxAgo(it.ts);
   if(it.derived){
     // live from Rounds — read-only here, edited where it actually lives
-    return '<div class="sxrow r-'+it.role+' s-'+(it.sys||"neuro")+' live'+(fresh?" fresh":"")+'" data-sxid="'+it.id+'">'+
+    return '<div class="sxrow r-'+it.role+' s-'+(it.sys||"neuro")+' live'+(fresh?" fresh":"")+(it.derived==="daytimeNotes"?" dayupdate":"")+'" data-sxid="'+it.id+'">'+
       '<span class="sxrole" title="'+esc(it.live)+' — updates itself">'+esc(SX_ROLE[it.role].l)+'</span>'+
       (it.role==="loop"?'<input type="checkbox" class="sxdone" title="close it on Rounds too" onchange="event.stopPropagation();sxCloseDerivedTodo(\''+r.id+'\','+it.idx+')">':"")+
       '<span class="sxtext livetext" title="'+esc(it.live)+'">'+esc(it.t)+'</span>'+
@@ -10959,7 +11058,7 @@ function sxItemHtml(r,it){
   return '<div class="sxrow r-'+it.role+' s-'+(it.sys||"neuro")+(it.done?" done":"")+(stale?" stale":"")+(fresh?" fresh":"")+'" data-sxid="'+it.id+'">'+
     sxRoleSelectHtml(r.id,it)+sxMoveButtons(r,it)+
     (it.role==="loop"?'<input type="checkbox" class="sxdone" '+(it.done?"checked":"")+' title="close this loop" onchange="event.stopPropagation();sxToggleDone(\''+r.id+'\',\''+it.id+'\')">':"")+
-    '<input class="sxtext" value="'+esc(it.t)+'" oninput="sxEdit(\''+r.id+'\',\''+it.id+'\',this)" onclick="event.stopPropagation()">'+
+    '<textarea class="sxtext" rows="1" oninput="sxEdit(\''+r.id+'\',\''+it.id+'\',this);sxGrow(this)" onclick="event.stopPropagation()">'+esc(it.t)+'</textarea>'+
     sxSysSelectHtml(r.id,it)+sxPushBtnHtml(r,it)+
     (ago?'<span class="sxago">'+esc(ago)+'</span>':"")+
     (stale?'<button type="button" class="sxkeep" title="still management-defining — keep it" onclick="event.stopPropagation();sxKeep(\''+r.id+'\',\''+it.id+'\')">keep</button>':"")+
@@ -11397,6 +11496,7 @@ function renderNccu(){
         '<div class="cardbtns"><button onclick="openSO(\''+esc(r&&r.id||"")+'\')">Edit SO</button></div></div>';
     }
   }).join(""):'<div class="empty">No SO board patients yet.<br>On a Rounds card, tap <b>SO</b>.</div>';
+  sxGrowAll(el);
 }
 // r.nccuView is "full" | "compact" | unset (follow the toolbar). The old
 // boolean r.nccuCompact could not express "expanded while the toolbar says
@@ -12673,7 +12773,7 @@ async function fetchGistFile(f,auto){
   if(!r.ok){const e=new Error("GitHub raw "+r.status);e.status=r.status;throw e}
   return r.text();
 }
-function syncDoc(){return {tombFormat:2,consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,boardAutoTimersOff:!!S.boardAutoTimersOff,boardAutoTimersAt:S.boardAutoTimersAt||0,ts:Date.now()}}
+function syncDoc(){return {tombFormat:2,consults:S.consults,rounds:S.rounds||[],formerWounds:S.formerWounds||[],tomb:S.tomb||{},day:S.day,roundCycleAt:S.roundCycleAt||0,round24:!!S.round24,round24At:S.round24At||0,roundGroupFloor:!!S.roundGroupFloor,roundGroupFloorAt:S.roundGroupFloorAt||0,boardAutoTimersOff:!!S.boardAutoTimersOff,boardAutoTimersAt:S.boardAutoTimersAt||0,ts:Date.now()}}
 const TOMB_KEEP_MS=45*24*3600*1000;
 function tombStamp(){return Date.now()}
 function tombSet(id,ts){
@@ -12937,10 +13037,13 @@ function mergeState(local,remote){
   const l24=local.round24At||0,r24=remote.round24At||0;
   const round24At=Math.max(l24,r24);
   const round24=(l24||r24)?(l24>=r24?!!local.round24:!!remote.round24):!!(local.round24||remote.round24);
+  const lgf=local.roundGroupFloorAt||0,rgf=remote.roundGroupFloorAt||0;
+  const roundGroupFloorAt=Math.max(lgf,rgf);
+  const roundGroupFloor=(lgf||rgf)?(lgf>=rgf?!!local.roundGroupFloor:!!remote.roundGroupFloor):!!(local.roundGroupFloor||remote.roundGroupFloor);
   const lat=local.boardAutoTimersAt||0,rat=remote.boardAutoTimersAt||0;
   const boardAutoTimersAt=Math.max(lat,rat);
   const boardAutoTimersOff=(lat||rat)?(lat>=rat?!!local.boardAutoTimersOff:!!remote.boardAutoTimersOff):!!(local.boardAutoTimersOff||remote.boardAutoTimersOff);
-  return {tombFormat:2,consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At,boardAutoTimersOff:boardAutoTimersOff,boardAutoTimersAt:boardAutoTimersAt};
+  return {tombFormat:2,consults:consults,rounds:rounds,formerWounds:formerWounds,tomb:tomb,day:day,roundCycleAt:roundCycleAt,round24:round24,round24At:round24At,roundGroupFloor:roundGroupFloor,roundGroupFloorAt:roundGroupFloorAt,boardAutoTimersOff:boardAutoTimersOff,boardAutoTimersAt:boardAutoTimersAt};
 }
 function parseSyncDocument(content){
   const doc=JSON.parse(content);
@@ -12994,7 +13097,7 @@ async function doSync(auto){
     const merged=mergeState(localHadChanges?S:{},remoteSnapshot);
     preserveLocalCardView(S,merged);
     slotCustomScan(merged);                 // rows another device named arrive with it
-    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
+    S.consults=merged.consults;S.rounds=merged.rounds;S.formerWounds=merged.formerWounds;S.tomb=merged.tomb;S.day=merged.day;S.roundCycleAt=merged.roundCycleAt;S.round24=merged.round24;S.round24At=merged.round24At;S.roundGroupFloor=merged.roundGroupFloor;S.roundGroupFloorAt=merged.roundGroupFloorAt;S.boardAutoTimersOff=merged.boardAutoTimersOff;S.boardAutoTimersAt=merged.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
     compactBoardForStartup();
     // Show the fetched/merged cards before waiting for a possible upload.
     renderAllSafe();
@@ -13085,7 +13188,7 @@ async function findAllSyncGists(){
 function absorbRemote(remote){
   const m=mergeState(S,remote);
   slotCustomScan(m);
-  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;S.round24=m.round24;S.round24At=m.round24At;S.boardAutoTimersOff=m.boardAutoTimersOff;S.boardAutoTimersAt=m.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
+  S.consults=m.consults;S.rounds=m.rounds;S.formerWounds=m.formerWounds;S.tomb=m.tomb;S.day=m.day;S.roundCycleAt=m.roundCycleAt;S.round24=m.round24;S.round24At=m.round24At;S.roundGroupFloor=m.roundGroupFloor;S.roundGroupFloorAt=m.roundGroupFloorAt;S.boardAutoTimersOff=m.boardAutoTimersOff;S.boardAutoTimersAt=m.boardAutoTimersAt;BOARD_AUTO_TIMERS_OFF=!!S.boardAutoTimersOff;
 }
 // if an earlier build ever made a second sync gist, pull its contents in rather
 // than stranding whatever was written there

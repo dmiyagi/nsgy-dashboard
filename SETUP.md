@@ -31,6 +31,17 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Notes read loosely into the boxes (v0.0.266):** `⤓ From notes` (and the morning-baseline refresh) now recognise far more of how a sign-out is actually typed — `EVD open at 0` / `EVD go to 5`, `ICP 5` or `ICPs 5-12`, a bare `131/54`, `Goal EuNa (151)` filling both the goal and the value, `had Tmax 101.5`, `CSF on 19th NGTD` / `Blood Cx neg` into cultures, antibiotics, `Keppra 7 days til 25th`, `MRI brain/spine neg` / `CTV negative` into imaging, `FiO2 increased` / `desatting` into Resp, steroids, bowel, dispo. One real note filled 13 boxes.
+- **The afternoon update is read on its own (v0.0.266):** daytime information no longer disappears into the neuro sentence. It is spoken last as **This afternoon: ___**, highlighted in amber in Present and on the card, so what changed since morning is the part that stands out. A note that already starts with "Morning baseline" no longer has the label repeated.
+- **Snoozing a dated task sticks (v0.0.266):** a card whose one-liner carries a date (`remove staples 10/22`) spawns a task for that date. Snoozing it used to bring back a fresh copy on the original date, because the scheduler recognised its own tasks by where they sat. Tasks are now matched by the date they came from, so a snooze holds — for rounds dates, board-card dates and wound checks alike.
+- **ED consults sort last, before the outside ICUs (v0.0.266):** the rounds list walks the floors first, then ED, then TICU/SICU (and MICU/CTIC/RICU), in every room-based sort.
+
+- **Whole sign-out lines are readable (v0.0.265):** a captured line is no longer a one-line box that cuts off at the edge — it grows to fit what it says (up to a point, then scrolls) and wraps, editable in place. Live lines pulled from Rounds wrap the same way.
+- **Lines / drains in the exam (v0.0.265):** a **Lines / drains** field is available from the exam builder's *+ add field* (EVD · a-line · CVL · Foley · JP). It writes a `Lines: ___` row into the exam text and reads back out of it, so it travels with the exam and into sign-out.
+- **Floors grouping is remembered (v0.0.265):** the Rounds list opens grouped-by-floor if that is how you left it, and the choice now follows you between devices (most recent wins), like the 24 hr toggle.
+- **10:00 check counts the rounds list only (v0.0.265):** wound checks and chart checks no longer count toward *everyone seen / plans communicated* — they are their own work.
+- **Chart-check cards have their own colour (v0.0.265):** a green tint and left edge, distinct from the blue of floor patients.
+
 - **Wound checks in the rounds list (v0.0.264):** with **Floors** ungrouped, due suture/staple/incision checks now sit in the main rounds list, sorted in with the patients and chart checks by room (or whichever sort is on), each keeping its own row controls. They are not repeated in the section below — it holds only what is not due, and disappears when there is nothing left in it. Turning **Floors** on restores the old grouping, with wound checks in their own section.
 - **The SO board follows the active list (v0.0.264):** a sign-out card now shows only while its patient is actually on Rounds or the Board. Move someone to the wound list, hide them from the board, or close them and they drop off the SO board; bring them back and they return with their sign-out intact — the SO flag itself is never changed.
 
