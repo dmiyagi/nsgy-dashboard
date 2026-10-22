@@ -47,6 +47,8 @@ header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;t
 .pacebar.protect .pacehead{color:#c7a6ff}
 .pacebar.off{padding:2px 6px;border:0;background:transparent}
 .pacebar.off .pacemore{margin:0;border-color:transparent;color:#7f8fa6}
+.bg.sodone{border-color:#4a5a72;color:#8b9bb4}
+.bg.sodone.on{border-color:var(--ok);color:var(--ok);background:rgba(63,214,143,.10)}
 .notehint{font-size:10.5px;color:var(--mut);margin:3px 0 0;letter-spacing:.2px}
 .qbtns.examsave{margin:6px 0 2px}
 .qbtns.examsave .primary{border-color:var(--acc);color:var(--acc)}
@@ -931,7 +933,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.268 · 2026-10-20</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.269 · 2026-10-21</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5988,7 +5990,7 @@ function soRestoreDay(r,before){
 function soRefreshFromText(r,txt){
   const t=String(txt||"");
   if(!t.trim())return 0;
-  let n=0;
+  let n=soFileLabelledLines(r,t);   // a written plan says where each line goes
   SLOT_SEED.forEach(seed=>{
     const m=lastMatch(t,seed.re);if(!m)return;
     const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();if(!v)return;
@@ -7255,7 +7257,13 @@ function roundIdentityBadges(r){
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"")+
-    (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"")+noExamBadge(r);
+    (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"")+soReadyBadge(r)+noExamBadge(r);
+}
+// a tick once every box on this patient's sign-out has something in it
+function soReadyBadge(r){
+  if(!r||!r.nccuSO)return "";
+  const ready=nccuReady(r);
+  return '<span class="bg sodone'+(ready?" on":"")+'" title="'+(ready?"Sign-out boxes all filled":"Sign-out boxes still have blanks")+'">'+(ready?"✓ SO":"SO ⋯")+'</span>';
 }
 function chartCheckRoundProxy(c){
   const linked=chartCheckRound(c);
@@ -7324,6 +7332,7 @@ function roundRowCard(r){
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (tags?'<span class="rtags">'+tags+'</span>':"")+
+    soReadyBadge(r)+
     '<span class="rprob">'+oneLinerKeyHtml(roundProblemText(r))+'</span>'+
     (nx?roundStepBox(r,nxi)+'<span class="ract">'+esc(nx.t)+'</span>':'<span class="ract"></span>')+
     '<span class="car">▸</span></div></div>';
@@ -8770,11 +8779,62 @@ function buildSOChips(){const r=findAny(soId);if(!r)return;
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
   Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();flushAutosave()});}
+// Whatever the boxes already know, the template should not ask for again.
+// Some template fields ask for a whole section rather than one parameter.
+const SO_TEMPLATE_COMPOSITE=[
+ [/^(?:a\/p neuro|neuro plan|plan)$/i,["neuroplan","asm","steroid","na","bp","ac","imaging"]],
+ [/^(?:evd\/output|evd \+ icp course|drains?(?: \+ output)?)$/i,["drain","icp","drainOutput"]],
+ [/^(?:vitals|cards)$/i,["bp"]],
+ [/^(?:seizure(?: ppx| meds)?(?: \/ ltm)?)$/i,["asm"]],
+ [/^(?:na goal(?: \+ last)?)$/i,["na"]],
+ [/^(?:bp goal|map goal if cord)$/i,["bp"]],
+ [/^(?:ac status|ac \/ antiplatelet|heme)$/i,["ac"]],
+ [/^(?:antibiotics|micro\/id)$/i,["id"]],
+ [/^(?:images|imaging(?: pending| comparison)?|post-?op imaging)$/i,["imaging"]],
+ [/^(?:vent|pulm)$/i,["resp"]],
+ [/^(?:dispo(?: \+ barriers| \/ barriers| planning)?)$/i,["dispo"]],
+ [/^(?:steroid \+ aed plan)$/i,["steroid","asm"]],
+ [/^(?:pending studies|studies pending)$/i,["imaging"]],
+ [/^(?:meds of consequence|daily meds|medications)$/i,["asm","ac","steroid","id"]],
+ [/^(?:goals?)$/i,["na","bp","icp"]],
+ [/^(?:other barriers to dispo)$/i,["dispo"]],
+ [/^(?:csf labs ?\/ ?cultures|cultures)$/i,["id"]]
+];
+function soCompositeFor(r,label){
+  const hit=SO_TEMPLATE_COMPOSITE.find(([re])=>re.test(String(label||"").trim()));
+  if(!hit)return "";
+  const live=slotActiveKeys(r);
+  return hit[1].filter(k=>live.indexOf(k)>=0).map(k=>{
+    const body=slotBody(r,k),d=slotDef(k);
+    return body?((hit[1].length>1&&d)?d.l+" "+body:body):"";
+  }).filter(Boolean).join(" · ");
+}
+function soFillTemplateFromSlots(r){
+  if(!r)return 0;
+  r.so=r.so||{};
+  let n=0;
+  soTemplateFields(r).forEach(f=>{
+    const label=f&&f[0];if(!label)return;
+    if(String(r.so[label]||"").trim())return;         // never overwrite your words
+    let body=soCompositeFor(r,label);
+    if(!body){
+      const alias=slotAliasFor(label)||soSlotMapping(label);
+      const k=alias?alias.k:slotKeyForLabel(r,label);
+      if(!k||!slotDef(k))return;
+      body=slotBody(r,k);
+    }
+    if(!body)return;
+    r.so[label]=body;stampSo(r,label);n++;
+  });
+  if(n){r.updatedAt=Date.now();autosave()}
+  return n;
+}
 function buildSOFields(){const r=findAny(soId);if(!r)return;
   r.so=r.so||{};
   const tmpl=normalizeSoTemplate(r);
   const one=tmpl.fields[0][0];
   if(!r.so[one])r.so[one]=soSourceOneLiner(r);
+  soFillTemplateFromSlots(r);
   const fields=soModalFields(r);
   document.getElementById("sofields").innerHTML=
     soBoxTemplateMenuHtml(r)+
@@ -10505,6 +10565,63 @@ function slotLabelSplit(t){
   if(/^(?:if|when|unless|once|should|in case)\b/i.test(l))return null;
   return {l:l,v:v};
 }
+// The labels a plan is actually written with, and the box each one belongs in.
+// Anything not here still works — it becomes a box of its own, named after the
+// label you used.
+const SO_LABEL_ALIAS=[
+ [/^neuro ?checks?$/i,["neuroplan","goal"]],
+ [/^(?:aeds?|asm|anti-?epileptics?|seizure(?: ppx| meds| prophylaxis)?)$/i,["asm","goal"]],
+ [/^steroids?$/i,["steroid","goal"]],
+ [/^(?:sodium(?: goal)?|na(?: goal)?)$/i,["na","goal"]],
+ [/^(?:bp(?: goal)?|blood pressure(?: goal)?|map(?: goal)?)$/i,["bp","goal"]],
+ [/^(?:imaging|images|films?|studies)$/i,["imaging","goal"]],
+ [/^(?:abx|antibiotics?|id|micro(?:\/id)?|infectious disease)$/i,["id","goal"]],
+ [/^(?:anticoagulation|antiplatelets?|anticoagulation\/antiplatelets?|ac(?:\/ap)?)$/i,["ac","goal"]],
+ [/^(?:dvt ?(?:ppx|prophylaxis)|vte ?(?:ppx|prophylaxis))$/i,["ac","cur"]],
+ [/^(?:diet|nutrition|feeds?)$/i,["gi","goal"]],
+ [/^(?:dispo|disposition|discharge)$/i,["dispo","goal"]],
+ [/^(?:incision care|wound care|incision|dressing)$/i,["skin","goal"]],
+ [/^(?:drains?|evd|lumbar drain)$/i,["drain","goal"]],
+ [/^(?:icp(?: goal)?)$/i,["icp","goal"]],
+ [/^(?:vent|respiratory|resp|airway|pulm)$/i,["resp","goal"]],
+ [/^(?:foley|gu|voiding)$/i,["gu","goal"]],
+ [/^(?:bowel|last bm)$/i,["bowel","goal"]],
+ [/^(?:exam|neuro exam|physical)$/i,["exam","cur"]],
+ [/^(?:vasospasm|tcds?)$/i,["vasospasm","goal"]],
+ [/^(?:goals? of care|code status)$/i,["goc","goal"]],
+ [/^(?:family|collateral)$/i,["family","goal"]]
+];
+function slotAliasFor(label){
+  const l=String(label||"").trim();
+  const hit=SO_LABEL_ALIAS.find(([re])=>re.test(l));
+  return hit?{k:hit[1][0],f:hit[1][1]}:null;
+}
+// a pasted plan — one "Label: value" per line — straight into the boxes
+function soFileLabelledLines(r,text){
+  if(!r)return 0;
+  let n=0;
+  const used={};
+  String(text||"").split(/\r?\n/).forEach(raw=>{
+    const line=String(raw||"").replace(/^[\s\-•*·]+/,"").trim();
+    if(!line)return;
+    const named=slotLabelSplit(line);
+    if(!named)return;
+    const alias=slotAliasFor(named.l);
+    let k=alias?alias.k:slotKeyForLabel(r,named.l);
+    let f=alias?alias.f:null;
+    if(!k)k=slotAddCustomRow(r,named.l);
+    if(!k||!slotDef(k))return;
+    // two lines can land on the same box ("Abx" and "ID"); the second keeps
+    // its own slot in that row instead of overwriting the first
+    if(f&&used[k+"."+f]&&slotVal(r,k,f)!==named.v)f=null;
+    if(!f)f=slotFieldForText(r,k,named.v);
+    used[k+"."+f]=true;
+    if(slotVal(r,k,f)===named.v)return;
+    slotUpdate(r,k,f,named.v);n++;
+  });
+  if(n)r.updatedAt=Date.now();
+  return n;
+}
 // does this label already name a row — standard or one you named before?
 function slotKeyForLabel(r,label){
   const want=String(label||"").trim().toLowerCase();
@@ -11171,15 +11288,22 @@ function sxListHtml(r){
   return ordered.length?'<div class="sxlist">'+ordered.map(it=>sxItemHtml(r,it)).join("")+'</div>'
     :'<div class="sxempty">Nothing captured yet — type below as the day goes.</div>';
 }
+function sxSetOpen(id,on){const r=findAny(id);if(!r)return;r.sxOpen=!!on;r.updatedAt=Date.now();autosave()}
 function sxCardHtml(r,prefix){
   const p=prefix||"";
   const legacy=!r.sxMigrated&&Object.keys(r.so||{}).some(k=>String(r.so[k]||"").trim());
+  // The boxes above are the sign-out. Captured lines still feed the read-out,
+  // but they are no longer the thing you fill in, so they fold away.
+  const nLines=sxAll(r).filter(x=>!x.derived).length;
   return '<div class="sxbody">'+
     sxRecompressHtml(r)+
-    sxListHtml(r)+
-    sxQuickAddHtml(r,p)+
     sxChecksHtml(r)+
-    '<details class="moredet"><summary>More options / suggested lines</summary>'+sxCondPickerHtml(r)+sxPromptsHtml(r)+'</details>'+
+    '<details class="moredet sxmore"'+(r.sxOpen?" open":"")+' ontoggle="sxSetOpen(\''+r.id+'\',this.open)">'+
+      '<summary>Lines, conditions + suggestions'+(nLines?' · '+nLines:'')+'</summary>'+
+      sxListHtml(r)+
+      sxQuickAddHtml(r,p)+
+      sxCondPickerHtml(r)+sxPromptsHtml(r)+
+    '</details>'+
     (legacy?'<div class="sxlegacy"><span>This patient still has an old template sign-out.</span>'+
       '<button type="button" onclick="event.stopPropagation();sxMigrateCard(\''+r.id+'\')">⇣ Import it</button></div>':"")+
   '</div>';
