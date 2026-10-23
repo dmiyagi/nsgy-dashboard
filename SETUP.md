@@ -31,6 +31,8 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **One SO tag, and the room dot shows it (v0.0.270):** while the sign-out still has blanks a patient carries the red **SO** tag and a grey **SO ⋯**; once every box is filled the red tag stands down and only the green **✓ SO** remains. The dot beside the room number stays where it was and turns **green** when the sign-out is complete. Same rule on the collapsed rounds row, the open rounds card, and both sign-out card views.
+
 - **Paste a plan, get the boxes (v0.0.269):** a written plan — `- Neuro Checks: q1 hour`, `- AEDs: Keppra 750 BID x 1 week`, `- Sodium Goal: …`, `Diet:`, `Lines:`, `Dispo:` — pasted into either notes box is filed line by line into the matching sign-out boxes. Labels the board knows (Neuro checks, AEDs, Steroids, Sodium, BP, Imaging, Abx/ID, AC, DVT ppx, Incision care, Diet, Dispo, Drains, Vent, GU…) go to their box; anything else (Analgesia, Activity, Labs, Lines, Other) becomes a box of its own, named after your label. Two lines that aim at the same box (Abx *and* ID) both keep their place. Re-pasting the same plan changes nothing.
 - **Template fields fill themselves (v0.0.269):** opening the sign-out editor now populates the template from the boxes — including the composite fields, so **A/P Neuro** gathers the neuro boxes and **EVD/Output** gathers drain + ICP + output. Anything you typed yourself is never overwritten. One pasted plan filled 10 NCCU fields and 5 floor fields.
 - **✓ SO on the rounds card (v0.0.269):** a patient on the SO board shows **✓ SO** in green once every box has something in it, and **SO ⋯** while blanks remain — on both the collapsed row and the open card.

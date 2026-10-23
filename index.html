@@ -130,6 +130,7 @@ section.view.active{display:block}
 .bg.warn{background:#3a1220;color:var(--e3);border:1px solid var(--e3)}
 .bg.roomresp,.rwho.roomresp{box-shadow:none;position:relative}
 .bg.roomresp::before,.rwho.roomresp::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--e3);margin-right:5px;vertical-align:middle}
+.bg.roomresp.sodoneroom::before,.rwho.roomresp.sodoneroom::before{background:var(--ok);box-shadow:0 0 5px rgba(63,214,143,.6)}
 .card .who{font-weight:700;font-size:15px}
 .card .prob{color:var(--acc);font-weight:600}
 .card .state{font-size:13px;color:var(--mut);margin:3px 0}
@@ -933,7 +934,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.269 · 2026-10-21</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.270 · 2026-10-22</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -7253,11 +7254,18 @@ function toggleNoExamNow(id){
 }
 function roundIdentityBadges(r){
   const room=roundRoom(r),team=roundTeam(r),pt=roundPatient3(r),attg=roundAttg(r);
-  return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+'">'+esc(room)+'</span>':"")+
+  const soDone=!!(r.nccuSO&&nccuReady(r));
+  return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+(soDone?" sodoneroom":"")+'">'+esc(room)+'</span>':"")+
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
     (pt?'<span class="bg mod">'+esc(pt)+'</span>':"")+
     (attg?'<span class="bg mod">'+esc(attg)+'</span>':"")+
     (roundIsFloor(r)?'<span class="bg floor">Floor</span>':"")+soReadyBadge(r)+noExamBadge(r);
+}
+// On the SO board while there are still blanks; once it is done the green
+// tick says it, so the red one stands down.
+function soMemberBadge(r){
+  if(!r||!r.nccuSO)return "";
+  return nccuReady(r)?"":'<span class="bg warn" title="On the SO board — boxes still have blanks">SO</span>';
 }
 // a tick once every box on this patient's sign-out has something in it
 function soReadyBadge(r){
@@ -7319,7 +7327,7 @@ function roundRowCard(r){
     roundAttg(r)?'<span class="bg mod">'+esc(roundAttg(r))+'</span>':"",
     roundIsFloor(r)?'<span class="bg floor">Floor</span>':"",
     otherTags,
-    r.nccuSO?'<span class="bg warn">SO</span>':""
+    soMemberBadge(r)
   ].filter(Boolean).join("");
   return '<div class="card crowwrap hastrash'+(roundIsFloor(r)?' floorcard':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)'))+'">'+trashBtn(r.id,"round")+
    '<div class="crow" onclick="togRoundCollapse(\''+r.id+'\')">'+
@@ -7329,7 +7337,7 @@ function roundRowCard(r){
     roundTodoIndicator(r)+
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
     (r.worry?'<span class="bg warn">!</span>':"")+
-    (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+'">'+esc(roundRoom(r))+'</span>':"")+
+    (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+((r.nccuSO&&nccuReady(r))?" sodoneroom":"")+'">'+esc(roundRoom(r))+'</span>':"")+
     (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
     (tags?'<span class="rtags">'+tags+'</span>':"")+
     soReadyBadge(r)+
@@ -7384,7 +7392,7 @@ function renderRounds(){
     if(r.collapsed)return roundRowCard(r);
     const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
     const worry=r.worry?'<span class="bg warn">! 2–3×/day</span>':"";
-    const nccu=r.nccuSO?'<span class="bg warn">SO</span>':"";
+    const nccu=soMemberBadge(r);
     return '<div class="card hastrash'+(roundIsFloor(r)?' floorcard':'')+(r.seen?' closedc':'')+'" data-id="'+r.id+'" style="border-left-color:'+(r.seen?'var(--ok)':(r.worry?'var(--e3)':(roundIsFloor(r)?'#5aa7ff':'var(--acc)')))+'">'+trashBtn(r.id,"round")+
      '<div class="badges">'+roundIdentityBadges(r)+roundTodoIndicator(r)+soTmplBadge(r)+worry+nccu+tags+rColBtn(r)+'</div>'+
      '<div class="state" style="color:#c8d3e4">'+oneLinerKeyHtml(roundProblemText(r))+'</div>'+
@@ -7505,7 +7513,7 @@ function chartCheckListRow(c){
   const ctx=chartCheckContextHtml(c,due);
   const r=chartCheckRoundProxy(c);
   const tags=(r.tags||[]).map(t=>'<span class="bg mod">'+esc(t)+'</span>').join("");
-  const nccu=(c.nccuSO||r.nccuSO)?'<span class="bg warn">SO</span>':"";
+  const nccu=soMemberBadge(c.nccuSO?c:r);
   if(!open){
     return '<div class="card crowwrap chartcard hastrash" data-id="'+c.id+'" style="'+(c.worry?'border-left-color:var(--e3)':'')+'">'+
       trashBtn(c.id,"chart")+
@@ -11597,7 +11605,7 @@ function nccuCardHtml(r){
       '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
       '<div class="crow" onclick="toggleOneNccuCompact(\''+r.id+'\')">'+
         (S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+
-        '<span class="bg warn">SO</span>'+
+        soMemberBadge(r)+
         (dx?'<span class="bg primarydx">'+esc(dx)+'</span>':cond)+
         ready+chg+
         '<span class="rprob">'+esc(one)+'</span>'+
@@ -11608,7 +11616,7 @@ function nccuCardHtml(r){
   }
   return '<div class="card nccucard hastrash'+(compact?' compact':'')+'" data-id="'+r.id+'">'+
     '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
-    '<div class="nccucardhead"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+'<span class="bg warn">SO</span>'+
+    '<div class="nccucardhead"><div class="badges">'+(S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+soMemberBadge(r)+
     sxConditions(r).slice(0,3).map(c=>'<span class="bg c">'+esc(c.l)+'</span>').join("")+
     (function(){
       const st=sxNeedsRecompress(r);
