@@ -31,6 +31,8 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Save scratch pad (v0.0.272):** a **Save scratch pad** button sits under the pad. It commits whatever is in the box right now (even mid-sentence, before the autosave would have fired), writes it to disk immediately, and the counter next to it reads *saved just now* for a moment. The pad still saves itself ~0.4 s after you stop typing — the button is for when you want to be sure.
+
 - **Scratch pad on the Board (v0.0.271):** a **✎ Scratch pad** fold at the top of the Board — free text, nothing required. Any line you indent with Tab (or start with `-`) becomes a task with a box to tick; ticking strikes it through, **✕** throws one away, **Clear n finished** sweeps the ticked ones, and both are undoable. Unindented lines stay as plain text, so `CALLS` and `BEFORE SIGN-OUT` read as headings. The summary shows how many are still open. It saves as you type and syncs between devices.
 - **Exam grades are buttons (v0.0.271):** every motor group in Rounds — BUE/BLE, RUE/LUE/RLE/LLE, and each muscle — is now a row of tap targets (5 · 4+ · 4 · 4− · 3 · 2 · 1 · 0) instead of a dropdown, with **⋯** for other wording (antigravity, follows commands, UTA). The spine grid keeps its per-muscle cells and gains a keypad that fills the highlighted one and steps to the next. The text consult exam has the same pad: pick the limb, tap the number. **Tapping never duplicates a line** — the group's existing line is rewritten in place, and tapping the lit grade again clears that group for good (it no longer walks back in from the text underneath). Prose the builder can't represent, like *Family at bedside*, is left alone.
 

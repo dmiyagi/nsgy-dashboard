@@ -63,6 +63,7 @@ header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;t
 .scratchmenu{margin:0 0 8px}
 .scratchmenu>summary{cursor:pointer;font-weight:800;font-size:12.5px;color:var(--acc);letter-spacing:.2px}
 .scratchlist{margin:8px 0 2px;display:flex;flex-direction:column;gap:2px}
+.scratchmenu .qbtns .primary{border-color:var(--acc);color:var(--acc)}
 .scratchrow{display:flex;align-items:flex-start;gap:7px;padding:3px 6px;border-radius:7px;background:var(--card2);cursor:pointer}
 .scratchrow span{flex:1;min-width:0;font-size:12.5px;line-height:1.35;word-break:break-word}
 .scratchrow.done span{text-decoration:line-through;color:var(--mut)}
@@ -954,7 +955,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.271 · 2026-10-23</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.272 · 2026-10-23</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -6137,6 +6138,15 @@ function scratchClearDone(){
     scratchRenderList();flushAutosave();
   },"Undo");
 }
+// it saves as you type; this is the button that says so out loud
+function scratchSaveNow(){
+  const el=document.getElementById("scratchtext");
+  if(el)scratchSave(el);
+  flushAutosave();
+  const tag=document.getElementById("scratchsaved");
+  if(tag){tag.textContent="saved just now";setTimeout(scratchRenderList,2500)}
+  showToast("Scratch pad saved");
+}
 function scratchToggleOpen(on){
   const r=scratchRecord();r.scratchOpen=!!on;touch(r);autosave();
   if(on)scratchRender();
@@ -6152,8 +6162,10 @@ function scratchListHtml(){
   const nTask=items.filter(x=>x.task).length,nDone=items.filter(x=>x.task&&x.done).length;
   return (rows.length?'<div class="scratchlist">'+rows.join("")+'</div>':"")+
     '<div class="qbtns">'+
+      '<button type="button" class="primary" onclick="scratchSaveNow()">Save scratch pad</button>'+
       (nDone?'<button type="button" onclick="scratchClearDone()">✕ Clear '+nDone+' finished</button>':"")+
-      (nTask?'<span class="sxcount">'+nDone+'/'+nTask+' done</span>':'<span class="sxcount">Indent a line with Tab to make it a task</span>')+
+      '<span class="sxcount" id="scratchsaved">'+
+        (nTask?nDone+'/'+nTask+' done':'Indent a line with Tab to make it a task')+'</span>'+
     '</div>';
 }
 function scratchRenderList(){
