@@ -49,6 +49,26 @@ header .sub{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;t
 .pacebar.off .pacemore{margin:0;border-color:transparent;color:#7f8fa6}
 .bg.sodone{border-color:#4a5a72;color:#8b9bb4}
 .bg.sodone.on{border-color:var(--ok);color:var(--ok);background:rgba(63,214,143,.10)}
+.exgrades{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.exgrade{min-width:30px;padding:4px 7px;border:1px solid var(--line);border-radius:7px;background:var(--card);
+  color:var(--text);font:800 12.5px var(--font);cursor:pointer}
+.exgrade:hover{border-color:var(--acc)}
+.exgrade.on{border-color:var(--acc);color:var(--acc);background:rgba(90,162,255,.12)}
+.exgrade.alt{font-weight:700;color:var(--mut);min-width:26px}
+.exgrade.alt.on{color:var(--acc)}
+.exgrades.spinepad{margin-top:5px}
+.exgrades.tcgradepad{margin-top:6px;width:100%}
+.exgrades.tcgradepad select{max-width:84px}
+.spinelimbcell.act input{border-color:var(--acc);box-shadow:0 0 0 2px rgba(90,162,255,.18)}
+.scratchmenu{margin:0 0 8px}
+.scratchmenu>summary{cursor:pointer;font-weight:800;font-size:12.5px;color:var(--acc);letter-spacing:.2px}
+.scratchlist{margin:8px 0 2px;display:flex;flex-direction:column;gap:2px}
+.scratchrow{display:flex;align-items:flex-start;gap:7px;padding:3px 6px;border-radius:7px;background:var(--card2);cursor:pointer}
+.scratchrow span{flex:1;min-width:0;font-size:12.5px;line-height:1.35;word-break:break-word}
+.scratchrow.done span{text-decoration:line-through;color:var(--mut)}
+.scratchrow .sxdel{opacity:.55}
+.scratchrow:hover .sxdel{opacity:1}
+.scratchhead{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:7px 0 1px}
 .notehint{font-size:10.5px;color:var(--mut);margin:3px 0 0;letter-spacing:.2px}
 .qbtns.examsave{margin:6px 0 2px}
 .qbtns.examsave .primary{border-color:var(--acc);color:var(--acc)}
@@ -934,7 +954,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.270 · 2026-10-22</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.271 · 2026-10-23</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -964,6 +984,10 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
     <select id="boardTodoPatient" aria-label="Optional patient attachment"><option value="">No patient</option></select>
     <button class="btn sec sm" onclick="addBoardTodo()">＋ Add to-do</button>
   </div>
+  <details class="addmenu scratchmenu" id="scratchpad" ontoggle="scratchToggleOpen(this.open)">
+    <summary>✎ Scratch pad ▾ <span id="scratchcount" class="sxcount"></span></summary>
+    <div id="scratchbody"></div>
+  </details>
   <div class="boardtools">
     <details class="addmenu">
       <summary>＋ Add by type ▾</summary>
@@ -4626,6 +4650,7 @@ function boardTodoAttachmentHtml(c){
 }
 function render(){
   renderBoardTodoPatients();
+  scratchRender();
   const baseAct=S.consults.filter(c=>boardVisible(c)&&!c.closed&&!isHiddenSnoozed(c)&&matchSearch(c));
   renderTypeFilters(baseAct);
   const act=sortBoardList(baseAct.filter(c=>matchBoardType(c)&&matchBoardOwner(c)));
@@ -6050,6 +6075,107 @@ function previousDayNotesText(r){
   const previous=String(r.previousDayNotes||""),legacy=String(r.note||"");
   return legacy&&!previous.includes(legacy)?[previous,legacy].filter(Boolean).join("\n\n"):previous;
 }
+// ---------- scratch pad ----------
+// Free text, nothing required. Any line you indent with a tab is a task: it
+// gets a box to tick, strikes through when done, and can be thrown away. Lines
+// you do not indent are just text — headings, reminders, whatever.
+function scratchRecord(){return handoffNotesRecord()}
+function scratchTextOf(){return String(scratchRecord().scratch||"")}
+function scratchKeyOf(t){return String(t||"").trim().toLowerCase().replace(/\s+/g," ")}
+function scratchDoneMap(){const r=scratchRecord();r.scratchDone=r.scratchDone||{};return r.scratchDone}
+function scratchItems(){
+  const done=scratchDoneMap();
+  return scratchTextOf().split(/\r?\n/).map((line,i)=>{
+    const task=/^[\t ]{1,}\S/.test(line)||/^\s*[-*•]\s+\S/.test(line);
+    const text=line.replace(/^[\t ]+/,"").replace(/^[-*•]\s+/,"").trim();
+    return {i:i,raw:line,text:text,task:task&&!!text,done:!!done[scratchKeyOf(text)]};
+  });
+}
+function scratchSave(el){
+  const r=scratchRecord();
+  if(r.scratch===el.value)return;
+  r.scratch=el.value;stampF(r,"scratch");touch(r);autosave();
+  scratchRenderList();
+}
+function scratchToggle(i){
+  const items=scratchItems(),it=items[i];if(!it||!it.text)return;
+  const done=scratchDoneMap(),k=scratchKeyOf(it.text);
+  if(done[k])delete done[k];else done[k]=Date.now();
+  const r=scratchRecord();stampF(r,"scratchDone");touch(r);autosave();
+  scratchRenderList();
+}
+function scratchRemove(i){
+  const r=scratchRecord();
+  const lines=scratchTextOf().split(/\r?\n/);
+  if(i<0||i>=lines.length)return;
+  const gone=lines[i];
+  lines.splice(i,1);
+  r.scratch=lines.join("\n");stampF(r,"scratch");touch(r);
+  const el=document.getElementById("scratchtext");if(el)el.value=r.scratch;
+  scratchRenderList();flushAutosave();
+  showToast("Removed — "+String(gone).trim().slice(0,38),()=>{
+    const rr=scratchRecord();
+    const back=String(rr.scratch||"").split(/\r?\n/);
+    back.splice(i,0,gone);
+    rr.scratch=back.join("\n");stampF(rr,"scratch");touch(rr);
+    const e2=document.getElementById("scratchtext");if(e2)e2.value=rr.scratch;
+    scratchRenderList();flushAutosave();
+  },"Undo");
+}
+function scratchClearDone(){
+  const items=scratchItems().filter(x=>x.task&&x.done);
+  if(!items.length){showToast("Nothing ticked off yet");return}
+  const r=scratchRecord(),before=scratchTextOf();
+  const drop={};items.forEach(x=>drop[x.i]=true);
+  r.scratch=before.split(/\r?\n/).filter((_,i)=>!drop[i]).join("\n");
+  stampF(r,"scratch");touch(r);
+  const el=document.getElementById("scratchtext");if(el)el.value=r.scratch;
+  scratchRenderList();flushAutosave();
+  showToast("Cleared "+items.length+" finished item"+(items.length>1?"s":""),()=>{
+    const rr=scratchRecord();rr.scratch=before;stampF(rr,"scratch");touch(rr);
+    const e2=document.getElementById("scratchtext");if(e2)e2.value=before;
+    scratchRenderList();flushAutosave();
+  },"Undo");
+}
+function scratchToggleOpen(on){
+  const r=scratchRecord();r.scratchOpen=!!on;touch(r);autosave();
+  if(on)scratchRender();
+}
+function scratchListHtml(){
+  const items=scratchItems();
+  const rows=items.filter(x=>x.text).map(x=>
+    x.task
+      ? '<label class="scratchrow'+(x.done?" done":"")+'"><input type="checkbox" '+(x.done?"checked":"")+' onchange="scratchToggle('+x.i+')">'+
+        '<span>'+esc(x.text)+'</span>'+
+        '<button type="button" class="sxdel" title="Throw this one away" onclick="event.preventDefault();scratchRemove('+x.i+')">✕</button></label>'
+      : '<div class="scratchhead">'+esc(x.text)+'</div>');
+  const nTask=items.filter(x=>x.task).length,nDone=items.filter(x=>x.task&&x.done).length;
+  return (rows.length?'<div class="scratchlist">'+rows.join("")+'</div>':"")+
+    '<div class="qbtns">'+
+      (nDone?'<button type="button" onclick="scratchClearDone()">✕ Clear '+nDone+' finished</button>':"")+
+      (nTask?'<span class="sxcount">'+nDone+'/'+nTask+' done</span>':'<span class="sxcount">Indent a line with Tab to make it a task</span>')+
+    '</div>';
+}
+function scratchRenderList(){
+  const el=document.getElementById("scratchlist");if(el)el.innerHTML=scratchListHtml();
+  const c=document.getElementById("scratchcount");
+  if(c){const items=scratchItems(),n=items.filter(x=>x.task&&!x.done).length;c.textContent=n?n+" open":""}
+}
+function scratchRender(){
+  const host=document.getElementById("scratchbody");if(!host)return;
+  const open=!!scratchRecord().scratchOpen;
+  const pad=document.getElementById("scratchpad");
+  if(pad&&open&&!pad.hasAttribute("open"))pad.setAttribute("open","");
+  if(!host.dataset.built){
+    host.innerHTML='<textarea class="evta" id="scratchtext" placeholder="Anything — lists, numbers, who to call.&#10;Indent a line with Tab to make it a task." '+
+      'style="width:100%;min-height:120px;resize:vertical" oninput="scratchSave(this)"></textarea>'+
+      '<div id="scratchlist"></div>';
+    host.dataset.built="1";
+  }
+  const ta=document.getElementById("scratchtext");
+  if(ta&&document.activeElement!==ta)ta.value=scratchTextOf();
+  scratchRenderList();
+}
 function patientHandoffNotesHtml(r){
   return '<div class="handoffnotes" aria-label="Patient sign-out notes"><h3>Sign-out notes</h3>'+
     [["daytime","Afternoon rounds / new daytime information"],["morning","Morning baseline / sign-out notes"],["previous","Previous-day notes"]].map(([kind,label])=>{
@@ -6288,6 +6414,62 @@ function examFieldWrap(id,k,label,inner,wide,removable){
 function examOptionKey(value){
   return String(value||"").trim().toLowerCase().replace(/^([0-5][+-]?)$/,"$1/5").replace(/\bfc\s+(?:ag|antigravity)\b/g,"fc antigravity").replace(/\b(?:spont|spontaneous|spontaneously)\s+(?:ag|antigravity)\b/g,"spont antigravity").replace(/\b(?:wd|wow|withdraws|withdrawal|withdraws? to pain)\b/g,"withdraw").replace(/\blocalizes?\b/g,"localize").replace(/\s+/g," ");
 }
+// ---------- grades are tapped, not picked from a list ----------
+const EX_GRADES=["5","4+","4","4-","3","2","1","0"];
+function examGradeHtml(id,k,label,val,removable){
+  const cur=String(val||"");
+  const btns=EX_GRADES.map(g=>{
+    const v=g+"/5";
+    return '<button type="button" class="exgrade'+(cur===v?" on":"")+'" data-g="'+esc(v)+'" '+
+      'onclick="examSetGrade(\''+id+'\',\''+k+'\',\''+v+'\',this)">'+g+'</button>';
+  }).join("");
+  const isGrade=/^\d[+-]?\/5$/.test(cur);
+  return examFieldWrap(id,k,label,
+    '<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(cur)+'">'+
+    '<div class="exgrades">'+btns+
+      '<button type="button" class="exgrade alt'+((!isGrade&&cur)?" on":"")+'" title="Other wording — antigravity, follows commands, UTA…" '+
+        'onclick="examGradeOther(\''+id+'\',\''+k+'\')">'+((!isGrade&&cur)?esc(cur.slice(0,16)):"⋯")+'</button>'+
+    '</div>',true,removable);
+}
+function examSetGrade(id,k,v,btn){
+  const el=document.getElementById("ex_"+k+"_"+id);if(!el)return;
+  const next=(el.value===v)?"":v;          // tapping the one already chosen clears it
+  el.value=next;
+  if(btn&&btn.parentElement){
+    Array.from(btn.parentElement.querySelectorAll(".exgrade")).forEach(b=>b.classList.remove("on"));
+    if(next)btn.classList.add("on");
+  }
+  roundExamBuildApply(id,false);
+}
+function examGradeOther(id,k){
+  const el=document.getElementById("ex_"+k+"_"+id);if(!el)return;
+  const v=window.prompt("Wording for this group — antigravity, follows commands, UTA…",el.value||"");
+  if(v===null)return;
+  el.value=String(v).trim();
+  roundExamBuildApply(id,false);
+  renderExamCards(id);
+}
+// the spine grid keeps its cells, with a keypad that fills them in order
+const exSpineCell={};
+function examSpineFocus(id,k,i){exSpineCell[id+"."+k]=i;examSpineMark(id,k)}
+function examSpineMark(id,k){
+  const act=exSpineCell[id+"."+k]||0;
+  const grid=document.getElementById("ex_"+k+"_grid_"+id);
+  if(!grid)return;
+  Array.from(grid.querySelectorAll(".spinelimbcell")).forEach((c,i)=>c.classList.toggle("act",i===act));
+}
+function examSpineKey(id,k,n,g){
+  const key=id+"."+k;
+  let i=exSpineCell[key];
+  if(i===undefined||i===null||i>=n){
+    i=0;
+    for(let j=0;j<n;j++){const c=document.getElementById("ex_"+k+"_"+j+"_"+id);if(c&&!String(c.value||"").trim()){i=j;break}}
+  }
+  const cell=document.getElementById("ex_"+k+"_"+i+"_"+id);
+  if(cell){cell.value=g;spineLimbApply(id,k,n)}
+  exSpineCell[key]=Math.min(i+1,n-1);
+  examSpineMark(id,k);
+}
 function examPickHtml(id,k,label,opts,val,wide,removable){
   const change=k==="mode"?"roundExamModeChange('"+id+"')":"roundExamBuildApply('"+id+"',false)";
   const pairs=opts.map(o=>Array.isArray(o)?o:[o,o]);
@@ -6318,8 +6500,11 @@ function examSpineMotorHtml(id,k,label,val,n,labels,removable){
   const listId="ex_"+k+"_opts_"+id;
   const dl='<datalist id="'+listId+'">'+opts.map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</datalist>';
   const cells=labels.map((lab,i)=>
-    '<span class="spinelimbcell">'+esc(lab)+'<input type="text" inputmode="text" list="'+listId+'" id="ex_'+k+'_'+i+'_'+id+'" value="'+esc(parts[i]||"")+'" placeholder="5" oninput="spineLimbApply(\''+id+'\',\''+k+'\','+n+')"></span>').join("");
-  return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'">'+dl+'<div class="spinelimbgrid">'+cells+'</div>',true,removable);
+    '<span class="spinelimbcell'+(((exSpineCell[id+"."+k]||0)===i)?" act":"")+'">'+esc(lab)+'<input type="text" inputmode="text" list="'+listId+'" id="ex_'+k+'_'+i+'_'+id+'" value="'+esc(parts[i]||"")+'" placeholder="5" onfocus="examSpineFocus(\''+id+'\',\''+k+'\','+i+')" oninput="spineLimbApply(\''+id+'\',\''+k+'\','+n+')"></span>').join("");
+  const pad='<div class="exgrades spinepad">'+EX_GRADES.map(g=>
+    '<button type="button" class="exgrade" title="Fill the highlighted muscle" onclick="examSpineKey(\''+id+'\',\''+k+'\','+n+',\''+g+'\')">'+g+'</button>').join("")+'</div>';
+  return examFieldWrap(id,k,label,'<input type="hidden" id="ex_'+k+'_'+id+'" value="'+esc(val||"")+'">'+dl+
+    '<div class="spinelimbgrid" id="ex_'+k+'_grid_'+id+'">'+cells+'</div>'+pad,true,removable);
 }
 function spineLimbApply(id,k,n){
   const hidden=document.getElementById("ex_"+k+"_"+id);
@@ -6582,24 +6767,24 @@ function roundExamBuilderHtml(r,cur){
     corneal:()=>examPickHtml(id,"corneal","Corneals",corneal,v.corneal,false,true),
     face:()=>examPickHtml(id,"face","Face",EX_FACE_OPTS,v.face,false,true),
     skin:()=>examPickHtml(id,"skin","Skin",EX_SKIN_OPTS,v.skin,true,true),
-    bue:()=>examPickHtml(id,"bue","BUE",neuroScores,v.bue,false,true),
-    ble:()=>examPickHtml(id,"ble","BLE",neuroScores,v.ble,false,true),
+    bue:()=>examGradeHtml(id,"bue","BUE",v.bue,true),
+    ble:()=>examGradeHtml(id,"ble","BLE",v.ble,true),
     bueSp:()=>examSpineMotorHtml(id,"bueSp","BUE",v.bueSp,6,upperLabs,true),
     bleSp:()=>examSpineMotorHtml(id,"bleSp","BLE",v.bleSp,5,lowerLabs,true),
     rueSp:()=>examSpineMotorHtml(id,"rueSp","RUE",v.rueSp,6,upperLabs,true),
     lueSp:()=>examSpineMotorHtml(id,"lueSp","LUE",v.lueSp,6,upperLabs,true),
     rleSp:()=>examSpineMotorHtml(id,"rleSp","RLE",v.rleSp,5,lowerLabs,true),
     lleSp:()=>examSpineMotorHtml(id,"lleSp","LLE",v.lleSp,5,lowerLabs,true),
-    rue:()=>examPickHtml(id,"rue","RUE",neuroScores,v.rue,false,true),
-    lue:()=>examPickHtml(id,"lue","LUE",neuroScores,v.lue,false,true),
-    rle:()=>examPickHtml(id,"rle","RLE",neuroScores,v.rle,false,true),
-    lle:()=>examPickHtml(id,"lle","LLE",neuroScores,v.lle,false,true),
-    delt:()=>examPickHtml(id,"delt","Delt",scores,v.delt,false,true),
-    bi:()=>examPickHtml(id,"bi","Bi",scores,v.bi,false,true),
-    tri:()=>examPickHtml(id,"tri","Tri",scores,v.tri,false,true),
-    we:()=>examPickHtml(id,"we","WE",scores,v.we,false,true),
-    ff:()=>examPickHtml(id,"ff","FF",scores,v.ff,false,true),
-    fa:()=>examPickHtml(id,"fa","FA",scores,v.fa,false,true),
+    rue:()=>examGradeHtml(id,"rue","RUE",v.rue,true),
+    lue:()=>examGradeHtml(id,"lue","LUE",v.lue,true),
+    rle:()=>examGradeHtml(id,"rle","RLE",v.rle,true),
+    lle:()=>examGradeHtml(id,"lle","LLE",v.lle,true),
+    delt:()=>examGradeHtml(id,"delt","Delt",v.delt,true),
+    bi:()=>examGradeHtml(id,"bi","Bi",v.bi,true),
+    tri:()=>examGradeHtml(id,"tri","Tri",v.tri,true),
+    we:()=>examGradeHtml(id,"we","WE",v.we,true),
+    ff:()=>examGradeHtml(id,"ff","FF",v.ff,true),
+    fa:()=>examGradeHtml(id,"fa","FA",v.fa,true),
     spl:()=>examInputHtml(id,"spl","Lower motor",v.spl,"IP/quad/AT/EHL/gastroc 5/5",true,true),
     ucmt:()=>examInputHtml(id,"ucmt","Upper comment",v.ucmt,"RUE pain limited, hand baseline",true,true),
     lcmt:()=>examInputHtml(id,"lcmt","Lower comment",v.lcmt,"RLE radic pain, foot drop baseline",true,true),
@@ -6707,14 +6892,18 @@ function examStructuredChunk(s){
   }
   return false;
 }
-function examCarryoverText(current,lines){
+// Prose the builder cannot represent is carried over; anything the builder is
+// holding a control for is not — otherwise clearing a group would let the old
+// value walk back in from the text underneath it.
+function examCarryoverText(current,lines,controlled){
   const generatedKeys=examGivenFields(examStructFromText((lines||[]).join("\n")));
+  const owned=(controlled||[]).slice();
   const existing=(lines||[]).map(x=>String(x||"").toLowerCase().replace(/\s+/g," ").trim()).filter(Boolean);
   return String(current||"").split(/[\t,;\n]+/).map(x=>x.trim()).filter(Boolean).filter(ch=>{
     const n=ch.toLowerCase().replace(/\s+/g," ").trim();
     if(existing.some(e=>e===n||e.includes(n)||n.includes(e)))return false;
     const keys=examGivenFields(examStructFromText(ch));
-    return !keys.some(k=>generatedKeys.includes(k));
+    return !keys.some(k=>generatedKeys.includes(k)||owned.includes(k));
   }).join("\n");
 }
 function roundExamBuildApply(id,explicit){
@@ -6753,7 +6942,16 @@ function roundExamBuildApply(id,explicit){
   if(comment)lines.push(comment);
   if(extra)lines.push(extra);
   const oldEl=document.getElementById("rexam_"+id);
-  const carry=examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines);
+  // every group the builder is showing is the builder's to own
+  const shown=(function(){
+    try{
+      const v=examStructFromText(oldEl?oldEl.value:(r.exam||""));
+      v.mode=mode;
+      const defs={};examAllFieldKeys().forEach(k=>defs[k]=1);
+      return examVisibleFields(r,mode,defs,v);
+    }catch(e){return []}
+  })();
+  const carry=examCarryoverText(oldEl?oldEl.value:(r.exam||""),lines,shown);
   if(carry)lines.push(carry);
   const text=lines.join("\n");
   const el=document.getElementById("rexam_"+id);if(el){el.value=text;roundExamInput(id,el)}
@@ -12030,7 +12228,33 @@ function tcExamChooserInner(p){
     opts.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?" selected":"")+'>'+esc(o[1])+'</option>').join("")+'</select>';
   return '<span class="tcexlab">Base exam</span>'+sel("exammode",TC_EXAM_MODES,mode,"mode")+
     sel("examlimbs",TC_EXAM_LIMBS,limbs,"limbs")+
-    '<button type="button" onclick="tcExamInsert(\''+p+'\')">⤓ Insert</button>';
+    '<button type="button" onclick="tcExamInsert(\''+p+'\')">⤓ Insert</button>'+
+    tcGradePadHtml(p);
+}
+// Grades by tap here too. Pick the limb, tap the number: the line for that limb
+// is rewritten in place, never added a second time.
+const TC_GRADE_LIMBS=[["RUE","RUE"],["LUE","LUE"],["RLE","RLE"],["LLE","LLE"],["BUE","BUE"],["BLE","BLE"]];
+function tcGradeLimb(p){
+  const el=document.getElementById(p+"_gradelimb");
+  return (el&&el.value)||"RUE";
+}
+function tcGradePadHtml(p){
+  return '<div class="exgrades tcgradepad"><span class="tcexlab">Motor</span>'+
+    '<select id="'+p+'_gradelimb" onclick="event.stopPropagation()">'+
+      TC_GRADE_LIMBS.map(l=>'<option value="'+l[0]+'">'+esc(l[1])+'</option>').join("")+'</select>'+
+    EX_GRADES.map(g=>'<button type="button" class="exgrade" onclick="tcSetGrade(\''+p+'\',\''+g+'/5\')">'+g+'</button>').join("")+
+    '<button type="button" class="exgrade alt" title="No movement" onclick="tcSetGrade(\''+p+'\',\'no movement\')">none</button>'+
+  '</div>';
+}
+// rewrite "<limb> <anything>" if it is already in the exam, otherwise add it
+function tcSetGrade(p,val){
+  const limb=tcGradeLimb(p);
+  const cur=String(tcGet(p,"exam")||"");
+  const re=new RegExp("^\\s*"+limb+"\\b[^\\n]*$","im");
+  const line=limb+" "+val;
+  const next=re.test(cur)?cur.replace(re,line):(cur.trim()?cur.replace(/\s*$/,"")+"\n"+line:line);
+  tcSet(p,"exam",next);
+  tcAfterEdit(p);
 }
 function tcExamChooserHtml(p){return '<div class="tcexam">'+tcExamChooserInner(p)+'</div>'}
 function tcExamInsert(p){
@@ -13009,7 +13233,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 const MERGE_FIELDS=["listMode","listHidden","noExamNow","exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields",
-  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows"];
+  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows","scratch","scratchDone"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){
