@@ -528,8 +528,11 @@ button.bg.chgreset:hover{background:var(--e1);color:#231d00}
 .woundrow .cprob{color:var(--acc);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:50px}
 .woundrow .cprob mark{background:rgba(242,211,75,.18);color:#ffe987;border-radius:3px;padding:0 2px;font-weight:900}
 .woundrow .car{color:var(--mut);font-size:12px;flex:0 0 auto}
-.woundseen{width:26px;height:26px;min-width:26px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);color:var(--mut);background:transparent;border-radius:8px;font-weight:900;font-size:15px;padding:0;cursor:pointer;font-family:var(--font);line-height:1}
-.woundseen.on{border-color:var(--ok);color:var(--ok);background:#123527}
+.woundcard .wounddots .chartdot{border-color:#5c4b8a}
+.woundcard .wounddots .chartdot.on{border-color:#b197fc;background:#b197fc;box-shadow:0 0 0 1px rgba(177,151,252,.2)}
+.woundcard .crow .rwho{color:#d9cffd}
+.woundseen{width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #5c4b8a;color:#b197fc;background:transparent;border-radius:8px;font-weight:900;font-size:15px;padding:0;cursor:pointer;font-family:var(--font);line-height:1}
+.woundseen.on{border-color:#b197fc;color:#d9cffd;background:#2a2142}
 .woundroom{font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--mut);cursor:pointer;font-family:var(--font);white-space:nowrap;flex:0 0 auto}
 .woundroom:hover{border-color:var(--acc);color:var(--acc)}
 .wdates{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
@@ -957,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.273 · 2026-10-25</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.274 · 2026-10-25</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -8275,9 +8278,10 @@ function woundRow(r,former,scope){
   return '<div class="card crowwrap woundcard hastrash" data-id="'+r.id+'">'+remove+
     '<div class="crow woundrow" onclick="toggleWoundOpen(\''+r.id+'\','+(former?'true':'false')+')">'+
     woundSeenBoxHtml(r,former)+
+    woundDotsHtml(r,former)+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
     '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
-    '<span class="rtags">'+woundDotsHtml(r,former)+b.tags+'</span>'+
+    '<span class="rtags">'+b.tags+'</span>'+
     '<span class="rprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
     '<button class="woundroom" title="Edit one-liner" onclick="event.stopPropagation();woundEditStart(\''+r.id+'\','+(former?'true':'false')+')">Line</button>'+

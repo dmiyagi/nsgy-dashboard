@@ -31,6 +31,8 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Wound rows line up with the rest (v0.0.274):** the wound row now leads with the same run as every other rounds row — check box, then dots, then room and name (the dots used to sit after the name, inside the tag run). The box, the dots and the room read in the card's purple, so the row scans the same way as its neighbours while staying obviously a wound check.
+
 - **Wound checks sort with the list, in purple (v0.0.273):** suture/staple/incision rows now use the same comparator as everything else on Rounds — whichever sort the toolbar is set to (room, patient, team, team→room, attending), including proper numeric rooms (B9 before B10) and the ED/outside-ICU ordering. They were sorting on their own plain-text key before. The rows now carry a purple tint and left edge, so they read as their own thing beside the blue floor cards and green chart checks. The separate wound section (when Floors is grouped) follows the same order.
 
 - **Save scratch pad (v0.0.272):** a **Save scratch pad** button sits under the pad. It commits whatever is in the box right now (even mid-sentence, before the autosave would have fired), writes it to disk immediately, and the counter next to it reads *saved just now* for a moment. The pad still saves itself ~0.4 s after you stop typing — the button is for when you want to be sure.
