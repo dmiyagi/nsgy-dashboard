@@ -31,6 +31,8 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **Wound checks sort with the list, in purple (v0.0.273):** suture/staple/incision rows now use the same comparator as everything else on Rounds — whichever sort the toolbar is set to (room, patient, team, team→room, attending), including proper numeric rooms (B9 before B10) and the ED/outside-ICU ordering. They were sorting on their own plain-text key before. The rows now carry a purple tint and left edge, so they read as their own thing beside the blue floor cards and green chart checks. The separate wound section (when Floors is grouped) follows the same order.
+
 - **Save scratch pad (v0.0.272):** a **Save scratch pad** button sits under the pad. It commits whatever is in the box right now (even mid-sentence, before the autosave would have fired), writes it to disk immediately, and the counter next to it reads *saved just now* for a moment. The pad still saves itself ~0.4 s after you stop typing — the button is for when you want to be sure.
 
 - **Scratch pad on the Board (v0.0.271):** a **✎ Scratch pad** fold at the top of the Board — free text, nothing required. Any line you indent with Tab (or start with `-`) becomes a task with a box to tick; ticking strikes it through, **✕** throws one away, **Clear n finished** sweeps the ticked ones, and both are undoable. Unindented lines stay as plain text, so `CALLS` and `BEFORE SIGN-OUT` read as headings. The summary shows how many are still open. It saves as you type and syncs between devices.

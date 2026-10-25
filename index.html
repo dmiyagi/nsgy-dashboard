@@ -174,6 +174,8 @@ section.view.active{display:block}
 .card.hastrash{padding-right:46px}
 .card.floorcard{background:linear-gradient(90deg,rgba(130,207,255,.16),rgba(29,44,64,.70) 42%,var(--card) 100%);border-color:#3f6b92}
 .card.chartcard{background:linear-gradient(90deg,rgba(63,214,143,.15),rgba(27,48,41,.65) 42%,var(--card) 100%);border-color:#3b7a61}
+.card.woundcard{background:linear-gradient(90deg,rgba(177,151,252,.16),rgba(40,33,62,.68) 42%,var(--card) 100%);border-color:#5c4b8a}
+.card.woundcard:not([style*="border-left-color"]){border-left-color:#b197fc}
 .card.chartcard:not([style*="border-left-color"]){border-left-color:#52c08d}
 .bg.floor{border-color:#82cfff;color:#b8e4ff;background:rgba(130,207,255,.14)}
 .floorsec{border-top:1px solid #31527d;margin-top:12px;padding-top:4px}
@@ -955,7 +957,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.272 · 2026-10-23</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.273 · 2026-10-25</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -7338,6 +7340,15 @@ function compareRoomText(left,right){
   }
   return a.length-b.length;
 }
+// whichever order the Rounds toolbar is set to
+function roundSortComparator(){
+  const m=S.roundSort||"room";
+  if(m==="team-room")return teamRoomComparator;
+  if(m==="initials")return (a,b)=>initialsOf(a).localeCompare(initialsOf(b));
+  if(m==="team")return (a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true});
+  if(m==="attg")return (a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true});
+  return roomCardComparator;
+}
 function roomCardComparator(a,b){
   const room=r=>r.label?roundRoom(r):(r.loc||roundRoom(r));
   return compareRoomText(room(a),room(b))||initialsOf(a).localeCompare(initialsOf(b));
@@ -7572,13 +7583,7 @@ function renderRounds(){
   const rt=document.getElementById("roundTimersBtn");if(rt){const off=roundAutoTimersOff();rt.classList.toggle("off",off);rt.classList.toggle("on",!off);rt.setAttribute("aria-pressed",String(!off));rt.innerHTML='<span class="sw"></span> Auto timers '+(off?"off":"on")+" for rounds"}
   const fg=document.getElementById("floorGroupBtn");if(fg){fg.classList.toggle("on",!!S.roundGroupFloor);fg.textContent=S.roundGroupFloor?"Floors grouped":"Floors"}
   const r24=document.getElementById("round24Btn");if(r24){r24.classList.toggle("on",!!S.round24);r24.textContent=S.round24?"◑ 24 hr on":"◑ 24 hr"}
-  const cmp=S.roundSort==="team-room"?teamRoomComparator:(S.roundSort==="initials")
-    ?(a,b)=>initialsOf(a).localeCompare(initialsOf(b))
-    :(S.roundSort==="team")
-      ?(a,b)=>roundTeamKey(a).localeCompare(roundTeamKey(b),undefined,{numeric:true})
-      :(S.roundSort==="attg")
-        ?(a,b)=>roundAttgKey(a).localeCompare(roundAttgKey(b),undefined,{numeric:true})
-      :roomCardComparator;
+  const cmp=roundSortComparator();
   const visible=S.rounds.filter(r=>!r.listMode||r.listMode==="rounds").filter(matchSearch).filter(r=>!soCcOnly||r.soCcResp);
   const archived=visible.filter(roundArchived).slice().sort((a,b)=>(a.archiveUntil||0)-(b.archiveUntil||0));
   const list=visible.filter(r=>!roundArchived(r)).slice().sort(cmp);
@@ -8016,7 +8021,11 @@ function addChartChecksFromRoundsInput(){
 function woundSortKey(r){
   return [roundRoom(r)||"ZZZ",roundPatient3(r)||"",roundIdentityText(r)||r.label||"",roundProblemText(r)||""].join(" ").toLowerCase();
 }
-function woundSort(a,b){return woundSortKey(a).localeCompare(woundSortKey(b),undefined,{numeric:true})}
+// wound checks read in the same order as everything else on the list
+function woundSort(a,b){
+  try{const c=roundSortComparator()(a,b);if(c)return c}catch(e){}
+  return woundSortKey(a).localeCompare(woundSortKey(b),undefined,{numeric:true});
+}
 const woundSecOpen={};
 const woundRowOpen={};
 function woundControlsHtml(scope,total,due){
