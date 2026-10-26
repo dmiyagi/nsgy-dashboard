@@ -960,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.274 · 2026-10-25</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.275 · 2026-10-25</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -1113,7 +1113,7 @@ B707 - MIYA BLUE (KS) r/o too tired, collapsed 7/31
     <div class="toolgrp">
       <button class="btn sec sm" onclick="collapseRounds(true)">⊟ Compact</button>
       <button class="btn sec sm" onclick="collapseRounds(false)">⊞ Expand</button>
-      <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show AM seen, Chart AM, Chart PM, Seen PM, and Chart Night">◑ 24 hr</button>
+      <button class="btn sec sm" id="round24Btn" onclick="toggleRound24()" title="Show AM Seen, Chart Day, Seen PM, and Chart Night">◑ 24 hr</button>
       <button class="btn sec sm" id="soCcFilterBtn" onclick="toggleSoCcFilter()">SO only</button>
       <button class="btn sec sm" id="soAllBtn" onclick="toggleSoAll()" title="Put every rounds patient and chart check on the SO board">● SO all</button>
       <button class="btn sec sm autotimer" id="roundTimersBtn" onclick="setRoundAutoTimers(!roundAutoTimersOff())">Auto timers</button>
@@ -6266,10 +6266,10 @@ function rStepsHtml(r){
   }).join("")+'</div>';
 }
 // Keep stable storage keys so existing checkmarks survive the new labels.
-// Normal view has three checks; 24-hour view adds the evening visit and night chart.
+// Normal view has three checks; 24-hour view uses one daytime chart check plus evening/night checks.
 // null = triggered by the morning reset rather than a clock time.
 const ROUND_CHECKS_DAY=[["am","AM seen",null],["pm1","Chart AM",8*60],["pm4","Chart PM",16*60]];
-const ROUND_CHECKS_24=ROUND_CHECKS_DAY.concat([["pmseen","Seen PM",18*60],["pm9","Chart Night",21*60]]);
+const ROUND_CHECKS_24=[["am","AM Seen",null],["pm1","Chart Day",8*60],["pmseen","Seen PM",18*60],["pm9","Chart Night",21*60]];
 function roundChecks(){return S.round24?ROUND_CHECKS_24:ROUND_CHECKS_DAY}
 function hasActiveChartCheck(r){
   return !!(r&&r.id&&(S.consults||[]).some(c=>!c.closed&&c.type==="CHART"&&c.roundId===r.id));
@@ -6394,7 +6394,7 @@ function toggleRound24(){
   S.round24=!S.round24;
   S.round24At=Date.now();
   renderRounds();flushAutosave();
-  showToast(S.round24?"24-hour view — AM seen · Chart AM · Chart PM · Seen PM · Chart Night":"Normal view — AM seen · Chart AM · Chart PM");
+  showToast(S.round24?"24-hour view — AM Seen · Chart Day · Seen PM · Chart Night":"Normal view — AM seen · Chart AM · Chart PM");
 }
 function toggleRoundChart(id,k){
   const r=roundWorkRecord(id);if(!r)return;
