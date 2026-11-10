@@ -960,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.275 · 2026-10-25</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.279 · 2026-11-09</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3815,7 +3815,29 @@ function sameBoardIdentityByLoc(a,b){
   }
   return aloc.toUpperCase()===bloc.toUpperCase();
 }
-function patientTag(c){const ab=patientLast3(c);return noExamBadge(c)+(ab?'<span class="bg mod">'+esc(ab)+'</span>':"")}
+// On the lists, a name is down to its first letter — enough to find the row,
+// not enough to read over your shoulder. Open the card, or search for them,
+// and it reads in full.
+function maskPt(name,open){
+  const s=String(name||"").trim();
+  if(!s||open)return s;
+  const q=String(globalSearch||"").trim().toLowerCase();
+  if(q&&s.toLowerCase().indexOf(q)>=0)return s;
+  return s[0].toUpperCase()+"XX";
+}
+// the location people type is "B707 Dem" — the room stays, the name shortens
+function maskLocName(c,open){
+  const loc=String((c&&c.loc)||"").trim();
+  const ab=patientLast3(c);
+  if(!loc||!ab||open)return loc;
+  const masked=maskPt(ab,false);
+  if(masked===ab)return loc;
+  return loc.replace(new RegExp("\\b"+ab.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i"),masked);
+}
+function patientTag(c,compact){
+  const ab=maskPt(patientLast3(c),!compact);
+  return noExamBadge(c)+(ab?'<span class="bg mod" title="initial only on the list — open the card for the name">'+esc(ab)+'</span>':"");
+}
 function linkedCards(c){
   const gid=c&&c.linkGroupId;
   return (S.consults||[]).filter(x=>!x.closed&&x.id!==c.id&&((gid&&x.linkGroupId===gid)||(c.sourceId&&x.id===c.sourceId)||(x.sourceId&&x.sourceId===c.id)));
@@ -4760,11 +4782,11 @@ function rowCard(c,dl,isTask){
     compactTimerHtml(c)+
     (needsConsent(c)?'<span class="bg consent">✎?</span>':"")+
     (openChk?'<span class="bg mod">☐'+openChk+'</span>':"")+
-    patientTag(c)+
+    patientTag(c,true)+
     linkedCardsHtml(c,true)+
     consentInterpBadge(c)+
     worryTag+
-    '<span class="rwho">'+esc(c.loc)+'</span>'+
+    '<span class="rwho" title="initial only on the list — open the card for the name">'+esc(maskLocName(c,false))+'</span>'+
     (c.prob?'<span class="rprob">'+esc(c.prob)+'</span>':"")+
     (act?'<button class="rdone" onclick="event.stopPropagation();rowDone(\''+c.id+'\')">✓ done</button><span class="ract">'+esc(act)+'</span>'
         :(allDone?closeDoneButton(c,true)+'<span class="ract"></span>'
@@ -6019,18 +6041,62 @@ function soRestoreDay(r,before){
 // update only the parameters a note actually speaks to. Anything it does not
 // mention keeps the value it had, and whatever it changes keeps the old value
 // as the comparator, so Δ Changes shows the move.
+// A set line ("Tmax · HR · SpO2") is updated piece by piece: an afternoon that
+// only says Tmax and HR leaves the SpO2 from this morning where it is.
+function seedMergeValue(seed,existing,fresh){
+  if(!seed.all||!String(existing||"").trim())return fresh;
+  const key=t=>String(t||"").toLowerCase().match(/^[a-z/%+-]+/)?.[0]||String(t||"").toLowerCase();
+  // a set line may have arrived as "Tmax 37.8, HR 78, SpO2 96% RA" from a
+  // labelled block, so commas separate items here just as the dots do
+  const split=t=>String(t||"").split(/\s*·\s*|\s*,\s*/).map(x=>x.trim()).filter(Boolean);
+  const out=split(existing);
+  split(fresh).forEach(f=>{
+    const i=out.findIndex(o=>key(o)===key(f));
+    if(i>=0)out[i]=f;else out.push(f);
+  });
+  return out.join(" · ");
+}
+// one seed, one box: read it, merge it into what is there, write it
+function slotSeedApply(r,seed,text){
+  const found=seedValue(seed,text);
+  if(!found)return 0;
+  const v=seedMergeValue(seed,slotVal(r,seed.k,seed.f),found);
+  if(!v||slotVal(r,seed.k,seed.f)===v)return 0;
+  slotUpdate(r,seed.k,seed.f,v);
+  return 1;
+}
 function soRefreshFromText(r,txt){
   const t=String(txt||"");
   if(!t.trim())return 0;
-  let n=soFileLabelledLines(r,t);   // a written plan says where each line goes
-  SLOT_SEED.forEach(seed=>{
-    const m=lastMatch(t,seed.re);if(!m)return;
-    const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();if(!v)return;
-    if(slotVal(r,seed.k,seed.f)===v)return;
-    slotUpdate(r,seed.k,seed.f,v);n++;
-  });
+  // a written plan says where each line goes; the readers below only look at
+  // what it did not already claim, or the same text would file twice
+  const filed={};
+  let n=soFileLabelledLines(r,t,filed);
+  SLOT_SEED.forEach(seed=>{if(!filed[seed.k])n+=slotSeedApply(r,seed,t)});
   if(n)r.updatedAt=Date.now();
   return n;
+}
+// What a seed takes out of a note: either the last time the thing was said,
+// or — for the lines that are read as a set — every piece of it.
+function seedValue(seed,text){
+  if(!seed)return "";
+  if(seed.all){
+    const seen={},out=[];
+    seed.all.forEach(re=>{
+      const g=new RegExp(re.source,re.flags.replace(/[gy]/g,"")+"g");
+      let m;
+      while((m=g.exec(text))){
+        const v=String(m[0]||"").replace(/\s+/g," ").trim().replace(/[.,;]$/,"");
+        const k=v.toLowerCase();
+        if(v&&!seen[k]){seen[k]=1;out.push(v)}
+        if(m.index===g.lastIndex)g.lastIndex++;
+      }
+    });
+    return out.join(" · ");
+  }
+  const m=lastMatch(text,seed.re);
+  if(!m)return "";
+  return String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();
 }
 // a note written through the day says a thing more than once; the last time
 // it was said is the one that is true now
@@ -7476,8 +7542,8 @@ function toggleNoExamNow(id){
   });
   render();renderRounds();renderNccu();flushAutosave();
 }
-function roundIdentityBadges(r){
-  const room=roundRoom(r),team=roundTeam(r),pt=roundPatient3(r),attg=roundAttg(r);
+function roundIdentityBadges(r,mask){
+  const room=roundRoom(r),team=roundTeam(r),pt=maskPt(roundPatient3(r),!mask),attg=roundAttg(r);
   const soDone=!!(r.nccuSO&&nccuReady(r));
   return (room?'<span class="bg t'+(r.soCcResp?" roomresp":"")+(soDone?" sodoneroom":"")+'">'+esc(room)+'</span>':"")+
     (team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':"")+
@@ -7562,7 +7628,7 @@ function roundRowCard(r){
     (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
     (r.worry?'<span class="bg warn">!</span>':"")+
     (roundRoom(r)?'<span class="rwho'+(r.soCcResp?" roomresp":"")+((r.nccuSO&&nccuReady(r))?" sodoneroom":"")+'">'+esc(roundRoom(r))+'</span>':"")+
-    (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
+    (roundPatient3(r)?'<span class="rwho" title="initial only on the list — open the card for the name">'+esc(maskPt(roundPatient3(r),false))+'</span>':"")+
     (tags?'<span class="rtags">'+tags+'</span>':"")+
     soReadyBadge(r)+
     '<span class="rprob">'+oneLinerKeyHtml(roundProblemText(r))+'</span>'+
@@ -7741,7 +7807,7 @@ function chartCheckListRow(c){
         (dl?'<span class="rdl dl '+dl.cls+'">'+clockIcon()+dl.txt.replace("due in ","").replace("OVERDUE ","−")+'</span>':"")+
         (worry?'<span class="bg warn">!</span>':"")+
         (roundRoom(r)?'<span class="rwho">'+esc(roundRoom(r))+'</span>':"")+
-        (roundPatient3(r)?'<span class="rwho">'+esc(roundPatient3(r))+'</span>':"")+
+        (roundPatient3(r)?'<span class="rwho" title="initial only on the list — open the card for the name">'+esc(maskPt(roundPatient3(r),false))+'</span>':"")+
         '<span class="rtags">'+roundCareBadges(r)+nccu+tags+'</span>'+
         '<span class="rprob">'+oneLinerKeyHtml(title)+'</span>'+
         chartCheckMiniButtons(c)+
@@ -8280,7 +8346,7 @@ function woundRow(r,former,scope){
     woundSeenBoxHtml(r,former)+
     woundDotsHtml(r,former)+
     '<span class="rwho">'+esc(roundRoom(r)||"")+'</span>'+
-    '<span class="rwho">'+esc(roundPatient3(r)||"")+'</span>'+
+    '<span class="rwho" title="initial only on the list — open the row for the name">'+esc(maskPt(roundPatient3(r)||"",open))+'</span>'+
     '<span class="rtags">'+b.tags+'</span>'+
     '<span class="rprob">'+woundProblemHtml(r)+'</span>'+
     (b.dates?'<span class="wdates">'+b.dates+'</span>':"")+
@@ -8964,6 +9030,16 @@ function copyRounds(){toClip((S.rounds||[]).map(r=>(r.seen?"✓ ":"• ")+r.labe
 // sign-out builder (works for rounds cards or chart-check consults)
 let soId=null;
 function soLabel(r){return r.label||r.loc||"patient"}
+// the same label with the name down to its initial — for a card sitting in a
+// list. Reading it out (Present) and opening the card both show it in full.
+function soLabelShort(r,open){
+  const full=soLabel(r);
+  const ab=(typeof roundPatient3==="function"&&roundPatient3(r))||patientLast3(r)||"";
+  if(!ab||open)return full;
+  const masked=maskPt(ab,false);
+  if(masked===ab)return full;
+  return String(full).replace(new RegExp("\\b"+ab.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i"),masked);
+}
 function soTemplate(r){
   const key=(r&&r.soT)||"floor";
   return SO_TMPLS[key]||SO_TMPLS.floor;
@@ -9029,7 +9105,24 @@ const SO_TEMPLATE_COMPOSITE=[
  [/^(?:meds of consequence|daily meds|medications)$/i,["asm","ac","steroid","id"]],
  [/^(?:goals?)$/i,["na","bp","icp"]],
  [/^(?:other barriers to dispo)$/i,["dispo"]],
- [/^(?:csf labs ?\/ ?cultures|cultures)$/i,["id"]]
+ [/^(?:csf labs ?\/ ?cultures|cultures)$/i,["id"]],
+ [/^(?:events|overnight events)$/i,["events"]],
+ [/^(?:last 24 hrs?|last 24 hours)$/i,["last24"]],
+ [/^vitals?$/i,["vitals"]],
+ [/^(?:i\/?os?)$/i,["ios"]],
+ [/^(?:drips\/rate|drips?)$/i,["drips"]],
+ [/^(?:lines?)$/i,["lines"]],
+ [/^labs?$/i,["labs"]],
+ [/^(?:daily meds)$/i,["meds"]],
+ [/^(?:prophylaxis)$/i,["ppx"]],
+ [/^(?:last bm)$/i,["bowel"]],
+ [/^(?:nutrition)$/i,["gi"]],
+ [/^(?:evd\/output)$/i,["drain","icp","drainOutput","ios"]],
+ [/^(?:renal)$/i,["renal"]],
+ [/^(?:heme)$/i,["heme"]],
+ [/^(?:endo)$/i,["endo"]],
+ [/^(?:gu)$/i,["gu"]],
+ [/^(?:gi)$/i,["gi","bowel"]]
 ];
 function soCompositeFor(r,label){
   const hit=SO_TEMPLATE_COMPOSITE.find(([re])=>re.test(String(label||"").trim()));
@@ -10332,15 +10425,37 @@ function sxPrompts(r){
     queues.forEach(q=>{if(i<q.length&&out.indexOf(q[i])<0)out.push(q[i])});
   return out;
 }
+// A prompt is a question the sign-out has to answer, so tapping it opens the
+// box that answers it — an existing row where there is one, otherwise a row of
+// its own, named after the question.
 function sxUsePrompt(id,p){
   const r=findAny(id);if(!r)return;
-  const text=String(p||"").trim()+": ";
-  const it=sxAdd(id,text,"state",sxGuessSys(text));
-  r.sxPromptOff=r.sxPromptOff||{};r.sxPromptOff[p]=true;
+  const label=String(p||"").trim();
+  if(!label)return;
+  const alias=slotAliasFor(label)||soSlotMapping(label);
+  let k=alias?alias.k:slotKeyForLabel(r,label);
+  let made=false;
+  if(!k||!slotDef(k)){k=slotAddCustomRow(r,label);made=true}
+  if(!k||!slotDef(k))return;
+  const wasOff=!!((r.slotsOff||{})[k]);
+  r.slotsOff=r.slotsOff||{};delete r.slotsOff[k];
+  r.slotsOn=r.slotsOn||{};r.slotsOn[k]=true;
+  stampF(r,"slotsOn");stampF(r,"slotsOff");
+  r.sxPromptOff=r.sxPromptOff||{};r.sxPromptOff[label]=true;
   r.updatedAt=Date.now();syncLinkedSo(r);renderNccu();flushAutosave();
-  showToast("Added thread — "+p,()=>{const rr=findAny(id);if(!rr)return;
-    if(it&&!it.toDo)rr.sx=sxList(rr).filter(x=>x.id!==it.id);
-    delete rr.sxPromptOff[p];rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
+  // put the cursor in it, so the answer goes straight in
+  setTimeout(()=>{
+    const f=(slotVisibleFields(r,k)[0]||[])[0];
+    const el=f&&document.getElementById("sl_"+r.id+"_"+k+"_"+f);
+    if(el){el.focus();el.scrollIntoView({block:"center"})}
+  },30);
+  showToast("Opened "+slotDef(k).l+" — fill it in",()=>{
+    const rr=findAny(id);if(!rr)return;
+    if(made){rr.slotRows=(rr.slotRows||[]).filter(x=>x.k!==k);stampF(rr,"slotRows");slotCustomScan()}
+    if(rr.slotsOn)delete rr.slotsOn[k];
+    if(wasOff){rr.slotsOff=rr.slotsOff||{};rr.slotsOff[k]=true}
+    delete rr.sxPromptOff[label];
+    rr.updatedAt=Date.now();syncLinkedSo(rr);renderNccu();flushAutosave();
   },"Undo");
 }
 function sxDismissPrompt(id,p){
@@ -10583,8 +10698,14 @@ const SO_SLOTS=[
   fields:[["goal","Foley / voiding plan"],["cur","voiding status + PVR"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  {k:"heme",l:"Heme",order:85,group:"Systems",re:/\bheme\b|\bhb\b|hemoglobin|haemoglobin|\bplt\b|platelets?|\binr\b|coagulopathy|transfus/i,
-  fields:[["hbGoal","Hb goal"],["hb","Hb value"],["pltGoal","Plt goal"],["plt","Plt value"],["inrGoal","INR goal"],["inr","INR value"]],
-  fmt:v=>[["Hb",v.hbGoal,v.hb],["Plt",v.pltGoal,v.plt],["INR",v.inrGoal,v.inr]].filter(x=>x[1]||x[2]).map(([name,goal,value])=>name+": "+[goal?"goal "+goal:"",value?"current "+value:""].filter(Boolean).join(", ")).join("; ")},
+  fields:[["hbGoal","Hb goal"],["hb","Hb value"],["pltGoal","Plt goal"],["plt","Plt value"],["inrGoal","INR goal"],["inr","INR value"],["note","transfusion threshold · DVT ppx"]],
+  fmt:v=>{
+    const parts=[["Hb",v.hbGoal,v.hb],["Plt",v.pltGoal,v.plt],["INR",v.inrGoal,v.inr]]
+      .filter(x=>x[1]||x[2])
+      .map(([name,goal,value])=>name+": "+[goal?"goal "+goal:"",value?"current "+value:""].filter(Boolean).join(", "));
+    if(v.note)parts.push(v.note);
+    return parts.join("; ");
+  }},
  {k:"id",l:"ID",order:90,group:"Systems",
   re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
   fields:[["goal","antibiotic + day of course"],["tmax","Tmax"],["cur","cultures"]],
@@ -10630,6 +10751,41 @@ const SO_SLOTS=[
  {k:"family",l:"Family / collateral",order:117,group:"Systems",pick:/\bfamily\b|spouse|\bwife\b|husband|mother|father|daughter|\bson\b|collateral|\bhcp\b|next of kin/i,
   fields:[["cur","who to call"],["goal","what they have been told"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ // ---- the ICU parameters an NCCU sign-out reads out, in its own order ----
+ {k:"events",l:"Overnight events",order:6,group:"",
+  pick:/overnight|events?\b|since sign-?out|last night/i,
+  fields:[["cur","what happened, in the order it happened"]],fmt:v=>v.cur||""},
+ {k:"last24",l:"Last 24 hrs",order:7,group:"",
+  pick:/last 24|past 24|yesterday|24 ?h(?:rs?)?\b/i,
+  fields:[["cur","events, imaging, procedures, exam change"]],fmt:v=>v.cur||""},
+ {k:"vitals",l:"Vitals",order:12,group:"",
+  pick:/vitals?|tmax|afebrile|heart rate|\bhr\b|spo2|sats?\b/i,
+  fields:[["cur","Tmax · HR · SBP · SpO2"],["goal","what to hold them at"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"ios",l:"I/Os",order:27,group:"",
+  pick:/\bi\/?os?\b|intake|\buop\b|urine output|net ?[+-]|fluid balance/i,
+  fields:[["cur","in / out · UOP · net"],["goal","fluid goal"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"drips",l:"Drips / rates",order:28,group:"",
+  pick:/\bdrips?\b|gtt\b|nicardipine|propofol|precedex|fentanyl|levophed|norepi|hts\b|\b3%\b/i,
+  fields:[["cur","drug + rate"],["goal","titrate to"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"lines",l:"Lines",order:84,group:"Systems",
+  pick:/\blines?\b|a-?line|arterial line|\bcvl\b|\bpiv\b|midline|\bpicc\b|foley|\bjp\b/i,
+  fields:[["cur","EVD · a-line · CVL · Foley · drains"],["goal","what comes out, when"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"labs",l:"Labs",order:86,group:"Systems",
+  pick:/\blabs?\b|\bcbc\b|\bbmp\b|\bwbc\b|\bhgb\b|\bplt\b|\binr\b|\bcr\b\s*\d/i,
+  fields:[["cur","Na · WBC · Hgb · Plt · INR"],["goal","what to recheck, when"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"meds",l:"Daily meds",order:88,group:"Systems",
+  pick:/daily meds|nimodipine|home meds|med list/i,
+  fields:[["cur","the ones that matter today"],["goal","day of course / stop date"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
+ {k:"ppx",l:"Prophylaxis",order:119,group:"Systems",
+  pick:/\bppx\b|prophylaxis|\bscds?\b|sch\b|lovenox|\bppi\b|pantoprazole|famotidine/i,
+  fields:[["cur","DVT · GI · ASM · abx"],["goal","when it starts / stops"]],
+  fmt:v=>[v.cur,v.goal].filter(Boolean).join(" · ")},
  {k:"trial",l:"Trial eligibility",order:118,group:"Systems",pick:/\btrial\b|enroll|consented? for|\breach\b|screen(?:ed|ing) for/i,
   fields:[["goal","trial + window"],["cur","screened / consented?"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")}
@@ -10704,21 +10860,25 @@ function soSlotMapping(label){
   const match=groups.find(([re])=>re.test(label));return match?{k:match[1],f:match[2]}:null;
 }
 function syncTemplateSlots(r,label,text){
-  const map=soSlotMapping(label);if(!map)return;
+  // the template and the boxes are two views of the same thing: what you type
+  // in a template field lands in the box that answers it
+  const map=soSlotMapping(label)||slotAliasFor(label)||
+    (function(){const k=slotKeyForLabel(r,label);return k?{k:k,f:slotFieldForText(r,k,text)}:null})();
+  if(!map)return;
   if(map.k==="exam"){r.exam=text;stampF(r,"exam");r.examAt=sxNow()}
   if(map.k==="diWatch"){
     ["na","uop","urineOsm","sg"].forEach(f=>{const v=templateIndividualValue(r,label,map.k,f);if(v)slotUpdate(r,map.k,f,v)});return;
   }
   slotUpdate(r,map.k,map.f,text);
   if(map.k!=="diWatch"&&/siadh|urine\s+(?:osm|sodium|na)/i.test(text))routeDaytimeUpdate(r,text);
-  SLOT_SEED.forEach(seed=>{const m=String(text).match(seed.re);if(m&&seed.k===map.k)slotUpdate(r,seed.k,seed.f,String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim())});
+  SLOT_SEED.forEach(seed=>{if(seed.k===map.k)slotSeedApply(r,seed,String(text))});
 }
 function routeDaytimeUpdate(r,text){
   if(/\bsiadh\b|urine\s+(?:osm|sodium|na)/i.test(text)){
     if(/\bsiadh\b|concern|hyponatr|hypernatr/i.test(text))slotUpdate(r,"sodiumStudies","concern",text);
     [["urineOsm",/urine\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["urineNa",/urine\s+(?:na|sodium)\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i],["serumOsm",/serum\s+osm(?:olality)?\s*(?:[:=]|of)?\s*(\d+(?:\.\d+)?)/i]].forEach(([f,re])=>{const m=text.match(re);if(m)slotUpdate(r,"sodiumStudies",f,m[1])});
   }
-  SLOT_SEED.forEach(seed=>{const m=text.match(seed.re);if(m)slotUpdate(r,seed.k,seed.f,String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim())});
+  SLOT_SEED.forEach(seed=>slotSeedApply(r,seed,text));
 }
 // ---------- rows you name yourself ----------
 // A patient can carry a parameter the standard board has no row for. The row
@@ -10749,6 +10909,60 @@ function slotCustomScan(st){
   });
 }
 function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||SLOT_CUSTOM[k]||null}
+// An NCCU sign-out is read in a fixed order, and the same rows come up every
+// time. A patient on the NCCU template gets that whole walk on the board,
+// each line as a box you fill during the day.
+// NCCU is read in a particular order, so its walk is written out. Every other
+// template describes its own board: each field it asks for becomes the box (or
+// boxes) that answer it, in the order the template lists them.
+const SO_PROFILES={
+  nccu:["events","last24","exam","vitals","resp","drain","icp","drainOutput","ios","bowel","drips",
+        "gi","lines","labs","id","meds","imaging","neuroplan","na","asm","steroid","ac","bp",
+        "renal","gu","heme","endo","ppx","dispo"]
+};
+const soProfileCache={};
+function soProfileForTemplate(key){
+  if(SO_PROFILES[key])return SO_PROFILES[key];
+  if(soProfileCache[key])return soProfileCache[key];
+  const tmpl=SO_TMPLS[key];
+  if(!tmpl)return null;
+  const out=[],seen={};
+  const push=k=>{if(k&&slotDef(k)&&!seen[k]){seen[k]=1;out.push(k)}};
+  tmpl.fields.forEach(f=>{
+    const label=f&&f[0];if(!label)return;
+    if(/^(?:one-?liner|events?|overnight)/i.test(label)&&!/^events?$/i.test(label))return;
+    const comp=SO_TEMPLATE_COMPOSITE.find(([re])=>re.test(String(label).trim()));
+    if(comp){comp[1].forEach(push);return}
+    const alias=slotAliasFor(label)||soSlotMapping(label);
+    if(alias){push(alias.k);return}
+    push(slotKeyForLabel({},label));
+  });
+  soProfileCache[key]=out;
+  return out;
+}
+function soProfileKeys(r){
+  if(!r||!r.soT||r.soProfileOff)return null;
+  const prof=soProfileForTemplate(r.soT);
+  if(!prof||!prof.length)return null;
+  return prof.filter(k=>slotDef(k));
+}
+function soProfileIndex(r){
+  const prof=soProfileKeys(r);
+  if(!prof)return null;
+  const ix={};prof.forEach((k,i)=>{ix[k]=i});
+  return ix;
+}
+// let the whole walk be put away for a patient who does not need it
+function toggleSoProfile(id){
+  const r=findAny(id);if(!r)return;
+  r.soProfileOff=!r.soProfileOff;stampF(r,"soProfileOff");
+  r.updatedAt=Date.now();renderNccu();flushAutosave();
+  showToast(r.soProfileOff?"NCCU rows off — only what this patient needs":"NCCU sign-out rows on",()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.soProfileOff=!rr.soProfileOff;stampF(rr,"soProfileOff");
+    rr.updatedAt=Date.now();renderNccu();flushAutosave();
+  },"Undo");
+}
 // name a new row and put it on this patient's board
 function slotAddCustomRow(r,name,group){
   if(!r)return "";
@@ -10812,15 +11026,36 @@ const SO_LABEL_ALIAS=[
  [/^(?:diet|nutrition|feeds?)$/i,["gi","goal"]],
  [/^(?:dispo|disposition|discharge)$/i,["dispo","goal"]],
  [/^(?:incision care|wound care|incision|dressing)$/i,["skin","goal"]],
- [/^(?:drains?|evd|lumbar drain)$/i,["drain","goal"]],
+ [/^(?:drains?|evd|lumbar drain|evd ?\/ ?output|evd \+ icp course|drains? \+ output|drain \+ level)$/i,["drain","goal"]],
  [/^(?:icp(?: goal)?)$/i,["icp","goal"]],
- [/^(?:vent|respiratory|resp|airway|pulm)$/i,["resp","goal"]],
+ [/^(?:resp|airway)$/i,["resp","goal"]],   // "Vent" is the settings, below
  [/^(?:foley|gu|voiding)$/i,["gu","goal"]],
  [/^(?:bowel|last bm)$/i,["bowel","goal"]],
  [/^(?:exam|neuro exam|physical)$/i,["exam","cur"]],
  [/^(?:vasospasm|tcds?)$/i,["vasospasm","goal"]],
  [/^(?:goals? of care|code status)$/i,["goc","goal"]],
- [/^(?:family|collateral)$/i,["family","goal"]]
+ [/^(?:family|collateral)$/i,["family","goal"]],
+ // the NCCU sign-out's own headings
+ [/^(?:events|overnight(?: events)?)$/i,["events","cur"]],
+ [/^(?:last 24 ?h(?:rs?)?|past 24 ?h(?:rs?)?|last 24 hours)$/i,["last24","cur"]],
+ [/^vitals?$/i,["vitals","cur"]],
+ [/^(?:vent|ventilator|vent settings)$/i,["resp","cur"]],
+ [/^(?:i\/?os?|ins? ?(?:and|\/) ?outs?|fluid balance)$/i,["ios","cur"]],
+ [/^(?:drips?(?:\/rate)?|gtts?)$/i,["drips","cur"]],
+ [/^(?:lines?|access)$/i,["lines","cur"]],
+ [/^labs?$/i,["labs","cur"]],
+ [/^(?:daily meds|meds)$/i,["meds","cur"]],
+ [/^(?:micro\/?id|micro)$/i,["id","cur"]],
+ [/^(?:images|imaging)$/i,["imaging","cur"]],
+ [/^(?:prophylaxis|ppx)$/i,["ppx","cur"]],
+ [/^(?:last bm|bowel)$/i,["bowel","cur"]],
+ [/^(?:a\/p neuro|neuro)$/i,["neuroplan","goal"]],
+ [/^(?:pulm|respiratory)$/i,["resp","goal"]],
+ [/^(?:cards|cardiac|cv)$/i,["bp","goal"]],
+ [/^(?:renal|nephro)$/i,["renal","cur"]],
+ [/^heme$/i,["heme","note"]],
+ [/^(?:endo|endocrine)$/i,["endo","cur"]],
+ [/^(?:nutrition|diet)$/i,["gi","goal"]]
 ];
 function slotAliasFor(label){
   const l=String(label||"").trim();
@@ -10828,7 +11063,7 @@ function slotAliasFor(label){
   return hit?{k:hit[1][0],f:hit[1][1]}:null;
 }
 // a pasted plan — one "Label: value" per line — straight into the boxes
-function soFileLabelledLines(r,text){
+function soFileLabelledLines(r,text,filed){
   if(!r)return 0;
   let n=0;
   const used={};
@@ -10837,6 +11072,12 @@ function soFileLabelledLines(r,text){
     if(!line)return;
     const named=slotLabelSplit(line);
     if(!named)return;
+    // the one-liner is the card's headline, not a parameter
+    if(/^(?:one-?liner|problem|dx|diagnosis|impression)$/i.test(named.l)){
+      r.so=r.so||{};
+      if(!String(r.so["One-liner"]||"").trim()){r.so["One-liner"]=named.v;stampSo(r,"One-liner");n++}
+      return;
+    }
     const alias=slotAliasFor(named.l);
     let k=alias?alias.k:slotKeyForLabel(r,named.l);
     let f=alias?alias.f:null;
@@ -10844,9 +11085,11 @@ function soFileLabelledLines(r,text){
     if(!k||!slotDef(k))return;
     // two lines can land on the same box ("Abx" and "ID"); the second keeps
     // its own slot in that row instead of overwriting the first
+    if(f&&!slotDefFields(r,k).some(x=>x[0]===f))f=null;      // the row has no such box
     if(f&&used[k+"."+f]&&slotVal(r,k,f)!==named.v)f=null;
     if(!f)f=slotFieldForText(r,k,named.v);
     used[k+"."+f]=true;
+    if(filed)filed[k]=true;                 // this row is spoken for by its label
     if(slotVal(r,k,f)===named.v)return;
     slotUpdate(r,k,f,named.v);n++;
   });
@@ -10950,10 +11193,16 @@ function slotOrderIndex(r){
 function slotSortedKeys(r,keys){
   const ix=slotOrderIndex(r);
   const has=k=>ix[k]!==undefined;
+  const prof=soProfileIndex(r);
+  const prank=k=>(prof&&prof[k]!==undefined)?prof[k]:null;
   const sorted=keys.slice().sort((a,b)=>{
     if(has(a)&&has(b))return ix[a]-ix[b];
     if(has(a))return -1;            // anything you have placed leads
     if(has(b))return 1;
+    const pa=prank(a),pb=prank(b);  // then the template's own order
+    if(pa!==null&&pb!==null)return pa-pb;
+    if(pa!==null)return -1;
+    if(pb!==null)return 1;
     return slotDef(a).order-slotDef(b).order;
   });
   const cluster=["drain","icp","drainOutput"].filter(k=>sorted.includes(k));
@@ -10985,6 +11234,8 @@ function slotActiveKeys(r){
   // a box switched off in the sign-out editor takes its row off the board too
   const boxOff={};slotKeysBoxOff(r).forEach(k=>{if(!on[k])boxOff[k]=true});
   const keys=slotAuto(r).filter(k=>!off[k]&&!boxOff[k]);
+  // the template's own walk, for the patients it belongs to
+  (soProfileKeys(r)||[]).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
   Object.keys(on).forEach(k=>{if(on[k]&&keys.indexOf(k)<0&&slotDef(k))keys.push(k)});
   // ...and a box switched on puts its row there
   slotKeysFromBoxes(r).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
@@ -11016,13 +11267,16 @@ function slotCaptureChange(r,k,f){
   if(r.soSnap[key]===undefined)r.soSnap[key]=String(slotVal(r,k,f)||"");
 }
 function slotUpdate(r,k,f,v){
-  slotCaptureChange(r,k,f);
-  r.slots=r.slots||{};r.slots[k]=r.slots[k]||{};
-  const old=r.slots[k][f];
-  if(old&&old!==v){r.slotPrev=r.slotPrev||{};r.slotPrev[k+"."+f]=old}
-  r.slots[k][f]=v;
-  r.slotAt=r.slotAt||{};r.slotAt[k+"."+f]=sxNow();
-  r.slotsOff=r.slotsOff||{};delete r.slotsOff[k];
+  // the output row is a second face on the drain row; reading already knows
+  // that, and writing has to as well or the value lands where nothing shows it
+  const row=(k==="drainOutput")?"drain":k;
+  slotCaptureChange(r,row,f);
+  r.slots=r.slots||{};r.slots[row]=r.slots[row]||{};
+  const old=r.slots[row][f];
+  if(old&&old!==v){r.slotPrev=r.slotPrev||{};r.slotPrev[row+"."+f]=old}
+  r.slots[row][f]=v;
+  r.slotAt=r.slotAt||{};r.slotAt[row+"."+f]=sxNow();
+  r.slotsOff=r.slotsOff||{};delete r.slotsOff[k];delete r.slotsOff[row];
   r.slotsOn=r.slotsOn||{};r.slotsOn[k]=true;
   stampF(r,"slots");
 }
@@ -11140,9 +11394,12 @@ function slotBoardHtml(r){
   const keys=slotActiveKeys(r);
   const rest=SO_SLOTS.filter(s=>keys.indexOf(s.k)<0);
   let html='<div class="slotboard">',group=null;
+  // a template with its own walk supplies the order; the Neuro/Systems
+  // headings would only cut across it
+  const walking=!!soProfileKeys(r);
   keys.forEach((k,i)=>{
     const g=slotDef(k).group;
-    if(g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
+    if(!walking&&g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
     html+=slotRowHtml(r,k,i===0,i===keys.length-1);
   });
   html+='<div class="slotadd">'+slotRestoreFieldsHtml(r)+
@@ -11154,6 +11411,8 @@ function slotBoardHtml(r){
       'onclick="event.stopPropagation();slotSeedFromNotes(\''+r.id+'\')">⤓ From notes</button>'+
     (Array.isArray(r.slotOrder)&&r.slotOrder.length?'<button type="button" class="slotseed" title="Back to the default order" '+
       'onclick="event.stopPropagation();slotResetOrder(\''+r.id+'\')">↕ Default order</button>':"")+
+    (soProfileForTemplate(r.soT)&&soProfileForTemplate(r.soT).length?'<button type="button" class="slotseed" title="'+(r.soProfileOff?"Put the whole "+soTemplate(r).name+" walk back on the board":"Trim to the rows this patient actually needs")+'" '+
+      'onclick="event.stopPropagation();toggleSoProfile(\''+r.id+'\')">'+(r.soProfileOff?"＋ "+soTemplate(r).name+" rows":"⊟ Trim rows")+'</button>':"")+
   '</div></div>';
   return html;
 }
@@ -11200,7 +11459,25 @@ const SLOT_SEED=[
  {k:"gi",f:"goal",re:/\b(npo[^,.;\n]*|tube feeds?[^,.;\n]*|diet[^,.;\n]*)/i},
  {k:"gu",f:"goal",re:/\b(foley[^,.;\n]*|cic[^,.;\n]*|trial of void)/i},
  {k:"bowel",f:"cur",re:/\b(?:last\s*)?bm\s*(?:was|on|:)?\s*([^,.;\n]{1,24})/i},
- {k:"dispo",f:"goal",re:/\b(home [^,.;\n]*|rehab[^,.;\n]*|discharge [^,.;\n]*|snf[^,.;\n]*)/i}
+ {k:"dispo",f:"goal",re:/\b(home [^,.;\n]*|rehab[^,.;\n]*|discharge [^,.;\n]*|snf[^,.;\n]*)/i},
+ // ---- the ICU numbers an NCCU note carries ----
+ // `all` collects every token it finds instead of letting one win, because
+ // these lines are read as a set: "Tmax 37.8 · HR 78 · SpO2 96% RA".
+ {k:"vitals",f:"cur",all:[/\btmax\s*\d{2,3}(?:\.\d)?/i,/\bafebrile\b/i,/\bhr\s*\d{2,3}/i,
+   /\b(?:spo2|sats?)\s*\d{2,3}\s*%?(?:\s*(?:on\s*)?(?:ra|room air|\d+\s*l(?:\s*nc)?))?/i]},
+ {k:"ios",f:"cur",all:[/\bin\s*[\d.]+\s*(?:l|ml|cc)?/i,/\bout\s*[\d.]+\s*(?:l|ml|cc)?/i,
+   /\bnet\s*[+-]?\s*[\d.]+\s*(?:l|ml|cc)?/i,/\buop\s*[\d.]+(?:\s*(?:ml\/kg\/h|ml\/h|cc\/h))?/i]},
+ {k:"drips",f:"cur",all:[/\b(?:nicardipine|cardene|propofol|precedex|dexmedetomidine|fentanyl|levophed|norepi|vasopressin|hts|3%)\s*(?:gtt\s*)?(?:at|@)?\s*[\d.]*\s*(?:mg\/h|mcg\/kg\/min|ml\/h|gtt)?/i]},
+ {k:"lines",f:"cur",all:[/\b(?:[lr]\s*)?(?:a-?line|arterial line)(?:\s*[lr]?\s*(?:radial|femoral))?/i,
+   /\bcvl(?:\s*(?:rij|lij|subclavian|femoral))?/i,/\b(?:picc|midline|piv)\b/i,/\bfoley\b/i,/\bjp\b/i,/\bevd\b/i]},
+ {k:"labs",f:"cur",all:[/\b(?:wbc|hgb|hb|plt|inr|cr)\s*[\d.]+/i]},
+ {k:"meds",f:"cur",all:[/\bnimodipine[^,;.\n]{0,18}/i,/\bkeppra[^,;.\n]{0,16}/i]},
+ {k:"ppx",f:"cur",all:[/\b(?:dvt|vte)\s*ppx[^,;\n]{0,22}/i,/\bscds?\b/i,/\bsch\b(?:\s*(?:ppx|prophylaxis))?/i,
+   /\blovenox[^,;\n]{0,14}/i,/\bppi\b/i,/\bpantoprazole\b/i]},
+ {k:"resp",f:"cur",all:[/\b(?:ac\/vc|psv|simv|cpap|bipap)[^,;\n]{0,16}/i,/\bpeep\s*\d+/i,/\bfio2\s*\d+\s*%?/i,
+   /\bintubated\b/i,/\btrach(?:eostomy)?\b/i,/\bextubated\b/i]},
+ {k:"events",f:"cur",re:/\b(?:overnight|over ?night)\s*[:\-]?\s*([^.;\n]{4,})/i},
+ {k:"last24",f:"cur",re:/\b(?:last|past)\s*24\s*(?:h|hrs?|hours)?\s*[:\-]?\s*([^.;\n]{4,})/i}
 ];
 function slotSeedFromNotes(id){
   const r=findAny(id);if(!r)return;
@@ -11210,9 +11487,7 @@ function slotSeedFromNotes(id){
   let n=0;
   SLOT_SEED.forEach(seed=>{
     if(slotVal(r,seed.k,seed.f))return;             // never overwrite what you typed
-    const m=txt.match(seed.re);
-    if(!m)return;
-    const v=String(seed.fmt?seed.fmt(m):(m[1]||m[0])).trim();
+    const v=seedValue(seed,txt);
     if(!v)return;
     r.slots=r.slots||{};r.slots[seed.k]=r.slots[seed.k]||{};
     r.slots[seed.k][seed.f]=v;
@@ -11567,10 +11842,20 @@ function sxReadableLineHtml(r,l){
   }
   return (l.label?'<b class="plab">'+esc(l.label)+':</b> ':"")+html;
 }
-function sxPreviewHtml(r){
+// free text can carry the name as well, so the same shortening applies
+function soTextShort(r,text,open){
+  const t=String(text||"");
+  const ab=(typeof roundPatient3==="function"&&roundPatient3(r))||patientLast3(r)||"";
+  if(!t||!ab||open)return t;
+  const masked=maskPt(ab,false);
+  if(masked===ab)return t;
+  return t.replace(new RegExp("\\b"+ab.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","ig"),masked);
+}
+function sxPreviewHtml(r,open){
   const lines=sxAssemble(r);
   if(lines.length<=1&&!sxHasContent(r))return "";
-  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+sxReadableLineHtml(r,l)+'</div>').join("")+'</div>';
+  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+
+    (l.cls==="head"?esc(soTextShort(r,l.text,open!==false)):sxReadableLineHtml(r,l))+'</div>').join("")+'</div>';
 }
 function copySxCard(id){
   const r=findAny(id);if(!r)return;
@@ -11789,7 +12074,13 @@ function nccuCompactBoxesHtml(r){
   ).join("")+'</div>';
 }
 function nccuReady(r){
-  const keys=slotActiveKeys(r);
+  // The template's walk puts every row a sign-out might need on the board.
+  // An untouched one of those is a prompt, not a gap — what has to be complete
+  // is the rows this patient actually called for, and anything you began.
+  const prof=soProfileKeys(r)||[];
+  const asked={};slotAuto(r).concat(slotKeysFromBoxes(r)).forEach(k=>{asked[k]=true});
+  const started=k=>slotVisibleFields(r,k).some(([f])=>String(slotVal(r,k,f)||"").trim()!=="");
+  const keys=slotActiveKeys(r).filter(k=>asked[k]||prof.indexOf(k)<0||started(k));
   return keys.length>0&&keys.every(k=>{const def=slotDef(k);return def&&slotVisibleFields(r,k).every(([f])=>String(slotVal(r,k,f)||"").trim()!=="")});
 }
 function refreshNccuReady(id){
@@ -11827,11 +12118,11 @@ function nccuCardHtml(r){
     return '<div class="card nccucard compact crowwrap hastrash" data-id="'+r.id+'">'+
       '<button class="webtrash" title="Remove from SO board" aria-label="Remove from SO board" onclick="event.stopPropagation();nccuRemove(\''+r.id+'\')">✕</button>'+
       '<div class="crow" onclick="toggleOneNccuCompact(\''+r.id+'\')">'+
-        (S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r):'<span class="bg t">'+esc(r.loc||"")+'</span>')+
+        (S.rounds&&S.rounds.includes(r)?roundIdentityBadges(r,true):'<span class="bg t">'+esc(maskLocName(r,false))+'</span>')+
         soMemberBadge(r)+
         (dx?'<span class="bg primarydx">'+esc(dx)+'</span>':cond)+
         ready+chg+
-        '<span class="rprob">'+esc(one)+'</span>'+
+        '<span class="rprob">'+esc(soTextShort(r,one,false))+'</span>'+
         '<span class="car">▸</span>'+
       '</div>'+
       nccuCompactTodoHtml(r)+
@@ -13258,7 +13549,7 @@ function mergeSxArray(primary,secondary,pOwner,sOwner){
 const MERGE_FIELDS=["listMode","listHidden","noExamNow","exam","prevExam","note","plan","planDraft","label","raw","loc","prob","state",
   "morningNotes","daytimeNotes","previousDayNotes","diWatchLegacy","followupNotes","roundAutoTimersOff","action","trig","owner","team","attg","qs","fname","phone","soT","sxCond","sxHide","sxOrder","soSnap","soSnapDay",
   "slotsOn","slotsOff","slotOrder","slotPrev","exGrid","slotFields",
-  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows","scratch","scratchDone"];
+  "soBoardOn","soExtra","soSuggestOff","soBoxOrder","soDayKey","slotRows","scratch","scratchDone","soProfileOff"];
 function stampF(rec,k){if(!rec)return;rec.fAt=rec.fAt||{};rec.fAt[k]=sxNow()}
 function stampSo(rec,k){if(!rec)return;rec.soAt=rec.soAt||{};rec.soAt[k]=sxNow()}
 function fieldStamp(rec,k){

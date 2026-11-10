@@ -206,7 +206,7 @@ patientHandoffNotesSaveNow('existing',{closest:()=>({querySelectorAll:()=>noteIn
 if(explicitWrites!==1||patient.daytimeNotes!=='Afternoon explicit'||patient.morningNotes!=='Morning explicit'||patient.previousDayNotes!=='Previous explicit')throw new Error('Explicit save did not persist all three patient note areas');
 return 'Handoff sorting checks PASS';
 `;
-const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','soRollDay','soRestoreDay','lastMatch','soFileLabelledLines','slotLabelSplit','slotAliasFor','soRefreshFromText','soRefreshFromBaseline','soRefreshFromDaytime','patientHandoffNotesRefresh','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
+const handoffResult=new Function(handoffSetup+['parseBlocks','handoffNotesKey','handoffNotesRecord','handoffNotesSave','sortHandoffNotes','soRollDay','soRestoreDay','lastMatch','seedValue','seedMergeValue','slotSeedApply','soFileLabelledLines','slotLabelSplit','slotAliasFor','soRefreshFromText','soRefreshFromBaseline','soRefreshFromDaytime','patientHandoffNotesRefresh','patientHandoffNotesSave','patientHandoffNotesSaveNow','previousDayNotesText','patientHandoffNotesHtml'].map(extract).join('\n')+handoffChecks)();
 if(typeof console!=='undefined')console.log(handoffResult);
 if(typeof report==='function')report(handoffResult);
 

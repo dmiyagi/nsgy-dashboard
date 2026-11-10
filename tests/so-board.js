@@ -4,6 +4,7 @@ const result=new Function(`
 let nccuCompact=true;const nccuSessionViews=new Map();let patient={id:'p',nccuView:'full'};
 const findAny=()=>patient,renderNccu=()=>{};
 const slotActiveKeys=r=>r.keys||[],slotDef=k=>({fields:k==='exam'?[['cur']]:[['goal'],['out24'],['shift']]});
+const soProfileKeys=()=>null,slotAuto=()=>[],slotKeysFromBoxes=()=>[];
 ${['nccuViewOf','nccuIsCompact','toggleOneNccuCompact','setNccuCompact','nccuReady','slotVisibleFields','slotDefFields','slotCustom','slotVal'].map(fn).join('\n')}
 const assert=(x,m)=>{if(!x)throw new Error(m)};
 assert(nccuIsCompact(patient),'New session did not start compact');
@@ -54,6 +55,7 @@ return 'Explicit not-consented suggestion checks PASS';`)();report(consentResult
 
 const evdResult=new Function(`
 const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,na:40}[k]});
+const soProfileIndex=()=>null;
 ${['slotOrderIndex','slotSortedKeys','slotVal'].map(fn).join('\n')}
 const r={slotOrder:['exam','icp','drain','na'],slots:{drain:{goal:'EVD at 0',out24:'235',shift:'20'}}};
 const order=slotSortedKeys(r,['exam','icp','drain','na','drainOutput']);
