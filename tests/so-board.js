@@ -55,7 +55,7 @@ return 'Explicit not-consented suggestion checks PASS';`)();report(consentResult
 
 const evdResult=new Function(`
 const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,na:40}[k]});
-const soProfileIndex=()=>null;
+const soProfileIndex=()=>null,soProfileKeys=()=>null;
 ${['slotOrderIndex','slotSortedKeys','slotVal'].map(fn).join('\n')}
 const r={slotOrder:['exam','icp','drain','na'],slots:{drain:{goal:'EVD at 0',out24:'235',shift:'20'}}};
 const order=slotSortedKeys(r,['exam','icp','drain','na','drainOutput']);

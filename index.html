@@ -960,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.279 · 2026-11-09</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.280 · 2026-11-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -9085,7 +9085,26 @@ function buildSOChips(){const r=findAny(soId);if(!r)return;
   normalizeSoTemplate(r);
   const el=document.getElementById("sochips");const keys=Object.keys(SO_TMPLS);
   el.innerHTML=keys.map(k=>'<button class="'+(r.soT===k?"on":"")+'">'+SO_TMPLS[k].name+'</button>').join("");
-  Array.from(el.children).forEach((b,i)=>b.onclick=()=>{r.soT=keys[i];r.updatedAt=Date.now();syncLinkedSo(r);buildSOChips();buildSOFields();flushAutosave()});}
+  Array.from(el.children).forEach((b,i)=>b.onclick=()=>soPickTemplate(r.id,keys[i]));}
+// Changing the format changes the shape of the sign-out: the new template's
+// order takes over, so any hand-placed order from the old one is let go.
+function soPickTemplate(id,key){
+  const r=findAny(id);if(!r||!SO_TMPLS[key])return;
+  const was={soT:r.soT,order:r.slotOrder?r.slotOrder.slice():undefined};
+  if(r.soT===key)return;
+  r.soT=key;stampF(r,"soT");
+  const hadOrder=Array.isArray(r.slotOrder)&&r.slotOrder.length;
+  if(hadOrder){delete r.slotOrder;stampF(r,"slotOrder")}
+  r.updatedAt=Date.now();syncLinkedSo(r);
+  buildSOChips();buildSOFields();renderNccu();flushAutosave();
+  showToast(SO_TMPLS[key].name+" — boxes in that order"+(hadOrder?" (your own order let go)":""),()=>{
+    const rr=findAny(id);if(!rr)return;
+    rr.soT=was.soT;stampF(rr,"soT");
+    if(was.order){rr.slotOrder=was.order;stampF(rr,"slotOrder")}
+    rr.updatedAt=Date.now();syncLinkedSo(rr);
+    buildSOChips();buildSOFields();renderNccu();flushAutosave();
+  },"Undo");
+}
 // Whatever the boxes already know, the template should not ask for again.
 // Some template fields ask for a whole section rather than one parameter.
 const SO_TEMPLATE_COMPOSITE=[
@@ -10884,8 +10903,28 @@ function routeDaytimeUpdate(r,text){
 // A patient can carry a parameter the standard board has no row for. The row
 // lives on the record; this registry is only so slotDef(k) stays a lookup.
 let SLOT_CUSTOM={};
+// Where a row you named belongs when the template does not name it. A limb
+// reads with the exam, activity with the neuro plan, FEN with nutrition.
+const SLOT_NEIGHBOUR=[
+ [/^(?:rue|lue|rle|lle|bue|ble|motor|strength|drift|sens(?:ation)?|silt|dre|reflex|pupils?|gcs)\b/i,"exam"],
+ [/^(?:activity|mobility|hob|ambulat|therapy|pt\/?ot)\b/i,"neuroplan"],
+ [/^(?:analgesia|pain|comfort)\b/i,"neuroplan"],
+ [/^(?:fen|diet|nutrition|feeds?)\b/i,"gi"],
+ [/^(?:labs?|chem|cbc)\b/i,"labs"],
+ [/^(?:incision|wound|dressing)\b/i,"skin"],
+ [/^(?:lines?|access|drains?)\b/i,"lines"],
+ [/^(?:vitals?|tmax|temp)\b/i,"vitals"]
+];
+function slotCustomOrder(d){
+  if(d&&d.order&&d.order!==119)return d.order;           // a place you chose stands
+  const hit=SLOT_NEIGHBOUR.find(([re])=>re.test(String((d&&d.l)||"").trim()));
+  const near=hit&&slotDef(hit[1]);
+  return near?near.order+0.5:(d&&d.order)||119;
+}
 function slotCustomRow(d){
-  return {k:d.k,l:d.l,order:d.order||119,group:d.group||"Systems",custom:true,
+  const hit=SLOT_NEIGHBOUR.find(([re])=>re.test(String((d&&d.l)||"").trim()));
+  const near=hit&&SO_SLOTS.find(x=>x.k===hit[1]);
+  return {k:d.k,l:d.l,order:slotCustomOrder(d),group:d.group||(near?near.group:"Systems"),custom:true,
     fields:[["cur","what it is now"],["goal","plan / goal"]],
     fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")};
 }
@@ -10970,7 +11009,12 @@ function slotAddCustomRow(r,name,group){
   const existing=(r.slotRows||[]).find(d=>d.l.toLowerCase()===l.toLowerCase());
   const k=existing?existing.k:("cx"+Math.random().toString(36).slice(2,7));
   if(!existing){
-    r.slotRows=(r.slotRows||[]).concat([{k:k,l:l,group:group||"Systems",order:119}]);
+    // sit it beside the row it reads closest to — "RUE" belongs by the exam,
+    // not at the bottom of the list
+    const hit=SLOT_NEIGHBOUR.find(([re])=>re.test(l));
+    const near=(hit&&hit[1])||slotPickForText(r,l);
+    const nd=near?slotDef(near):null;
+    r.slotRows=(r.slotRows||[]).concat([{k:k,l:l,group:group||(nd?nd.group:"Systems"),order:nd?nd.order+0.5:119}]);
     stampF(r,"slotRows");
   }
   slotCustomRegister(r);
@@ -11193,16 +11237,24 @@ function slotOrderIndex(r){
 function slotSortedKeys(r,keys){
   const ix=slotOrderIndex(r);
   const has=k=>ix[k]!==undefined;
+  const profArr=soProfileKeys(r);
   const prof=soProfileIndex(r);
-  const prank=k=>(prof&&prof[k]!==undefined)?prof[k]:null;
+  // A row the template does not name still has to land somewhere sensible, so
+  // it slots in after the template row it most nearly follows.
+  const prank=k=>{
+    if(prof&&prof[k]!==undefined)return prof[k];
+    if(!profArr||!profArr.length)return null;
+    const d=slotDef(k);if(!d)return null;
+    let at=-0.5;
+    profArr.forEach((pk,i)=>{const pd=slotDef(pk);if(pd&&pd.order<=d.order)at=i+0.5});
+    return at;
+  };
   const sorted=keys.slice().sort((a,b)=>{
     if(has(a)&&has(b))return ix[a]-ix[b];
     if(has(a))return -1;            // anything you have placed leads
     if(has(b))return 1;
     const pa=prank(a),pb=prank(b);  // then the template's own order
-    if(pa!==null&&pb!==null)return pa-pb;
-    if(pa!==null)return -1;
-    if(pb!==null)return 1;
+    if(pa!==null&&pb!==null&&pa!==pb)return pa-pb;
     return slotDef(a).order-slotDef(b).order;
   });
   const cluster=["drain","icp","drainOutput"].filter(k=>sorted.includes(k));
