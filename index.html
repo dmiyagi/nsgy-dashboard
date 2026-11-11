@@ -960,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.280 · 2026-11-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.281 · 2026-11-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -9117,7 +9117,8 @@ const SO_TEMPLATE_COMPOSITE=[
  [/^(?:ac status|ac \/ antiplatelet|heme)$/i,["ac"]],
  [/^(?:antibiotics|micro\/id)$/i,["id"]],
  [/^(?:images|imaging(?: pending| comparison)?|post-?op imaging)$/i,["imaging"]],
- [/^(?:vent|pulm)$/i,["resp"]],
+ [/^(?:vent|pulm|respiratory)$/i,["resp"]],
+ [/^(?:cards|cardiac|cv)$/i,["bp"]],
  [/^(?:dispo(?: \+ barriers| \/ barriers| planning)?)$/i,["dispo"]],
  [/^(?:steroid \+ aed plan)$/i,["steroid","asm"]],
  [/^(?:pending studies|studies pending)$/i,["imaging"]],
@@ -10693,8 +10694,8 @@ const SO_SLOTS=[
   re:/keppra|levetiracetam|dilantin|phenytoin|vimpat|lacosamide|depakote|valproate|\basm\b|\baed\b|seizure|epilep|\bceeg\b|\bltm\b/i,
   fields:[["goal","drug, dose + duration"],["cur","day of course / events"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
- {k:"bp",l:"Blood pressure",order:60,group:"Neuro",when:r=>slotIsCranial(r)||/\bsbp\b|\bmap\b|cardene|nicardipine|labetalol|pressor|norepi|hypertens/i.test(slotText(r)),
-  fields:[["goal","BP goal"],["cur","what it takes to hold it"]],
+ {k:"bp",l:"Cards / BP",order:60,group:"Neuro",when:r=>slotIsCranial(r)||/\bsbp\b|\bmap\b|cardene|nicardipine|labetalol|pressor|norepi|hypertens/i.test(slotText(r)),
+  fields:[["goal","SBP goal"],["cur","what holds it · rhythm"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
  // ---- other systems ----
  {k:"imaging",l:"Imaging pending",order:65,group:"Neuro",
@@ -10729,9 +10730,9 @@ const SO_SLOTS=[
   re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
   fields:[["goal","antibiotic + day of course"],["tmax","Tmax"],["cur","cultures"]],
   fmt:v=>[v.tmax?("Tmax "+v.tmax.replace(/^tmax\s*/i,"")):"",v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"resp",l:"Resp / airway",order:100,group:"Systems",
-  re:/intubat|extubat|\bett\b|vent\b|trach|\bpeep\b|fio2|\bsbt\b|oxygen|\bbipap\b/i,
-  fields:[["goal","extubation / airway plan"],["cur","current support"]],
+ {k:"resp",l:"Pulm / airway",order:100,group:"Systems",
+  re:/intubat|extubat|\bett\b|vent\b|trach|\bpeep\b|fio2|\bsbt\b|oxygen|\bbipap\b|room air|\bra\b|\bnc\b|nasal cannula|copd|inhaler/i,
+  fields:[["goal","extubation / airway plan"],["cur","intubated · RA · 2L NC · vent settings"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
  {k:"endo",l:"Endo / glucose",order:110,group:"Systems",
   re:/\bdi\b|diabetes insipidus|siadh|ddavp|cortisol|steroid|dex\b|insulin|glucose|\bissi?\b/i,
@@ -10955,8 +10956,8 @@ function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||SLOT_CUSTOM[k]||null}
 // template describes its own board: each field it asks for becomes the box (or
 // boxes) that answer it, in the order the template lists them.
 const SO_PROFILES={
-  nccu:["events","last24","exam","vitals","resp","drain","icp","drainOutput","ios","bowel","drips",
-        "gi","lines","labs","id","meds","imaging","neuroplan","na","asm","steroid","ac","bp",
+  nccu:["events","last24","vitals","resp","drain","icp","drainOutput","ios","bowel","drips",
+        "gi","lines","labs","id","meds","imaging","exam","neuroplan","na","asm","steroid","ac","bp",
         "renal","gu","heme","endo","ppx","dispo"]
 };
 const soProfileCache={};
@@ -11481,8 +11482,11 @@ const SLOT_SEED=[
  // blood pressure
  {k:"bp",f:"goal",re:/\b((?:goal\s*)?sbp\s*(?:goal\s*)?[<>]\s*\d{2,3}|(?:goal\s*)?map\s*(?:goal\s*)?[>]\s*\d{2,3}|sbp\s*\d{2,3}\s*-\s*\d{2,3}|normotn\w*|normotensi\w*)/i,
   fmt:m=>m[1].replace(/\s*goal\s*/i," ").replace(/\s+/g," ").trim()},
- {k:"bp",f:"cur",re:/\b(cardene|nicardipine|labetalol|norepi|pressors?|levophed|neo\b)[^,.;\n]*/i},
- {k:"bp",f:"cur",re:/(?:^|[\s,(])(\d{2,3}\/\d{2,3})(?:[\s,.)]|$)/},
+ // what holds the pressure, and the rhythm, read together on the Cards line
+ {k:"bp",f:"cur",all:[/\b(?:cardene|nicardipine|labetalol|norepi|levophed|vasopressin|hydralazine|pressors?)\b(?:\s*(?:gtt|drip|prn))?/i,
+   /\b(?:sinus rhythm|nsr|a-?fib|atrial fibrillation|paced)\b/i,
+   /(?:^|[\s,(])\d{2,3}\/\d{2,3}(?=[\s,.)]|$)/]},
+
  // drains and pressure
  {k:"drain",f:"goal",re:/\b((?:[lr]\s+)?(?:evd|lumbar drain|ld|edv)\b[^,.;\n]{0,24}?(?:at|@|to|open at|go to|set at)\s*-?\d+)/i,
   fmt:m=>m[1].replace(/\s+/g," ").trim()},
@@ -11527,7 +11531,9 @@ const SLOT_SEED=[
  {k:"ppx",f:"cur",all:[/\b(?:dvt|vte)\s*ppx[^,;\n]{0,22}/i,/\bscds?\b/i,/\bsch\b(?:\s*(?:ppx|prophylaxis))?/i,
    /\blovenox[^,;\n]{0,14}/i,/\bppi\b/i,/\bpantoprazole\b/i]},
  {k:"resp",f:"cur",all:[/\b(?:ac\/vc|psv|simv|cpap|bipap)[^,;\n]{0,16}/i,/\bpeep\s*\d+/i,/\bfio2\s*\d+\s*%?/i,
-   /\bintubated\b/i,/\btrach(?:eostomy)?\b/i,/\bextubated\b/i]},
+   /\bintubated\b/i,/\btrach(?:eostomy)?\b/i,/\bextubated\b/i,
+   /\b(?:on\s*)?\d+\s*l\s*(?:nc|nasal cannula)/i,/\broom air\b/i,/\bra\b(?=[\s,.;]|$)/i,
+   /\bcopd\b/i,/\bhome o2\b/i,/\binhalers?\b/i]},
  {k:"events",f:"cur",re:/\b(?:overnight|over ?night)\s*[:\-]?\s*([^.;\n]{4,})/i},
  {k:"last24",f:"cur",re:/\b(?:last|past)\s*24\s*(?:h|hrs?|hours)?\s*[:\-]?\s*([^.;\n]{4,})/i}
 ];
@@ -11582,9 +11588,13 @@ function sxAssemble(r){
   const head=soLabel(r)+(ctx?" — "+ctx:"");
   lines.push({cls:"head",text:head});
   const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
-  exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
+  // Most sign-outs open with the exam. An NCCU one reads it where the template
+  // puts it, so when the walk names the exam, the exam row speaks for it.
+  const prof=soProfileKeys(r)||[];
+  const examInWalk=prof.indexOf("exam")>=0;
+  if(!examInWalk)exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
-  slotLines(r).forEach(l=>{if(l.k!=="exam"||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
+  slotLines(r).forEach(l=>{if(l.k!=="exam"||examInWalk||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
   const day=sxDaytimeItems(r);
   sxManagementThreads(r,exams.concat(day)).forEach(l=>lines.push(l));
   day.forEach(x=>{
