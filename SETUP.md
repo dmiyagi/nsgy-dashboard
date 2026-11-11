@@ -31,6 +31,8 @@ That's it. Changes push ~2.5 s after you make them, and pull every minute while 
 
 ## Notes
 
+- **NCCU order tuned (v0.0.281):** **Pulm** and **Cards** are now their own lines — Pulm carries intubated / RA / 2L NC / vent settings / COPD and the airway plan; **Cards / BP** carries the SBP goal with what holds it, the rhythm and a reading. The **Exam** moved to where an NCCU sign-out actually reads it: after Imaging, before the Neuro plan — and it is read there once, not repeated at the top. Every other template still opens with the exam.
+
 - **Changing the format re-orders the sign-out (v0.0.280):** picking a different template now re-reads the card in that template's order — on the board and in the read-out. Any order you had set by hand with ↑↓ is let go, since it belonged to the old format; the toast says so and Undo puts both back.
 - **Rows you named find their place (v0.0.280):** a box named after something the template does not list used to sit at the bottom. **RUE / LUE / RLE / LLE** now read straight after the Exam, **Activity** with the Neuro plan, **FEN/GU** by GU, labs with Labs, dressings with Skin / wound — and they keep that place when you switch templates. Existing cards pick this up without anything to migrate; a row you have moved by hand stays where you put it.
 
