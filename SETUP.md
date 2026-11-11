@@ -1,3 +1,4 @@
+- **Vent and diet split off from Pulm and GI (v0.0.282)** — on the NCCU walk the report part now reads **Vent / O2** ("AC/VC 450x16 · PEEP 5 · FiO2 40%", or "2L NC", or "RA") where Pulm used to sit, and **Diet / feeds** ("NPO · clears · TF at goal") where GI used to sit. **Pulm** and **GI** moved down with the rest of the plan, after Cards / BP: Pulm carries the airway plan and the chronic lung story (COPD, home O2, inhalers), GI carries advancing the diet, PEG and swallow eval. Pasted text files itself the same way — vent settings and oxygen delivery to Vent, NPO / tube feeds / diet to Diet — and a "Vent:" or "Diet:" line in a template fills those rows. Values already sitting on the old Pulm and GI rows move across once, automatically.
 # NSGY Triage — phone + computer setup (one time, ~10 min)
 
 The app is a static web page. GitHub hosts it (Pages) and syncs your board through a **private secret Gist** in your own account. No servers to maintain, free.

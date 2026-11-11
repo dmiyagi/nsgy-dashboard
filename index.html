@@ -960,7 +960,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.281 · 2026-11-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.282 · 2026-11-10</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -3625,8 +3625,34 @@ function normalizeDeletionStamps(doc){
   }
   return doc;
 }
+// ---- one-time: the vent settings and the diet get their own report rows ----
+// They used to live on the Pulm and GI lines, which now carry only the plan.
+const VENT_TOKEN=/ac\/vc|psv|simv|cpap|bipap|peep|fio2|intubat|extubat|trach|nasal cannula|\bnc\b|room air|\bra\b|\d\s*l\b/i;
+function splitVentDiet(r){
+  if(!r||!r.slots)return;
+  const resp=r.slots.resp||{},gi=r.slots.gi||{};
+  const cur=String(resp.cur||"").trim();
+  if(cur){
+    const parts=cur.split(/\s*·\s*|\s*,\s*/).filter(Boolean);
+    const support=parts.filter(x=>VENT_TOKEN.test(x)),rest=parts.filter(x=>!VENT_TOKEN.test(x));
+    if(support.length){
+      r.slots.vent=r.slots.vent||{};
+      if(!String(r.slots.vent.cur||"").trim())r.slots.vent.cur=support.join(" · ");
+      resp.cur=rest.join(" · ");
+    }
+  }
+  const diet=String(gi.goal||"").trim();
+  if(diet){
+    r.slots.diet=r.slots.diet||{};
+    if(!String(r.slots.diet.cur||"").trim()){r.slots.diet.cur=diet;gi.goal=""}
+  }
+}
 function migrate(d){
   normalizeDeletionStamps(d);
+  if(!d.slotVentDietSplit){
+    d.slotVentDietSplit=true;
+    (d.rounds||[]).concat(d.consults||[],d.formerWounds||[]).forEach(splitVentDiet);
+  }
   slotCustomScan(d);                 // patient-named rows have to exist before anything renders
   d.round24=!!d.round24;
   d.round24At=d.round24At||0;
@@ -9117,7 +9143,8 @@ const SO_TEMPLATE_COMPOSITE=[
  [/^(?:ac status|ac \/ antiplatelet|heme)$/i,["ac"]],
  [/^(?:antibiotics|micro\/id)$/i,["id"]],
  [/^(?:images|imaging(?: pending| comparison)?|post-?op imaging)$/i,["imaging"]],
- [/^(?:vent|pulm|respiratory)$/i,["resp"]],
+ [/^(?:vent)$/i,["vent"]],
+ [/^(?:pulm|respiratory)$/i,["resp"]],
  [/^(?:cards|cardiac|cv)$/i,["bp"]],
  [/^(?:dispo(?: \+ barriers| \/ barriers| planning)?)$/i,["dispo"]],
  [/^(?:steroid \+ aed plan)$/i,["steroid","asm"]],
@@ -9136,13 +9163,13 @@ const SO_TEMPLATE_COMPOSITE=[
  [/^(?:daily meds)$/i,["meds"]],
  [/^(?:prophylaxis)$/i,["ppx"]],
  [/^(?:last bm)$/i,["bowel"]],
- [/^(?:nutrition)$/i,["gi"]],
+ [/^(?:nutrition)$/i,["diet","gi"]],
  [/^(?:evd\/output)$/i,["drain","icp","drainOutput","ios"]],
  [/^(?:renal)$/i,["renal"]],
  [/^(?:heme)$/i,["heme"]],
  [/^(?:endo)$/i,["endo"]],
  [/^(?:gu)$/i,["gu"]],
- [/^(?:gi)$/i,["gi","bowel"]]
+ [/^(?:gi)$/i,["gi","diet","bowel"]]
 ];
 function soCompositeFor(r,label){
   const hit=SO_TEMPLATE_COMPOSITE.find(([re])=>re.test(String(label||"").trim()));
@@ -10706,10 +10733,15 @@ const SO_SLOTS=[
   re:/\btlso\b|\baspen\b|miami ?j|\bc-?collar\b|\bcollar\b|\bhalo\b|\bbrace\b|\bcorset\b|\bjewett\b|\bcto\b|\blso\b/i,
   fields:[["goal","brace + when worn"],["cur","fitted / tolerating?"]],
   fmt:v=>[v.goal,v.cur].filter(Boolean).join(", ")},
- {k:"gi",l:"GI / nutrition",order:70,group:"Systems",
+ {k:"gi",l:"GI",order:70,group:"Systems",
   re:/\bnpo\b|\bsbo\b|ileus|obstruction|diet|tube feed|\btf\b|\bpeg\b|\bng\b|dysphagia|swallow|aspirat|nausea|vomit|\bemesis\b|nutrition/i,
-  fields:[["goal","diet / feeding plan"],["cur","current intake + issues"]],
+  fields:[["goal","GI plan — advance diet · PEG · swallow eval"],["cur","GI issues"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ // what they are actually eating, read with the numbers
+ {k:"diet",l:"Diet / feeds",order:69,group:"",
+  pick:/diet|feeds?|\bnpo\b|tube feed|\btf\b|nutrition|\bfen\b/i,
+  fields:[["cur","NPO · clears · regular · TF at goal"]],
+  fmt:v=>v.cur||""},
  {k:"bowel",l:"Bowel",order:75,group:"Systems",when:slotIsSpine,
   fields:[["goal","bowel regimen"],["cur","date of last BM"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
@@ -10730,10 +10762,16 @@ const SO_SLOTS=[
   re:/fever|febrile|tmax|infect|abscess|culture|\bcx\b|\babx\b|antibiotic|vanc|ceftriax|cefepime|zosyn|ventriculit|meningit/i,
   fields:[["goal","antibiotic + day of course"],["tmax","Tmax"],["cur","cultures"]],
   fmt:v=>[v.tmax?("Tmax "+v.tmax.replace(/^tmax\s*/i,"")):"",v.cur,v.goal].filter(Boolean).join(", ")},
- {k:"resp",l:"Pulm / airway",order:100,group:"Systems",
+ {k:"resp",l:"Pulm",order:100,group:"Systems",
   re:/intubat|extubat|\bett\b|vent\b|trach|\bpeep\b|fio2|\bsbt\b|oxygen|\bbipap\b|room air|\bra\b|\bnc\b|nasal cannula|copd|inhaler/i,
-  fields:[["goal","extubation / airway plan"],["cur","intubated · RA · 2L NC · vent settings"]],
+  fields:[["goal","extubation / airway plan"],["cur","pulm issues · SBT · COPD / home O2"]],
   fmt:v=>[v.cur,v.goal].filter(Boolean).join(", ")},
+ // The support itself is read out with the rest of the numbers, not with the
+ // plan: "on 2L NC" belongs beside the vitals, "wean to extubate" with Pulm.
+ {k:"vent",l:"Vent / O2",order:99,group:"",
+  pick:/vent(?:ilator)?(?: settings)?|\bpeep\b|fio2|oxygen|nasal cannula|room air|airway/i,
+  fields:[["cur","AC/VC 450x16 · PEEP 5 · FiO2 40% · 2L NC · RA"]],
+  fmt:v=>v.cur||""},
  {k:"endo",l:"Endo / glucose",order:110,group:"Systems",
   re:/\bdi\b|diabetes insipidus|siadh|ddavp|cortisol|steroid|dex\b|insulin|glucose|\bissi?\b/i,
   fields:[["goal","glucose goal / steroid taper"],["cur","current coverage"]],
@@ -10815,14 +10853,14 @@ const SO_SLOTS=[
 // row switched off on the board switches the box back off.
 const SO_BOX_SLOTS={
   // the "Boxes:" chips in the sign-out editor
-  evd:["drain","icp","drainOutput"],drain:["drain","drainOutput"],vent:["resp"],
+  evd:["drain","icp","drainOutput"],drain:["drain","drainOutput"],vent:["vent","resp"],
   neuroplan:["neuroplan"],na:["na"],bp:["bp"],abx:["id"],steroid:["steroid"],
   asm:["asm"],ac:["ac"],dispo:["dispo"],
   // the "+ Add box" chips
   "POD":["status"],"Post-bleed day":["status"],"Post-trauma status":["status"],"Pre-op status":["status"],
   "Neuro plan":["neuroplan"],"Drain":["drain","drainOutput"],"Antibiotics":["id"],"Steroids":["steroid"],
   "AC / antiplatelet":["ac"],"Seizures / ASM":["asm"],"ID / cultures":["id"],"Vasospasm / TCD":["vasospasm"],
-  "Endocrine / DI":["endo","diWatch"],"Hemodynamics / pressors":["bp"],"Airway / trach":["resp"],
+  "Endocrine / DI":["endo","diWatch"],"Hemodynamics / pressors":["bp"],"Airway / trach":["vent","resp"],
   "Goals of care":["goc"],"Family / collateral":["family"],"Dispo barriers":["dispo"],
   "Trial eligibility":["trial"],"Peds / weight":["peds"],"Pressure injury / skin":["skin"],"Renal / CRRT":["renal"]
 };
@@ -10876,7 +10914,7 @@ function soBoxOnForSlot(r,k){
   });
 }
 function soSlotMapping(label){
-  const groups=[[/^di watch$/i,"diWatch","uop"],[/^exam/i,"exam","cur"],[/evd|drains?/i,"drain","goal"],[/icp/i,"icp","cur"],[/na goal|sodium/i,"na","goal"],[/bp goal|blood pressure|map goal/i,"bp","goal"],[/seizure|asm|ltm/i,"asm","goal"],[/anticoag/i,"ac","goal"],[/^id|antibiotic|infection/i,"id","goal"],[/renal|di watch/i,"gu","cur"],[/nutrition|diet/i,"gi","goal"]];
+  const groups=[[/^di watch$/i,"diWatch","uop"],[/^exam/i,"exam","cur"],[/evd|drains?/i,"drain","goal"],[/icp/i,"icp","cur"],[/na goal|sodium/i,"na","goal"],[/bp goal|blood pressure|map goal/i,"bp","goal"],[/seizure|asm|ltm/i,"asm","goal"],[/anticoag/i,"ac","goal"],[/^id|antibiotic|infection/i,"id","goal"],[/renal|di watch/i,"gu","cur"],[/nutrition|diet/i,"diet","cur"]];
   const match=groups.find(([re])=>re.test(label));return match?{k:match[1],f:match[2]}:null;
 }
 function syncTemplateSlots(r,label,text){
@@ -10910,7 +10948,7 @@ const SLOT_NEIGHBOUR=[
  [/^(?:rue|lue|rle|lle|bue|ble|motor|strength|drift|sens(?:ation)?|silt|dre|reflex|pupils?|gcs)\b/i,"exam"],
  [/^(?:activity|mobility|hob|ambulat|therapy|pt\/?ot)\b/i,"neuroplan"],
  [/^(?:analgesia|pain|comfort)\b/i,"neuroplan"],
- [/^(?:fen|diet|nutrition|feeds?)\b/i,"gi"],
+ [/^(?:fen|diet|nutrition|feeds?)\b/i,"diet"],
  [/^(?:labs?|chem|cbc)\b/i,"labs"],
  [/^(?:incision|wound|dressing)\b/i,"skin"],
  [/^(?:lines?|access|drains?)\b/i,"lines"],
@@ -10956,9 +10994,9 @@ function slotDef(k){return SO_SLOTS.find(s=>s.k===k)||SLOT_CUSTOM[k]||null}
 // template describes its own board: each field it asks for becomes the box (or
 // boxes) that answer it, in the order the template lists them.
 const SO_PROFILES={
-  nccu:["events","last24","vitals","resp","drain","icp","drainOutput","ios","bowel","drips",
-        "gi","lines","labs","id","meds","imaging","exam","neuroplan","na","asm","steroid","ac","bp",
-        "renal","gu","heme","endo","ppx","dispo"]
+  nccu:["events","last24","vitals","vent","drain","icp","drainOutput","ios","bowel","diet","drips",
+        "lines","labs","id","meds","imaging","exam","neuroplan","na","asm","steroid","ac","bp",
+        "resp","gi","renal","gu","heme","endo","ppx","dispo"]
 };
 const soProfileCache={};
 function soProfileForTemplate(key){
@@ -11068,7 +11106,7 @@ const SO_LABEL_ALIAS=[
  [/^(?:abx|antibiotics?|id|micro(?:\/id)?|infectious disease)$/i,["id","goal"]],
  [/^(?:anticoagulation|antiplatelets?|anticoagulation\/antiplatelets?|ac(?:\/ap)?)$/i,["ac","goal"]],
  [/^(?:dvt ?(?:ppx|prophylaxis)|vte ?(?:ppx|prophylaxis))$/i,["ac","cur"]],
- [/^(?:diet|nutrition|feeds?)$/i,["gi","goal"]],
+ [/^(?:diet|nutrition|feeds?|fen)$/i,["diet","cur"]],
  [/^(?:dispo|disposition|discharge)$/i,["dispo","goal"]],
  [/^(?:incision care|wound care|incision|dressing)$/i,["skin","goal"]],
  [/^(?:drains?|evd|lumbar drain|evd ?\/ ?output|evd \+ icp course|drains? \+ output|drain \+ level)$/i,["drain","goal"]],
@@ -11084,7 +11122,7 @@ const SO_LABEL_ALIAS=[
  [/^(?:events|overnight(?: events)?)$/i,["events","cur"]],
  [/^(?:last 24 ?h(?:rs?)?|past 24 ?h(?:rs?)?|last 24 hours)$/i,["last24","cur"]],
  [/^vitals?$/i,["vitals","cur"]],
- [/^(?:vent|ventilator|vent settings)$/i,["resp","cur"]],
+ [/^(?:vent|ventilator|vent settings)$/i,["vent","cur"]],
  [/^(?:i\/?os?|ins? ?(?:and|\/) ?outs?|fluid balance)$/i,["ios","cur"]],
  [/^(?:drips?(?:\/rate)?|gtts?)$/i,["drips","cur"]],
  [/^(?:lines?|access)$/i,["lines","cur"]],
@@ -11510,9 +11548,10 @@ const SLOT_SEED=[
  {k:"imaging",f:"cur",re:/\b((?:mri|cth?|cta|ctv|angio\w*|x-?ray|tcds?|shunt series)[^,.;\n]{0,40}?(?:neg\w*|negative|stable|unchanged|improved|no change)[^,.;\n]*)/i,
   fmt:m=>m[1].replace(/\s+/g," ").trim()},
  {k:"imaging",f:"goal",re:/\b((?:repeat|pending|f\/?u|follow-?up|get|obtain)\s+(?:mri|cth?|cta|ctv|angio\w*|x-?ray|kub)[^,.;\n]*)/i},
- {k:"resp",f:"cur",re:/\b(fio2[^,.;\n]*|intubated[^,.;\n]*|trach\w*[^,.;\n]*|desat\w*[^,.;\n]*|on\s*\d+\s*l\s*(?:nc|nasal)[^,.;\n]*)/i},
+ {k:"vent",f:"cur",re:/\b(fio2[^,.;\n]*|intubated[^,.;\n]*|trach\w*[^,.;\n]*|on\s*\d+\s*l\s*(?:nc|nasal)[^,.;\n]*)/i},
+ {k:"resp",f:"cur",re:/\b(desat\w*[^,.;\n]*|pneumoni\w*[^,.;\n]*|copd[^,.;\n]*|aspiration[^,.;\n]*)/i},
  {k:"resp",f:"goal",re:/\b((?:extubat|sbt|wean)\w*[^,.;\n]*)/i},
- {k:"gi",f:"goal",re:/\b(npo[^,.;\n]*|tube feeds?[^,.;\n]*|diet[^,.;\n]*)/i},
+ {k:"diet",f:"cur",re:/\b(npo[^,.;\n]*|tube feeds?[^,.;\n]*|diet[^,.;\n]*)/i},
  {k:"gu",f:"goal",re:/\b(foley[^,.;\n]*|cic[^,.;\n]*|trial of void)/i},
  {k:"bowel",f:"cur",re:/\b(?:last\s*)?bm\s*(?:was|on|:)?\s*([^,.;\n]{1,24})/i},
  {k:"dispo",f:"goal",re:/\b(home [^,.;\n]*|rehab[^,.;\n]*|discharge [^,.;\n]*|snf[^,.;\n]*)/i},
@@ -11530,10 +11569,11 @@ const SLOT_SEED=[
  {k:"meds",f:"cur",all:[/\bnimodipine[^,;.\n]{0,18}/i,/\bkeppra[^,;.\n]{0,16}/i]},
  {k:"ppx",f:"cur",all:[/\b(?:dvt|vte)\s*ppx[^,;\n]{0,22}/i,/\bscds?\b/i,/\bsch\b(?:\s*(?:ppx|prophylaxis))?/i,
    /\blovenox[^,;\n]{0,14}/i,/\bppi\b/i,/\bpantoprazole\b/i]},
- {k:"resp",f:"cur",all:[/\b(?:ac\/vc|psv|simv|cpap|bipap)[^,;\n]{0,16}/i,/\bpeep\s*\d+/i,/\bfio2\s*\d+\s*%?/i,
+ {k:"vent",f:"cur",all:[/\b(?:ac\/vc|psv|simv|cpap|bipap)(?:\s*\d+\s*[x\/]\s*\d+)?/i,/\bpeep\s*\d+/i,/\bfio2\s*\d+\s*%?/i,
    /\bintubated\b/i,/\btrach(?:eostomy)?\b/i,/\bextubated\b/i,
-   /\b(?:on\s*)?\d+\s*l\s*(?:nc|nasal cannula)/i,/\broom air\b/i,/\bra\b(?=[\s,.;]|$)/i,
-   /\bcopd\b/i,/\bhome o2\b/i,/\binhalers?\b/i]},
+   /\b(?:on\s*)?\d+\s*l\s*(?:nc|nasal cannula)/i,/\broom air\b/i,/\bra\b(?=[\s,.;]|$)/i]},
+ // the chronic lung story stays on the Pulm line
+ {k:"resp",f:"cur",all:[/\bcopd\b/i,/\bhome o2\b/i,/\binhalers?\b/i,/\bosa\b/i,/\bcpap at home\b/i]},
  {k:"events",f:"cur",re:/\b(?:overnight|over ?night)\s*[:\-]?\s*([^.;\n]{4,})/i},
  {k:"last24",f:"cur",re:/\b(?:last|past)\s*24\s*(?:h|hrs?|hours)?\s*[:\-]?\s*([^.;\n]{4,})/i}
 ];
