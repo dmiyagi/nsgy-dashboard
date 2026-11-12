@@ -710,15 +710,28 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxnone{font-size:11px;color:var(--mut);font-style:italic}
 .slotboard{margin:8px 0 6px;padding:8px 9px;background:var(--card2);border:1px solid var(--line);border-radius:10px}
 .slotgroup{font-size:10.5px;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;
-  margin:8px 0 4px;padding-top:6px;border-top:1px solid rgba(139,167,214,.16)}
+  margin:10px 0 5px;padding-top:6px;border-top:1px solid rgba(139,167,214,.16)}
 .slotgroup:first-child{margin-top:0;padding-top:0;border-top:none}
-.slotrow{display:grid;grid-template-columns:104px minmax(0,1fr) 56px;gap:7px;align-items:center;margin-bottom:4px}
-.slotrow em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.slotfields{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0}
-.slotfields.three{grid-template-columns:1.3fr .8fr .8fr}
-.slotin{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:7px;color:var(--text);
+/* one section = one rounded block: its name reads first, its boxes are the detail */
+.slotrow{display:grid;grid-template-columns:116px minmax(0,1fr) 50px;gap:8px;align-items:center;
+  margin-bottom:6px;padding:6px 7px;background:var(--card);border:1px solid var(--line);border-radius:11px}
+.slotrow:focus-within{border-color:rgba(90,162,255,.55)}
+.slotrow.empty{background:transparent;border-style:dashed;border-color:rgba(139,167,214,.18)}
+.slotrow em{font-style:normal;font-size:12px;font-weight:800;color:#b7c7de;line-height:1.2;text-align:left;
+  overflow:hidden;text-overflow:ellipsis}
+.slotrow.empty em{color:var(--mut);font-weight:700}
+/* the boxes flow, so the "＋ box" chip sits at the end of them, never below */
+.slotfields{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.slotfields .slotcell{flex:1 1 calc(50% - 30px);min-width:110px}
+.slotfields.three .slotcell{flex:1 1 calc(33.3% - 24px)}
+.slotin{min-width:0;background:var(--card2);border:1px solid rgba(139,167,214,.20);border-radius:8px;color:var(--text);
   font-family:var(--font);font-size:12.5px;padding:5px 8px}
+.slotin::placeholder{color:#5d6a7e;font-weight:400;font-size:11.5px}
 .slotin:focus{outline:none;border-color:var(--acc)}
+/* add another box to this section, where the section is */
+.slotmore{flex:0 0 auto;align-self:stretch;min-height:28px;border:1px dashed rgba(139,167,214,.28);background:transparent;
+  color:var(--mut);border-radius:8px;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;padding:0 6px}
+.slotmore:hover{border-color:var(--teal);color:var(--teal)}
 .tcexam{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px}
 .tcexam .tcexlab{font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
 .tcexam select{background:var(--card2);border:1px solid var(--line);border-radius:7px;color:var(--text);
@@ -731,10 +744,12 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .slotctl button:hover:not(:disabled){color:var(--acc)}
 .slotctl button:disabled{opacity:.25;cursor:default}
 .slotcell{display:flex;flex-direction:column;min-width:0;position:relative}
+@media(max-width:620px){.slotfields .slotcell,.slotfields.three .slotcell{flex:1 1 100%}
+  .slotmore{flex:1 1 100%;min-height:24px}}
 .slotcell .slotin{padding-right:30px}
 .slotcell > .slotx{position:absolute;right:5px;top:3px;width:24px;min-height:24px;background:transparent;border:0;color:var(--mut);cursor:pointer}
 .slotin.live{border-style:dashed;color:#c8d3e4}
-.slotwas{font-size:10px;color:var(--mut);padding:1px 3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slotwas{font-size:9.5px;color:#606c7e;font-style:italic;padding:1px 3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plab{color:#778395;font-weight:800}
 .slotx{border:none;background:transparent;color:var(--mut);font-size:14px;cursor:pointer;font-family:var(--font);line-height:1;padding:0}
 .slotx:hover{color:var(--e3)}
@@ -743,7 +758,7 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   color:var(--acc);font-family:var(--font);font-size:11.5px;font-weight:700;padding:4px 6px}
 .slotadd .slotseed{border:1px solid var(--teal);background:transparent;color:var(--teal);border-radius:7px;
   font-size:11.5px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font);white-space:nowrap}
-@media(max-width:620px){.slotrow{grid-template-columns:1fr 56px;grid-template-areas:"lab x" "f f"}
+@media(max-width:620px){.slotrow{grid-template-columns:1fr 50px;grid-template-areas:"lab x" "f f";gap:5px}
   .slotrow em{grid-area:lab}.slotctl{grid-area:x;justify-content:flex-end}.slotfields{grid-area:f}}
 .exchips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
 .exchips button{font-size:11px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;
@@ -960,7 +975,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.282 · 2026-11-10</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.284 · 2026-11-11</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -11470,13 +11485,16 @@ function slotRowHtml(r,k,first,last){
       (was?'<span class="slotwas" title="earlier today">was '+esc(was.slice(0,40))+'</span>':"")+
     '</div>';
   };
-  return '<div class="slotrow" data-slot="'+k+'">'+
+  const empty=!f.some(x=>String(slotVal(r,k,x[0])||"").trim());
+  return '<div class="slotrow'+(empty?" empty":"")+'" data-slot="'+k+'">'+
     '<em title="'+esc(d.l)+'">'+esc(d.l)+'</em>'+
-    '<div class="slotfields'+(f.length>2?" three":"")+'">'+f.map(x=>inp(x[0],x[1])).join("")+'</div>'+
+    '<div class="slotfields'+(f.length>2?" three":"")+'">'+f.map(x=>inp(x[0],x[1])).join("")+
+      '<button type="button" class="slotmore" title="Add another box to '+esc(d.l)+'" '+
+        'onclick="event.stopPropagation();slotAddField(\''+r.id+'\',\''+k+'\')">＋</button>'+
+    '</div>'+
     '<span class="slotctl">'+
       '<button type="button" title="Move up"'+(first?" disabled":"")+' onclick="event.stopPropagation();slotMove(\''+r.id+'\',\''+k+'\',-1)">↑</button>'+
       '<button type="button" title="Move down"'+(last?" disabled":"")+' onclick="event.stopPropagation();slotMove(\''+r.id+'\',\''+k+'\',1)">↓</button>'+
-      '<button type="button" title="Add a box to this row" onclick="event.stopPropagation();slotAddField(\''+r.id+'\',\''+k+'\')">＋</button>'+
       '<button type="button" class="slotx" title="Not relevant for this patient" onclick="event.stopPropagation();slotToggle(\''+r.id+'\',\''+k+'\')">×</button>'+
     '</span>'+
   '</div>';
@@ -11627,6 +11645,13 @@ function sxAssemble(r){
   const ctx=sxByRole(r,"context").map(x=>sxClause(x.t)).join("; ");
   const head=soLabel(r)+(ctx?" — "+ctx:"");
   lines.push({cls:"head",text:head});
+  // the afternoon is what the next person most needs: it reads straight after
+  // the headline, before the morning's parameters
+  const dayItems=sxDaytimeItems(r);
+  dayItems.forEach(x=>{
+    const t=sxDaytimeText(x);
+    if(t)lines.push({cls:"update",label:"This afternoon",text:sxPeriod(sxClause(t))});
+  });
   const exams=sxAll(r).filter(x=>x.derived==="exam"||/^so:.*\bexam\b/i.test(x.src||"")||/^exam\b/i.test(x.t||""));
   // Most sign-outs open with the exam. An NCCU one reads it where the template
   // puts it, so when the walk names the exam, the exam row speaks for it.
@@ -11635,12 +11660,7 @@ function sxAssemble(r){
   if(!examInWalk)exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
   slotLines(r).forEach(l=>{if(l.k!=="exam"||examInWalk||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
-  const day=sxDaytimeItems(r);
-  sxManagementThreads(r,exams.concat(day)).forEach(l=>lines.push(l));
-  day.forEach(x=>{
-    const t=sxDaytimeText(x);
-    if(t)lines.push({cls:"update",label:"This afternoon",text:sxPeriod(sxClause(t))});
-  });
+  sxManagementThreads(r,exams.concat(dayItems)).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
   return lines;
