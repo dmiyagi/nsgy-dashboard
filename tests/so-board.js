@@ -68,14 +68,15 @@ const nestResult=new Function(`
 const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,neuroplan:29,na:40,brace:68,bp:60}[k],custom:false});
 const soProfileIndex=()=>null,soProfileKeys=()=>null;
 const SLOT_PARENT={na:'neuroplan',brace:'neuroplan',icp:'drain',drainOutput:'drain'};
-const SLOT_NEIGHBOUR=[];
-${['slotOrderIndex','slotParentOf','slotGatherChildren','slotSortedKeys'].map(fn).join('\n')}
+const SLOT_NEIGHBOUR=[];const SLOT_HEADS=['neuroplan','drain','bp','resp','gi'];
+${['slotOrderIndex','slotIsHead','slotParentOf','slotGatherChildren','slotSortedKeys'].map(fn).join('\n')}
 const flat=slotSortedKeys({},['neuroplan','na','bp','brace','drain','icp']);
 if(flat.indexOf('brace')!==flat.indexOf('neuroplan')+2)throw new Error('Bracing did not join its heading');
 if(flat.indexOf('brace')>flat.indexOf('bp'))throw new Error('Bracing was left below Cards / BP');
 if(flat.indexOf('icp')!==flat.indexOf('drain')+1)throw new Error('ICP left its drain heading');
 const mine=slotSortedKeys({slotOrder:['bp','neuroplan','na','brace']},['neuroplan','na','bp','brace']);
 if(mine.join(',')!=='bp,neuroplan,na,brace')throw new Error('An order arranged by hand was overridden by nesting');
+if(!slotIsHead('bp')||!slotIsHead('gi')||slotIsHead('labs'))throw new Error('Systems and report rows are not told apart');
 return 'Section nesting / hand-arranged order checks PASS';`)();report(nestResult);
 
 const compactExamResult=new Function(`

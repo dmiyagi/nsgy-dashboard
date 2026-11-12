@@ -992,7 +992,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.286 · 2026-11-11</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.287 · 2026-11-12</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -10996,6 +10996,11 @@ const SLOT_PARENT={
   // the vent settings and the diet are read with the numbers, not under Pulm
   // and GI, so they are left where the walk puts them
 };
+// The systems are the headings of a sign-out: each reads as its own section,
+// whether or not it has parameters nested under it. The numbers an ICU note
+// carries — vitals, labs, lines, I/Os, drips, imaging — are not systems.
+const SLOT_HEADS=["neuroplan","drain","bp","resp","gi","gu","renal","heme","endo","id","ppx","dispo","goc","skin","peds","family","trial"];
+function slotIsHead(k){return SLOT_HEADS.indexOf(k)>=0}
 function slotParentOf(k){
   if(SLOT_PARENT[k])return SLOT_PARENT[k];
   const d=slotDef(k);
@@ -11510,7 +11515,7 @@ function slotLines(r){
   const out=[];
   keys.forEach(k=>{
     const d=slotDef(k),b=body[k],p=slotParentOf(k);
-    const tier=heads[k]?"parent":((p&&heads[p])?"sub":"");
+    const tier=(heads[k]||(slotIsHead(k)&&b))?"parent":((p&&heads[p])?"sub":"");
     if(!b&&tier!=="parent")return;
     out.push({k:k,group:d.group,label:d.k==="exam"?"":d.l,body:b,tier:tier,
       text:b?slotLine(r,k):d.l});
@@ -11577,7 +11582,7 @@ function slotBoardHtml(r){
     const kids=[];
     let j=i+1;
     while(j<keys.length&&slotParentOf(keys[j])===k){kids.push(keys[j]);j++}
-    if(kids.length){
+    if(kids.length||slotIsHead(k)){
       html+='<div class="slotsection">'+slotRowHtml(r,k,i===0,false,"parent")+
         kids.map((ck,n)=>slotRowHtml(r,ck,false,i+1+n===keys.length-1,"sub")).join("")+'</div>';
       i=j;
