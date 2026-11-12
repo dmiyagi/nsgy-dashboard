@@ -683,6 +683,12 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
 .sxpreview{margin-top:10px;padding:9px 11px;background:var(--card2);border:1px solid var(--line);
   border-left:3px solid var(--ok);border-radius:9px}
 .sxpreview .pl{font-size:12.5px;line-height:1.55;color:#d9e2ef}
+/* a heading and the parameters that belong to it, said as one section */
+.pl.parent{margin-top:6px}
+.pl.parent .plab{color:var(--acc);font-size:1.06em;letter-spacing:.2px}
+.pl.sub{margin-left:12px;padding-left:9px;border-left:2px solid rgba(90,162,255,.28)}
+.pl.sub .plab{color:#8a9bb8}
+.pl.sub+.pl:not(.sub){margin-top:5px}
 .sxpreview .pl.head{font-weight:800;color:var(--text);font-size:13.5px;margin-bottom:3px}
 .sxpreview .pl.delta{color:var(--e1)}
 .sxpreview .pl.constraint{color:var(--e2)}
@@ -728,6 +734,17 @@ select.sxrole{min-width:92px;max-width:132px;padding-right:4px}
   font-family:var(--font);font-size:12.5px;padding:5px 8px}
 .slotin::placeholder{color:#5d6a7e;font-weight:400;font-size:11.5px}
 .slotin:focus{outline:none;border-color:var(--acc)}
+/* a heading and its detail, drawn as one section */
+.slotsection{border:1px solid rgba(90,162,255,.26);background:rgba(90,162,255,.05);
+  border-radius:14px;padding:5px 7px 6px;margin-bottom:8px}
+.slotrow.parent{background:transparent;border:0;padding:2px 1px 3px;margin-bottom:3px}
+.slotrow.parent em{font-size:13.5px;font-weight:800;color:var(--acc);letter-spacing:.2px}
+.slotrow.parent.empty em{color:#7f93b4}
+.slotrow.sub{margin-left:13px;margin-bottom:5px;position:relative}
+.slotrow.sub:last-child{margin-bottom:0}
+.slotrow.sub::before{content:"";position:absolute;left:-9px;top:9px;bottom:9px;
+  width:2px;border-radius:2px;background:rgba(90,162,255,.22)}
+.slotrow.sub em{font-size:11.5px;font-weight:700;color:#93a6c2}
 /* add another box to this section, where the section is */
 .slotmore{flex:0 0 auto;align-self:stretch;min-height:28px;border:1px dashed rgba(139,167,214,.28);background:transparent;
   color:var(--mut);border-radius:8px;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;padding:0 6px}
@@ -975,7 +992,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.284 · 2026-11-11</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.286 · 2026-11-11</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -9529,7 +9546,7 @@ function renderPresent(){
     return '<article class="pcard">'+
       lines.map(l=>l.cls==="head"
         ? '<h3>'+esc(l.text)+(team?'<span class="bg '+teamBadgeClass(team)+'">'+esc(team)+'</span>':'')+'<span class="pgap'+(ready?' done':'')+'">'+(ready?'ready':'Incomplete')+'</span></h3>'
-        : '<div class="pl '+l.cls+'">'+sxReadableLineHtml(r,l)+'</div>').join("")+
+        : '<div class="pl '+l.cls+(l.tier?" "+l.tier:"")+'">'+sxReadableLineHtml(r,l)+'</div>').join("")+
       '</article>';
   }).join("")||'<div class="empty">Nothing captured yet.</div>';
 }
@@ -10969,6 +10986,26 @@ const SLOT_NEIGHBOUR=[
  [/^(?:lines?|access|drains?)\b/i,"lines"],
  [/^(?:vitals?|tmax|temp)\b/i,"vitals"]
 ];
+// Which rows are the detail under a bigger heading. A parent and the rows that
+// belong to it read as one section: the heading stands out, its parameters sit
+// inside it. Nesting is only drawn where the rows actually sit together.
+const SLOT_PARENT={
+  na:"neuroplan",asm:"neuroplan",steroid:"neuroplan",ac:"neuroplan",diWatch:"neuroplan",
+  sodiumStudies:"neuroplan",vasospasm:"neuroplan",brace:"neuroplan",
+  icp:"drain",drainOutput:"drain"
+  // the vent settings and the diet are read with the numbers, not under Pulm
+  // and GI, so they are left where the walk puts them
+};
+function slotParentOf(k){
+  if(SLOT_PARENT[k])return SLOT_PARENT[k];
+  const d=slotDef(k);
+  if(d&&d.custom){
+    // a row you named belongs where its neighbour belongs
+    const hit=SLOT_NEIGHBOUR.find(([re])=>re.test(String(d.l||"").trim()));
+    if(hit)return SLOT_PARENT[hit[1]]||hit[1];
+  }
+  return "";
+}
 function slotCustomOrder(d){
   if(d&&d.order&&d.order!==119)return d.order;           // a place you chose stands
   const hit=SLOT_NEIGHBOUR.find(([re])=>re.test(String((d&&d.l)||"").trim()));
@@ -11288,6 +11325,19 @@ function slotOrderIndex(r){
   custom.forEach((k,i)=>{ix[k]=i});
   return ix;
 }
+// a parameter that reads as detail under a heading follows that heading,
+// wherever the sort first put it
+function slotGatherChildren(list,pinned){
+  // an order you arranged yourself stands: nothing is pulled anywhere
+  if(pinned&&Object.keys(pinned).length)return list;
+  const out=[],placed={};
+  list.forEach(k=>{
+    if(placed[k])return;
+    out.push(k);placed[k]=true;
+    list.forEach(c=>{if(!placed[c]&&slotParentOf(c)===k){out.push(c);placed[c]=true}});
+  });
+  return out;
+}
 function slotSortedKeys(r,keys){
   const ix=slotOrderIndex(r);
   const has=k=>ix[k]!==undefined;
@@ -11312,8 +11362,8 @@ function slotSortedKeys(r,keys){
     return slotDef(a).order-slotDef(b).order;
   });
   const cluster=["drain","icp","drainOutput"].filter(k=>sorted.includes(k));
-  if(cluster.length>1){const first=Math.min(...cluster.map(k=>sorted.indexOf(k))),rest=sorted.filter(k=>!cluster.includes(k));rest.splice(first,0,...cluster);return rest}
-  return sorted;
+  if(cluster.length>1){const first=Math.min(...cluster.map(k=>sorted.indexOf(k))),rest=sorted.filter(k=>!cluster.includes(k));rest.splice(first,0,...cluster);return slotGatherChildren(rest,ix)}
+  return slotGatherChildren(sorted,ix);
 }
 function slotMove(id,k,dir){
   const r=findAny(id);if(!r)return;
@@ -11449,10 +11499,23 @@ function slotLine(r,k){
   return d.k==="exam"?body:(d.l+": "+body);
 }
 function slotLines(r){
-  return slotActiveKeys(r).map(k=>{
-    const d=slotDef(k),body=slotBody(r,k);
-    return {k:k,group:d.group,label:d.k==="exam"?"":d.l,body:body,text:slotLine(r,k)};
-  }).filter(x=>x.body);
+  const keys=slotActiveKeys(r),body={};
+  keys.forEach(k=>{body[k]=slotBody(r,k)});
+  // a heading is a heading only while something under it has been filled in
+  const heads={};
+  keys.forEach(k=>{
+    const p=slotParentOf(k);
+    if(p&&body[k]&&keys.indexOf(p)>=0)heads[p]=true;
+  });
+  const out=[];
+  keys.forEach(k=>{
+    const d=slotDef(k),b=body[k],p=slotParentOf(k);
+    const tier=heads[k]?"parent":((p&&heads[p])?"sub":"");
+    if(!b&&tier!=="parent")return;
+    out.push({k:k,group:d.group,label:d.k==="exam"?"":d.l,body:b,tier:tier,
+      text:b?slotLine(r,k):d.l});
+  });
+  return out;
 }
 function slotToggle(id,k){
   const r=findAny(id);if(!r)return;
@@ -11472,7 +11535,7 @@ function slotAddFromSelect(id,el){
   slotToggle(id,k);
 }
 // ---------- slot UI: one row per parameter, goal then current ----------
-function slotRowHtml(r,k,first,last){
+function slotRowHtml(r,k,first,last,tier){
   const d=slotDef(k);if(!d)return "";
   const f=slotVisibleFields(r,k);
   const inp=(fk,ph)=>{
@@ -11486,7 +11549,7 @@ function slotRowHtml(r,k,first,last){
     '</div>';
   };
   const empty=!f.some(x=>String(slotVal(r,k,x[0])||"").trim());
-  return '<div class="slotrow'+(empty?" empty":"")+'" data-slot="'+k+'">'+
+  return '<div class="slotrow'+(empty?" empty":"")+(tier?" "+tier:"")+'" data-slot="'+k+'">'+
     '<em title="'+esc(d.l)+'">'+esc(d.l)+'</em>'+
     '<div class="slotfields'+(f.length>2?" three":"")+'">'+f.map(x=>inp(x[0],x[1])).join("")+
       '<button type="button" class="slotmore" title="Add another box to '+esc(d.l)+'" '+
@@ -11506,11 +11569,23 @@ function slotBoardHtml(r){
   // a template with its own walk supplies the order; the Neuro/Systems
   // headings would only cut across it
   const walking=!!soProfileKeys(r);
-  keys.forEach((k,i)=>{
-    const g=slotDef(k).group;
+  let i=0;
+  while(i<keys.length){
+    const k=keys[i],g=slotDef(k).group;
     if(!walking&&g!==group){group=g;if(g)html+='<div class="slotgroup">'+esc(g)+'</div>'}
-    html+=slotRowHtml(r,k,i===0,i===keys.length-1);
-  });
+    // the rows that read as this one's detail, where they follow it
+    const kids=[];
+    let j=i+1;
+    while(j<keys.length&&slotParentOf(keys[j])===k){kids.push(keys[j]);j++}
+    if(kids.length){
+      html+='<div class="slotsection">'+slotRowHtml(r,k,i===0,false,"parent")+
+        kids.map((ck,n)=>slotRowHtml(r,ck,false,i+1+n===keys.length-1,"sub")).join("")+'</div>';
+      i=j;
+    }else{
+      html+=slotRowHtml(r,k,i===0,i===keys.length-1);
+      i++;
+    }
+  }
   html+='<div class="slotadd">'+slotRestoreFieldsHtml(r)+
     (rest.length?'<select onclick="event.stopPropagation()" onchange="slotAddFromSelect(\''+r.id+'\',this)">'+
       '<option value="">＋ add a parameter…</option>'+
@@ -11659,13 +11734,15 @@ function sxAssemble(r){
   const examInWalk=prof.indexOf("exam")>=0;
   if(!examInWalk)exams.forEach(x=>lines.push({cls:"state",text:sxPeriod(sxClause(x.t))}));
   // slots carry the goal → current parameters, in spoken order
-  slotLines(r).forEach(l=>{if(l.k!=="exam"||examInWalk||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,text:sxPeriod(l.text),body:sxPeriod(l.body)})});
+  slotLines(r).forEach(l=>{if(l.k!=="exam"||examInWalk||!exams.length)lines.push({cls:"state",slotKey:l.k,label:l.label,tier:l.tier,
+    text:l.body?sxPeriod(l.text):l.text,body:l.body?sxPeriod(l.body):""})});
   sxManagementThreads(r,exams.concat(dayItems)).forEach(l=>lines.push(l));
   const action=sxActionLine(r);
   if(action)lines.push({cls:"loop",text:action});
   return lines;
 }
-function sxText(r){return sxAssemble(r).map(l=>l.text).join("\n")}
+// pasted text keeps the shape: detail sits under its heading
+function sxText(r){return sxAssemble(r).map(l=>(l.tier==="sub"?"  ":"")+l.text).join("\n")}
 function sxHasContent(r){return sxAll(r).length>0}
 // ---- migration: pull an existing template sign-out into the new model once ----
 const SX_FIELD_ROLE=[
@@ -11945,6 +12022,7 @@ function sxQuickAddHtml(r,idPrefix){
 }
 
 function sxReadableLineHtml(r,l){
+  if(l.tier==="parent"&&!l.body)return '<b class="plab">'+esc(l.label||l.text)+'</b>';
   const text=l.body||l.text;
   let html=negHtml(text);
   if(nccuDiff&&l.slotKey){
@@ -11976,7 +12054,7 @@ function soTextShort(r,text,open){
 function sxPreviewHtml(r,open){
   const lines=sxAssemble(r);
   if(lines.length<=1&&!sxHasContent(r))return "";
-  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+'">'+
+  return '<div class="sxpreview">'+lines.map(l=>'<div class="pl '+l.cls+(l.tier?" "+l.tier:"")+'">'+
     (l.cls==="head"?esc(soTextShort(r,l.text,open!==false)):sxReadableLineHtml(r,l))+'</div>').join("")+'</div>';
 }
 function copySxCard(id){

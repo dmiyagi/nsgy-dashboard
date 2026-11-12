@@ -56,12 +56,27 @@ return 'Explicit not-consented suggestion checks PASS';`)();report(consentResult
 const evdResult=new Function(`
 const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,na:40}[k]});
 const soProfileIndex=()=>null,soProfileKeys=()=>null;
-${['slotOrderIndex','slotSortedKeys','slotVal'].map(fn).join('\n')}
+const slotParentOf=k=>({icp:'drain',drainOutput:'drain',na:'neuroplan'})[k]||'';
+${['slotOrderIndex','slotGatherChildren','slotSortedKeys','slotVal'].map(fn).join('\n')}
 const r={slotOrder:['exam','icp','drain','na'],slots:{drain:{goal:'EVD at 0',out24:'235',shift:'20'}}};
 const order=slotSortedKeys(r,['exam','icp','drain','na','drainOutput']);
 if(order.join(',')!=='exam,drain,icp,drainOutput,na')throw new Error('EVD, ICP and output order is incorrect');
 if(slotVal(r,'drainOutput','out24')!=='235'||slotVal(r,'drainOutput','shift')!=='20')throw new Error('Splitting output lost existing measurements');
 return 'EVD → ICP → output layout / saved values checks PASS';`)();report(evdResult);
+
+const nestResult=new Function(`
+const slotDef=k=>({order:{exam:10,drain:15,icp:20,drainOutput:25,neuroplan:29,na:40,brace:68,bp:60}[k],custom:false});
+const soProfileIndex=()=>null,soProfileKeys=()=>null;
+const SLOT_PARENT={na:'neuroplan',brace:'neuroplan',icp:'drain',drainOutput:'drain'};
+const SLOT_NEIGHBOUR=[];
+${['slotOrderIndex','slotParentOf','slotGatherChildren','slotSortedKeys'].map(fn).join('\n')}
+const flat=slotSortedKeys({},['neuroplan','na','bp','brace','drain','icp']);
+if(flat.indexOf('brace')!==flat.indexOf('neuroplan')+2)throw new Error('Bracing did not join its heading');
+if(flat.indexOf('brace')>flat.indexOf('bp'))throw new Error('Bracing was left below Cards / BP');
+if(flat.indexOf('icp')!==flat.indexOf('drain')+1)throw new Error('ICP left its drain heading');
+const mine=slotSortedKeys({slotOrder:['bp','neuroplan','na','brace']},['neuroplan','na','bp','brace']);
+if(mine.join(',')!=='bp,neuroplan,na,brace')throw new Error('An order arranged by hand was overridden by nesting');
+return 'Section nesting / hand-arranged order checks PASS';`)();report(nestResult);
 
 const compactExamResult=new Function(`
 const examHistOpen={r:true};let S={rounds:[{id:'r',collapsed:false,examOpen:true}],consults:[{id:'c',type:'CHART',collapsed:false,examOpen:true}]};
