@@ -992,7 +992,7 @@ h3.secgroup{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var
   <div class="apptitle">
     <h1>Brown NSGY Triage</h1>
     <div class="sub">Nonvalidated cognitive aid — not a substitute for clinical judgement</div>
-    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.287 · 2026-11-12</div>
+    <div class="buildmeta" id="buildmeta" onclick="forceAppUpdate()" title="Tap to check for a new version">v0.0.289 · 2026-11-13</div>
   </div>
   <input id="gsearch" class="gsearch" placeholder="Search board, rounds, calendar, reference…" autocomplete="off" oninput="globalSearch=this.value;renderAll()">
   <div class="hpills" id="hpills"></div>
@@ -5708,6 +5708,12 @@ const SO_TMPLS={
   ["Heme","Hgb 10.4 · Plt 210 · INR 1.1 · DVT ppx held/on since ___"],
   ["Endo","glucose 110-160 · ISS · dex + PPI while >10 mg/d"],
   ["Prophylaxis","DVT ___ · GI PPI · ASM Keppra · abx ___"]]},
+ nccushort:{name:"Short NCCU",fields:[
+  ["One-liner","52F aSAH pcomm coiled POD2 — what the NSGY issue is"],
+  ["Exam","pupils, motor by group, vs baseline"],
+  ["Neuro plan","checks · Na / BP goal · ASM · escalation trigger"],
+  ["DVT ppx","SCDs only · lovenox from POD___ · held since ___"],
+  ["Spine plan","brace + when worn · activity · MAP goal if cord"]]},
  asah:{name:"aSAH",fields:[
   ["One-liner","52F HH2 mFisher3 pcomm, coiled 8/21, PBD3"],
   ["Exam @ SBP","intact at SBP 130 · any deficit that is SBP-dependent"],
@@ -5894,7 +5900,22 @@ function normalizeRoundTags(tags){
   (tags||[]).map(normalizeRoundTag).filter(Boolean).forEach(t=>{if(!out.includes(t))out.push(t)});
   return out.slice(0,4);
 }
-const ROUND_BED_RE="(?:ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z]+)\\s?-?\\d+[A-Za-z0-9-]*(?:-\\d+)?|\\d[AB]-?\\d*";
+// Rooms come in both shapes: unit-first (NCCU 7, B707, AT10) and floor-first
+// (4E12, 5E12, 2N4) — the second was missing, so those patients carried no room.
+const ROUND_BED_RE="(?:ED|BB|NCCU|NCC|PICU|SICU|TICU|MICU|CTIC|RICU|COOP|HCH|WIMU|J|[A-Z]+)\\s?-?\\d+[A-Za-z0-9-]*(?:-\\d+)?|\\d{1,2}[A-Za-z]{1,3}-?\\d{1,3}|\\d[AB]-?\\d*";
+// ...and plenty of clinical shorthand looks like a room without being one:
+// POD2, PEEP 5, FiO2 82, GCS 8, SBP 160, G3, HH2, L4. A token whose letters are
+// one of these is never read as a bed.
+const NOT_A_ROOM_RE=/^(?:pod|pbd|ptd|pos|hd|gcs|ich|ivh|sah|sdh|edh|tbi|dai|icp|cpp|sbp|dbp|map|hr|rr|spo|fio|peep|psv|simv|cpap|bipap|ps|pc|ac|vc|tv|q|x|d|c|t|l|s|g|hh|hunt|fisher|mfisher|asa|na|k|mg|mcg|ml|cc|kg|cm|mm|hgb|hct|wbc|plt|inr|cr|bun|evd|ett|og|ng|jp|piv|cvl|picc|tmax|wk|wks|yo|yof|yom|po|iv|bid|tid|qid|prn|covid|keppra|dex|on|in|of|to|by|is|as|no|or|up|bm|bp|day|days|age|goal|last|max|min|rate|dose|sat|sats|temp|vent|net|out|uop|cvp|abg|ph|co2|o2|pt|ot|pr|post|pre)$/i;
+function roomTokenOk(tok){
+  const alpha=String(tok||"").match(/^[A-Za-z]+/);
+  return !(alpha&&NOT_A_ROOM_RE.test(alpha[0]));
+}
+// the same shorthand must not be read as the patient either
+function nameTokenOk(tok){
+  const t=String(tok||"").trim();
+  return !!t&&!NOT_A_ROOM_RE.test(t)&&!/^(?:nc|ra|gtt|hs|sq|im|ett|tf|npo|cpp|abx|cx|gcs|hob|map)$/i.test(t);
+}
 function spineLevelToken(raw,token,end){
   const s=String(raw||""),t=String(token||"").toUpperCase().replace(/\s+/g,"");
   if(!/^C\d+$/.test(t))return false;
@@ -5908,6 +5929,7 @@ function firstRoomToken(raw){
   const s=String(raw||""),re=new RegExp("\\b("+ROUND_BED_RE+")\\b","ig");
   let m;
   while((m=re.exec(s))){
+    if(!roomTokenOk(m[1]))continue;
     if(spineLevelToken(s,m[1],m.index+m[0].length))continue;
     return m[1].toUpperCase().replace(/\s+/g,"");
   }
@@ -5926,8 +5948,14 @@ function roundLabel(raw){
 }
 function last3FromText(raw){
   const s=String(raw||"");
-  const afterBed=s.match(new RegExp("\\b(?:"+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)([A-Za-z]{2,4})(?![A-Za-z])","i"));
-  if(afterBed&&!spineLevelToken(s,afterBed[0].split(/\s+/)[0],(afterBed.index||0)+afterBed[0].length))return capPt(afterBed[1]);
+  const bedName=new RegExp("\\b(?:"+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)([A-Za-z]{2,4})(?![A-Za-z])","ig");
+  let afterBed;
+  while((afterBed=bedName.exec(s))){
+    const tok=afterBed[0].split(/\s+/)[0];
+    if(!roomTokenOk(tok)||!nameTokenOk(afterBed[1]))continue;
+    if(spineLevelToken(s,tok,(afterBed.index||0)+afterBed[0].length))continue;
+    return capPt(afterBed[1]);
+  }
   const bed=firstRoomToken(s);
   if(bed){
     const at=s.toUpperCase().indexOf(bed);
@@ -5936,10 +5964,10 @@ function last3FromText(raw){
       .replace(/\([A-Za-z]{1,4}\)/g," ")
       .replace(/^[-–—:;,\s]+/," ");
     const nm=tail.match(/\b([A-Za-z]{2,4})(?![A-Za-z])\b/);
-    if(nm)return capPt(nm[1]);
+    if(nm&&nameTokenOk(nm[1]))return capPt(nm[1]);
   }
-  const par=s.match(/\(([A-Za-z]{2,4})\)/);if(par)return capPt(par[1]);
-  const comma=s.match(/\b([A-Z][A-Za-z'’-]{1,})\s*,\s*[A-Z][A-Za-z'’-]{1,}/);if(comma)return capPt(comma[1]);
+  const par=s.match(/\(([A-Za-z]{2,4})\)/);if(par&&nameTokenOk(par[1]))return capPt(par[1]);
+  const comma=s.match(/\b([A-Z][A-Za-z'’-]{1,})\s*,\s*[A-Z][A-Za-z'’-]{1,}/);if(comma&&nameTokenOk(comma[1]))return capPt(comma[1]);
   const label=s.match(/\b(?:patient|pt)\s+([A-Z][A-Za-z'’-]{1,})\b/i);if(label)return capPt(label[1]);
   return "";
 }
@@ -11055,9 +11083,28 @@ const SO_PROFILES={
         "lines","labs","id","meds","imaging","exam","neuroplan","na","asm","steroid","ac","bp",
         "resp","gi","renal","gu","heme","endo","ppx","dispo"]
 };
+// The short NCCU sign-out is the neurosurgical part of any patient, whatever
+// service or template they came in under: who they are, the exam, the neuro
+// plan, and the DVT and spine plans when those apply.
+function slotFilled(r,k){
+  const d=slotDef(k);
+  return !!(d&&d.fields.some(f=>String(slotVal(r,k,f[0])||"").trim()));
+}
+SO_PROFILES.nccushort=r=>{
+  const keys=["exam","neuroplan"];
+  const t=slotText(r||{});
+  if(slotFilled(r,"ac")||/\bdvt\b|lovenox|enoxaparin|heparin|ppx|prophylax|anticoag|apixaban|eliquis|xarelto|plavix|aspirin|\basa\b|\bscds?\b/i.test(t))keys.push("ac");
+  if(slotIsSpine(r||{})||slotFilled(r,"brace")||/\bbrace\b|\btlso\b|\baspen\b|collar|\bmap\b\s*>|cord/i.test(t))keys.push("brace");
+  return keys;
+};
+// a walk the template means literally: nothing else is put on the board
+const SO_PROFILE_ONLY={nccushort:true};
 const soProfileCache={};
-function soProfileForTemplate(key){
-  if(SO_PROFILES[key])return SO_PROFILES[key];
+function soProfileForTemplate(key,r){
+  if(SO_PROFILES[key]){
+    const prof=SO_PROFILES[key];
+    return typeof prof==="function"?prof(r||{}):prof;
+  }
   if(soProfileCache[key])return soProfileCache[key];
   const tmpl=SO_TMPLS[key];
   if(!tmpl)return null;
@@ -11077,7 +11124,7 @@ function soProfileForTemplate(key){
 }
 function soProfileKeys(r){
   if(!r||!r.soT||r.soProfileOff)return null;
-  const prof=soProfileForTemplate(r.soT);
+  const prof=soProfileForTemplate(r.soT,r);
   if(!prof||!prof.length)return null;
   return prof.filter(k=>slotDef(k));
 }
@@ -11172,6 +11219,7 @@ const SO_LABEL_ALIAS=[
  [/^(?:foley|gu|voiding)$/i,["gu","goal"]],
  [/^(?:bowel|last bm)$/i,["bowel","goal"]],
  [/^(?:exam|neuro exam|physical)$/i,["exam","cur"]],
+ [/^(?:spine(?: plan)?|brace|bracing)$/i,["brace","goal"]],
  [/^(?:vasospasm|tcds?)$/i,["vasospasm","goal"]],
  [/^(?:goals? of care|code status)$/i,["goc","goal"]],
  [/^(?:family|collateral)$/i,["family","goal"]],
@@ -11394,15 +11442,19 @@ function slotActiveKeys(r){
   const off=(r&&r.slotsOff)||{},on=(r&&r.slotsOn)||{};
   // a box switched off in the sign-out editor takes its row off the board too
   const boxOff={};slotKeysBoxOff(r).forEach(k=>{if(!on[k])boxOff[k]=true});
-  const keys=slotAuto(r).filter(k=>!off[k]&&!boxOff[k]);
+  // a template whose walk is the whole sign-out brings nothing else with it
+  const only=!!(r&&r.soT&&SO_PROFILE_ONLY[r.soT]&&!r.soProfileOff);
+  const keys=only?[]:slotAuto(r).filter(k=>!off[k]&&!boxOff[k]);
   // the template's own walk, for the patients it belongs to
   (soProfileKeys(r)||[]).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
   Object.keys(on).forEach(k=>{if(on[k]&&keys.indexOf(k)<0&&slotDef(k))keys.push(k)});
-  // ...and a box switched on puts its row there
-  slotKeysFromBoxes(r).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
-  // a slot you have already filled stays, whatever the detectors now say
+  // ...and a box switched on puts its row there, unless the walk is the
+  // whole sign-out, where only what you add by hand joins it
+  if(!only)slotKeysFromBoxes(r).forEach(k=>{if(!off[k]&&keys.indexOf(k)<0)keys.push(k)});
+  // a slot you have already filled stays, whatever the detectors now say —
+  // except under a short walk, where the point is that it is short
   const vals=(r&&r.slots)||{};
-  Object.keys(vals).forEach(k=>{
+  if(!only)Object.keys(vals).forEach(k=>{
     if(off[k]||keys.indexOf(k)>=0||!slotDef(k))return;
     if(slotDef(k).fields.some(f=>String((vals[k]||{})[f[0]]||"").trim()))keys.push(k);
   });
@@ -11600,7 +11652,7 @@ function slotBoardHtml(r){
       'onclick="event.stopPropagation();slotSeedFromNotes(\''+r.id+'\')">⤓ From notes</button>'+
     (Array.isArray(r.slotOrder)&&r.slotOrder.length?'<button type="button" class="slotseed" title="Back to the default order" '+
       'onclick="event.stopPropagation();slotResetOrder(\''+r.id+'\')">↕ Default order</button>':"")+
-    (soProfileForTemplate(r.soT)&&soProfileForTemplate(r.soT).length?'<button type="button" class="slotseed" title="'+(r.soProfileOff?"Put the whole "+soTemplate(r).name+" walk back on the board":"Trim to the rows this patient actually needs")+'" '+
+    (soProfileForTemplate(r.soT,r)&&soProfileForTemplate(r.soT,r).length?'<button type="button" class="slotseed" title="'+(r.soProfileOff?"Put the whole "+soTemplate(r).name+" walk back on the board":"Trim to the rows this patient actually needs")+'" '+
       'onclick="event.stopPropagation();toggleSoProfile(\''+r.id+'\')">'+(r.soProfileOff?"＋ "+soTemplate(r).name+" rows":"⊟ Trim rows")+'</button>':"")+
   '</div></div>';
   return html;
@@ -11773,16 +11825,34 @@ function sxFieldText(label,val){
   if(!v)return "";
   return /^one-?liner(?:\s+\d+)?$/i.test(label)?v:label+": "+v;
 }
+// which boxes a template field is asking about
+function soLabelSlots(r,label){
+  const name=String(label||"").trim();
+  const comp=SO_TEMPLATE_COMPOSITE.find(([re])=>re.test(name));
+  if(comp)return comp[1];
+  const alias=slotAliasFor(name)||soSlotMapping(name);
+  if(alias)return [alias.k];
+  const k=slotKeyForLabel(r,name);
+  return k?[k]:[];
+}
 function sxSyncFromTemplate(r){
   if(!r)return 0;
   r.so=r.so||{};
   const list=sxList(r);
+  const live=slotActiveKeys(r);
   let n=0;
   sxTemplateLabels(r).forEach(label=>{
     const v=String(r.so[label]||"").trim();
     if(!v)return;
     const text=sxFieldText(label,v);
     const src="so:"+label.toLowerCase();
+    // if the boxes already carry this, it is not said a second time
+    const mapped=soLabelSlots(r,label);
+    if(mapped.length&&mapped.some(k=>live.indexOf(k)>=0&&slotFilled(r,k))){
+      const dup=list.find(x=>x.src===src&&!x.dropped);
+      if(dup){dup.dropped=true;dup.droppedAt=sxNow();dup.updatedAt=dup.droppedAt;n++}
+      return;
+    }
     let it=list.find(x=>x.src===src);
     if(!it){
       it=list.find(x=>!x.derived&&(x.t===text||x.t===v||x.t===label+": "+v));
@@ -13132,7 +13202,8 @@ function normalizeCaptureProblem(s){
 function parseCaptureConsult(text){
   const s=String(text||"").trim();
   const roomRe=new RegExp("^\\s*("+ROUND_BED_RE+")\\b\\s*(?:[-–—:;,]?\\s*)","i");
-  const rm=s.match(roomRe);
+  let rm=s.match(roomRe);
+  if(rm&&!roomTokenOk(rm[1]))rm=null;
   const tempED=s.match(/^\s*(ED|ER)\b\s*(?:[-–—:;,]?\\s*)/i);
   if(!rm&&tempED){
     const tail=s.slice(tempED[0].length).trim();

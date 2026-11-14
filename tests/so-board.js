@@ -79,6 +79,32 @@ if(mine.join(',')!=='bp,neuroplan,na,brace')throw new Error('An order arranged b
 if(!slotIsHead('bp')||!slotIsHead('gi')||slotIsHead('labs'))throw new Error('Systems and report rows are not told apart');
 return 'Section nesting / hand-arranged order checks PASS';`)();report(nestResult);
 
+const shortResult=new Function(`
+const SO_PROFILES={},SO_PROFILE_ONLY={nccushort:true},SO_TMPLS={nccushort:{name:'Short NCCU',fields:[]}};
+const soProfileCache={},SLOT_CUSTOM={},SO_SLOTS=[];
+const slotDef=k=>({k:k,fields:[['goal'],['cur']],order:1});
+const slotText=r=>String(r.raw||'');
+const slotIsSpine=r=>/tlif|fusion|acdf|lami|cord/i.test(slotText(r));
+const slotVal=(r,k,f)=>((r.slots||{})[k]||{})[f]||'';
+const slotAuto=()=>['na','asm','drain','bp'],slotKeysFromBoxes=()=>['asm'],slotKeysBoxOff=()=>[];
+const slotSortedKeys=(r,keys)=>keys;
+${['slotFilled','soProfileForTemplate','soProfileKeys','soProfileIndex','slotActiveKeys'].map(fn).join('\n')}
+SO_PROFILES.nccushort=r=>{
+  const keys=['exam','neuroplan'];
+  if(slotFilled(r,'ac')||/dvt|lovenox|heparin/i.test(slotText(r)))keys.push('ac');
+  if(slotIsSpine(r)||slotFilled(r,'brace'))keys.push('brace');
+  return keys;
+};
+const cranial={soT:'nccushort',raw:'aSAH pcomm coiled POD2, Keppra',slots:{na:{goal:'135-145'}}};
+if(slotActiveKeys(cranial).join(',')!=='exam,neuroplan')throw new Error('Short NCCU brought rows it was not asked for');
+const dvt={soT:'nccushort',raw:'aSAH POD2, lovenox held since 8/20',slots:{}};
+if(slotActiveKeys(dvt).indexOf('ac')<0)throw new Error('Short NCCU dropped the DVT plan where it applies');
+const spine={soT:'nccushort',raw:'L4-5 TLIF POD1, lovenox POD1',slots:{}};
+if(slotActiveKeys(spine).join(',')!=='exam,neuroplan,ac,brace')throw new Error('Short NCCU dropped the spine plan');
+const full={soT:'nccu',raw:'aSAH pcomm coiled POD2',slots:{}};
+if(slotActiveKeys(full).indexOf('na')<0)throw new Error('A normal template lost its detected rows');
+return 'Short NCCU walk checks PASS';`)();report(shortResult);
+
 const compactExamResult=new Function(`
 const examHistOpen={r:true};let S={rounds:[{id:'r',collapsed:false,examOpen:true}],consults:[{id:'c',type:'CHART',collapsed:false,examOpen:true}]};
 const renderRounds=()=>{},renderCal=()=>{},save=()=>{};
